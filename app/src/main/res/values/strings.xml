@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Prayer Times</string>
+    <string name="widget_description">Displays the next prayer time and countdown on your home screen.</string>
+</resources>

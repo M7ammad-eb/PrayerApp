@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Glow Circle -->
+    <path
+        android:pathData="M54,26 A28,28 0 1,0 54,82 A28,28 0 1,0 54,26"
+        android:fillColor="#15FFFFFF" />
+
+    <!-- Golden Crescent Moon -->
+    <path
+        android:pathData="M64,32 C50,32 38,44 38,58 C38,72 50,84 64,84 C56,84 46,76 46,58 C46,40 56,32 64,32 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="38"
+                android:startY="32"
+                android:endX="64"
+                android:endY="84"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FFE885" />
+                <item android:offset="1.0" android:color="#D49B24" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 8-pointed Islamic Star -->
+    <path
+        android:pathData="M66,46 L68.5,49.5 L73,50 L69.5,53 L70.5,57.5 L66,55.5 L61.5,57.5 L62.5,53 L59,50 L63.5,49.5 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="59"
+                android:startY="46"
+                android:endX="73"
+                android:endY="57.5"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FFFFFF" />
+                <item android:offset="1.0" android:color="#F4C742" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Mosque Arch Motif at bottom center -->
+    <path
+        android:pathData="M50,78 L58,78 L58,68 C58,65 55,62 54,62 C53,62 50,65 50,68 Z"
+        android:fillColor="#80FFE885" />
+</vector>

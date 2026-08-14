@@ -1,0 +1,6 @@
+{
+  "name": "Muslim Prayer Times & Qibla",
+  "description": "Accurate offline prayer times, Qibla compass, athan audio and notifications worldwide.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
