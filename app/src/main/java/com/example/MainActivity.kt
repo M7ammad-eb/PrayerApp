@@ -9,6 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import com.example.ui.MainScreen
 import com.example.ui.theme.MyApplicationTheme
@@ -39,7 +41,8 @@ class MainActivity : ComponentActivity() {
         requestAppPermissionsIfNeeded()
 
         setContent {
-            MyApplicationTheme {
+            val settings by prayerViewModel.settings.collectAsState()
+            MyApplicationTheme(themeMode = settings.themeMode) {
                 MainScreen(
                     viewModel = prayerViewModel,
                     onRequestLocationPermission = { requestLocationPermission() }

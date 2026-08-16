@@ -345,6 +345,12 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun updateThemeMode(themeMode: com.example.data.models.AppThemeMode) {
+        viewModelScope.launch {
+            prefs.updateThemeMode(themeMode)
+        }
+    }
+
     fun updatePrayerAdjustment(prayer: PrayerType, minutes: Int) {
         viewModelScope.launch {
             prefs.updatePrayerAdjustment(prayer, minutes)
@@ -357,8 +363,19 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun playAthanPreview(prayerType: PrayerType = PrayerType.DHUHR) {
-        AthanAudioEngine.playAthan(prayerType, NotificationSoundType.FULL_ATHAN)
+    fun updateDynamicIslandSettings(enabled: Boolean, minutesBefore: Int) {
+        viewModelScope.launch {
+            prefs.updateDynamicIslandSettings(enabled, minutesBefore)
+            PrayerNotificationScheduler.rescheduleAll(getApplication())
+        }
+    }
+
+    fun playAthanPreview(prayerType: PrayerType = PrayerType.DHUHR, soundType: NotificationSoundType = NotificationSoundType.FULL_ATHAN) {
+        AthanAudioEngine.playAthan(
+            context = getApplication(),
+            prayerType = prayerType,
+            soundType = soundType
+        )
     }
 
     fun previewNotificationSound(soundType: NotificationSoundType, prayerType: PrayerType = PrayerType.DHUHR) {
@@ -367,6 +384,14 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             soundType = soundType,
             prayerType = prayerType
         )
+    }
+
+    fun previewDynamicIsland(prayerType: PrayerType = PrayerType.ASR, minutesInFuture: Int = 15) {
+        PrayerNotificationScheduler.triggerTestDynamicIsland(getApplication(), prayerType, minutesInFuture)
+    }
+
+    fun dismissDynamicIsland() {
+        PrayerNotificationScheduler.dismissDynamicIsland(getApplication())
     }
 
     fun stopAudio() {

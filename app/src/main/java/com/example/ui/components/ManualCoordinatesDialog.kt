@@ -66,6 +66,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.data.cities.CityDatabase
 import com.example.data.models.UserLocation
 import com.example.data.qibla.QiblaCalculator
+import com.example.ui.locale.LocalAppStrings
 import java.time.ZoneId
 import java.util.Locale
 
@@ -75,6 +76,7 @@ fun ManualCoordinatesDialog(
     onSaveLocation: (UserLocation) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     var latText by remember {
         mutableStateOf(
             if (currentLocation.isGps || currentLocation.latitude != 0.0)
@@ -93,7 +95,7 @@ fun ManualCoordinatesDialog(
         mutableStateOf(
             if (currentLocation.name.isNotEmpty() && currentLocation.name != "Makkah")
                 currentLocation.name
-            else "Custom Coordinates"
+            else if (strings.isArabic) "إحداثيات مخصصة" else "Custom Coordinates"
         )
     }
 
@@ -152,16 +154,16 @@ fun ManualCoordinatesDialog(
         ).distinct()
     }
 
-    val presetCoordinates = remember {
+    val presetCoordinates = remember(strings.isArabic) {
         listOf(
-            PresetCoord("Makkah", 21.4225, 39.8262, "Asia/Riyadh", "Saudi Arabia"),
-            PresetCoord("Madinah", 24.4672, 39.6111, "Asia/Riyadh", "Saudi Arabia"),
-            PresetCoord("Jerusalem", 31.7683, 35.2137, "Asia/Jerusalem", "Palestine"),
-            PresetCoord("Cairo", 30.0444, 31.2357, "Africa/Cairo", "Egypt"),
-            PresetCoord("Dubai", 25.2048, 55.2708, "Asia/Dubai", "UAE"),
-            PresetCoord("Istanbul", 41.0082, 28.9784, "Europe/Istanbul", "Turkey"),
-            PresetCoord("London", 51.5074, -0.1278, "Europe/London", "United Kingdom"),
-            PresetCoord("New York", 40.7128, -74.0060, "America/New_York", "United States")
+            PresetCoord(if (strings.isArabic) "مكة المكرمة" else "Makkah", 21.4225, 39.8262, "Asia/Riyadh", "Saudi Arabia"),
+            PresetCoord(if (strings.isArabic) "المدينة المنورة" else "Madinah", 24.4672, 39.6111, "Asia/Riyadh", "Saudi Arabia"),
+            PresetCoord(if (strings.isArabic) "القدس الشريف" else "Jerusalem", 31.7683, 35.2137, "Asia/Jerusalem", "Palestine"),
+            PresetCoord(if (strings.isArabic) "القاهرة" else "Cairo", 30.0444, 31.2357, "Africa/Cairo", "Egypt"),
+            PresetCoord(if (strings.isArabic) "دبي" else "Dubai", 25.2048, 55.2708, "Asia/Dubai", "UAE"),
+            PresetCoord(if (strings.isArabic) "إسطنبول" else "Istanbul", 41.0082, 28.9784, "Europe/Istanbul", "Turkey"),
+            PresetCoord(if (strings.isArabic) "لندن" else "London", 51.5074, -0.1278, "Europe/London", "United Kingdom"),
+            PresetCoord(if (strings.isArabic) "نيويورك" else "New York", 40.7128, -74.0060, "America/New_York", "United States")
         )
     }
 
@@ -208,13 +210,13 @@ fun ManualCoordinatesDialog(
                         }
                         Column {
                             Text(
-                                text = "Manual Coordinates",
+                                text = strings.customCoordinates,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Enter Latitude & Longitude",
+                                text = strings.enterCoordinates,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -227,7 +229,7 @@ fun ManualCoordinatesDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
+                            contentDescription = strings.close,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -236,7 +238,7 @@ fun ManualCoordinatesDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Specify precise geographical coordinates for off-grid areas, desert camps, or locations without GPS signal.",
+                    text = strings.manualCoordinatesDesc,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 16.sp
@@ -246,7 +248,7 @@ fun ManualCoordinatesDialog(
 
                 // Quick Preset Chips
                 Text(
-                    text = "Quick Presets",
+                    text = strings.quickPresets,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -294,8 +296,8 @@ fun ManualCoordinatesDialog(
                         OutlinedTextField(
                             value = latText,
                             onValueChange = { latText = it },
-                            label = { Text("Latitude (°)") },
-                            placeholder = { Text("e.g. 24.7136") },
+                            label = { Text(strings.latitudeLabel) },
+                            placeholder = { Text("24.7136") },
                             isError = latText.isNotBlank() && !isLatValid,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Decimal,
@@ -309,7 +311,7 @@ fun ManualCoordinatesDialog(
                         )
                         if (latText.isNotBlank() && !isLatValid) {
                             Text(
-                                text = "-90.0° to +90.0°",
+                                text = "-90.0° .. +90.0°",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(start = 4.dp, top = 2.dp)
@@ -322,8 +324,8 @@ fun ManualCoordinatesDialog(
                         OutlinedTextField(
                             value = lonText,
                             onValueChange = { lonText = it },
-                            label = { Text("Longitude (°)") },
-                            placeholder = { Text("e.g. 46.6753") },
+                            label = { Text(strings.longitudeLabel) },
+                            placeholder = { Text("46.6753") },
                             isError = lonText.isNotBlank() && !isLonValid,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Decimal,
@@ -337,7 +339,7 @@ fun ManualCoordinatesDialog(
                         )
                         if (lonText.isNotBlank() && !isLonValid) {
                             Text(
-                                text = "-180.0° to +180.0°",
+                                text = "-180.0° .. +180.0°",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(start = 4.dp, top = 2.dp)
@@ -352,8 +354,8 @@ fun ManualCoordinatesDialog(
                 OutlinedTextField(
                     value = locationNameText,
                     onValueChange = { locationNameText = it },
-                    label = { Text("Location Name / Label") },
-                    placeholder = { Text("e.g. Desert Camp, My Farm, Off-grid Site") },
+                    label = { Text(strings.locationNameLabel) },
+                    placeholder = { Text("Desert Camp") },
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     },
@@ -369,7 +371,7 @@ fun ManualCoordinatesDialog(
                 // Time Zone Selector Box
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Time Zone",
+                        text = strings.timeZoneLabel,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -411,7 +413,7 @@ fun ManualCoordinatesDialog(
                                     )
                                 }
                                 Text(
-                                    text = "Change",
+                                    text = if (strings.isArabic) "تغيير" else "Change",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold
@@ -428,7 +430,7 @@ fun ManualCoordinatesDialog(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            text = if (tz == ZoneId.systemDefault().id) "$tz (Device Default)" else tz,
+                                            text = if (tz == ZoneId.systemDefault().id) "$tz (${if (strings.isArabic) "الافتراضي" else "Device Default"})" else tz,
                                             fontWeight = if (tz == selectedTimeZone) FontWeight.Bold else FontWeight.Normal
                                         )
                                     },
@@ -475,7 +477,7 @@ fun ManualCoordinatesDialog(
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Text(
-                                        text = "Near ${nearCity.name}, ${nearCity.country} (approx. ${distKm.toInt()} km)",
+                                        text = "${if (strings.isArabic) "بالقرب من" else "Near"} ${nearCity.name}, ${nearCity.country} (approx. ${distKm.toInt()} km)",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -495,7 +497,7 @@ fun ManualCoordinatesDialog(
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Text(
-                                        text = "Qibla Direction: ${String.format(Locale.US, "%.1f°", qiblaBearing)} (${QiblaCalculator.getDirectionCardinal(qiblaBearing!!)})",
+                                        text = "${strings.qiblaBearingLabel}: ${String.format(Locale.US, "%.1f°", qiblaBearing)} (${strings.cardinalDirection(qiblaBearing!!)})",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -522,7 +524,7 @@ fun ManualCoordinatesDialog(
                             .testTag("cancel_coordinates_button"),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Cancel")
+                        Text(strings.cancel)
                     }
 
                     Button(
@@ -551,7 +553,7 @@ fun ManualCoordinatesDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("Apply Coordinates")
+                        Text(strings.applyCoordinates)
                     }
                 }
             }

@@ -2,12 +2,13 @@ package com.example.audio
 
 import android.content.Context
 import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioTrack
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
+import com.example.R
 import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
 import kotlinx.coroutines.CoroutineScope
@@ -19,8 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.math.PI
-import kotlin.math.sin
+import kotlinx.coroutines.withContext
 
 data class AdhanVerse(
     val arabic: String,
@@ -40,32 +40,33 @@ data class AdhanPlaybackState(
 
 object AthanAudioEngine {
 
+    private const val TAG = "AthanAudioEngine"
+
     private val STANDARD_ADHAN_VERSES = listOf(
-        AdhanVerse("اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ", "Allahu Akbar, Allahu Akbar", "Allah is the Greatest, Allah is the Greatest", 5.5f),
-        AdhanVerse("اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ", "Allahu Akbar, Allahu Akbar", "Allah is the Greatest, Allah is the Greatest", 5.5f),
-        AdhanVerse("أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللَّهُ", "Ash-hadu an la ilaha illallah", "I bear witness that there is no god but Allah", 6.0f),
-        AdhanVerse("أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللَّهُ", "Ash-hadu an la ilaha illallah", "I bear witness that there is no god but Allah", 6.0f),
-        AdhanVerse("أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ", "Ash-hadu anna Muhammadan Rasulullah", "I bear witness that Muhammad is the Messenger of Allah", 6.5f),
-        AdhanVerse("أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ", "Ash-hadu anna Muhammadan Rasulullah", "I bear witness that Muhammad is the Messenger of Allah", 6.5f),
-        AdhanVerse("حَيَّ عَلَى الصَّلَاةِ", "Hayya 'ala as-Salah", "Hasten to prayer", 6.0f),
-        AdhanVerse("حَيَّ عَلَى الصَّلَاةِ", "Hayya 'ala as-Salah", "Hasten to prayer", 6.0f),
-        AdhanVerse("حَيَّ عَلَى الْفَلَاحِ", "Hayya 'ala al-Falah", "Hasten to success", 6.0f),
-        AdhanVerse("حَيَّ عَلَى الْفَلَاحِ", "Hayya 'ala al-Falah", "Hasten to success", 6.0f),
-        AdhanVerse("اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ", "Allahu Akbar, Allahu Akbar", "Allah is the Greatest, Allah is the Greatest", 5.5f),
-        AdhanVerse("لَا إِلٰهَ إِلَّا اللَّهُ", "La ilaha illallah", "There is no god but Allah", 7.0f)
+        AdhanVerse("اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ", "Allahu Akbar, Allahu Akbar", "Allah is the Greatest, Allah is the Greatest", 5.0f),
+        AdhanVerse("اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ", "Allahu Akbar, Allahu Akbar", "Allah is the Greatest, Allah is the Greatest", 5.0f),
+        AdhanVerse("أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللَّهُ", "Ash-hadu an la ilaha illallah", "I bear witness that there is no god but Allah", 5.5f),
+        AdhanVerse("أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللَّهُ", "Ash-hadu an la ilaha illallah", "I bear witness that there is no god but Allah", 5.5f),
+        AdhanVerse("أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ", "Ash-hadu anna Muhammadan Rasulullah", "I bear witness that Muhammad is the Messenger of Allah", 5.5f),
+        AdhanVerse("أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ", "Ash-hadu anna Muhammadan Rasulullah", "I bear witness that Muhammad is the Messenger of Allah", 5.5f),
+        AdhanVerse("حَيَّ عَلَى الصَّلَاةِ", "Hayya 'ala as-Salah", "Hasten to prayer", 5.0f),
+        AdhanVerse("حَيَّ عَلَى الصَّلَاةِ", "Hayya 'ala as-Salah", "Hasten to prayer", 5.0f),
+        AdhanVerse("حَيَّ عَلَى الْفَلَاحِ", "Hayya 'ala al-Falah", "Hasten to success", 5.0f),
+        AdhanVerse("حَيَّ عَلَى الْفَلَاحِ", "Hayya 'ala al-Falah", "Hasten to success", 5.0f),
+        AdhanVerse("اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ", "Allahu Akbar, Allahu Akbar", "Allah is the Greatest, Allah is the Greatest", 5.0f),
+        AdhanVerse("لَا إِلٰهَ إِلَّا اللَّهُ", "La ilaha illallah", "There is no god but Allah", 6.0f)
     )
 
     private val FAJR_EXTRA_VERSE = AdhanVerse(
         "الصَّلَاةُ خَيْرٌ مِنَ النَّوْمِ",
         "As-Salatu Khayrun Minan-Nawm",
         "Prayer is better than sleep",
-        6.5f
+        5.5f
     )
 
     fun getVersesForPrayer(prayerType: PrayerType): List<AdhanVerse> {
         return if (prayerType == PrayerType.FAJR) {
             val list = STANDARD_ADHAN_VERSES.toMutableList()
-            // Insert "As-Salatu Khayrun Minan-Nawm" twice after the second "Hayya 'alal-falah"
             list.add(10, FAJR_EXTRA_VERSE)
             list.add(11, FAJR_EXTRA_VERSE)
             list
@@ -77,11 +78,28 @@ object AthanAudioEngine {
     private val _playbackState = MutableStateFlow(AdhanPlaybackState())
     val playbackState: StateFlow<AdhanPlaybackState> = _playbackState.asStateFlow()
 
-    private var currentAudioTrack: AudioTrack? = null
-    private var playbackJob: Job? = null
-    private val audioScope = CoroutineScope(Dispatchers.Default)
+    @Volatile
+    private var mediaPlayer: MediaPlayer? = null
+    private var trackingJob: Job? = null
+    private val audioScope = CoroutineScope(Dispatchers.Main)
 
+    fun getRawResourceForSoundType(soundType: NotificationSoundType): Int {
+        return when (soundType) {
+            NotificationSoundType.FULL_ATHAN -> R.raw.athan_makkah
+            NotificationSoundType.ATHAN_MADINAH -> R.raw.athan_madinah
+            NotificationSoundType.ATHAN_AL_AQSA -> R.raw.athan_al_aqsa
+            NotificationSoundType.ATHAN_CAIRO -> R.raw.athan_cairo
+            NotificationSoundType.SHORT_TAKBEER -> R.raw.takbeer
+            NotificationSoundType.MELODIC_TONE -> R.raw.chime
+            else -> R.raw.athan_makkah
+        }
+    }
+
+    /**
+     * Plays authentic Athan audio using Android's native MediaPlayer with progress & lyrics synchronization.
+     */
     fun playAthan(
+        context: Context,
         prayerType: PrayerType = PrayerType.DHUHR,
         soundType: NotificationSoundType = NotificationSoundType.FULL_ATHAN,
         onVerseChange: ((AdhanVerse, Int, Float) -> Unit)? = null,
@@ -89,165 +107,95 @@ object AthanAudioEngine {
     ) {
         stop()
 
+        val rawResId = getRawResourceForSoundType(soundType)
         val verses = getVersesForPrayer(prayerType)
-        val totalDuration = verses.sumOf { it.durationSeconds.toDouble() }.toFloat()
         val styleTitle = "${soundType.displayName} • ${prayerType.title}"
 
-        playbackJob = audioScope.launch {
+        try {
+            val player = MediaPlayer.create(context.applicationContext, rawResId)
+            if (player == null) {
+                Log.e(TAG, "Failed to create MediaPlayer for resource: $rawResId")
+                onFinished?.invoke()
+                return
+            }
+
+            mediaPlayer = player
+
+            val audioAttributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build()
+            player.setAudioAttributes(audioAttributes)
+            player.setVolume(1.0f, 1.0f)
+
             _playbackState.value = AdhanPlaybackState(
                 isPlaying = true,
                 currentPrayer = prayerType,
                 currentVerseIndex = 0,
-                currentVerse = verses[0],
+                currentVerse = verses.firstOrNull(),
                 progress = 0f,
                 title = styleTitle
             )
-            onVerseChange?.invoke(verses[0], 0, 0f)
+            verses.firstOrNull()?.let { onVerseChange?.invoke(it, 0, 0f) }
 
-            val sampleRate = 44100
-            val bufferSize = AudioTrack.getMinBufferSize(
-                sampleRate,
-                AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_16BIT
-            ).coerceAtLeast(sampleRate)
-
-            val track = AudioTrack.Builder()
-                .setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .build()
-                )
-                .setAudioFormat(
-                    AudioFormat.Builder()
-                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                        .setSampleRate(sampleRate)
-                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                        .build()
-                )
-                .setBufferSizeInBytes(bufferSize)
-                .setTransferMode(AudioTrack.MODE_STREAM)
-                .build()
-
-            currentAudioTrack = track
-            track.play()
-
-            // Maqam variations per sound type
-            val basePitch = when (soundType) {
-                NotificationSoundType.ATHAN_MADINAH -> 196.0 // G3 (Calm, deeper)
-                NotificationSoundType.ATHAN_AL_AQSA -> 246.94 // B3 (Soulful high)
-                NotificationSoundType.ATHAN_CAIRO -> 233.08 // Bb3 (Vocal Egyptian)
-                else -> 220.0 // A3 (Classic Makkah Bayati)
+            player.setOnCompletionListener {
+                stop()
+                onFinished?.invoke()
             }
 
-            val notes = listOf(
-                basePitch,             // 0
-                basePitch * 1.05946,   // 1
-                basePitch * 1.189207,  // 2
-                basePitch * 1.33484,   // 3
-                basePitch * 1.498307,  // 4
-                basePitch * 1.587401,  // 5
-                basePitch * 1.781797   // 6
-            )
+            player.setOnErrorListener { _, what, extra ->
+                Log.e(TAG, "MediaPlayer error: what=$what extra=$extra")
+                stop()
+                onFinished?.invoke()
+                true
+            }
 
-            var accumulatedSeconds = 0f
+            player.start()
 
-            for ((index, verse) in verses.withIndex()) {
-                if (!isActive) break
+            // Synchronize lyrics/verses with audio position
+            trackingJob = audioScope.launch {
+                val duration = player.duration.coerceAtLeast(1)
+                val totalVerseSeconds = verses.sumOf { it.durationSeconds.toDouble() }.toFloat()
 
-                _playbackState.value = _playbackState.value.copy(
-                    currentVerseIndex = index,
-                    currentVerse = verse
-                )
-                val currentProg = (accumulatedSeconds / totalDuration).coerceIn(0f, 1f)
-                onVerseChange?.invoke(verse, index, currentProg)
+                while (isActive && mediaPlayer?.isPlaying == true) {
+                    val currentPosMs = try { mediaPlayer?.currentPosition ?: 0 } catch (e: Exception) { 0 }
+                    val currentProgress = (currentPosMs.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
 
-                // Synthesize melodic chant for the verse
-                val verseDuration = verse.durationSeconds
-                val chunkSamples = (sampleRate * verseDuration).toInt()
-                val pcmBuffer = ShortArray(chunkSamples)
-
-                val noteSeq = when (soundType) {
-                    NotificationSoundType.ATHAN_MADINAH -> when (index % 4) {
-                        0 -> listOf(notes[0], notes[2], notes[3], notes[2], notes[0])
-                        1 -> listOf(notes[0], notes[1], notes[3], notes[2], notes[0])
-                        2 -> listOf(notes[2], notes[4], notes[3], notes[2], notes[0])
-                        else -> listOf(notes[0], notes[3], notes[2], notes[1], notes[0])
-                    }
-                    NotificationSoundType.ATHAN_AL_AQSA -> when (index % 4) {
-                        0 -> listOf(notes[3], notes[5], notes[4], notes[2], notes[0])
-                        1 -> listOf(notes[2], notes[3], notes[4], notes[1], notes[0])
-                        2 -> listOf(notes[3], notes[6], notes[5], notes[3], notes[1])
-                        else -> listOf(notes[1], notes[3], notes[2], notes[1], notes[0])
-                    }
-                    NotificationSoundType.ATHAN_CAIRO -> when (index % 4) {
-                        0 -> listOf(notes[3], notes[4], notes[5], notes[3], notes[1], notes[0])
-                        1 -> listOf(notes[0], notes[2], notes[4], notes[3], notes[1], notes[0])
-                        2 -> listOf(notes[3], notes[5], notes[4], notes[3], notes[2], notes[0])
-                        else -> listOf(notes[0], notes[2], notes[3], notes[1], notes[0])
-                    }
-                    else -> when (index % 4) {
-                        0 -> listOf(notes[3], notes[4], notes[3], notes[1], notes[0]) // Allahu Akbar motif
-                        1 -> listOf(notes[0], notes[2], notes[3], notes[2], notes[0]) // Shahadah motif
-                        2 -> listOf(notes[3], notes[5], notes[4], notes[3], notes[1]) // Hayya 'ala motif
-                        else -> listOf(notes[0], notes[1], notes[3], notes[1], notes[0])
-                    }
-                }
-
-                val samplesPerNote = chunkSamples / noteSeq.size
-
-                for (i in 0 until chunkSamples) {
-                    val noteIndex = (i / samplesPerNote).coerceIn(0, noteSeq.lastIndex)
-                    val targetFreq = noteSeq[noteIndex]
-
-                    val t = i.toDouble() / sampleRate
-                    // Gentle vibrato and acoustic resonance
-                    val vibratoSpeed = if (soundType == NotificationSoundType.ATHAN_MADINAH) 4.2 else 5.2
-                    val vibrato = 1.0 + 0.008 * sin(2 * PI * vibratoSpeed * t)
-                    val freq = targetFreq * vibrato
-
-                    // Natural envelope attack & decay per note
-                    val noteLocalT = (i % samplesPerNote).toDouble() / samplesPerNote
-                    val env = when {
-                        noteLocalT < 0.12 -> noteLocalT / 0.12
-                        noteLocalT > 0.78 -> (1.0 - noteLocalT) / 0.22
-                        else -> 1.0
+                    // Map current audio progress to current verse
+                    val scaledSeconds = currentProgress * totalVerseSeconds
+                    var accumulatedSec = 0f
+                    var matchedVerseIndex = 0
+                    for ((idx, verse) in verses.withIndex()) {
+                        accumulatedSec += verse.durationSeconds
+                        if (scaledSeconds <= accumulatedSec || idx == verses.lastIndex) {
+                            matchedVerseIndex = idx
+                            break
+                        }
                     }
 
-                    // Multi-harmonic acoustic vocal resonance
-                    val fundamental = sin(2 * PI * freq * t)
-                    val secondHarmonic = 0.35 * sin(2 * PI * freq * 2.0 * t)
-                    val thirdHarmonic = 0.18 * sin(2 * PI * freq * 3.0 * t)
-                    val subHarmonic = 0.12 * sin(2 * PI * (freq / 2.0) * t)
+                    val activeVerse = verses.getOrNull(matchedVerseIndex) ?: verses.first()
 
-                    val sampleValue = ((fundamental + secondHarmonic + thirdHarmonic + subHarmonic) * env * 0.7 * Short.MAX_VALUE).toInt()
-                    pcmBuffer[i] = sampleValue.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
-                }
+                    _playbackState.value = _playbackState.value.copy(
+                        currentVerseIndex = matchedVerseIndex,
+                        currentVerse = activeVerse,
+                        progress = currentProgress
+                    )
+                    onVerseChange?.invoke(activeVerse, matchedVerseIndex, currentProgress)
 
-                track.write(pcmBuffer, 0, chunkSamples)
-
-                val stepTime = 100L
-                val steps = (verseDuration * 1000 / stepTime).toInt()
-                for (s in 0 until steps) {
-                    if (!isActive) break
-                    delay(stepTime)
-                    accumulatedSeconds += 0.1f
-                    val prog = (accumulatedSeconds / totalDuration).coerceIn(0f, 1f)
-                    _playbackState.value = _playbackState.value.copy(progress = prog)
+                    delay(150)
                 }
             }
 
-            try {
-                track.stop()
-                track.release()
-            } catch (e: Exception) {}
-
-            currentAudioTrack = null
-            _playbackState.value = AdhanPlaybackState(isPlaying = false, progress = 1f)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error starting playback", e)
+            stop()
             onFinished?.invoke()
         }
     }
 
+    /**
+     * Plays the requested sound type using high-fidelity native audio.
+     */
     fun playSoundType(
         context: Context,
         soundType: NotificationSoundType,
@@ -261,13 +209,13 @@ object AthanAudioEngine {
             NotificationSoundType.ATHAN_MADINAH,
             NotificationSoundType.ATHAN_AL_AQSA,
             NotificationSoundType.ATHAN_CAIRO -> {
-                playAthan(prayerType, soundType, onVerseChange, onFinished)
+                playAthan(context, prayerType, soundType, onVerseChange, onFinished)
             }
             NotificationSoundType.SHORT_TAKBEER -> {
-                playTakbeer(onFinished)
+                playTakbeer(context, onFinished)
             }
             NotificationSoundType.MELODIC_TONE -> {
-                playGentleChime(onFinished)
+                playGentleChime(context, onFinished)
             }
             NotificationSoundType.VIBRATE_ONLY -> {
                 vibrateDevice(context)
@@ -279,93 +227,77 @@ object AthanAudioEngine {
         }
     }
 
-    fun playTakbeer(onFinished: (() -> Unit)? = null) {
+    /**
+     * Plays authentic Mishari Alafasy Takbeerat.
+     */
+    fun playTakbeer(context: Context, onFinished: (() -> Unit)? = null) {
         stop()
-        playbackJob = audioScope.launch {
+        try {
+            val player = MediaPlayer.create(context.applicationContext, R.raw.takbeer) ?: run {
+                onFinished?.invoke()
+                return
+            }
+            mediaPlayer = player
             _playbackState.value = AdhanPlaybackState(
                 isPlaying = true,
                 title = "Takbeerat",
-                currentVerse = AdhanVerse("اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ ، لَا إِلٰهَ إِلَّا اللَّهُ", "Allahu Akbar, Allahu Akbar, La ilaha illallah", "Allah is the Greatest, there is no god but Allah", 4.0f)
+                currentVerse = AdhanVerse(
+                    "اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ ، لَا إِلٰهَ إِلَّا اللَّهُ",
+                    "Allahu Akbar, Allahu Akbar, La ilaha illallah",
+                    "Allah is the Greatest, Allah is the Greatest, there is no god but Allah",
+                    4.0f
+                )
             )
 
-            val sampleRate = 44100
-            val totalSamples = (sampleRate * 4.0).toInt()
-            val pcm = ShortArray(totalSamples)
-
-            val freq1 = 293.66 // D4
-            val freq2 = 349.23 // F4
-            val freq3 = 440.00 // A4
-
-            for (i in 0 until totalSamples) {
-                val t = i.toDouble() / sampleRate
-                val env = (1.0 - (i.toDouble() / totalSamples)).coerceIn(0.0, 1.0)
-                val signal = (sin(2 * PI * freq1 * t) + 0.6 * sin(2 * PI * freq2 * t) + 0.4 * sin(2 * PI * freq3 * t)) * env * 0.8 * Short.MAX_VALUE
-                pcm[i] = signal.toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+            player.setOnCompletionListener {
+                stop()
+                onFinished?.invoke()
             }
-
-            val track = AudioTrack.Builder()
-                .setAudioAttributes(
-                    AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
-                )
-                .setAudioFormat(
-                    AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT).setSampleRate(sampleRate).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build()
-                )
-                .setBufferSizeInBytes(pcm.size * 2)
-                .setTransferMode(AudioTrack.MODE_STATIC)
-                .build()
-
-            currentAudioTrack = track
-            track.write(pcm, 0, pcm.size)
-            track.play()
-
-            delay(4000)
-            try {
-                track.stop()
-                track.release()
-            } catch (e: Exception) {}
-            _playbackState.value = AdhanPlaybackState(isPlaying = false)
+            player.setOnErrorListener { _, _, _ ->
+                stop()
+                onFinished?.invoke()
+                true
+            }
+            player.start()
+        } catch (e: Exception) {
+            Log.e(TAG, "Takbeer playback failed", e)
+            stop()
             onFinished?.invoke()
         }
     }
 
-    fun playGentleChime(onFinished: (() -> Unit)? = null) {
+    /**
+     * Plays gentle crystal chime tone.
+     */
+    fun playGentleChime(context: Context? = null, onFinished: (() -> Unit)? = null) {
         stop()
-        playbackJob = audioScope.launch {
-            val sampleRate = 44100
-            val duration = 2.5
-            val totalSamples = (sampleRate * duration).toInt()
-            val pcm = ShortArray(totalSamples)
-
-            val chimeFreq = 523.25 // C5
-
-            for (i in 0 until totalSamples) {
-                val t = i.toDouble() / sampleRate
-                val env = Math.exp(-2.5 * t) // Exponential decay chime
-                val signal = (sin(2 * PI * chimeFreq * t) + 0.35 * sin(2 * PI * chimeFreq * 2 * t) + 0.2 * sin(2 * PI * chimeFreq * 3 * t)) * env * 0.7 * Short.MAX_VALUE
-                pcm[i] = signal.toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        if (context == null) {
+            onFinished?.invoke()
+            return
+        }
+        try {
+            val player = MediaPlayer.create(context.applicationContext, R.raw.chime) ?: run {
+                onFinished?.invoke()
+                return
             }
-
-            val track = AudioTrack.Builder()
-                .setAudioAttributes(
-                    AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
-                )
-                .setAudioFormat(
-                    AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT).setSampleRate(sampleRate).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build()
-                )
-                .setBufferSizeInBytes(pcm.size * 2)
-                .setTransferMode(AudioTrack.MODE_STATIC)
-                .build()
-
-            currentAudioTrack = track
-            track.write(pcm, 0, pcm.size)
-            track.play()
-
-            delay(2500)
-            try {
-                track.stop()
-                track.release()
-            } catch (e: Exception) {}
-            _playbackState.value = AdhanPlaybackState(isPlaying = false)
+            mediaPlayer = player
+            _playbackState.value = AdhanPlaybackState(
+                isPlaying = true,
+                title = "Prayer Reminder Chime"
+            )
+            player.setOnCompletionListener {
+                stop()
+                onFinished?.invoke()
+            }
+            player.setOnErrorListener { _, _, _ ->
+                stop()
+                onFinished?.invoke()
+                true
+            }
+            player.start()
+        } catch (e: Exception) {
+            Log.e(TAG, "Chime playback failed", e)
+            stop()
             onFinished?.invoke()
         }
     }
@@ -388,17 +320,26 @@ object AthanAudioEngine {
                 @Suppress("DEPRECATION")
                 vibrator.vibrate(longArrayOf(0, 400, 200, 400, 200, 600), -1)
             }
-        } catch (e: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "Vibration failed", e)
+        }
     }
 
     fun stop() {
-        playbackJob?.cancel()
-        playbackJob = null
+        trackingJob?.cancel()
+        trackingJob = null
         try {
-            currentAudioTrack?.stop()
-            currentAudioTrack?.release()
-        } catch (e: Exception) {}
-        currentAudioTrack = null
-        _playbackState.value = AdhanPlaybackState(isPlaying = false)
+            mediaPlayer?.let {
+                if (it.isPlaying) {
+                    it.stop()
+                }
+                it.release()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error releasing MediaPlayer", e)
+        } finally {
+            mediaPlayer = null
+            _playbackState.value = AdhanPlaybackState(isPlaying = false)
+        }
     }
 }

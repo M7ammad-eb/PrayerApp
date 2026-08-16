@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.data.cities.CityDatabase
 import com.example.data.models.AppLanguage
+import com.example.data.models.AppThemeMode
 import com.example.data.models.CalculationMethod
 import com.example.data.models.HighLatitudeRule
 import com.example.data.models.JuristicMethod
@@ -32,6 +33,9 @@ data class AppPrayerSettings(
     val hijriAdjustmentDays: Int = 0,
     val is24HourFormat: Boolean = false,
     val language: AppLanguage = AppLanguage.SYSTEM,
+    val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
+    val dynamicIslandEnabled: Boolean = true,
+    val dynamicIslandMinutesBefore: Int = 15,
     val prayerConfigs: Map<PrayerType, NotificationPrayerConfig> = PrayerType.values().associateWith {
         NotificationPrayerConfig(
             enabled = it != PrayerType.SUNRISE, // Sunrise not a prayer, so disabled by default or reminder only
@@ -58,6 +62,9 @@ class PrayerPreferences(private val context: Context) {
         val HIJRI_OFFSET = intPreferencesKey("hijri_offset")
         val IS_24_HOUR = booleanPreferencesKey("is_24_hour")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
+        val DYNAMIC_ISLAND_ENABLED = booleanPreferencesKey("dynamic_island_enabled")
+        val DYNAMIC_ISLAND_MINUTES = intPreferencesKey("dynamic_island_minutes")
 
         // Adjustments
         val ADJ_FAJR = intPreferencesKey("adj_fajr")
@@ -102,6 +109,11 @@ class PrayerPreferences(private val context: Context) {
             try { AppLanguage.valueOf(it) } catch (e: Exception) { AppLanguage.SYSTEM }
         } ?: AppLanguage.SYSTEM
 
+        val themeStr = prefs[Keys.THEME_MODE]
+        val themeMode = themeStr?.let {
+            try { AppThemeMode.valueOf(it) } catch (e: Exception) { AppThemeMode.SYSTEM }
+        } ?: AppThemeMode.SYSTEM
+
         val adjustments = PrayerTimeAdjustments(
             fajr = prefs[Keys.ADJ_FAJR] ?: 0,
             sunrise = prefs[Keys.ADJ_SUNRISE] ?: 0,
@@ -125,6 +137,9 @@ class PrayerPreferences(private val context: Context) {
             NotificationPrayerConfig(enabled, soundType, preMinutes)
         }
 
+        val dynamicIslandEnabled = prefs[Keys.DYNAMIC_ISLAND_ENABLED] ?: true
+        val dynamicIslandMinutes = prefs[Keys.DYNAMIC_ISLAND_MINUTES] ?: 15
+
         AppPrayerSettings(
             location = location,
             calculationMethod = calcMethod,
@@ -133,9 +148,19 @@ class PrayerPreferences(private val context: Context) {
             hijriAdjustmentDays = hijriOffset,
             is24HourFormat = is24Hour,
             language = language,
+            themeMode = themeMode,
+            dynamicIslandEnabled = dynamicIslandEnabled,
+            dynamicIslandMinutesBefore = dynamicIslandMinutes,
             prayerConfigs = prayerConfigs,
             adjustments = adjustments
         )
+    }
+
+    suspend fun updateDynamicIslandSettings(enabled: Boolean, minutesBefore: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.DYNAMIC_ISLAND_ENABLED] = enabled
+            prefs[Keys.DYNAMIC_ISLAND_MINUTES] = minutesBefore
+        }
     }
 
     suspend fun updateLocation(location: UserLocation) {
@@ -182,6 +207,12 @@ class PrayerPreferences(private val context: Context) {
     suspend fun updateLanguage(language: AppLanguage) {
         context.dataStore.edit { prefs ->
             prefs[Keys.APP_LANGUAGE] = language.name
+        }
+    }
+
+    suspend fun updateThemeMode(themeMode: AppThemeMode) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.THEME_MODE] = themeMode.name
         }
     }
 

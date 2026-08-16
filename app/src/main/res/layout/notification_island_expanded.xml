@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_island_expanded"
+    android:padding="16dp">
+
+    <!-- Top header row -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/island_expanded_icon"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_crescent_capsule"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:contentDescription="@string/app_name" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_toEndOf="@id/island_expanded_icon"
+            android:layout_marginStart="10dp"
+            android:layout_centerVertical="true">
+
+            <TextView
+                android:id="@+id/island_expanded_prayer_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Upcoming: Asr (العصر)"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/island_expanded_location"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="4:15 PM • Mecca, Saudi Arabia"
+                android:textColor="#99FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:text="LIVE"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="#0D1A13"
+            android:background="#E6C687"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp" />
+    </RelativeLayout>
+
+    <!-- Center prominent live countdown & progress bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#14281E"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        android:padding="12dp"
+        android:gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TIME REMAINING UNTIL ADHAN"
+            android:textColor="#80FFFFFF"
+            android:textSize="10sp"
+            android:letterSpacing="0.08"
+            android:textStyle="bold" />
+
+        <Chronometer
+            android:id="@+id/island_expanded_chronometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#E6C687"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:countDown="true"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp" />
+
+        <TextView
+            android:id="@+id/island_expanded_subtext"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Prepare for prayer with Wudu &amp; Dhikr"
+            android:textColor="#CCFFFFFF"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Action Hint -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="Tap to open Prayer Times &amp; Qibla"
+        android:textColor="#80FFFFFF"
+        android:textSize="11sp" />
+
+</LinearLayout>

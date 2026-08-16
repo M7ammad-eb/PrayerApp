@@ -60,13 +60,10 @@ fun MonthlyCalendarScreen(
 ) {
     val strings = LocalAppStrings.current
     val timeFormatter = remember(is24HourFormat) {
-        if (is24HourFormat) DateTimeFormatter.ofPattern("HH:mm") else DateTimeFormatter.ofPattern("h:mm a")
+        if (is24HourFormat) DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH) else DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
     }
 
-    val monthYearFormatter = remember(strings) {
-        DateTimeFormatter.ofPattern("MMMM yyyy", if (strings.isArabic) Locale("ar") else Locale.ENGLISH)
-    }
-
+    val headerTitle = "${strings.monthName(selectedDate.monthValue)} ${selectedDate.year}"
     val today = LocalDate.now()
 
     Column(
@@ -91,12 +88,12 @@ fun MonthlyCalendarScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onPreviousMonth) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous Month")
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = strings.prevMonth)
                 }
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = selectedDate.format(monthYearFormatter),
+                        text = headerTitle,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -109,7 +106,7 @@ fun MonthlyCalendarScreen(
                 }
 
                 IconButton(onClick = onNextMonth) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next Month")
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = strings.nextMonth)
                 }
             }
         }

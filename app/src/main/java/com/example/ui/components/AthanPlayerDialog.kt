@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.audio.AdhanPlaybackState
 import com.example.data.models.PrayerType
+import com.example.ui.locale.LocalAppStrings
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldAccentLight
 
@@ -58,6 +59,7 @@ fun AthanPlayerDialog(
     onStop: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     Dialog(onDismissRequest = {
         onStop()
         onDismiss()
@@ -67,6 +69,7 @@ fun AthanPlayerDialog(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
                 .testTag("athan_player_dialog"),
+            shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 8.dp
         ) {
@@ -91,7 +94,7 @@ fun AthanPlayerDialog(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.VolumeUp,
-                                contentDescription = "Athan Audio",
+                                contentDescription = strings.athanDialogTitle,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -99,8 +102,8 @@ fun AthanPlayerDialog(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Athan Recitation",
-                                style = MaterialTheme.styleFormatTitle(MaterialTheme.typography.titleMedium),
+                                text = strings.athanDialogTitle,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
@@ -114,7 +117,7 @@ fun AthanPlayerDialog(
                         onStop()
                         onDismiss()
                     }) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                        Icon(imageVector = Icons.Default.Close, contentDescription = strings.close)
                     }
                 }
 
@@ -168,7 +171,7 @@ fun AthanPlayerDialog(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Listen to the sacred Islamic call to prayer",
+                                text = strings.athanPromptText,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -206,27 +209,27 @@ fun AthanPlayerDialog(
                             onClick = onStop,
                             modifier = Modifier.testTag("stop_athan_button")
                         ) {
-                            Icon(imageVector = Icons.Default.Stop, contentDescription = "Stop", modifier = Modifier.size(18.dp))
+                            Icon(imageVector = Icons.Default.Stop, contentDescription = strings.stopBtn, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Stop")
+                            Text(strings.stopBtn)
                         }
                     } else {
                         OutlinedButton(
                             onClick = { onPlayPrayer(PrayerType.DHUHR) },
                             modifier = Modifier.testTag("play_standard_athan_button")
                         ) {
-                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Play Standard Adhan", modifier = Modifier.size(18.dp))
+                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = strings.playAdhan, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Play Adhan")
+                            Text(strings.playAdhan)
                         }
 
                         OutlinedButton(
                             onClick = { onPlayPrayer(PrayerType.FAJR) },
                             modifier = Modifier.testTag("play_fajr_athan_button")
                         ) {
-                            Icon(imageVector = Icons.Default.GraphicEq, contentDescription = "Play Fajr Adhan", modifier = Modifier.size(18.dp))
+                            Icon(imageVector = Icons.Default.GraphicEq, contentDescription = strings.fajrAdhan, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Fajr Adhan")
+                            Text(strings.fajrAdhan)
                         }
                     }
                 }
@@ -234,5 +237,3 @@ fun AthanPlayerDialog(
         }
     }
 }
-
-private fun MaterialTheme.styleFormatTitle(style: androidx.compose.ui.text.TextStyle) = style

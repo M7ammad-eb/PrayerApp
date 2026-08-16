@@ -1,10 +1,18 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,50 +28,43 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddLocationAlt
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.EditLocationAlt
-import androidx.compose.material.icons.filled.FormatListNumbered
-import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -71,6 +72,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -78,6 +80,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.cities.CityDatabase
 import com.example.data.models.AppLanguage
+import com.example.data.models.AppThemeMode
 import com.example.data.models.CalculationMethod
 import com.example.data.models.HighLatitudeRule
 import com.example.data.models.JuristicMethod
@@ -88,7 +91,18 @@ import com.example.data.models.UserLocation
 import com.example.data.preferences.AppPrayerSettings
 import com.example.ui.components.ManualCoordinatesDialog
 import com.example.ui.locale.LocalAppStrings
-import com.example.ui.theme.GoldAccent
+
+enum class SettingsSubScreen {
+    MAIN,
+    THEME,
+    CALCULATION,
+    LOCATION,
+    NOTIFICATIONS,
+    LANGUAGE,
+    HIJRI_DISPLAY,
+    ADJUSTMENTS,
+    ABOUT
+}
 
 @Composable
 fun SettingsScreen(
@@ -102,829 +116,1384 @@ fun SettingsScreen(
     onUpdateHijriOffset: (Int) -> Unit,
     onToggle24Hour: () -> Unit,
     onUpdateLanguage: (AppLanguage) -> Unit,
+    onUpdateThemeMode: (AppThemeMode) -> Unit,
     onUpdatePrayerAdjustment: (PrayerType, Int) -> Unit,
     onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit,
     onTestNotification: (PrayerType, NotificationSoundType) -> Unit,
-    onPreviewSound: (NotificationSoundType) -> Unit
+    onPreviewSound: (NotificationSoundType) -> Unit,
+    onUpdateDynamicIslandSettings: (Boolean, Int) -> Unit = { _, _ -> },
+    onPreviewDynamicIsland: () -> Unit = {},
+    onDismissDynamicIsland: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
-    var showCityPicker by remember { mutableStateOf(false) }
-    var showManualCoordinatesDialog by remember { mutableStateOf(false) }
-    var showCalcMethodPicker by remember { mutableStateOf(false) }
-    var showAdjustmentsDialog by remember { mutableStateOf(false) }
-    var soundPickerPrayerType by remember { mutableStateOf<PrayerType?>(null) }
+    var currentSubScreen by remember { mutableStateOf(SettingsSubScreen.MAIN) }
 
-    if (soundPickerPrayerType != null) {
-        val targetPrayer = soundPickerPrayerType!!
-        val currentCfg = settings.prayerConfigs[targetPrayer] ?: NotificationPrayerConfig()
-        SoundPickerDialog(
-            prayerType = targetPrayer,
-            currentSound = currentCfg.soundType,
-            onSelectSound = { newSound ->
-                onUpdateNotificationConfig(targetPrayer, currentCfg.enabled, newSound, currentCfg.preReminderMinutes)
-                soundPickerPrayerType = null
-            },
-            onPreviewSound = onPreviewSound,
-            onDismiss = { soundPickerPrayerType = null }
-        )
+    // Hardware back button support
+    BackHandler(enabled = currentSubScreen != SettingsSubScreen.MAIN) {
+        currentSubScreen = SettingsSubScreen.MAIN
     }
 
-    if (showCityPicker) {
-        CityPickerDialog(
-            onSelectCity = {
-                onSelectCity(it)
-                showCityPicker = false
-            },
-            onOpenManualCoordinates = {
-                showCityPicker = false
-                showManualCoordinatesDialog = true
-            },
-            onDismiss = { showCityPicker = false }
-        )
+    AnimatedContent(
+        targetState = currentSubScreen,
+        transitionSpec = {
+            if (targetState != SettingsSubScreen.MAIN) {
+                (slideInHorizontally { width -> if (strings.isArabic) -width else width } + fadeIn()).togetherWith(
+                    slideOutHorizontally { width -> if (strings.isArabic) width else -width } + fadeOut()
+                )
+            } else {
+                (slideInHorizontally { width -> if (strings.isArabic) width else -width } + fadeIn()).togetherWith(
+                    slideOutHorizontally { width -> if (strings.isArabic) -width else width } + fadeOut()
+                )
+            }
+        },
+        label = "SettingsSubScreenAnimation"
+    ) { screen ->
+        when (screen) {
+            SettingsSubScreen.MAIN -> {
+                SettingsMainHub(
+                    settings = settings,
+                    onNavigateTo = { currentSubScreen = it }
+                )
+            }
+            SettingsSubScreen.THEME -> {
+                SettingsThemeSubScreen(
+                    settings = settings,
+                    onUpdateThemeMode = onUpdateThemeMode,
+                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
+                )
+            }
+            SettingsSubScreen.CALCULATION -> {
+                SettingsCalculationSubScreen(
+                    settings = settings,
+                    onUpdateCalculationMethod = onUpdateCalculationMethod,
+                    onUpdateJuristicMethod = onUpdateJuristicMethod,
+                    onUpdateHighLatitudeRule = onUpdateHighLatitudeRule,
+                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
+                )
+            }
+            SettingsSubScreen.LOCATION -> {
+                SettingsLocationSubScreen(
+                    settings = settings,
+                    isGpsLoading = isGpsLoading,
+                    onSelectCity = onSelectCity,
+                    onRequestGps = onRequestGps,
+                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
+                )
+            }
+            SettingsSubScreen.NOTIFICATIONS -> {
+                SettingsNotificationsSubScreen(
+                    settings = settings,
+                    onUpdateNotificationConfig = onUpdateNotificationConfig,
+                    onTestNotification = onTestNotification,
+                    onPreviewSound = onPreviewSound,
+                    onUpdateDynamicIslandSettings = onUpdateDynamicIslandSettings,
+                    onPreviewDynamicIsland = onPreviewDynamicIsland,
+                    onDismissDynamicIsland = onDismissDynamicIsland,
+                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
+                )
+            }
+            SettingsSubScreen.LANGUAGE -> {
+                SettingsLanguageSubScreen(
+                    settings = settings,
+                    onUpdateLanguage = onUpdateLanguage,
+                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
+                )
+            }
+            SettingsSubScreen.HIJRI_DISPLAY -> {
+                SettingsHijriDisplaySubScreen(
+                    settings = settings,
+                    onUpdateHijriOffset = onUpdateHijriOffset,
+                    onToggle24Hour = onToggle24Hour,
+                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
+                )
+            }
+            SettingsSubScreen.ADJUSTMENTS -> {
+                SettingsAdjustmentsSubScreen(
+                    settings = settings,
+                    onUpdatePrayerAdjustment = onUpdatePrayerAdjustment,
+                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
+                )
+            }
+            SettingsSubScreen.ABOUT -> {
+                SettingsAboutSubScreen(
+                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
+                )
+            }
+        }
     }
+}
 
-    if (showManualCoordinatesDialog) {
-        ManualCoordinatesDialog(
-            currentLocation = settings.location,
-            onSaveLocation = { newLocation ->
-                onSelectCity(newLocation)
-                showManualCoordinatesDialog = false
-            },
-            onDismiss = { showManualCoordinatesDialog = false }
-        )
-    }
-
-    if (showCalcMethodPicker) {
-        CalculationMethodPickerDialog(
-            currentMethod = settings.calculationMethod,
-            onSelectMethod = {
-                onUpdateCalculationMethod(it)
-                showCalcMethodPicker = false
-            },
-            onDismiss = { showCalcMethodPicker = false }
-        )
-    }
-
-    if (showAdjustmentsDialog) {
-        ManualAdjustmentsDialog(
-            settings = settings,
-            onUpdateAdjustment = onUpdatePrayerAdjustment,
-            onDismiss = { showAdjustmentsDialog = false }
-        )
-    }
+// ============================================================================
+// MAIN HUB (Categorized overview)
+// ============================================================================
+@Composable
+private fun SettingsMainHub(
+    settings: AppPrayerSettings,
+    onNavigateTo: (SettingsSubScreen) -> Unit
+) {
+    val strings = LocalAppStrings.current
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
             .testTag("settings_screen"),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // 0. Language & Localization Section
-        SettingsSectionHeader(title = strings.languageSection, icon = Icons.Default.Language)
-        Card(
-            modifier = Modifier.fillMaxWidth().testTag("language_settings_card"),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = strings.appLanguage,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(10.dp))
+        // Theme
+        SettingsHubCategoryCard(
+            title = strings.themeSection,
+            subtitle = strings.themeModeName(settings.themeMode),
+            icon = Icons.Default.Palette,
+            badgeColor = MaterialTheme.colorScheme.primaryContainer,
+            iconTint = MaterialTheme.colorScheme.primary,
+            testTag = "settings_cat_theme",
+            onClick = { onNavigateTo(SettingsSubScreen.THEME) }
+        )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AppLanguage.values().forEach { lang ->
-                        val isSelected = settings.language == lang
-                        Surface(
-                            onClick = { onUpdateLanguage(lang) },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
-                            modifier = Modifier.weight(1f).testTag("lang_opt_${lang.name.lowercase()}")
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = if (strings.isArabic) lang.displayNameAr else lang.displayNameEn,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1
-                                )
-                                Text(
-                                    text = when (lang) {
-                                        AppLanguage.SYSTEM -> if (strings.isArabic) "تلقائي (123)" else "Default (123)"
-                                        AppLanguage.ENGLISH -> "English (123)"
-                                        AppLanguage.ARABIC -> "العربية (123)"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                    fontSize = 10.5.sp
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Calculation
+        SettingsHubCategoryCard(
+            title = strings.calcMethodSection,
+            subtitle = "${strings.calcMethodName(settings.calculationMethod)} • ${if (settings.juristicMethod == JuristicMethod.STANDARD) strings.standardJuristic else strings.hanafiJuristic}",
+            icon = Icons.Default.Calculate,
+            badgeColor = MaterialTheme.colorScheme.secondaryContainer,
+            iconTint = MaterialTheme.colorScheme.secondary,
+            testTag = "settings_cat_calc",
+            onClick = { onNavigateTo(SettingsSubScreen.CALCULATION) }
+        )
 
-        // 1. Location Settings Section
-        SettingsSectionHeader(title = strings.locationSection, icon = Icons.Default.LocationOn)
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = settings.location.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "${if (settings.location.country.isNotEmpty()) settings.location.country + " • " else ""}Lat: ${String.format("%.2f", settings.location.latitude)}, Lon: ${String.format("%.2f", settings.location.longitude)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+        // Location
+        SettingsHubCategoryCard(
+            title = strings.locationSection,
+            subtitle = "${settings.location.name}${if (settings.location.country.isNotEmpty()) ", " + settings.location.country else ""} ${if (settings.location.isGps) "(GPS)" else ""}",
+            icon = Icons.Default.LocationOn,
+            badgeColor = MaterialTheme.colorScheme.tertiaryContainer,
+            iconTint = MaterialTheme.colorScheme.tertiary,
+            testTag = "settings_cat_location",
+            onClick = { onNavigateTo(SettingsSubScreen.LOCATION) }
+        )
 
-                    if (settings.location.isGps) {
-                        Box(
-                            modifier = Modifier
-                                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(8.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text("GPS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                }
+        // Notifications
+        val enabledNotifsCount = settings.prayerConfigs.values.count { it.enabled }
+        SettingsHubCategoryCard(
+            title = strings.notifSectionTitle,
+            subtitle = if (strings.isArabic) "$enabledNotifsCount صلوات مفعلة" else "$enabledNotifsCount prayers active",
+            icon = Icons.Default.NotificationsActive,
+            badgeColor = MaterialTheme.colorScheme.primaryContainer,
+            iconTint = MaterialTheme.colorScheme.primary,
+            testTag = "settings_cat_notifications",
+            onClick = { onNavigateTo(SettingsSubScreen.NOTIFICATIONS) }
+        )
 
-                Spacer(modifier = Modifier.height(14.dp))
+        // Language
+        SettingsHubCategoryCard(
+            title = strings.languageSection,
+            subtitle = settings.language.getDisplayName(strings.isArabic),
+            icon = Icons.Default.Language,
+            badgeColor = MaterialTheme.colorScheme.secondaryContainer,
+            iconTint = MaterialTheme.colorScheme.secondary,
+            testTag = "settings_cat_language",
+            onClick = { onNavigateTo(SettingsSubScreen.LANGUAGE) }
+        )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Button(
-                        onClick = onRequestGps,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("use_gps_button"),
-                        enabled = !isGpsLoading
-                    ) {
-                        if (isGpsLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                        } else {
-                            Icon(imageVector = Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Use GPS", maxLines = 1)
-                        }
-                    }
+        // Hijri & Display
+        SettingsHubCategoryCard(
+            title = strings.displayHijriSection,
+            subtitle = "${if (settings.is24HourFormat) "24-Hour" else "12-Hour"} • ${if (settings.hijriAdjustmentDays == 0) "0 " + strings.days else (if (settings.hijriAdjustmentDays > 0) "+" else "") + settings.hijriAdjustmentDays + " " + strings.days}",
+            icon = Icons.Default.CalendarMonth,
+            badgeColor = MaterialTheme.colorScheme.tertiaryContainer,
+            iconTint = MaterialTheme.colorScheme.tertiary,
+            testTag = "settings_cat_hijri",
+            onClick = { onNavigateTo(SettingsSubScreen.HIJRI_DISPLAY) }
+        )
 
-                    OutlinedButton(
-                        onClick = { showCityPicker = true },
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("choose_city_button")
-                    ) {
-                        Icon(imageVector = Icons.Default.Public, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("World Cities", maxLines = 1)
-                    }
-                }
+        // Adjustments
+        val hasAdjustments = settings.adjustments.let { it.fajr != 0 || it.sunrise != 0 || it.dhuhr != 0 || it.asr != 0 || it.maghrib != 0 || it.isha != 0 }
+        SettingsHubCategoryCard(
+            title = strings.minuteAdjustmentsTitle,
+            subtitle = if (hasAdjustments) (if (strings.isArabic) "تعديلات مخصصة مفعلة" else "Custom offsets active") else (if (strings.isArabic) "افتراضي (0 دقيقة)" else "Standard (0 min)"),
+            icon = Icons.Default.Tune,
+            badgeColor = MaterialTheme.colorScheme.surfaceVariant,
+            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+            testTag = "settings_cat_adjustments",
+            onClick = { onNavigateTo(SettingsSubScreen.ADJUSTMENTS) }
+        )
 
-                Spacer(modifier = Modifier.height(8.dp))
+        // About
+        SettingsHubCategoryCard(
+            title = if (strings.isArabic) "حول التطبيق والحسابات الفلكية" else "About & Calculation Info",
+            subtitle = if (strings.isArabic) "حسابات فلكية بدون إنترنت • الإصدار 1.0" else "Offline Astronomical Algorithms • v1.0",
+            icon = Icons.Default.Info,
+            badgeColor = MaterialTheme.colorScheme.surfaceVariant,
+            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+            testTag = "settings_cat_about",
+            onClick = { onNavigateTo(SettingsSubScreen.ABOUT) }
+        )
 
-                FilledTonalButton(
-                    onClick = { showManualCoordinatesDialog = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("manual_coordinates_button"),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.PinDrop, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(strings.manualCoordinates, maxLines = 1, fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
-
-        // 2. Calculation Methods Section
-        SettingsSectionHeader(title = strings.calcMethodSection, icon = Icons.Default.Calculate)
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                // Method Selector Clickable Row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { showCalcMethodPicker = true }
-                        .padding(vertical = 8.dp)
-                        .testTag("calculation_method_selector"),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = settings.calculationMethod.displayName,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = settings.calculationMethod.description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null)
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-
-                // Juristic Method (Asr Shadow)
-                Text(
-                    text = strings.juristicMethodTitle,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    JuristicMethod.values().forEach { juristic ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onUpdateJuristicMethod(juristic) }
-                        ) {
-                            RadioButton(
-                                selected = settings.juristicMethod == juristic,
-                                onClick = { onUpdateJuristicMethod(juristic) }
-                            )
-                            Text(
-                                text = if (juristic == JuristicMethod.STANDARD) strings.standardJuristic else strings.hanafiJuristic,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-
-                // High Latitude Rule Selector
-                Text(
-                    text = strings.highLatitudeSection,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                HighLatitudeRule.values().forEach { rule ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onUpdateHighLatitudeRule(rule) }
-                    ) {
-                        RadioButton(
-                            selected = settings.highLatitudeRule == rule,
-                            onClick = { onUpdateHighLatitudeRule(rule) }
-                        )
-                        Text(text = rule.displayName, style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-            }
-        }
-
-        // 3. Calendar & Time Display
-        SettingsSectionHeader(title = if (strings.isArabic) "العرض والتقويم الهجري" else "Display & Hijri Adjustments", icon = Icons.Default.FormatListNumbered)
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                // 24-Hour Time Toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(text = strings.timeFormatTitle, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                        Text(text = if (settings.is24HourFormat) "13:30" else "1:30 PM", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Switch(
-                        checked = settings.is24HourFormat,
-                        onCheckedChange = { onToggle24Hour() }
-                    )
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-
-                // Hijri Date Adjustment (Umm al-Qura)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = strings.hijriOffsetTitle, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                        Text(
-                            text = if (strings.isArabic) "المعيار: أم القرى (مكة) • التعديل: ${if (settings.hijriAdjustmentDays > 0) "+" else ""}${settings.hijriAdjustmentDays} ${strings.days}" else "Standard: Umm al-Qura (Makkah) • Offset: ${if (settings.hijriAdjustmentDays > 0) "+" else ""}${settings.hijriAdjustmentDays} days",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf(-2, -1, 0, 1, 2).forEach { offset ->
-                            FilledTonalButton(
-                                onClick = { onUpdateHijriOffset(offset) },
-                                modifier = Modifier.size(36.dp),
-                                shape = CircleShape,
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                            ) {
-                                Text(
-                                    text = if (offset > 0) "+$offset" else "$offset",
-                                    fontSize = 11.sp,
-                                    fontWeight = if (settings.hijriAdjustmentDays == offset) FontWeight.Bold else FontWeight.Normal
-                                )
-                            }
-                        }
-                    }
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-
-                // Manual Mosque Time Adjustments Button
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showAdjustmentsDialog = true },
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(imageVector = Icons.Default.Tune, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(text = strings.minuteAdjustmentsTitle, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Text(text = strings.minuteAdjustmentsSubtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null)
-                }
-            }
-        }
-
-        // 4. Notifications & Athan Per Prayer
-        SettingsSectionHeader(title = strings.notifSectionTitle, icon = Icons.Default.NotificationsActive)
-        PrayerType.values().forEach { prayerType ->
-            val config = settings.prayerConfigs[prayerType] ?: NotificationPrayerConfig()
-            PrayerNotificationConfigCard(
-                prayerType = prayerType,
-                config = config,
-                onUpdate = { enabled, sound, reminder ->
-                    onUpdateNotificationConfig(prayerType, enabled, sound, reminder)
-                },
-                onOpenSoundPicker = { soundPickerPrayerType = prayerType },
-                onTest = { onTestNotification(prayerType, config.soundType) },
-                onPreviewSound = { onPreviewSound(config.soundType) }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(70.dp))
     }
 }
 
 @Composable
-private fun SettingsSectionHeader(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+private fun SettingsHubCategoryCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    badgeColor: Color,
+    iconTint: Color,
+    testTag: String,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(testTag)
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(badgeColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+            }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(22.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SubScreenHeader(
+    title: String,
+    onBack: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onBack, modifier = Modifier.testTag("subscreen_back_button")) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
     }
 }
 
+// 1. THEME
 @Composable
-private fun PrayerNotificationConfigCard(
-    prayerType: PrayerType,
-    config: NotificationPrayerConfig,
-    onUpdate: (Boolean, NotificationSoundType, Int) -> Unit,
-    onOpenSoundPicker: () -> Unit,
-    onTest: () -> Unit,
-    onPreviewSound: () -> Unit
+private fun SettingsThemeSubScreen(
+    settings: AppPrayerSettings,
+    onUpdateThemeMode: (AppThemeMode) -> Unit,
+    onBack: () -> Unit
 ) {
-    Card(
+    val strings = LocalAppStrings.current
+
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .testTag("notif_config_${prayerType.name.lowercase()}"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            .fillMaxSize()
+            .padding(16.dp)
+            .testTag("theme_subscreen")
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Prayer Name & Master Switch
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = prayerType.title.take(1),
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(text = "${prayerType.title} (${prayerType.arabicName})", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                        Text(
-                            text = if (config.enabled) "${config.soundType.displayName}${if (config.preReminderMinutes > 0) " + ${config.preReminderMinutes}m reminder" else ""}" else "Notifications Disabled",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (config.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                        )
-                    }
-                }
+        SubScreenHeader(title = strings.themeSection, onBack = onBack)
+        Spacer(modifier = Modifier.height(12.dp))
 
-                Switch(
-                    checked = config.enabled,
-                    onCheckedChange = { onUpdate(it, config.soundType, config.preReminderMinutes) }
-                )
-            }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            ThemeSelectionCard(
+                title = strings.themeModeName(AppThemeMode.SYSTEM),
+                description = strings.systemThemeDesc,
+                icon = Icons.Default.BrightnessAuto,
+                isSelected = settings.themeMode == AppThemeMode.SYSTEM,
+                onClick = { onUpdateThemeMode(AppThemeMode.SYSTEM) }
+            )
 
-            if (config.enabled) {
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(10.dp))
+            ThemeSelectionCard(
+                title = strings.themeModeName(AppThemeMode.LIGHT),
+                description = strings.lightThemeDesc,
+                icon = Icons.Default.LightMode,
+                isSelected = settings.themeMode == AppThemeMode.LIGHT,
+                onClick = { onUpdateThemeMode(AppThemeMode.LIGHT) }
+            )
 
-                // Custom Sound Selector Button
-                Surface(
-                    onClick = onOpenSoundPicker,
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
-                    modifier = Modifier.fillMaxWidth().testTag("sound_picker_trigger_${prayerType.name.lowercase()}")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = if (config.soundType == NotificationSoundType.SILENT) Icons.Default.Notifications
-                                else Icons.Default.VolumeUp,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = config.soundType.displayName,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                if (config.soundType.subtitle.isNotBlank()) {
-                                    Text(
-                                        text = config.soundType.subtitle,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = "Change sound",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Pre-reminder & Test Bar
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = "Pre-reminder: ", style = MaterialTheme.typography.bodySmall)
-                        listOf(0, 10, 15).forEach { mins ->
-                            val isSel = config.preReminderMinutes == mins
-                            Text(
-                                text = if (mins == 0) "None" else "${mins}m",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .clickable { onUpdate(config.enabled, config.soundType, mins) }
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-
-                    Row {
-                        IconButton(onClick = onPreviewSound, modifier = Modifier.size(32.dp)) {
-                            Icon(imageVector = Icons.Default.VolumeUp, contentDescription = "Preview Sound", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                        }
-                        IconButton(onClick = onTest, modifier = Modifier.size(32.dp)) {
-                            Icon(imageVector = Icons.Default.Notifications, contentDescription = "Test Notification", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                        }
-                    }
-                }
-            }
+            ThemeSelectionCard(
+                title = strings.themeModeName(AppThemeMode.DARK),
+                description = strings.darkThemeDesc,
+                icon = Icons.Default.DarkMode,
+                isSelected = settings.themeMode == AppThemeMode.DARK,
+                onClick = { onUpdateThemeMode(AppThemeMode.DARK) }
+            )
         }
     }
 }
 
 @Composable
-private fun CityPickerDialog(
-    onSelectCity: (UserLocation) -> Unit,
-    onOpenManualCoordinates: () -> Unit,
-    onDismiss: () -> Unit
+private fun ThemeSelectionCard(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    val filteredCities = remember(searchQuery) {
-        if (searchQuery.isBlank()) CityDatabase.PRESET_CITIES
-        else CityDatabase.PRESET_CITIES.filter {
-            it.name.contains(searchQuery, ignoreCase = true) || it.country.contains(searchQuery, ignoreCase = true)
-        }
-    }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+        ),
+        border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(560.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .testTag("city_picker_dialog"),
-            color = MaterialTheme.colorScheme.surface
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            RadioButton(
+                selected = isSelected,
+                onClick = onClick
+            )
+        }
+    }
+}
+
+// 2. CALCULATION
+@Composable
+private fun SettingsCalculationSubScreen(
+    settings: AppPrayerSettings,
+    onUpdateCalculationMethod: (CalculationMethod) -> Unit,
+    onUpdateJuristicMethod: (JuristicMethod) -> Unit,
+    onUpdateHighLatitudeRule: (HighLatitudeRule) -> Unit,
+    onBack: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .testTag("calc_subscreen")
+    ) {
+        SubScreenHeader(title = strings.calcMethodSection, onBack = onBack)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            item {
                 Text(
-                    text = "Select Offline World City",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = strings.juristicMethodTitle,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search city or country...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
                 Spacer(modifier = Modifier.height(8.dp))
-
-                // Manual Coordinates shortcut button in dialog
-                FilledTonalButton(
-                    onClick = onOpenManualCoordinates,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("dialog_manual_coordinates_button"),
-                    shape = RoundedCornerShape(10.dp)
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Icon(imageVector = Icons.Default.AddLocationAlt, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Can't find city? Enter Lat / Lon", style = MaterialTheme.typography.labelMedium)
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(filteredCities) { city ->
+                    Column(modifier = Modifier.padding(8.dp)) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onSelectCity(city) }
-                                .padding(vertical = 12.dp, horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onUpdateJuristicMethod(JuristicMethod.STANDARD) }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Column {
-                                Text(text = city.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                                Text(text = city.country, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Icon(imageVector = Icons.Default.LocationCity, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
-                        }
-                        HorizontalDivider()
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Close")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CalculationMethodPickerDialog(
-    currentMethod: CalculationMethod,
-    onSelectMethod: (CalculationMethod) -> Unit,
-    onDismiss: () -> Unit
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(540.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .testTag("calculation_method_dialog"),
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Calculation Methods",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(CalculationMethod.values()) { method ->
-                        val isSelected = method == currentMethod
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clickable { onSelectMethod(method) },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = method.displayName,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    if (isSelected) {
-                                        Icon(imageVector = Icons.Default.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = method.description,
+                                    text = strings.standardJuristic,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = if (strings.isArabic) "ظل الشيء مثله (الشافعي، المالكي، الحنبلي)" else "Shadow equals object length (Standard)",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
+                            RadioButton(
+                                selected = settings.juristicMethod == JuristicMethod.STANDARD,
+                                onClick = { onUpdateJuristicMethod(JuristicMethod.STANDARD) }
+                            )
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onUpdateJuristicMethod(JuristicMethod.HANAFI) }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = strings.hanafiJuristic,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = if (strings.isArabic) "ظل الشيء مثليه (المذهب الحنفي)" else "Shadow equals twice object length (Hanafi)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            RadioButton(
+                                selected = settings.juristicMethod == JuristicMethod.HANAFI,
+                                onClick = { onUpdateJuristicMethod(JuristicMethod.HANAFI) }
+                            )
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Cancel")
-                }
             }
-        }
-    }
-}
 
-@Composable
-private fun ManualAdjustmentsDialog(
-    settings: AppPrayerSettings,
-    onUpdateAdjustment: (PrayerType, Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .testTag("manual_adjustments_dialog"),
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Manual Minute Adjustments",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = strings.calcMethodSection,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Text(
-                    text = "Adjust calculated times (-30 to +30 min) to match your local mosque.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                PrayerType.values().forEach { prayer ->
-                    val currentVal = when (prayer) {
-                        PrayerType.FAJR -> settings.adjustments.fajr
-                        PrayerType.SUNRISE -> settings.adjustments.sunrise
-                        PrayerType.DHUHR -> settings.adjustments.dhuhr
-                        PrayerType.ASR -> settings.adjustments.asr
-                        PrayerType.MAGHRIB -> settings.adjustments.maghrib
-                        PrayerType.ISHA -> settings.adjustments.isha
-                    }
-
+            items(CalculationMethod.values()) { method ->
+                val isSelected = settings.calculationMethod == method
+                Card(
+                    onClick = { onUpdateCalculationMethod(method) },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                    ),
+                    border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(text = prayer.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            FilledTonalButton(
-                                onClick = { onUpdateAdjustment(prayer, currentVal - 1) },
-                                modifier = Modifier.size(32.dp),
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                            ) {
-                                Text("-")
-                            }
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "${if (currentVal > 0) "+" else ""}$currentVal m",
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = strings.calcMethodName(method),
+                                style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 10.dp)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
-                            FilledTonalButton(
-                                onClick = { onUpdateAdjustment(prayer, currentVal + 1) },
-                                modifier = Modifier.size(32.dp),
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            val ishaDesc = if ((method.ishaMinutesAfterMaghrib ?: 0) > 0) "${method.ishaMinutesAfterMaghrib}m" else "${method.ishaAngle}°"
+                            Text(
+                                text = "Fajr: ${method.fajrAngle}° • Isha: $ishaDesc",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = { onUpdateCalculationMethod(method) }
+                        )
+                    }
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(40.dp)) }
+        }
+    }
+}
+
+// 3. LOCATION
+@Composable
+private fun SettingsLocationSubScreen(
+    settings: AppPrayerSettings,
+    isGpsLoading: Boolean,
+    onSelectCity: (UserLocation) -> Unit,
+    onRequestGps: () -> Unit,
+    onBack: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    var showManualDialog by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    if (showManualDialog) {
+        ManualCoordinatesDialog(
+            currentLocation = settings.location,
+            onSaveLocation = {
+                onSelectCity(it)
+                showManualDialog = false
+            },
+            onDismiss = { showManualDialog = false }
+        )
+    }
+
+    val filteredCities = remember(searchQuery) {
+        if (searchQuery.isBlank()) CityDatabase.popularCities
+        else CityDatabase.searchCities(searchQuery)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .testTag("location_subscreen")
+    ) {
+        SubScreenHeader(title = strings.locationSection, onBack = onBack)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // GPS Action Button
+        Card(
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = strings.useGps,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (settings.location.isGps) "Current: ${settings.location.name}" else "Tap to detect automatically",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Button(
+                    onClick = onRequestGps,
+                    enabled = !isGpsLoading,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (isGpsLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                    } else {
+                        Icon(imageVector = Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = "GPS")
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedButton(
+            onClick = { showManualDialog = true },
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(imageVector = Icons.Default.PinDrop, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = strings.manualCoordinates, fontWeight = FontWeight.SemiBold)
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text(strings.search + " (London, Cairo, Makkah...)") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(filteredCities) { city ->
+                val isSelected = settings.location.name.equals(city.name, ignoreCase = true)
+                Card(
+                    onClick = { onSelectCity(city) },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                    ),
+                    border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = city.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "${city.country} • ${city.timeZoneId}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        if (isSelected) {
+                            Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            }
+            item { Spacer(modifier = Modifier.height(40.dp)) }
+        }
+    }
+}
+
+// 4. NOTIFICATIONS
+@Composable
+private fun SettingsNotificationsSubScreen(
+    settings: AppPrayerSettings,
+    onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit,
+    onTestNotification: (PrayerType, NotificationSoundType) -> Unit,
+    onPreviewSound: (NotificationSoundType) -> Unit,
+    onUpdateDynamicIslandSettings: (Boolean, Int) -> Unit,
+    onPreviewDynamicIsland: () -> Unit,
+    onDismissDynamicIsland: () -> Unit,
+    onBack: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    var activeSoundDialogPrayer by remember { mutableStateOf<PrayerType?>(null) }
+
+    if (activeSoundDialogPrayer != null) {
+        val target = activeSoundDialogPrayer!!
+        val cfg = settings.prayerConfigs[target] ?: NotificationPrayerConfig()
+        SoundPickerDialog(
+            prayerType = target,
+            currentSound = cfg.soundType,
+            onSelectSound = {
+                onUpdateNotificationConfig(target, cfg.enabled, it, cfg.preReminderMinutes)
+                activeSoundDialogPrayer = null
+            },
+            onPreviewSound = onPreviewSound,
+            onDismiss = { activeSoundDialogPrayer = null }
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .testTag("notif_subscreen")
+    ) {
+        SubScreenHeader(title = strings.notifSectionTitle, onBack = onBack)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Dynamic Island / Live Activity Feature Card
+            item {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                    ),
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "🏝️ " + strings.dynamicIslandSectionTitle,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = strings.dynamicIslandDesc,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Switch(
+                                checked = settings.dynamicIslandEnabled,
+                                onCheckedChange = { isChecked ->
+                                    onUpdateDynamicIslandSettings(isChecked, settings.dynamicIslandMinutesBefore)
+                                }
+                            )
+                        }
+
+                        if (settings.dynamicIslandEnabled) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = strings.dynamicIslandLeadTimeTitle,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("+")
+                                listOf(5, 10, 15, 30).forEach { mins ->
+                                    val isSelected = settings.dynamicIslandMinutesBefore == mins
+                                    FilledTonalButton(
+                                        onClick = { onUpdateDynamicIslandSettings(true, mins) },
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+                                        ),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = "$mins m",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Button(
+                                    onClick = onPreviewDynamicIsland,
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = strings.previewDynamicIslandBtn,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                OutlinedButton(
+                                    onClick = onDismissDynamicIsland,
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        text = strings.dismissDynamicIslandBtn,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
                             }
                         }
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
+            items(PrayerType.values()) { prayer ->
+                val cfg = settings.prayerConfigs[prayer] ?: NotificationPrayerConfig()
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Done")
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = strings.prayerName(prayer),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Switch(
+                                checked = cfg.enabled,
+                                onCheckedChange = { isChecked ->
+                                    onUpdateNotificationConfig(prayer, isChecked, cfg.soundType, cfg.preReminderMinutes)
+                                }
+                            )
+                        }
+
+                        if (cfg.enabled) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { activeSoundDialogPrayer = prayer }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = strings.athanSound,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = strings.soundTypeName(cfg.soundType),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                FilledTonalButton(
+                                    onClick = { activeSoundDialogPrayer = prayer },
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text(strings.change, style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(10.dp))
+                Button(
+                    onClick = { onTestNotification(PrayerType.DHUHR, NotificationSoundType.FULL_ATHAN) },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.Default.NotificationsActive, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(strings.testAlert, fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.height(40.dp))
+            }
+        }
+    }
+}
+
+// 5. LANGUAGE
+@Composable
+private fun SettingsLanguageSubScreen(
+    settings: AppPrayerSettings,
+    onUpdateLanguage: (AppLanguage) -> Unit,
+    onBack: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .testTag("language_subscreen")
+    ) {
+        SubScreenHeader(title = strings.languageSection, onBack = onBack)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(AppLanguage.values()) { lang ->
+                val isSelected = settings.language == lang
+                Card(
+                    onClick = { onUpdateLanguage(lang) },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                    ),
+                    border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = lang.getDisplayName(strings.isArabic),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = { onUpdateLanguage(lang) }
+                        )
+                    }
+                }
+            }
+            item { Spacer(modifier = Modifier.height(40.dp)) }
+        }
+    }
+}
+
+// 6. HIJRI & DISPLAY
+@Composable
+private fun SettingsHijriDisplaySubScreen(
+    settings: AppPrayerSettings,
+    onUpdateHijriOffset: (Int) -> Unit,
+    onToggle24Hour: () -> Unit,
+    onBack: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .testTag("hijri_subscreen")
+    ) {
+        SubScreenHeader(title = strings.displayHijriSection, onBack = onBack)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // 24-Hour Switch Card
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = strings.timeFormatTitle,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (settings.is24HourFormat) "13:30 (24-Hour)" else "1:30 PM (12-Hour AM/PM)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = settings.is24HourFormat,
+                        onCheckedChange = { onToggle24Hour() }
+                    )
+                }
+            }
+
+            // Hijri Offset Stepper Card
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = strings.hijriOffsetTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (strings.isArabic) "مطابقة رؤية الهلال مع الجهة الشرعية المحلية" else "Sync with official local moon sighting declarations",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FilledTonalButton(
+                            onClick = { onUpdateHijriOffset(settings.hijriAdjustmentDays - 1) },
+                            modifier = Modifier.size(44.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("-", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Spacer(modifier = Modifier.width(20.dp))
+
+                        Text(
+                            text = "${if (settings.hijriAdjustmentDays > 0) "+" else ""}${settings.hijriAdjustmentDays} ${strings.days}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Spacer(modifier = Modifier.width(20.dp))
+
+                        FilledTonalButton(
+                            onClick = { onUpdateHijriOffset(settings.hijriAdjustmentDays + 1) },
+                            modifier = Modifier.size(44.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Umm al Qura info card
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = strings.aboutUmmAlQuraTitle,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = strings.aboutUmmAlQuraDesc,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
     }
 }
 
+// 7. ADJUSTMENTS
+@Composable
+private fun SettingsAdjustmentsSubScreen(
+    settings: AppPrayerSettings,
+    onUpdatePrayerAdjustment: (PrayerType, Int) -> Unit,
+    onBack: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .testTag("adjustments_subscreen")
+    ) {
+        SubScreenHeader(title = strings.minuteAdjustmentsTitle, onBack = onBack)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(PrayerType.values()) { prayer ->
+                val currentOffset = when (prayer) {
+                    PrayerType.FAJR -> settings.adjustments.fajr
+                    PrayerType.SUNRISE -> settings.adjustments.sunrise
+                    PrayerType.DHUHR -> settings.adjustments.dhuhr
+                    PrayerType.ASR -> settings.adjustments.asr
+                    PrayerType.MAGHRIB -> settings.adjustments.maghrib
+                    PrayerType.ISHA -> settings.adjustments.isha
+                }
+
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = strings.prayerName(prayer),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            FilledTonalButton(
+                                onClick = { onUpdatePrayerAdjustment(prayer, currentOffset - 1) },
+                                modifier = Modifier.size(36.dp),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text("-", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Text(
+                                text = "${if (currentOffset > 0) "+" else ""}${currentOffset}m",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (currentOffset != 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            FilledTonalButton(
+                                onClick = { onUpdatePrayerAdjustment(prayer, currentOffset + 1) },
+                                modifier = Modifier.size(36.dp),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        PrayerType.values().forEach { onUpdatePrayerAdjustment(it, 0) }
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (strings.isArabic) "إعادة ضبط جميع الصلوات (0 دقيقة)" else "Reset All Adjustments to 0")
+                }
+                Spacer(modifier = Modifier.height(40.dp))
+            }
+        }
+    }
+}
+
+// 8. ABOUT
+@Composable
+private fun SettingsAboutSubScreen(onBack: () -> Unit) {
+    val strings = LocalAppStrings.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .testTag("about_subscreen")
+    ) {
+        SubScreenHeader(
+            title = if (strings.isArabic) "حول التطبيق والحسابات" else "About & Precision Engine",
+            onBack = onBack
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Text(
+                        text = strings.appBrandName,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = strings.appSubtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Version 1.0.0 • 100% Offline Precision Calculation Engine",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = if (strings.isArabic) "الخوارزميات الفلكية المعتمدة" else "Astronomical Calculation Engine",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (strings.isArabic) "يعتمد التطبيق خوارزميات جان ميوس (Jean Meeus) الفلكية لحساب موقع الشمس، زاوية الميل الشمسي، ومعادلة الزمن بدقة متناهية متوافقة مع معايير رابطة العالم الإسلامي وتقويم أم القرى."
+                               else "Calculates exact solar coordinates, solar declination angle, and equation of time using Jean Meeus astronomical algorithms, supporting major world Islamic authorities with zero network dependencies.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = strings.compassCalibTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = strings.compassCalibText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+// SOUND PICKER DIALOG
 @Composable
 fun SoundPickerDialog(
     prayerType: PrayerType,
@@ -933,183 +1502,92 @@ fun SoundPickerDialog(
     onPreviewSound: (NotificationSoundType) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
+
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(580.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .testTag("sound_picker_dialog"),
-            color = MaterialTheme.colorScheme.surface
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(18.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .fillMaxWidth()
+            ) {
                 Text(
-                    text = "${prayerType.title} Alert Sound",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = "${strings.athanSound} - ${strings.prayerName(prayerType)}",
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Text(
-                    text = "Select custom Athan style, melodic chime, or vibrate alert.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Category: Full Athan Chants
-                    item {
-                        Text(
-                            text = "GRAND MOSQUES ADHAN",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                    }
+                    items(NotificationSoundType.values()) { sound ->
+                        val isSelected = sound == currentSound
+                        Card(
+                            onClick = { onSelectSound(sound) },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = { onSelectSound(sound) }
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = strings.soundTypeName(sound),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
 
-                    val athanList = listOf(
-                        NotificationSoundType.FULL_ATHAN,
-                        NotificationSoundType.ATHAN_MADINAH,
-                        NotificationSoundType.ATHAN_AL_AQSA,
-                        NotificationSoundType.ATHAN_CAIRO
-                    )
-
-                    items(athanList) { sound ->
-                        SoundOptionRow(
-                            sound = sound,
-                            isSelected = sound == currentSound,
-                            onSelect = { onSelectSound(sound) },
-                            onPreview = { onPreviewSound(sound) }
-                        )
-                    }
-
-                    // Category: Short Alerts & Chimes
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "SHORT ALERTS & CHIMES",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                    }
-
-                    val shortList = listOf(
-                        NotificationSoundType.SHORT_TAKBEER,
-                        NotificationSoundType.MELODIC_TONE
-                    )
-
-                    items(shortList) { sound ->
-                        SoundOptionRow(
-                            sound = sound,
-                            isSelected = sound == currentSound,
-                            onSelect = { onSelectSound(sound) },
-                            onPreview = { onPreviewSound(sound) }
-                        )
-                    }
-
-                    // Category: Haptics & Silent
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "HAPTIC & SILENT",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                    }
-
-                    val silentList = listOf(
-                        NotificationSoundType.VIBRATE_ONLY,
-                        NotificationSoundType.SILENT
-                    )
-
-                    items(silentList) { sound ->
-                        SoundOptionRow(
-                            sound = sound,
-                            isSelected = sound == currentSound,
-                            onSelect = { onSelectSound(sound) },
-                            onPreview = { onPreviewSound(sound) }
-                        )
+                                if (sound != NotificationSoundType.SILENT && sound != NotificationSoundType.VIBRATE_ONLY) {
+                                    IconButton(
+                                        onClick = { onPreviewSound(sound) },
+                                        modifier = Modifier.size(34.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PlayArrow,
+                                            contentDescription = "Preview",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Close")
-                }
-            }
-        }
-    }
-}
+                Spacer(modifier = Modifier.height(14.dp))
 
-@Composable
-private fun SoundOptionRow(
-    sound: NotificationSoundType,
-    isSelected: Boolean,
-    onSelect: () -> Unit,
-    onPreview: () -> Unit
-) {
-    Surface(
-        onClick = onSelect,
-        shape = RoundedCornerShape(12.dp),
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        modifier = Modifier.fillMaxWidth().testTag("sound_option_${sound.name.lowercase()}")
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = isSelected,
-                    onClick = onSelect
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(
-                        text = sound.displayName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    if (sound.subtitle.isNotBlank()) {
-                        Text(
-                            text = sound.subtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(strings.close)
                     }
-                }
-            }
-
-            if (sound != NotificationSoundType.SILENT) {
-                IconButton(
-                    onClick = onPreview,
-                    modifier = Modifier.size(36.dp).testTag("preview_btn_${sound.name.lowercase()}")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.VolumeUp,
-                        contentDescription = "Preview ${sound.displayName}",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
                 }
             }
         }

@@ -195,6 +195,15 @@ object CityDatabase {
         UserLocation("Mexico City", "Mexico", 19.4326, -99.1332, "America/Mexico_City")
     )
 
+    val popularCities: List<UserLocation> get() = PRESET_CITIES
+
+    fun searchCities(query: String): List<UserLocation> {
+        val q = query.trim().lowercase()
+        return PRESET_CITIES.filter {
+            it.name.lowercase().contains(q) || it.country.lowercase().contains(q)
+        }
+    }
+
     fun calculateDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val r = 6371.0 // Earth radius in km
         val dLat = Math.toRadians(lat2 - lat1)

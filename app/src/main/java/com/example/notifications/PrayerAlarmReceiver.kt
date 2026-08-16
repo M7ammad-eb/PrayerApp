@@ -17,25 +17,58 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_PRAYER_ALARM = "com.example.ACTION_PRAYER_ALARM"
+        const val ACTION_DYNAMIC_ISLAND_COUNTDOWN = "com.example.ACTION_DYNAMIC_ISLAND_COUNTDOWN"
+        const val ACTION_DISMISS_ISLAND = "com.example.ACTION_DISMISS_ISLAND"
+
         const val EXTRA_PRAYER_NAME = "extra_prayer_name"
         const val EXTRA_PRAYER_TIME = "extra_prayer_time"
         const val EXTRA_SOUND_TYPE = "extra_sound_type"
         const val EXTRA_IS_PRE_REMINDER = "extra_is_pre_reminder"
         const val EXTRA_LOCATION_NAME = "extra_location_name"
+        const val EXTRA_TARGET_MILLIS = "extra_target_millis"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+        val action = intent.action
+
+        if (action == Intent.ACTION_BOOT_COMPLETED) {
             // System rebooted: reschedule alarms
             PrayerNotificationScheduler.rescheduleAll(context)
             return
         }
 
+        if (action == ACTION_DISMISS_ISLAND) {
+            PrayerDynamicIslandManager.dismissCountdownIsland(context)
+            return
+        }
+
         val prayerName = intent.getStringExtra(EXTRA_PRAYER_NAME) ?: "Prayer"
+        val prayerType = try {
+            PrayerType.valueOf(prayerName.uppercase())
+        } catch (e: Exception) {
+            PrayerType.FAJR
+        }
         val prayerTime = intent.getStringExtra(EXTRA_PRAYER_TIME) ?: ""
+        val locationName = intent.getStringExtra(EXTRA_LOCATION_NAME) ?: "your location"
+
+        // Handle Dynamic Island Countdown Alarm
+        if (action == ACTION_DYNAMIC_ISLAND_COUNTDOWN) {
+            val targetEpochMillis = intent.getLongExtra(EXTRA_TARGET_MILLIS, System.currentTimeMillis() + 15 * 60 * 1000L)
+            PrayerDynamicIslandManager.showCountdownIsland(
+                context = context,
+                prayerType = prayerType,
+                targetEpochMillis = targetEpochMillis,
+                prayerTimeFormatted = prayerTime,
+                locationName = locationName
+            )
+            return
+        }
+
+        // When exact prayer time arrives, clear the dynamic island countdown
+        PrayerDynamicIslandManager.dismissCountdownIsland(context)
+
         val soundTypeStr = intent.getStringExtra(EXTRA_SOUND_TYPE) ?: NotificationSoundType.FULL_ATHAN.name
         val isPreReminder = intent.getBooleanExtra(EXTRA_IS_PRE_REMINDER, false)
-        val locationName = intent.getStringExtra(EXTRA_LOCATION_NAME) ?: "your location"
 
         val soundType = try {
             NotificationSoundType.valueOf(soundTypeStr)
@@ -43,22 +76,16 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             NotificationSoundType.FULL_ATHAN
         }
 
-        val prayerType = try {
-            PrayerType.valueOf(prayerName.uppercase())
-        } catch (e: Exception) {
-            PrayerType.FAJR
-        }
-
         val title = if (isPreReminder) {
-            "Approaching: $prayerName Prayer"
+            "Approaching: ${prayerType.title} Prayer"
         } else {
-            "Time for $prayerName Prayer (${prayerType.arabicName})"
+            "Time for ${prayerType.title} Prayer (${prayerType.arabicName})"
         }
 
         val content = if (isPreReminder) {
-            "Prepare for $prayerName prayer coming up at $prayerTime in $locationName."
+            "Prepare for ${prayerType.title} prayer coming up at $prayerTime in $locationName."
         } else {
-            "It is now time for $prayerName prayer in $locationName ($prayerTime)."
+            "It is now time for ${prayerType.title} prayer in $locationName ($prayerTime)."
         }
 
         // PendingIntent to launch app
@@ -75,7 +102,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         val channelId = if (isPreReminder) PrayerApplication.CHANNEL_REMINDER_ID else PrayerApplication.CHANNEL_ATHAN_ID
 
         val stopIntent = Intent(context, AthanAudioService::class.java).apply {
-            action = AthanAudioService.ACTION_STOP_ATHAN
+            this.action = AthanAudioService.ACTION_STOP_ATHAN
         }
         val stopPendingIntent = PendingIntent.getService(
             context,
@@ -105,7 +132,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         // Update widget status
         com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
 
-        // Background Audio Handling via Foreground Service for full playback reliability
+        // Audio Playback
         if (!isPreReminder) {
             when (soundType) {
                 NotificationSoundType.SILENT -> {
@@ -115,7 +142,6 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                     AthanAudioEngine.vibrateDevice(context)
                 }
                 else -> {
-                    // Start Athan Audio Service for reliable background playback
                     AthanAudioService.startAthan(
                         context = context,
                         prayerType = prayerType,
@@ -125,8 +151,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                 }
             }
         } else {
-            // Pre-reminder gentle chime or vibration
-            AthanAudioEngine.playGentleChime()
+            AthanAudioEngine.playGentleChime(context)
         }
     }
 }

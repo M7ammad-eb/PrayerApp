@@ -10,6 +10,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.example.data.models.AppThemeMode
 
 private val DarkColorScheme =
   darkColorScheme(
@@ -29,7 +30,7 @@ private val DarkColorScheme =
     onBackground = Color(0xFFE6E1E5),
     surface = Color(0xFF1D1B20),
     onSurface = Color(0xFFE6E1E5),
-    surfaceVariant = Color(0xFF49454F),
+    surfaceVariant = Color(0xFF322F37),
     onSurfaceVariant = Color(0xFFCAC4D0),
     outline = Color(0xFF938F99),
   )
@@ -59,20 +60,27 @@ private val LightColorScheme =
 
 @Composable
 fun MyApplicationTheme(
-  darkTheme: Boolean = isSystemInDarkTheme(),
-  dynamicColor: Boolean = false,
+  themeMode: AppThemeMode = AppThemeMode.SYSTEM,
+  dynamicColor: Boolean = true,
   content: @Composable () -> Unit,
 ) {
+  val isDark = when (themeMode) {
+    AppThemeMode.SYSTEM -> isSystemInDarkTheme()
+    AppThemeMode.LIGHT -> false
+    AppThemeMode.DARK -> true
+  }
+
   val colorScheme =
     when {
       dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
         val context = LocalContext.current
-        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
       }
-      darkTheme -> DarkColorScheme
+      isDark -> DarkColorScheme
       else -> LightColorScheme
     }
 
   MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
 }
+
 

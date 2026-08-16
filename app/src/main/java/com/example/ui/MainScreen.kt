@@ -5,59 +5,85 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import com.example.audio.AdhanPlaybackState
+import com.example.ui.components.CityPickerDialog
 import com.example.ui.locale.LocalAppStrings
 import com.example.ui.locale.ProvideAppLocale
 import com.example.ui.screens.MonthlyCalendarScreen
 import com.example.ui.screens.PrayerHomeScreen
 import com.example.ui.screens.QiblaScreen
 import com.example.ui.screens.SettingsScreen
-import com.example.ui.theme.GoldAccent
 import com.example.ui.viewmodel.PrayerViewModel
 import kotlinx.coroutines.launch
 
-enum class AppNavTab(val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+enum class AppNavTab(val icon: ImageVector) {
     PRAYER_TIMES(Icons.Default.Schedule),
     QIBLA(Icons.Default.Explore),
     MONTHLY(Icons.Default.CalendarMonth),
     SETTINGS(Icons.Default.Settings)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: PrayerViewModel,
@@ -68,6 +94,7 @@ fun MainScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     var selectedTab by remember { mutableIntStateOf(AppNavTab.PRAYER_TIMES.ordinal) }
+    var showCityPickerFromHeader by remember { mutableStateOf(false) }
 
     val settings by viewModel.settings.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
@@ -127,6 +154,20 @@ fun MainScreen(
     ProvideAppLocale(appLanguage = settings.language) {
         val strings = LocalAppStrings.current
 
+        if (showCityPickerFromHeader) {
+            CityPickerDialog(
+                onSelectCity = {
+                    viewModel.selectCity(it)
+                    showCityPickerFromHeader = false
+                },
+                onOpenManualCoordinates = {
+                    showCityPickerFromHeader = false
+                    selectedTab = AppNavTab.SETTINGS.ordinal
+                },
+                onDismiss = { showCityPickerFromHeader = false }
+            )
+        }
+
         fun tabTitle(tab: AppNavTab): String = when (tab) {
             AppNavTab.PRAYER_TIMES -> strings.navPrayerTimes
             AppNavTab.QIBLA -> strings.navQibla
@@ -137,59 +178,23 @@ fun MainScreen(
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = when (AppNavTab.values()[selectedTab]) {
-                                AppNavTab.PRAYER_TIMES -> strings.appTitle
-                                AppNavTab.QIBLA -> strings.qiblaTitle
-                                AppNavTab.MONTHLY -> strings.monthlyCalendarTitle
-                                AppNavTab.SETTINGS -> strings.settingsTitle
-                            },
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    )
+                // Expressive Floating Header Toolbar
+                ExpressiveTopHeader(
+                    currentTab = AppNavTab.values()[selectedTab],
+                    settings = settings,
+                    strings = strings,
+                    onLocationClick = { showCityPickerFromHeader = true }
                 )
             },
             bottomBar = {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    tonalElevation = 0.dp
-                ) {
-                    AppNavTab.values().forEachIndexed { index, tab ->
-                        val isSelected = selectedTab == index
-                        val title = tabTitle(tab)
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = { selectedTab = index },
-                            icon = {
-                                Icon(
-                                    imageVector = tab.icon,
-                                    contentDescription = title
-                                )
-                            },
-                            label = {
-                                Text(
-                                    text = title,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                indicatorColor = MaterialTheme.colorScheme.secondaryContainer
-                            ),
-                            modifier = Modifier.testTag("nav_tab_${tab.name.lowercase()}")
-                        )
-                    }
-                }
+                // Expressive Floating Bottom Navigation Bar
+                ExpressiveFloatingBottomBar(
+                    selectedTab = selectedTab,
+                    onSelectTab = { selectedTab = it },
+                    tabTitle = { tabTitle(it) }
+                )
             }
         ) { innerPadding ->
             Box(
@@ -213,9 +218,7 @@ fun MainScreen(
                             onStopAudio = { viewModel.stopAudio() },
                             onUpdateNotificationConfig = { prayer, enabled, sound, reminder ->
                                 viewModel.updatePrayerNotification(prayer, enabled, sound, reminder)
-                            },
-                            onNavigateToQibla = { selectedTab = AppNavTab.QIBLA.ordinal },
-                            onNavigateToSettings = { selectedTab = AppNavTab.SETTINGS.ordinal }
+                            }
                         )
                     }
                     AppNavTab.QIBLA -> {
@@ -264,6 +267,7 @@ fun MainScreen(
                             onUpdateHijriOffset = { viewModel.updateHijriOffset(it) },
                             onToggle24Hour = { viewModel.toggle24HourFormat() },
                             onUpdateLanguage = { viewModel.updateLanguage(it) },
+                            onUpdateThemeMode = { viewModel.updateThemeMode(it) },
                             onUpdatePrayerAdjustment = { prayer, mins ->
                                 viewModel.updatePrayerAdjustment(prayer, mins)
                             },
@@ -275,11 +279,218 @@ fun MainScreen(
                             },
                             onPreviewSound = { sound ->
                                 com.example.audio.AthanAudioEngine.playSoundType(context, sound)
+                            },
+                            onUpdateDynamicIslandSettings = { enabled, minutes ->
+                                viewModel.updateDynamicIslandSettings(enabled, minutes)
+                            },
+                            onPreviewDynamicIsland = {
+                                viewModel.previewDynamicIsland()
+                            },
+                            onDismissDynamicIsland = {
+                                viewModel.dismissDynamicIsland()
                             }
                         )
                     }
                 }
             }
         }
+    }
+}
+
+// ============================================================================
+// MATERIAL 3 EXPRESSIVE FLOATING HEADER
+// ============================================================================
+@Composable
+private fun ExpressiveTopHeader(
+    currentTab: AppNavTab,
+    settings: com.example.data.preferences.AppPrayerSettings,
+    strings: com.example.ui.locale.AppStrings,
+    onLocationClick: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            if (currentTab == AppNavTab.PRAYER_TIMES) {
+                // Expressive Interactive Location Pill
+                Surface(
+                    onClick = onLocationClick,
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 2.dp,
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    ),
+                    modifier = Modifier.clip(RoundedCornerShape(24.dp))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Column {
+                            Text(
+                                text = strings.appBrandName,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "${settings.location.name}${if (settings.location.country.isNotEmpty() && !settings.location.country.contains("°")) ", " + settings.location.country else ""}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    text = when (currentTab) {
+                        AppNavTab.PRAYER_TIMES -> strings.appTitle
+                        AppNavTab.QIBLA -> strings.qiblaTitle
+                        AppNavTab.MONTHLY -> strings.monthlyCalendarTitle
+                        AppNavTab.SETTINGS -> strings.settingsTitle
+                    },
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+        }
+    }
+}
+
+// ============================================================================
+// MATERIAL 3 EXPRESSIVE FLOATING BOTTOM NAVIGATION BAR
+// ============================================================================
+@Composable
+private fun ExpressiveFloatingBottomBar(
+    selectedTab: Int,
+    onSelectTab: (Int) -> Unit,
+    tabTitle: (AppNavTab) -> String
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.95f),
+            tonalElevation = 4.dp,
+            shadowElevation = 6.dp,
+            border = CardDefaults.outlinedCardBorder().copy(
+                brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            ),
+            modifier = Modifier
+                .clip(RoundedCornerShape(28.dp))
+                .fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AppNavTab.values().forEachIndexed { index, tab ->
+                    val isSelected = selectedTab == index
+                    ExpressiveNavTabItem(
+                        tab = tab,
+                        title = tabTitle(tab),
+                        isSelected = isSelected,
+                        onClick = { onSelectTab(index) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpressiveNavTabItem(
+    tab: AppNavTab,
+    title: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val indicatorColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+        label = "TabIndicator"
+    )
+
+    val iconColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        label = "TabIcon"
+    )
+
+    val textColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        label = "TabText"
+    )
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp)
+            .testTag("nav_tab_${tab.name.lowercase()}"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 54.dp, height = 28.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(indicatorColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = tab.icon,
+                contentDescription = title,
+                tint = iconColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = textColor,
+            maxLines = 1
+        )
     }
 }

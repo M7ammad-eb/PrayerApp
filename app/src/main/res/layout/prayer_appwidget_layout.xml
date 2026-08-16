@@ -7,7 +7,7 @@
     android:orientation="vertical"
     android:padding="14dp">
 
-    <!-- Header: App Name, Location, Hijri Date, and Refresh Action -->
+    <!-- Header: Location, Hijri Date, and Refresh Action -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -41,7 +41,7 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="Makkah, Saudi Arabia"
-                    android:textColor="#FFFFFFFF"
+                    android:textColor="@color/widget_text_primary"
                     android:textSize="13sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -54,7 +54,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="14 Safar 1448 AH"
-                android:textColor="#FFA8A4B8"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
 
@@ -97,9 +97,9 @@
                     android:id="@+id/widget_next_prayer_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="NEXT: ASR • العصر"
-                    android:textColor="#FFD0BCFF"
-                    android:textSize="11sp"
+                    android:text="Asr"
+                    android:textColor="@color/widget_text_accent"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -108,7 +108,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:text="3:45 PM"
-                    android:textColor="#FFFFFFFF"
+                    android:textColor="@color/widget_text_on_hero"
                     android:textSize="22sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -133,7 +133,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="In 1h 45m"
-                    android:textColor="#FF1E1B2C"
+                    android:textColor="@color/widget_text_on_accent"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
@@ -142,7 +142,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Remaining"
-                    android:textColor="#FF3E2723"
+                    android:textColor="@color/widget_text_on_accent"
                     android:textSize="9sp" />
             </LinearLayout>
         </RelativeLayout>
@@ -186,7 +186,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Fajr"
-                android:textColor="#FFA8A4B8"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
@@ -196,7 +196,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="05:12"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/widget_text_primary"
                 android:textSize="10sp" />
         </LinearLayout>
 
@@ -217,7 +217,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sunrise"
-                android:textColor="#FFA8A4B8"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
@@ -227,7 +227,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="06:34"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/widget_text_primary"
                 android:textSize="10sp" />
         </LinearLayout>
 
@@ -248,7 +248,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Dhuhr"
-                android:textColor="#FFA8A4B8"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
@@ -258,7 +258,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="12:20"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/widget_text_primary"
                 android:textSize="10sp" />
         </LinearLayout>
 
@@ -279,7 +279,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Asr"
-                android:textColor="#FFD49B24"
+                android:textColor="@color/widget_text_on_accent"
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
@@ -289,9 +289,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="15:45"
-                android:textColor="#FFFFFFFF"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textColor="@color/widget_text_on_accent"
+                android:textSize="10sp" />
         </LinearLayout>
 
         <!-- Maghrib -->
@@ -311,7 +310,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Maghrib"
-                android:textColor="#FFA8A4B8"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
@@ -321,7 +320,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="18:05"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/widget_text_primary"
                 android:textSize="10sp" />
         </LinearLayout>
 
@@ -341,7 +340,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Isha"
-                android:textColor="#FFA8A4B8"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
@@ -351,7 +350,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="19:35"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/widget_text_primary"
                 android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>

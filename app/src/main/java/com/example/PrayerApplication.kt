@@ -11,6 +11,7 @@ class PrayerApplication : Application() {
     companion object {
         const val CHANNEL_ATHAN_ID = "prayer_athan_channel"
         const val CHANNEL_REMINDER_ID = "prayer_reminder_channel"
+        const val CHANNEL_DYNAMIC_ISLAND_ID = "prayer_dynamic_island_channel"
     }
 
     override fun onCreate() {
@@ -43,8 +44,20 @@ class PrayerApplication : Application() {
                 setShowBadge(true)
             }
 
+            val islandChannel = NotificationChannel(
+                CHANNEL_DYNAMIC_ISLAND_ID,
+                "Dynamic Island & Live Prayer Countdown",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Ongoing countdown shown in the Dynamic Island and status bar 15 minutes before prayer"
+                enableVibration(false)
+                setShowBadge(false)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+            }
+
             notificationManager.createNotificationChannel(athanChannel)
             notificationManager.createNotificationChannel(reminderChannel)
+            notificationManager.createNotificationChannel(islandChannel)
         }
     }
 }

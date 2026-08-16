@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.models.HijriDate
+import com.example.ui.locale.LocalAppStrings
 import com.example.ui.theme.BentoSkyBlue
 import com.example.ui.theme.BentoSkyBlueDark
 import java.time.DayOfWeek
@@ -66,11 +67,10 @@ fun HijriUmmAlQuraDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val strings = LocalAppStrings.current
     val scrollState = rememberScrollState()
 
-    val gregorianFormatted = gregorianDate.format(
-        DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.getDefault())
-    )
+    val gregorianFormatted = "${strings.dayOfWeekName(gregorianDate.dayOfWeek)}, ${gregorianDate.dayOfMonth} ${strings.formatDateShort(gregorianDate)} ${gregorianDate.year}"
 
     val isMondayOrThursday = gregorianDate.dayOfWeek == DayOfWeek.MONDAY || gregorianDate.dayOfWeek == DayOfWeek.THURSDAY
 
@@ -117,13 +117,13 @@ fun HijriUmmAlQuraDialog(
                         }
                         Column {
                             Text(
-                                text = "Hijri Calendar",
+                                text = strings.hijriCalendarHeader,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Umm al-Qura Standard",
+                                text = strings.ummAlQuraStandard,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary
@@ -137,7 +137,7 @@ fun HijriUmmAlQuraDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
+                            contentDescription = strings.close,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -158,7 +158,7 @@ fun HijriUmmAlQuraDialog(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = hijriDate.formattedAr,
+                            text = if (strings.isArabic) hijriDate.formattedAr else hijriDate.formattedEn,
                             fontSize = 28.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = BentoSkyBlueDark,
@@ -168,8 +168,8 @@ fun HijriUmmAlQuraDialog(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text = hijriDate.formattedEn,
-                            style = MaterialTheme.typography.titleLarge,
+                            text = if (strings.isArabic) hijriDate.formattedEn else hijriDate.formattedAr,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = BentoSkyBlueDark,
                             textAlign = TextAlign.Center
@@ -225,16 +225,16 @@ fun HijriUmmAlQuraDialog(
                             )
                             Column {
                                 Text(
-                                    text = hijriDate.islamicEvent,
+                                    text = if (strings.isArabic && hijriDate.islamicEventAr != null) hijriDate.islamicEventAr else hijriDate.islamicEvent,
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF78350F)
                                 )
-                                if (hijriDate.islamicEventAr != null) {
+                                if (strings.isArabic) {
                                     Text(
-                                        text = hijriDate.islamicEventAr,
+                                        text = hijriDate.islamicEvent,
                                         style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = FontWeight.Normal,
                                         color = Color(0xFF92400E)
                                     )
                                 }
@@ -251,8 +251,8 @@ fun HijriUmmAlQuraDialog(
                 ) {
                     if (hijriDate.isSacredMonth) {
                         CulturalBadge(
-                            title = "Sacred Month (الأشهر الحرم)",
-                            description = "${hijriDate.monthNameEn} (${hijriDate.monthNameAr}) is one of the four sacred months in Islam (Dhu al-Qi'dah, Dhu al-Hijjah, Muharram, and Rajab) in which good deeds are amplified.",
+                            title = strings.sacredMonthTitle,
+                            description = strings.sacredMonthDesc,
                             icon = Icons.Default.Mosque,
                             tint = Color(0xFF0F766E),
                             bgColor = Color(0xFFCCFBF1)
@@ -261,8 +261,8 @@ fun HijriUmmAlQuraDialog(
 
                     if (hijriDate.isWhiteDay) {
                         CulturalBadge(
-                            title = "White Days (الأيام البيض)",
-                            description = "Day ${hijriDate.day} of the lunar month. Fasting the 13th, 14th, and 15th of each Hijri month is an established Sunnah of the Prophet ﷺ.",
+                            title = strings.whiteDaysTitle,
+                            description = strings.whiteDaysDesc,
                             icon = Icons.Default.Star,
                             tint = Color(0xFF1D4ED8),
                             bgColor = Color(0xFFDBEAFE)
@@ -271,8 +271,8 @@ fun HijriUmmAlQuraDialog(
 
                     if (isMondayOrThursday) {
                         CulturalBadge(
-                            title = "Sunnah Fasting Day",
-                            description = "Today is ${gregorianDate.dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() }}. Fasting on Mondays and Thursdays is an authentic Sunnah practice.",
+                            title = strings.sunnahFastingDay,
+                            description = strings.mondayThursdayDesc,
                             icon = Icons.Default.AutoAwesome,
                             tint = Color(0xFF7C3AED),
                             bgColor = Color(0xFFEDE9FE)
@@ -298,14 +298,14 @@ fun HijriUmmAlQuraDialog(
                     )
                     Column {
                         Text(
-                            text = "About Umm al-Qura Calendar (تقويم أم القرى)",
+                            text = strings.aboutUmmAlQuraTitle,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "The Umm al-Qura calendar is the official standardized Islamic lunar calendar calculated by the King Abdulaziz City for Science and Technology (KACST) for the holy city of Makkah al-Mukarramah. It aligns astronomical conjunctions with Islamic calendar principles.",
+                            text = strings.aboutUmmAlQuraDesc,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 16.sp
@@ -336,7 +336,7 @@ fun HijriUmmAlQuraDialog(
                         modifier = Modifier.weight(1f).testTag("convert_date_button"),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Convert Date", fontSize = 13.sp)
+                        Text(strings.convertDate, fontSize = 13.sp)
                     }
 
                     Button(
@@ -348,7 +348,7 @@ fun HijriUmmAlQuraDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("Adjust Days", fontSize = 13.sp)
+                        Text(strings.adjustDays, fontSize = 13.sp)
                     }
                 }
             }

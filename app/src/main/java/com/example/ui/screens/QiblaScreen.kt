@@ -119,7 +119,7 @@ fun QiblaScreen(
             },
             confirmButton = {
                 Button(onClick = { showCalibDialog = false }) {
-                    Text(if (strings.isArabic) "حسناً" else "Got It")
+                    Text(strings.gotIt)
                 }
             }
         )
@@ -166,7 +166,7 @@ fun QiblaScreen(
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Qibla: ${qiblaBearing.roundToInt()}° ${QiblaCalculator.getDirectionCardinal(qiblaBearing.toDouble())}",
+                        text = "${strings.qiblaBearingLabel} ${qiblaBearing.roundToInt()}° ${strings.cardinalDirection(qiblaBearing.toDouble())}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = GoldAccent
@@ -175,13 +175,13 @@ fun QiblaScreen(
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "${compassState.distanceKm.roundToInt()} km",
+                        text = "${strings.formatNumber(compassState.distanceKm.roundToInt())} ${strings.kmUnit}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "to Mecca (Kaaba)",
+                        text = strings.distanceToKaabaLabel,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -228,9 +228,12 @@ fun QiblaScreen(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                TelemetryItem(label = "Phone Heading", value = "${effectiveAzimuth.roundToInt()}°")
-                TelemetryItem(label = "Qibla Direction", value = "${qiblaBearing.roundToInt()}°")
-                TelemetryItem(label = "Turn Needed", value = if (isAligned) "Aligned!" else "${relAngle.roundToInt()}°")
+                TelemetryItem(label = strings.currentHeadingLabel, value = "${effectiveAzimuth.roundToInt()}°")
+                TelemetryItem(label = strings.qiblaBearingLabel, value = "${qiblaBearing.roundToInt()}°")
+                TelemetryItem(
+                    label = if (strings.isArabic) "التوجيه المطلوب" else "Turn Needed",
+                    value = if (isAligned) (if (strings.isArabic) "مطابق!" else "Aligned!") else "${relAngle.roundToInt()}°"
+                )
             }
         }
 
@@ -253,7 +256,12 @@ fun QiblaScreen(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Sensor: ${compassState.accuracy.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                    text = "${if (strings.isArabic) "دقة الحساس:" else "Sensor:"} ${when (compassState.accuracy) {
+                        CompassAccuracy.HIGH -> if (strings.isArabic) "عالية" else "High"
+                        CompassAccuracy.MEDIUM -> if (strings.isArabic) "متوسطة" else "Medium"
+                        CompassAccuracy.LOW -> if (strings.isArabic) "منخفضة" else "Low"
+                        CompassAccuracy.UNRELIABLE -> if (strings.isArabic) "غير موثوق" else "Unreliable"
+                    }}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -262,7 +270,7 @@ fun QiblaScreen(
             TextButton(onClick = { showCalibDialog = true }) {
                 Icon(imageVector = Icons.Default.CompassCalibration, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Calibrate", style = MaterialTheme.typography.bodySmall)
+                Text(if (strings.isArabic) "معايرة" else "Calibrate", style = MaterialTheme.typography.bodySmall)
             }
         }
 
@@ -278,7 +286,7 @@ fun QiblaScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Device Rotation Sim / Manual",
+                        text = strings.manualCompassMode,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -312,6 +320,7 @@ fun QiblaScreen(
 
 @Composable
 private fun AlignmentStatusBadge(isAligned: Boolean, relAngle: Float) {
+    val strings = LocalAppStrings.current
     val backgroundColor by animateColorAsState(
         targetValue = if (isAligned) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         label = "status_color"
@@ -342,7 +351,7 @@ private fun AlignmentStatusBadge(isAligned: Boolean, relAngle: Float) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = if (isAligned) "Facing the Kaaba (Makkah)" else if (relAngle > 0) "Turn right ${relAngle.roundToInt()}°" else "Turn left ${-relAngle.roundToInt()}°",
+            text = if (isAligned) strings.qiblaAlignedMessage else if (relAngle > 0) (if (strings.isArabic) "اتجه يميناً ${relAngle.roundToInt()}°" else "Turn right ${relAngle.roundToInt()}°") else (if (strings.isArabic) "اتجه يساراً ${-relAngle.roundToInt()}°" else "Turn left ${-relAngle.roundToInt()}°"),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = textColor
@@ -492,7 +501,7 @@ private fun KaabaCenterIndicator(isAligned: Boolean) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
-                    .background(GoldAccent)
+                .background(GoldAccent)
             )
         }
     }
