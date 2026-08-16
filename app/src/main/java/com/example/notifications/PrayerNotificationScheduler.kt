@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.example.MainActivity
 import com.example.data.calculator.PrayerTimesCalculator
 import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
@@ -39,8 +40,8 @@ object PrayerNotificationScheduler {
             DateTimeFormatter.ofPattern("h:mm a")
         }
 
-        // Schedule for today and tomorrow
-        for (dayOffset in 0..1) {
+        // Schedule alarms across the next 7 days for complete week-long coverage
+        for (dayOffset in 0..6) {
             val date = LocalDate.now(zoneId).plusDays(dayOffset.toLong())
             val schedule = PrayerTimesCalculator.calculateDailySchedule(
                 date = date,
@@ -65,7 +66,7 @@ object PrayerNotificationScheduler {
 
                 // 1. Exact Prayer Time Alarm (Athan)
                 if (prayerZonedTime.isAfter(now)) {
-                    val requestCode = prayerType.ordinal * 10 + dayOffset
+                    val requestCode = dayOffset * 100 + prayerType.ordinal
                     val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
                         action = PrayerAlarmReceiver.ACTION_PRAYER_ALARM
                         putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
@@ -82,22 +83,14 @@ object PrayerNotificationScheduler {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
 
-                    try {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, prayerEpochMillis, pendingIntent)
-                        } else {
-                            alarmManager.setExact(AlarmManager.RTC_WAKEUP, prayerEpochMillis, pendingIntent)
-                        }
-                    } catch (e: Exception) {
-                        alarmManager.set(AlarmManager.RTC_WAKEUP, prayerEpochMillis, pendingIntent)
-                    }
+                    setExactAlarm(context, alarmManager, prayerEpochMillis, pendingIntent, requestCode)
                 }
 
-                // 2. Pre-prayer reminder alarm if set
+                // 2. Pre-prayer reminder alarm if configured
                 if (config.preReminderMinutes > 0) {
                     val reminderZonedTime = prayerZonedTime.minusMinutes(config.preReminderMinutes.toLong())
                     if (reminderZonedTime.isAfter(now)) {
-                        val reminderRequestCode = 1000 + prayerType.ordinal * 10 + dayOffset
+                        val reminderRequestCode = 1000 + dayOffset * 100 + prayerType.ordinal
                         val reminderIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
                             action = PrayerAlarmReceiver.ACTION_PRAYER_ALARM
                             putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
@@ -115,25 +108,17 @@ object PrayerNotificationScheduler {
                         )
 
                         val triggerAtMillis = reminderZonedTime.toInstant().toEpochMilli()
-                        try {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, reminderPendingIntent)
-                            } else {
-                                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, reminderPendingIntent)
-                            }
-                        } catch (e: Exception) {
-                            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, reminderPendingIntent)
-                        }
+                        setExactAlarm(context, alarmManager, triggerAtMillis, reminderPendingIntent, reminderRequestCode)
                     }
                 }
 
-                // 3. Dynamic Island / Status Bar Live Countdown Trigger (e.g., 15 min before prayer)
+                // 3. Dynamic Island / Status Bar Live Countdown Trigger
                 if (settings.dynamicIslandEnabled && prayerType != PrayerType.SUNRISE) {
                     val islandLeadMinutes = settings.dynamicIslandMinutesBefore.coerceAtLeast(1)
                     val islandTriggerZonedTime = prayerZonedTime.minusMinutes(islandLeadMinutes.toLong())
 
                     if (islandTriggerZonedTime.isAfter(now)) {
-                        val islandRequestCode = 2000 + prayerType.ordinal * 10 + dayOffset
+                        val islandRequestCode = 2000 + dayOffset * 100 + prayerType.ordinal
                         val islandIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
                             action = PrayerAlarmReceiver.ACTION_DYNAMIC_ISLAND_COUNTDOWN
                             putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
@@ -150,17 +135,9 @@ object PrayerNotificationScheduler {
                         )
 
                         val triggerAtMillis = islandTriggerZonedTime.toInstant().toEpochMilli()
-                        try {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, islandPendingIntent)
-                            } else {
-                                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, islandPendingIntent)
-                            }
-                        } catch (e: Exception) {
-                            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, islandPendingIntent)
-                        }
-                    } else if (now.isBefore(prayerZonedTime)) {
-                        // Already within the 15-min countdown window today: trigger island immediately!
+                        setExactAlarm(context, alarmManager, triggerAtMillis, islandPendingIntent, islandRequestCode)
+                    } else if (dayOffset == 0 && now.isBefore(prayerZonedTime)) {
+                        // Already within the countdown window today: trigger island immediately
                         PrayerDynamicIslandManager.showCountdownIsland(
                             context = context,
                             prayerType = prayerType,
@@ -169,6 +146,47 @@ object PrayerNotificationScheduler {
                             locationName = settings.location.name
                         )
                     }
+                }
+            }
+        }
+    }
+
+    private fun setExactAlarm(
+        context: Context,
+        alarmManager: AlarmManager,
+        triggerAtMillis: Long,
+        pendingIntent: PendingIntent,
+        requestCode: Int
+    ) {
+        try {
+            // Gold standard for prayer/alarm notifications: AlarmClockInfo is Doze-exempt on all Android versions
+            val showAppIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val showPendingIntent = PendingIntent.getActivity(
+                context,
+                requestCode + 50000,
+                showAppIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, showPendingIntent)
+            alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+        } catch (e: Exception) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                } else {
+                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                }
+            } catch (e2: Exception) {
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                    } else {
+                        alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                    }
+                } catch (e3: Exception) {
+                    // Fallback log
                 }
             }
         }
@@ -184,6 +202,53 @@ object PrayerNotificationScheduler {
             putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, "Test Mode")
         }
         context.sendBroadcast(intent)
+    }
+
+    fun triggerTestAlarmInSeconds(context: Context, prayerType: PrayerType, soundType: NotificationSoundType, seconds: Int = 5) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val triggerTime = System.currentTimeMillis() + (seconds * 1000L)
+        val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
+            action = PrayerAlarmReceiver.ACTION_PRAYER_ALARM
+            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
+            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_TIME, "In $seconds s")
+            putExtra(PrayerAlarmReceiver.EXTRA_SOUND_TYPE, soundType.name)
+            putExtra(PrayerAlarmReceiver.EXTRA_IS_PRE_REMINDER, false)
+            putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, "Alarm Test ($seconds s)")
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            99999,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        setExactAlarm(context, alarmManager, triggerTime, pendingIntent, 99999)
+    }
+
+    fun scheduleSnoozeAlarm(
+        context: Context,
+        prayerType: PrayerType,
+        prayerTime: String,
+        locationName: String,
+        soundType: NotificationSoundType,
+        delaySeconds: Int = 300
+    ) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val triggerTime = System.currentTimeMillis() + (delaySeconds * 1000L)
+        val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
+            action = PrayerAlarmReceiver.ACTION_PRAYER_ALARM
+            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
+            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_TIME, "$prayerTime (Snooze)")
+            putExtra(PrayerAlarmReceiver.EXTRA_SOUND_TYPE, soundType.name)
+            putExtra(PrayerAlarmReceiver.EXTRA_IS_PRE_REMINDER, false)
+            putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, locationName)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            88888,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        setExactAlarm(context, alarmManager, triggerTime, pendingIntent, 88888)
     }
 
     fun triggerTestDynamicIsland(context: Context, prayerType: PrayerType = PrayerType.ASR, minutesInFuture: Int = 15) {

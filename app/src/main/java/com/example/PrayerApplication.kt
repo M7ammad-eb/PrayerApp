@@ -9,9 +9,9 @@ import android.os.Build
 class PrayerApplication : Application() {
 
     companion object {
-        const val CHANNEL_ATHAN_ID = "prayer_athan_channel"
-        const val CHANNEL_REMINDER_ID = "prayer_reminder_channel"
-        const val CHANNEL_DYNAMIC_ISLAND_ID = "prayer_dynamic_island_channel"
+        const val CHANNEL_ATHAN_ID = "prayer_athan_channel_v2"
+        const val CHANNEL_REMINDER_ID = "prayer_reminder_channel_v2"
+        const val CHANNEL_DYNAMIC_ISLAND_ID = "prayer_dynamic_island_channel_v2"
     }
 
     override fun onCreate() {
@@ -23,15 +23,24 @@ class PrayerApplication : Application() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+            // Delete old channels if they had default sounds attached by Android
+            try {
+                notificationManager.deleteNotificationChannel("prayer_athan_channel")
+                notificationManager.deleteNotificationChannel("prayer_dynamic_island_channel")
+            } catch (e: Exception) {
+                // Ignore
+            }
+
             val athanChannel = NotificationChannel(
                 CHANNEL_ATHAN_ID,
                 "Prayer Times & Athan Alerts",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Notifications and Athan sounds when prayer time arrives"
-                enableVibration(true)
-                vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 600)
+                enableVibration(false)
+                setSound(null, null)
                 setShowBadge(true)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
 
             val reminderChannel = NotificationChannel(
@@ -47,10 +56,11 @@ class PrayerApplication : Application() {
             val islandChannel = NotificationChannel(
                 CHANNEL_DYNAMIC_ISLAND_ID,
                 "Dynamic Island & Live Prayer Countdown",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Ongoing countdown shown in the Dynamic Island and status bar 15 minutes before prayer"
+                description = "Ongoing countdown shown in the Dynamic Island and status bar before prayer"
                 enableVibration(false)
+                setSound(null, null)
                 setShowBadge(false)
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }

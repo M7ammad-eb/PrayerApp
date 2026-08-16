@@ -1,8 +1,10 @@
 package com.example.ui.locale
 
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.example.data.models.AppLanguage
@@ -88,39 +90,8 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
                 PrayerType.MAGHRIB -> "المغرب"
                 PrayerType.ISHA -> "العشاء"
             }
-            AppLanguage.TURKISH -> when (type) {
-                PrayerType.FAJR -> "İmsak"
-                PrayerType.SUNRISE -> "Güneş"
-                PrayerType.DHUHR -> "Öğle"
-                PrayerType.ASR -> "İkindi"
-                PrayerType.MAGHRIB -> "Akşam"
-                PrayerType.ISHA -> "Yatsı"
-            }
-            AppLanguage.URDU -> when (type) {
-                PrayerType.FAJR -> "فجر"
-                PrayerType.SUNRISE -> "طلوع آفتاب"
-                PrayerType.DHUHR -> "ظہر"
-                PrayerType.ASR -> "عصر"
-                PrayerType.MAGHRIB -> "مغرب"
-                PrayerType.ISHA -> "عشاء"
-            }
-            AppLanguage.INDONESIAN -> when (type) {
-                PrayerType.FAJR -> "Subuh"
-                PrayerType.SUNRISE -> "Terbit"
-                PrayerType.DHUHR -> "Dzuhur"
-                PrayerType.ASR -> "Ashar"
-                PrayerType.MAGHRIB -> "Maghrib"
-                PrayerType.ISHA -> "Isya"
-            }
-            AppLanguage.FRENCH -> when (type) {
-                PrayerType.FAJR -> "Fajr"
-                PrayerType.SUNRISE -> "Lever du soleil"
-                PrayerType.DHUHR -> "Dhuhr"
-                PrayerType.ASR -> "Asr"
-                PrayerType.MAGHRIB -> "Maghrib"
-                PrayerType.ISHA -> "Icha"
-            }
-            else -> {
+            AppLanguage.ENGLISH -> type.title
+            AppLanguage.SYSTEM -> {
                 if (isArabic) {
                     when (type) {
                         PrayerType.FAJR -> "الفجر"
@@ -148,10 +119,18 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
     fun soundTypeName(type: NotificationSoundType): String {
         return if (isArabic) {
             when (type) {
-                NotificationSoundType.FULL_ATHAN -> "أذان مكة المكرمة (كامل)"
-                NotificationSoundType.ATHAN_MADINAH -> "أذان المدينة المنورة"
-                NotificationSoundType.ATHAN_AL_AQSA -> "أذان المسجد الأقصى"
-                NotificationSoundType.ATHAN_CAIRO -> "أذان القاهرة"
+                NotificationSoundType.ATHAN_MAKKAH_MULLA -> "أذان مكة المكرمة - علي أحمد ملا"
+                NotificationSoundType.ATHAN_FAJR1_KWAIT_ALAFASY -> "أذان الفجر (الكويت) - مشاري العفاسي"
+                NotificationSoundType.ATHAN_FAJR2_JORDAN_ALLALA -> "أذان الفجر (الأردن) - كامل اللالا"
+                NotificationSoundType.ATHAN_RIYADH_QATAMI -> "أذان الرياض - ناصر القطامي"
+                NotificationSoundType.ATHAN_QATAR_NABET -> "أذان قطر - صالح النابت"
+                NotificationSoundType.ATHAN_QUDS_QAZAZ_1 -> "أذان المسجد الأقصى - ناجي قزاز (١)"
+                NotificationSoundType.ATHAN_QUDS_QAZAZ_2 -> "أذان المسجد الأقصى - ناجي قزاز (٢)"
+                NotificationSoundType.ATHAN_EGYPT_DAWOD -> "أذان مصر - أحمد داود"
+                NotificationSoundType.ATHAN_EGYPT_ALALFI -> "أذان مصر - صلاح الألفي"
+                NotificationSoundType.ATHAN_EGYPT_ABDULAATI -> "أذان مصر (الحسين) - سيد عبد العاطي"
+                NotificationSoundType.ATHAN_IRAQ_ALAMOURI -> "أذان العراق - أبو عمر العامري"
+                NotificationSoundType.ATHAN_GEORGIA -> "أذان جورجيا (تبليسي)"
                 NotificationSoundType.SHORT_TAKBEER -> "تكبير فقط (الله أكبر)"
                 NotificationSoundType.MELODIC_TONE -> "نغمة هادئة"
                 NotificationSoundType.VIBRATE_ONLY -> "اهتزاز فقط"
@@ -159,15 +138,48 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
             }
         } else {
             when (type) {
-                NotificationSoundType.FULL_ATHAN -> "Makkah Adhan (Full)"
-                NotificationSoundType.ATHAN_MADINAH -> "Madinah Adhan"
-                NotificationSoundType.ATHAN_AL_AQSA -> "Al-Aqsa Adhan"
-                NotificationSoundType.ATHAN_CAIRO -> "Cairo Adhan"
+                NotificationSoundType.ATHAN_MAKKAH_MULLA -> "Makkah - Ali Bin Ahmad Mullah"
+                NotificationSoundType.ATHAN_FAJR1_KWAIT_ALAFASY -> "Fajr (Kuwait) - Mishary Alafasy"
+                NotificationSoundType.ATHAN_FAJR2_JORDAN_ALLALA -> "Fajr (Jordan) - Kamel Allala"
+                NotificationSoundType.ATHAN_RIYADH_QATAMI -> "Riyadh - Nasser Al-Qatami"
+                NotificationSoundType.ATHAN_QATAR_NABET -> "Qatar - Saleh Al-Nabet"
+                NotificationSoundType.ATHAN_QUDS_QAZAZ_1 -> "Al-Aqsa Al-Quds - Naji Qazzaz (1)"
+                NotificationSoundType.ATHAN_QUDS_QAZAZ_2 -> "Al-Aqsa Al-Quds - Naji Qazzaz (2)"
+                NotificationSoundType.ATHAN_EGYPT_DAWOD -> "Egypt - Ahmad Dawod"
+                NotificationSoundType.ATHAN_EGYPT_ALALFI -> "Egypt - Salah Al-Alfi"
+                NotificationSoundType.ATHAN_EGYPT_ABDULAATI -> "Egypt (Al-Hussein) - Sayed Abdulaati"
+                NotificationSoundType.ATHAN_IRAQ_ALAMOURI -> "Iraq - Abu Omar Al-Amouri"
+                NotificationSoundType.ATHAN_GEORGIA -> "Georgia Mosque Adhan"
                 NotificationSoundType.SHORT_TAKBEER -> "Takbeer Only"
                 NotificationSoundType.MELODIC_TONE -> "Gentle Chime"
                 NotificationSoundType.VIBRATE_ONLY -> "Vibrate Only"
                 NotificationSoundType.SILENT -> "Silent / Off"
             }
+        }
+    }
+
+    fun soundTypeSubtitle(type: NotificationSoundType): String {
+        return if (isArabic) {
+            when (type) {
+                NotificationSoundType.ATHAN_MAKKAH_MULLA -> "أذان الحرم المكي الشريف بصوت شيخ المؤذنين"
+                NotificationSoundType.ATHAN_FAJR1_KWAIT_ALAFASY -> "أذان الفجر المخصوص بعبارة (الصلاة خير من النوم)"
+                NotificationSoundType.ATHAN_FAJR2_JORDAN_ALLALA -> "أذان الفجر التراثي من المسجد الحسيني الكبير"
+                NotificationSoundType.ATHAN_RIYADH_QATAMI -> "أذان ندي وخاشع من مساجد الرياض"
+                NotificationSoundType.ATHAN_QATAR_NABET -> "أذan جامع الإمام محمد بن عبد الوهاب بدولة قطر"
+                NotificationSoundType.ATHAN_QUDS_QAZAZ_1 -> "أذان المسجد الأقصى المبارك بمقام الحجاز"
+                NotificationSoundType.ATHAN_QUDS_QAZAZ_2 -> "أذان المسجد الأقصى المبارك بمقام البياتي"
+                NotificationSoundType.ATHAN_EGYPT_DAWOD -> "أذان الإذاعة المصرية التراثي الأصيل"
+                NotificationSoundType.ATHAN_EGYPT_ALALFI -> "أذان الجامع الأزهر الشريف ومساجد القاهرة"
+                NotificationSoundType.ATHAN_EGYPT_ABDULAATI -> "أذان مسجد الإمام الحسين عليه السلام بالقاهرة"
+                NotificationSoundType.ATHAN_IRAQ_ALAMOURI -> "أذان بغداد والمساجد العراقية بنغم البياتي العريق"
+                NotificationSoundType.ATHAN_GEORGIA -> "أذان جامع تبليسي التاريخي في جورجيا"
+                NotificationSoundType.SHORT_TAKBEER -> "تكبيرات العيد والأذان المختصرة"
+                NotificationSoundType.MELODIC_TONE -> "نغمة هادئة للتنبيه في العمل والاجتماعات"
+                NotificationSoundType.VIBRATE_ONLY -> "اهتزاز فقط دون إصدار صوت"
+                NotificationSoundType.SILENT -> "إشعار بصري فقط"
+            }
+        } else {
+            type.subtitle
         }
     }
 
@@ -231,6 +243,16 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
         return if (isArabic) mode.arabicTitle else mode.title
     }
 
+    val colorPaletteSection: String = if (isArabic) "لوحة الألوان وسمة التطبيق" else "Color Palette & Accent Colors"
+    val followSystemColorsTitle: String = if (isArabic) "متابعة ألوان النظام (Material You)" else "Follow System Colors"
+    val followSystemColorsDesc: String = if (isArabic) "استخراج الألوان التلقائي المتناسق مع خلفية جهازك" else "Dynamically match device wallpaper and system accents"
+    val presetColorsTitle: String = if (isArabic) "لوحات ألوان جاهزة" else "Preset Color Palettes"
+    val presetColorsDesc: String = if (isArabic) "اختر لوناً مميزاً لتخصيص واجهة التطبيق" else "Select a curated color palette for the app interface"
+
+    fun colorPresetName(preset: com.example.data.models.AppColorPreset): String {
+        return if (isArabic) preset.arabicTitle else preset.title
+    }
+
     val languageSection: String = if (isArabic) "اللغة والعرض" else "Language & Localization"
     val appLanguage: String = if (isArabic) "لغة التطبيق" else "App Language"
     val selectLanguageSubtitle: String = if (isArabic) "اختر لغة واجهة التطبيق" else "Choose application interface language"
@@ -252,13 +274,33 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
     val athanSound: String = if (isArabic) "صوت الأذان والتنبيه" else "Athan Sound"
     val preReminder: String = if (isArabic) "تنبيه مبكر قبل الصلاة" else "Pre-Prayer Reminder"
     val minutesBefore: String = if (isArabic) "دقيقة قبل" else "min before"
-    val testAlert: String = if (isArabic) "تجربة التنبيه" else "Test Alert"
+    val testAlert: String = if (isArabic) "تجربة التنبيه الفوري" else "Test Instant Alert"
+    val testAlarm5s: String = if (isArabic) "تجربة إنذار الصلاة (بعد 5 ثوانٍ)" else "Test Prayer Alarm (in 5s)"
+    val reschedule7Days: String = if (isArabic) "إعادة جدولة جميع منبهات الأسبوع (7 أيام)" else "Reschedule 7-Day Alarms"
+    val notificationsDisabledWarning: String = if (isArabic) "تنبيهات الأذان معطلة في إعدادات النظام. يرجى تفعيل الإشعارات حتى يعمل الأذان في موعده." else "Prayer alerts & Athan notifications are disabled in system settings. Please enable them to receive timely prayer alarms."
+    val enableNotificationsBtn: String = if (isArabic) "تفعيل الإشعارات الآن" else "Enable Notifications"
+    val notificationsStatusActive: String = if (isArabic) "الإشعارات ومنبهات الأذان مفعلة وجاهزة بنجاح." else "Prayer notifications & exact alarms are active and ready."
+
+    // Audio Output Channel & Wake Screen Settings
+    val audioStreamSectionTitle: String = if (isArabic) "قناة صوت الأذان (Audio Stream)" else "Athan Audio Stream Channel"
+    val audioStreamDesc: String = if (isArabic) "اختر القناة الصوتية التي يعمل بها صوت الأذان ليتبع مستوى صوت النظام المختار." else "Choose which system audio channel the Athan plays through. It will follow your device's system volume."
+    val audioStreamAlarmTitle: String = if (isArabic) "مستوى صوت المنبه (Alarm)" else "Alarm Stream (Recommended)"
+    val audioStreamAlarmDesc: String = if (isArabic) "يعمل بمستوى صوت منبه الهاتف، ويرن حتى في الوضع الصامت إذا سمح النظام." else "Plays at alarm volume level, sounds reliably when idle or silent."
+    val audioStreamMediaTitle: String = if (isArabic) "مستوى صوت الوسائط (Media)" else "Media Stream"
+    val audioStreamMediaDesc: String = if (isArabic) "يعمل بمستوى صوت الموسيقى والفيديوهات." else "Plays at music/video media volume level."
+    val audioStreamRingtoneTitle: String = if (isArabic) "مستوى صوت رنين الهاتف (Ringtone)" else "Ringtone Stream"
+    val audioStreamRingtoneDesc: String = if (isArabic) "يعمل بمستوى نغمة رنين المكالمات." else "Plays at incoming call ringtone volume level."
+    
+    val wakeScreenTitle: String = if (isArabic) "إيقاظ الشاشة وعرض منبه الأذان بالكامل (عند إغلاق الشاشة فقط)" else "Wake Screen & Full-Screen Alarm (Screen Off Only)"
+    val wakeScreenDesc: String = if (isArabic) "إضاءة الشاشة تلقائياً وعرض اللوحة الفنية الكاملة فقط إذا كانت الشاشة مغلقة. أثناء استخدام الهاتف، يظهر إشعار علوي أنيق دون مقاطعتك." else "Turn on the display and show full-screen prayer artwork only if the phone is locked/idle. When actively using your phone, a heads-up notification appears."
+    val previewFullScreenAlarmBtn: String = if (isArabic) "🖼️ معاينة شاشة منبه الأذان الفنية الكاملة" else "🖼️ Preview Full-Screen Alarm Artwork"
 
     // Dynamic Island / Live Countdown Feature
     val dynamicIslandSectionTitle: String = if (isArabic) "الجزيرة التفاعلية والعد التنازلي المباشر (Live Activity)" else "Dynamic Island & Live Activity Countdown"
     val dynamicIslandDesc: String = if (isArabic) "عرض كبسولة تفاعلية وعد تنازلي مباشر في أعلى الشاشة وشريط الإشعارات قبل حلول وقت الصلاة (مثل Keeta و Live Activities)." else "Display a live interactive countdown capsule at the top of your screen and notification bar before prayer time (similar to Keeta Live Activities)."
     val dynamicIslandEnableTitle: String = if (isArabic) "تفعيل كبسولة الجزيرة التفاعلية" else "Enable Dynamic Island Capsule"
     val dynamicIslandLeadTimeTitle: String = if (isArabic) "بدء العد التنازلي قبل الصلاة بـ:" else "Start Countdown Before Prayer:"
+    val dynamicIslandVivoTip: String = if (isArabic) "💡 لأجهزة Vivo / iQOO / OriginOS: لتفعيل كبسولة الجزيرة (Atomic Island)، يرجى التأكد من تشغيل 'الأنشطة الحية / Live Alerts' لتطبيق مواقيت الصلاة من إعدادات الهاتف > الإشعارات." else "💡 For Vivo / iQOO / OriginOS users: Ensure 'Live Alerts / Atomic Island' is turned ON for Prayer Times in Phone Settings > Notifications."
     val previewDynamicIslandBtn: String = if (isArabic) "✨ معاينة كبسولة الجزيرة التفاعلية الآن" else "✨ Preview Dynamic Island Countdown"
     val dismissDynamicIslandBtn: String = if (isArabic) "إخفاء الجزيرة التفاعلية" else "Dismiss Island Preview"
 
@@ -416,24 +458,37 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
     }
 }
 
-val LocalAppStrings = staticCompositionLocalOf { AppStrings(false) }
+val LocalAppStrings = staticCompositionLocalOf {
+    val isAr = Locale.getDefault().language.equals("ar", ignoreCase = true)
+    AppStrings(isAr, if (isAr) AppLanguage.ARABIC else AppLanguage.ENGLISH)
+}
 
 @Composable
 fun ProvideAppLocale(
     appLanguage: AppLanguage,
     content: @Composable () -> Unit
 ) {
+    val context = LocalContext.current
     val isArabic = when (appLanguage) {
         AppLanguage.SYSTEM -> {
-            val systemLang = Locale.getDefault().language
+            val systemLang = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val appLocales = try {
+                    val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
+                    val locales = localeManager?.applicationLocales
+                    if (locales != null && !locales.isEmpty) locales.get(0)?.language else null
+                } catch (e: Exception) { null }
+                appLocales ?: Locale.getDefault().language
+            } else {
+                Locale.getDefault().language
+            }
             systemLang.equals("ar", ignoreCase = true)
         }
         AppLanguage.ARABIC -> true
-        AppLanguage.ENGLISH, AppLanguage.FRENCH, AppLanguage.TURKISH, AppLanguage.URDU, AppLanguage.INDONESIAN -> false
+        AppLanguage.ENGLISH -> false
     }
 
     val appStrings = AppStrings(isArabic, appLanguage)
-    val layoutDirection = if (isArabic || appLanguage == AppLanguage.URDU) LayoutDirection.Rtl else LayoutDirection.Ltr
+    val layoutDirection = if (isArabic) LayoutDirection.Rtl else LayoutDirection.Ltr
 
     CompositionLocalProvider(
         LocalAppStrings provides appStrings,

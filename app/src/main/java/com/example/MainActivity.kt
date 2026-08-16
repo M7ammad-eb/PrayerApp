@@ -32,7 +32,11 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { _ -> }
+    ) { isGranted ->
+        if (isGranted) {
+            prayerViewModel.rescheduleAllAlarms()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,11 +46,28 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settings by prayerViewModel.settings.collectAsState()
-            MyApplicationTheme(themeMode = settings.themeMode) {
+            MyApplicationTheme(
+                themeMode = settings.themeMode,
+                colorPreset = settings.colorPreset,
+                followSystemColors = settings.followSystemColors
+            ) {
                 MainScreen(
                     viewModel = prayerViewModel,
-                    onRequestLocationPermission = { requestLocationPermission() }
+                    onRequestLocationPermission = { requestLocationPermission() },
+                    onRequestNotificationPermission = { requestNotificationPermission() }
                 )
+            }
+        }
+    }
+
+    fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val notifGranted = ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!notifGranted) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }

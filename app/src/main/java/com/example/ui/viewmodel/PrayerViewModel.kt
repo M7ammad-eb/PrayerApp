@@ -66,7 +66,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     val settings: StateFlow<AppPrayerSettings> = prefs.settingsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
-        initialValue = AppPrayerSettings()
+        initialValue = PrayerPreferences.getInitialSettings(application)
     )
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
@@ -92,6 +92,12 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     val locationErrorMessage: StateFlow<String?> = _locationErrorMessage.asStateFlow()
 
     init {
+        val initialSettings = settings.value
+        compassManager.setLocation(initialSettings.location.latitude, initialSettings.location.longitude)
+        recalculateSchedules(initialSettings, _selectedDate.value)
+        val initialZoneId = try { ZoneId.of(initialSettings.location.timeZoneId) } catch (e: Exception) { ZoneId.systemDefault() }
+        updateNextPrayerCountdown(initialSettings, ZonedDateTime.now(initialZoneId))
+
         viewModelScope.launch {
             settings.collect { currentSettings ->
                 compassManager.setLocation(currentSettings.location.latitude, currentSettings.location.longitude)
@@ -351,6 +357,18 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun updateColorPreset(preset: com.example.data.models.AppColorPreset) {
+        viewModelScope.launch {
+            prefs.updateColorPreset(preset)
+        }
+    }
+
+    fun updateFollowSystemColors(follow: Boolean) {
+        viewModelScope.launch {
+            prefs.updateFollowSystemColors(follow)
+        }
+    }
+
     fun updatePrayerAdjustment(prayer: PrayerType, minutes: Int) {
         viewModelScope.launch {
             prefs.updatePrayerAdjustment(prayer, minutes)
@@ -360,6 +378,18 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     fun updatePrayerNotification(prayer: PrayerType, enabled: Boolean, soundType: NotificationSoundType, preReminder: Int) {
         viewModelScope.launch {
             prefs.updatePrayerNotification(prayer, enabled, soundType, preReminder)
+        }
+    }
+
+    fun updateAudioStream(audioStream: com.example.data.models.AthanAudioStream) {
+        viewModelScope.launch {
+            prefs.updateAudioStream(audioStream)
+        }
+    }
+
+    fun updateWakeScreenOnAlarm(wakeScreen: Boolean) {
+        viewModelScope.launch {
+            prefs.updateWakeScreenOnAlarm(wakeScreen)
         }
     }
 
@@ -374,7 +404,8 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         AthanAudioEngine.playAthan(
             context = getApplication(),
             prayerType = prayerType,
-            soundType = soundType
+            soundType = soundType,
+            audioStream = settings.value.audioStream
         )
     }
 
@@ -382,7 +413,8 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         AthanAudioEngine.playSoundType(
             context = getApplication(),
             soundType = soundType,
-            prayerType = prayerType
+            prayerType = prayerType,
+            audioStream = settings.value.audioStream
         )
     }
 
@@ -401,6 +433,14 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun testNotification(prayerType: PrayerType, soundType: NotificationSoundType) {
         PrayerNotificationScheduler.triggerTestNotification(getApplication(), prayerType, soundType)
+    }
+
+    fun testAlarmInSeconds(prayerType: PrayerType = PrayerType.DHUHR, soundType: NotificationSoundType = NotificationSoundType.FULL_ATHAN, seconds: Int = 5) {
+        PrayerNotificationScheduler.triggerTestAlarmInSeconds(getApplication(), prayerType, soundType, seconds)
+    }
+
+    fun rescheduleAllAlarms() {
+        PrayerNotificationScheduler.scheduleDailyAlarms(getApplication(), settings.value)
     }
 
     override fun onCleared() {

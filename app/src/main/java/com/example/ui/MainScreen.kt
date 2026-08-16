@@ -87,7 +87,8 @@ enum class AppNavTab(val icon: ImageVector) {
 @Composable
 fun MainScreen(
     viewModel: PrayerViewModel,
-    onRequestLocationPermission: (() -> Unit)? = null
+    onRequestLocationPermission: (() -> Unit)? = null,
+    onRequestNotificationPermission: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -175,8 +176,9 @@ fun MainScreen(
             AppNavTab.SETTINGS -> strings.navSettings
         }
 
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
@@ -218,6 +220,13 @@ fun MainScreen(
                             onStopAudio = { viewModel.stopAudio() },
                             onUpdateNotificationConfig = { prayer, enabled, sound, reminder ->
                                 viewModel.updatePrayerNotification(prayer, enabled, sound, reminder)
+                            },
+                            onRequestNotificationPermission = {
+                                if (onRequestNotificationPermission != null) {
+                                    onRequestNotificationPermission()
+                                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
                             }
                         )
                     }
@@ -268,6 +277,8 @@ fun MainScreen(
                             onToggle24Hour = { viewModel.toggle24HourFormat() },
                             onUpdateLanguage = { viewModel.updateLanguage(it) },
                             onUpdateThemeMode = { viewModel.updateThemeMode(it) },
+                            onUpdateColorPreset = { viewModel.updateColorPreset(it) },
+                            onUpdateFollowSystemColors = { viewModel.updateFollowSystemColors(it) },
                             onUpdatePrayerAdjustment = { prayer, mins ->
                                 viewModel.updatePrayerAdjustment(prayer, mins)
                             },
@@ -277,8 +288,21 @@ fun MainScreen(
                             onTestNotification = { prayer, sound ->
                                 viewModel.testNotification(prayer, sound)
                             },
-                            onPreviewSound = { sound ->
-                                com.example.audio.AthanAudioEngine.playSoundType(context, sound)
+                            onTestAlarmInSeconds = { prayer, sound, seconds ->
+                                viewModel.testAlarmInSeconds(prayer, sound, seconds)
+                            },
+                            onRescheduleAlarms = {
+                                viewModel.rescheduleAllAlarms()
+                            },
+                            onRequestNotificationPermission = {
+                                if (onRequestNotificationPermission != null) {
+                                    onRequestNotificationPermission()
+                                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            },
+                            onPreviewSound = { sound, prayer ->
+                                viewModel.previewNotificationSound(sound, prayer)
                             },
                             onUpdateDynamicIslandSettings = { enabled, minutes ->
                                 viewModel.updateDynamicIslandSettings(enabled, minutes)
@@ -288,6 +312,22 @@ fun MainScreen(
                             },
                             onDismissDynamicIsland = {
                                 viewModel.dismissDynamicIsland()
+                            },
+                            onUpdateAudioStream = { stream ->
+                                viewModel.updateAudioStream(stream)
+                            },
+                            onUpdateWakeScreen = { wake ->
+                                viewModel.updateWakeScreenOnAlarm(wake)
+                            },
+                            onPreviewFullScreenAlarm = { prayer ->
+                                val intent = com.example.ui.alarm.PrayerAlarmActivity.createIntent(
+                                    context = context,
+                                    prayerType = prayer,
+                                    prayerTime = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern(if (settings.is24HourFormat) "HH:mm" else "h:mm a")),
+                                    locationName = settings.location.name.ifEmpty { "Current Location" },
+                                    soundType = settings.prayerConfigs[prayer]?.soundType ?: com.example.data.models.NotificationSoundType.FULL_ATHAN
+                                )
+                                context.startActivity(intent)
                             }
                         )
                     }
@@ -295,6 +335,7 @@ fun MainScreen(
             }
         }
     }
+}
 }
 
 // ============================================================================

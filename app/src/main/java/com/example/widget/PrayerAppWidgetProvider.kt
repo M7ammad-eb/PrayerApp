@@ -28,6 +28,7 @@ import java.time.Duration
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class PrayerAppWidgetProvider : AppWidgetProvider() {
 
@@ -164,7 +165,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
         // Intents for opening the app and refreshing
         val mainIntent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val mainPendingIntent = PendingIntent.getActivity(
             context,
@@ -416,39 +417,22 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 PrayerType.MAGHRIB -> "المغرب"
                 PrayerType.ISHA -> "العشاء"
             }
-            AppLanguage.TURKISH -> when (type) {
-                PrayerType.FAJR -> "İmsak"
-                PrayerType.SUNRISE -> "Güneş"
-                PrayerType.DHUHR -> "Öğle"
-                PrayerType.ASR -> "İkindi"
-                PrayerType.MAGHRIB -> "Akşam"
-                PrayerType.ISHA -> "Yatsı"
+            AppLanguage.ENGLISH -> type.title
+            AppLanguage.SYSTEM -> {
+                val isAr = Locale.getDefault().language.equals("ar", ignoreCase = true)
+                if (isAr) {
+                    when (type) {
+                        PrayerType.FAJR -> "الفجر"
+                        PrayerType.SUNRISE -> "الشروق"
+                        PrayerType.DHUHR -> "الظهر"
+                        PrayerType.ASR -> "العصر"
+                        PrayerType.MAGHRIB -> "المغرب"
+                        PrayerType.ISHA -> "العشاء"
+                    }
+                } else {
+                    type.title
+                }
             }
-            AppLanguage.URDU -> when (type) {
-                PrayerType.FAJR -> "فجر"
-                PrayerType.SUNRISE -> "طلوع آفتاب"
-                PrayerType.DHUHR -> "ظہر"
-                PrayerType.ASR -> "عصر"
-                PrayerType.MAGHRIB -> "مغرب"
-                PrayerType.ISHA -> "عشاء"
-            }
-            AppLanguage.INDONESIAN -> when (type) {
-                PrayerType.FAJR -> "Subuh"
-                PrayerType.SUNRISE -> "Terbit"
-                PrayerType.DHUHR -> "Dzuhur"
-                PrayerType.ASR -> "Ashar"
-                PrayerType.MAGHRIB -> "Maghrib"
-                PrayerType.ISHA -> "Isya"
-            }
-            AppLanguage.FRENCH -> when (type) {
-                PrayerType.FAJR -> "Fajr"
-                PrayerType.SUNRISE -> "Lever du soleil"
-                PrayerType.DHUHR -> "Dhuhr"
-                PrayerType.ASR -> "Asr"
-                PrayerType.MAGHRIB -> "Maghrib"
-                PrayerType.ISHA -> "Icha"
-            }
-            else -> type.title
         }
     }
 

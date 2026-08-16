@@ -91,11 +91,17 @@ fun PrayerHomeScreen(
     onDatePicked: (LocalDate) -> Unit,
     onPlayPrayerAthan: (PrayerType) -> Unit,
     onStopAudio: () -> Unit,
-    onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit
+    onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit,
+    onRequestNotificationPermission: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     var showAthanDialog by remember { mutableStateOf(false) }
     var showExtraTimes by remember { mutableStateOf(false) }
+
+    val notificationsEnabled = remember {
+        androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
+    val strings = LocalAppStrings.current
 
     val isToday = selectedDate == LocalDate.now()
 
@@ -123,6 +129,61 @@ fun PrayerHomeScreen(
             .testTag("prayer_home_screen"),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // Warning Banner if OS Notifications are disabled
+        if (!notificationsEnabled) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.NotificationsOff,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                text = strings.notificationsDisabledWarning,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        androidx.compose.material3.Button(
+                            onClick = {
+                                onRequestNotificationPermission?.invoke()
+                                try {
+                                    val intent = android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    // Ignore
+                                }
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = strings.enableNotificationsBtn,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onError
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         // 1. Next Prayer Hero Card
         item {
             if (isToday && nextPrayerInfo.prayerItem != null) {

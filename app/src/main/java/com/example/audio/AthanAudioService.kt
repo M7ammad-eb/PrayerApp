@@ -18,6 +18,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.example.MainActivity
 import com.example.PrayerApplication
+import com.example.data.models.AthanAudioStream
 import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
 
@@ -30,6 +31,8 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
         const val EXTRA_PRAYER_TYPE = "extra_prayer_type"
         const val EXTRA_SOUND_TYPE = "extra_sound_type"
         const val EXTRA_LOCATION_NAME = "extra_location_name"
+        const val EXTRA_AUDIO_STREAM = "extra_audio_stream"
+        const val EXTRA_VOLUME_PERCENT = "extra_volume_percent"
 
         const val NOTIFICATION_ID = 9999
 
@@ -37,13 +40,15 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
             context: Context,
             prayerType: PrayerType,
             soundType: NotificationSoundType,
-            locationName: String = ""
+            locationName: String = "",
+            audioStream: AthanAudioStream = AthanAudioStream.ALARM
         ) {
             val intent = Intent(context, AthanAudioService::class.java).apply {
                 action = ACTION_PLAY_ATHAN
                 putExtra(EXTRA_PRAYER_TYPE, prayerType.name)
                 putExtra(EXTRA_SOUND_TYPE, soundType.name)
                 putExtra(EXTRA_LOCATION_NAME, locationName)
+                putExtra(EXTRA_AUDIO_STREAM, audioStream.name)
             }
             ContextCompat.startForegroundService(context, intent)
         }
@@ -61,6 +66,7 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
     private var wakeLock: PowerManager.WakeLock? = null
     private var currentPrayerType: PrayerType = PrayerType.DHUHR
     private var currentSoundType: NotificationSoundType = NotificationSoundType.FULL_ATHAN
+    private var currentAudioStream: AthanAudioStream = AthanAudioStream.ALARM
     private var locationName: String = ""
 
     override fun onCreate() {
@@ -79,6 +85,7 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
 
         val prayerTypeName = intent?.getStringExtra(EXTRA_PRAYER_TYPE) ?: PrayerType.DHUHR.name
         val soundTypeName = intent?.getStringExtra(EXTRA_SOUND_TYPE) ?: NotificationSoundType.FULL_ATHAN.name
+        val audioStreamName = intent?.getStringExtra(EXTRA_AUDIO_STREAM) ?: AthanAudioStream.ALARM.name
         locationName = intent?.getStringExtra(EXTRA_LOCATION_NAME) ?: ""
 
         currentPrayerType = try {
@@ -91,6 +98,12 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
             NotificationSoundType.valueOf(soundTypeName)
         } catch (e: Exception) {
             NotificationSoundType.FULL_ATHAN
+        }
+
+        currentAudioStream = try {
+            AthanAudioStream.valueOf(audioStreamName)
+        } catch (e: Exception) {
+            AthanAudioStream.ALARM
         }
 
         // 1. Start as foreground immediately with initial notification to satisfy Android OS requirements
@@ -121,14 +134,12 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
         // 2. Request Audio Focus
         requestAudioFocus()
 
-        // 3. Play sound engine with verse progression callback
+        // 3. Play sound engine
         AthanAudioEngine.playSoundType(
             context = this,
             soundType = currentSoundType,
             prayerType = currentPrayerType,
-            onVerseChange = { verse, index, progress ->
-                updateForegroundNotification(verse.arabic, verse.transliteration)
-            },
+            audioStream = currentAudioStream,
             onFinished = {
                 stopAudioAndService()
             }
@@ -168,31 +179,28 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setOngoing(true)
             .setAutoCancel(false)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setSound(null)
+            .setVibrate(null)
             .setContentIntent(openAppPendingIntent)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop Athan", stopPendingIntent)
 
         return builder.build()
     }
 
-    private fun updateForegroundNotification(arabicText: String, transliteration: String) {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-        val notification = buildNotification(
-            title = "Athan: ${currentPrayerType.title} (${currentPrayerType.arabicName})",
-            verseText = "$arabicText — $transliteration",
-            subText = currentSoundType.displayName
-        )
-        notificationManager?.notify(NOTIFICATION_ID, notification)
-    }
-
     private fun requestAudioFocus(): Boolean {
         val am = audioManager ?: return false
         val audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_MEDIA)
-            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .setUsage(currentAudioStream.audioUsage)
+            .setContentType(
+                if (currentAudioStream == AthanAudioStream.ALARM) AudioAttributes.CONTENT_TYPE_SONIFICATION
+                else AudioAttributes.CONTENT_TYPE_MUSIC
+            )
             .build()
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                 .setAudioAttributes(audioAttributes)
                 .setAcceptsDelayedFocusGain(false)
                 .setOnAudioFocusChangeListener(this)
@@ -201,7 +209,7 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
             am.requestAudioFocus(req) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
         } else {
             @Suppress("DEPRECATION")
-            am.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+            am.requestAudioFocus(this, currentAudioStream.streamType, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
         }
     }
 

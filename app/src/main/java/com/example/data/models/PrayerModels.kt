@@ -170,16 +170,68 @@ enum class HighLatitudeRule(val displayName: String) {
 enum class NotificationSoundType(
     val displayName: String,
     val subtitle: String = "",
+    val displayNameAr: String = "",
     val isFullAthan: Boolean = false
 ) {
-    FULL_ATHAN("Makkah Adhan", "Grand Mosque Bayati chant", true),
-    ATHAN_MADINAH("Madinah Adhan", "Prophet's Mosque serene cadence", true),
-    ATHAN_AL_AQSA("Al-Aqsa Adhan", "Soulful Jerusalem Maqam", true),
-    ATHAN_CAIRO("Cairo Adhan", "Traditional Egyptian Maqam", true),
-    SHORT_TAKBEER("Takbeer Only", "Allahu Akbar takbeerat alert", false),
-    MELODIC_TONE("Gentle Chime", "Soft chime notification", false),
-    VIBRATE_ONLY("Vibrate Only", "Haptic vibration without audio", false),
-    SILENT("Silent", "Visual notification only", false)
+    ATHAN_MAKKAH_MULLA("Makkah - Ali Bin Ahmad Mullah", "Holy Mosque in Makkah", "مكة المكرمة - علي بن أحمد ملا", true),
+    ATHAN_FAJR1_KWAIT_ALAFASY("Fajr (Kuwait) - Mishary Alafasy", "Fajr Adhan with As-Salatu Khayrun Minan-Nawm", "أذان الفجر (الكويت) - مشاري العفاسي", true),
+    ATHAN_FAJR2_JORDAN_ALLALA("Fajr (Jordan) - Kamel Allala", "Grand Hussein Mosque Fajr Adhan", "أذان الفجر (الأردن) - كامل اللالا", true),
+    ATHAN_RIYADH_QATAMI("Riyadh - Nasser Al-Qatami", "Saudi capital soulful recitation", "الرياض - ناصر القطامي", true),
+    ATHAN_QATAR_NABET("Qatar - Saleh Al-Nabet", "State Grand Mosque of Qatar", "قطر - صالح النابت", true),
+    ATHAN_QUDS_QAZAZ_1("Al-Aqsa Al-Quds - Naji Qazzaz (1)", "Blessed Jerusalem Al-Aqsa Mosque", "المسجد الأقصى - ناجي قزاز (1)", true),
+    ATHAN_QUDS_QAZAZ_2("Al-Aqsa Al-Quds - Naji Qazzaz (2)", "Blessed Jerusalem Al-Aqsa Mosque", "المسجد الأقصى - ناجي قزاز (2)", true),
+    ATHAN_EGYPT_DAWOD("Egypt - Ahmad Dawod", "Classic Cairo melodic Maqam", "مصر - أحمد داود", true),
+    ATHAN_EGYPT_ALALFI("Egypt - Salah Al-Alfi", "Historic Egyptian recitation", "مصر - صلاح الألفي", true),
+    ATHAN_EGYPT_ABDULAATI("Egypt (Al-Hussein) - Sayed Abdulaati", "Imam Al-Hussein Mosque Cairo", "مصر (الحسين) - سيد عبد العاطي", true),
+    ATHAN_IRAQ_ALAMOURI("Iraq - Abu Omar Al-Amouri", "Traditional Iraqi Maqam", "العراق - أبو عمر العامري", true),
+    ATHAN_GEORGIA("Georgia Mosque Adhan", "Tbilisi Juma Mosque", "أذان جورجيا", true),
+    SHORT_TAKBEER("Takbeer Only", "Allahu Akbar takbeerat alert", "تكبيرات فقط", false),
+    MELODIC_TONE("Gentle Chime", "Soft chime notification", "نغمة هادئة", false),
+    VIBRATE_ONLY("Vibrate Only", "Haptic vibration without audio", "اهتزاز فقط", false),
+    SILENT("Silent", "Visual notification only", "صامت", false);
+
+    companion object {
+        // Fallback backward-compatibility mappings
+        val FULL_ATHAN get() = ATHAN_MAKKAH_MULLA
+        val ATHAN_FAJR get() = ATHAN_FAJR1_KWAIT_ALAFASY
+        val ATHAN_MADINAH get() = ATHAN_RIYADH_QATAMI
+        val ATHAN_AL_AQSA get() = ATHAN_QUDS_QAZAZ_1
+        val ATHAN_CAIRO get() = ATHAN_EGYPT_DAWOD
+    }
+}
+
+enum class AthanAudioStream(
+    val titleEn: String,
+    val titleAr: String,
+    val descriptionEn: String,
+    val descriptionAr: String,
+    val streamType: Int,
+    val audioUsage: Int
+) {
+    ALARM(
+        titleEn = "Alarm Volume",
+        titleAr = "صوت المنبه (Alarm)",
+        descriptionEn = "Recommended: Sounds aloud even when phone is in Silent or Vibrate mode",
+        descriptionAr = "موصى به: يرن بصوت مسموع حتى وإن كان الهاتف في وضع الصامت أو الاهتزاز",
+        streamType = android.media.AudioManager.STREAM_ALARM,
+        audioUsage = android.media.AudioAttributes.USAGE_ALARM
+    ),
+    MEDIA(
+        titleEn = "Media Volume",
+        titleAr = "صوت الوسائط (Media)",
+        descriptionEn = "Uses current media/music volume slider",
+        descriptionAr = "يتبع مستوى صوت الموسيقى والوسائط الحالي",
+        streamType = android.media.AudioManager.STREAM_MUSIC,
+        audioUsage = android.media.AudioAttributes.USAGE_MEDIA
+    ),
+    RINGTONE(
+        titleEn = "Ringtone Volume",
+        titleAr = "صوت نغمة الرنين (Ringtone)",
+        descriptionEn = "Follows phone call & ringtone volume level",
+        descriptionAr = "يتبع مستوى صوت نغمة رنين المكالمات والهاتف",
+        streamType = android.media.AudioManager.STREAM_RING,
+        audioUsage = android.media.AudioAttributes.USAGE_NOTIFICATION_RINGTONE
+    )
 }
 
 data class NotificationPrayerConfig(

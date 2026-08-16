@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -7,7 +8,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,24 +33,35 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
+import com.example.audio.AthanAudioEngine
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Panorama
+import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.StayCurrentPortrait
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -59,6 +74,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -81,6 +97,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.data.cities.CityDatabase
 import com.example.data.models.AppLanguage
 import com.example.data.models.AppThemeMode
+import com.example.data.models.AthanAudioStream
 import com.example.data.models.CalculationMethod
 import com.example.data.models.HighLatitudeRule
 import com.example.data.models.JuristicMethod
@@ -117,13 +134,21 @@ fun SettingsScreen(
     onToggle24Hour: () -> Unit,
     onUpdateLanguage: (AppLanguage) -> Unit,
     onUpdateThemeMode: (AppThemeMode) -> Unit,
+    onUpdateColorPreset: (com.example.data.models.AppColorPreset) -> Unit = {},
+    onUpdateFollowSystemColors: (Boolean) -> Unit = {},
     onUpdatePrayerAdjustment: (PrayerType, Int) -> Unit,
     onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit,
     onTestNotification: (PrayerType, NotificationSoundType) -> Unit,
-    onPreviewSound: (NotificationSoundType) -> Unit,
+    onTestAlarmInSeconds: (PrayerType, NotificationSoundType, Int) -> Unit = { _, _, _ -> },
+    onRescheduleAlarms: () -> Unit = {},
+    onRequestNotificationPermission: () -> Unit = {},
+    onPreviewSound: (NotificationSoundType, PrayerType) -> Unit,
     onUpdateDynamicIslandSettings: (Boolean, Int) -> Unit = { _, _ -> },
     onPreviewDynamicIsland: () -> Unit = {},
-    onDismissDynamicIsland: () -> Unit = {}
+    onDismissDynamicIsland: () -> Unit = {},
+    onUpdateAudioStream: (AthanAudioStream) -> Unit = {},
+    onUpdateWakeScreen: (Boolean) -> Unit = {},
+    onPreviewFullScreenAlarm: (PrayerType) -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     var currentSubScreen by remember { mutableStateOf(SettingsSubScreen.MAIN) }
@@ -159,6 +184,8 @@ fun SettingsScreen(
                 SettingsThemeSubScreen(
                     settings = settings,
                     onUpdateThemeMode = onUpdateThemeMode,
+                    onUpdateColorPreset = onUpdateColorPreset,
+                    onUpdateFollowSystemColors = onUpdateFollowSystemColors,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
             }
@@ -185,10 +212,16 @@ fun SettingsScreen(
                     settings = settings,
                     onUpdateNotificationConfig = onUpdateNotificationConfig,
                     onTestNotification = onTestNotification,
+                    onTestAlarmInSeconds = onTestAlarmInSeconds,
+                    onRescheduleAlarms = onRescheduleAlarms,
+                    onRequestNotificationPermission = onRequestNotificationPermission,
                     onPreviewSound = onPreviewSound,
                     onUpdateDynamicIslandSettings = onUpdateDynamicIslandSettings,
                     onPreviewDynamicIsland = onPreviewDynamicIsland,
                     onDismissDynamicIsland = onDismissDynamicIsland,
+                    onUpdateAudioStream = onUpdateAudioStream,
+                    onUpdateWakeScreen = onUpdateWakeScreen,
+                    onPreviewFullScreenAlarm = onPreviewFullScreenAlarm,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
             }
@@ -444,6 +477,8 @@ private fun SubScreenHeader(
 private fun SettingsThemeSubScreen(
     settings: AppPrayerSettings,
     onUpdateThemeMode: (AppThemeMode) -> Unit,
+    onUpdateColorPreset: (com.example.data.models.AppColorPreset) -> Unit,
+    onUpdateFollowSystemColors: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val strings = LocalAppStrings.current
@@ -463,6 +498,13 @@ private fun SettingsThemeSubScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            Text(
+                text = strings.themeModeTitle,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
             ThemeSelectionCard(
                 title = strings.themeModeName(AppThemeMode.SYSTEM),
                 description = strings.systemThemeDesc,
@@ -486,6 +528,168 @@ private fun SettingsThemeSubScreen(
                 isSelected = settings.themeMode == AppThemeMode.DARK,
                 onClick = { onUpdateThemeMode(AppThemeMode.DARK) }
             )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = strings.colorPaletteSection,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            // Follow System Colors Card (Dynamic Theming)
+            Card(
+                onClick = { onUpdateFollowSystemColors(!settings.followSystemColors) },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (settings.followSystemColors) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                ),
+                border = if (settings.followSystemColors) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(if (settings.followSystemColors) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = if (settings.followSystemColors) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column {
+                            Text(
+                                text = strings.followSystemColorsTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = strings.followSystemColorsDesc,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Switch(
+                        checked = settings.followSystemColors,
+                        onCheckedChange = { onUpdateFollowSystemColors(it) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = strings.presetColorsTitle,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            // Preset Colors list
+            com.example.data.models.AppColorPreset.values().filter { it != com.example.data.models.AppColorPreset.SYSTEM_DYNAMIC }.forEach { preset ->
+                val isSelected = !settings.followSystemColors && settings.colorPreset == preset
+                val isDark = settings.themeMode == AppThemeMode.DARK || (settings.themeMode == AppThemeMode.SYSTEM && androidx.compose.foundation.isSystemInDarkTheme())
+                val primaryColorLong = if (isDark) preset.primaryDark else preset.primaryLight
+                val secondaryColorLong = if (isDark) preset.secondaryDark else preset.secondaryLight
+
+                Card(
+                    onClick = {
+                        if (settings.followSystemColors) {
+                            onUpdateFollowSystemColors(false)
+                        }
+                        onUpdateColorPreset(preset)
+                    },
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                    ),
+                    border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            // Dual Color Preview Swatch
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(androidx.compose.ui.graphics.Color(primaryColorLong)),
+                                contentAlignment = Alignment.BottomEnd
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .clip(CircleShape)
+                                        .background(androidx.compose.ui.graphics.Color(secondaryColorLong))
+                                        .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(14.dp))
+
+                            Column {
+                                Text(
+                                    text = strings.colorPresetName(preset),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = if (strings.isArabic) preset.arabicTitle else preset.title,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = {
+                                if (settings.followSystemColors) {
+                                    onUpdateFollowSystemColors(false)
+                                }
+                                onUpdateColorPreset(preset)
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
         }
     }
 }
@@ -871,14 +1075,27 @@ private fun SettingsNotificationsSubScreen(
     settings: AppPrayerSettings,
     onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit,
     onTestNotification: (PrayerType, NotificationSoundType) -> Unit,
-    onPreviewSound: (NotificationSoundType) -> Unit,
+    onTestAlarmInSeconds: (PrayerType, NotificationSoundType, Int) -> Unit,
+    onRescheduleAlarms: () -> Unit,
+    onRequestNotificationPermission: () -> Unit,
+    onPreviewSound: (NotificationSoundType, PrayerType) -> Unit,
     onUpdateDynamicIslandSettings: (Boolean, Int) -> Unit,
     onPreviewDynamicIsland: () -> Unit,
     onDismissDynamicIsland: () -> Unit,
+    onUpdateAudioStream: (AthanAudioStream) -> Unit,
+    onUpdateWakeScreen: (Boolean) -> Unit,
+    onPreviewFullScreenAlarm: (PrayerType) -> Unit,
     onBack: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val strings = LocalAppStrings.current
     var activeSoundDialogPrayer by remember { mutableStateOf<PrayerType?>(null) }
+    var testAlarmScheduledText by remember { mutableStateOf<String?>(null) }
+    var previewPrayerArtwork by remember { mutableStateOf(PrayerType.FAJR) }
+
+    val notificationsEnabled = remember {
+        androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
 
     if (activeSoundDialogPrayer != null) {
         val target = activeSoundDialogPrayer!!
@@ -890,7 +1107,7 @@ private fun SettingsNotificationsSubScreen(
                 onUpdateNotificationConfig(target, cfg.enabled, it, cfg.preReminderMinutes)
                 activeSoundDialogPrayer = null
             },
-            onPreviewSound = onPreviewSound,
+            onPreviewSound = { sound -> onPreviewSound(sound, target) },
             onDismiss = { activeSoundDialogPrayer = null }
         )
     }
@@ -908,6 +1125,307 @@ private fun SettingsNotificationsSubScreen(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Notification Permission Status Banner
+            item {
+                if (!notificationsEnabled) {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.NotificationsOff,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                                Text(
+                                    text = strings.notificationsDisabledWarning,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    onRequestNotificationPermission()
+                                    try {
+                                        val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        // Ignore
+                                    }
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = strings.enableNotificationsBtn,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onError
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Card(
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.NotificationsActive,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = strings.notificationsStatusActive,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Audio Stream Output Selection Card (Follows System Volume)
+            item {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VolumeUp,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = strings.audioStreamSectionTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = strings.audioStreamDesc,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        listOf(
+                            Triple(AthanAudioStream.ALARM, strings.audioStreamAlarmTitle, strings.audioStreamAlarmDesc),
+                            Triple(AthanAudioStream.MEDIA, strings.audioStreamMediaTitle, strings.audioStreamMediaDesc),
+                            Triple(AthanAudioStream.RINGTONE, strings.audioStreamRingtoneTitle, strings.audioStreamRingtoneDesc)
+                        ).forEach { (stream, title, desc) ->
+                            val isSelected = settings.audioStream == stream
+                            val streamIcon = when (stream) {
+                                AthanAudioStream.ALARM -> Icons.Default.Alarm
+                                AthanAudioStream.MEDIA -> Icons.Default.MusicNote
+                                AthanAudioStream.RINGTONE -> Icons.Default.PhoneInTalk
+                            }
+
+                            Card(
+                                onClick = { onUpdateAudioStream(stream) },
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                ),
+                                border = if (isSelected) CardDefaults.outlinedCardBorder().copy(
+                                    brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
+                                ) else null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            imageVector = streamIcon,
+                                            contentDescription = null,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Column {
+                                            Text(
+                                                text = title,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = desc,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = { onUpdateAudioStream(stream) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Wake Screen & Full-Screen Alarm Artwork Card
+            item {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
+                    ),
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.StayCurrentPortrait,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
+                                Column {
+                                    Text(
+                                        text = strings.wakeScreenTitle,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = strings.wakeScreenDesc,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Switch(
+                                checked = settings.wakeScreenOnAlarm,
+                                onCheckedChange = { isChecked ->
+                                    onUpdateWakeScreen(isChecked)
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f))
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = if (strings.isArabic) "اختر وقتاً لمعاينة لوحته الفنية:" else "Select prayer artwork to preview:",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Chips to choose prayer artwork for preview
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            listOf(
+                                PrayerType.FAJR,
+                                PrayerType.SUNRISE,
+                                PrayerType.DHUHR,
+                                PrayerType.ASR,
+                                PrayerType.MAGHRIB,
+                                PrayerType.ISHA
+                            ).forEach { p ->
+                                val isSelected = previewPrayerArtwork == p
+                                FilledTonalButton(
+                                    onClick = { previewPrayerArtwork = p },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surface
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = strings.prayerName(p),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Button(
+                            onClick = { onPreviewFullScreenAlarm(previewPrayerArtwork) },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(imageVector = Icons.Default.Panorama, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = strings.previewFullScreenAlarmBtn,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondary
+                            )
+                        }
+                    }
+                }
+            }
+
             // Dynamic Island / Live Activity Feature Card
             item {
                 Card(
@@ -955,7 +1473,7 @@ private fun SettingsNotificationsSubScreen(
 
                             Text(
                                 text = strings.dynamicIslandLeadTimeTitle,
-                                style = MaterialTheme.typography.labelMedium,
+                                style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -982,6 +1500,28 @@ private fun SettingsNotificationsSubScreen(
                                             color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                                         )
                                     }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // OEM / Vivo tip banner
+                            Card(
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = strings.dynamicIslandVivoTip,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
 
@@ -1086,6 +1626,8 @@ private fun SettingsNotificationsSubScreen(
 
             item {
                 Spacer(modifier = Modifier.height(10.dp))
+
+                // Test instant notification
                 Button(
                     onClick = { onTestNotification(PrayerType.DHUHR, NotificationSoundType.FULL_ATHAN) },
                     shape = RoundedCornerShape(14.dp),
@@ -1095,6 +1637,48 @@ private fun SettingsNotificationsSubScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(strings.testAlert, fontWeight = FontWeight.Bold)
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Test 5-second background alarm
+                OutlinedButton(
+                    onClick = {
+                        onTestAlarmInSeconds(PrayerType.DHUHR, NotificationSoundType.FULL_ATHAN, 5)
+                        testAlarmScheduledText = "Alarm scheduled in 5 seconds! Lock screen or leave app to test."
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.Default.Timer, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(strings.testAlarm5s, fontWeight = FontWeight.Bold)
+                }
+
+                testAlarmScheduledText?.let {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Reschedule 7-Day Alarms
+                FilledTonalButton(
+                    onClick = {
+                        onRescheduleAlarms()
+                        testAlarmScheduledText = "All 7-day prayer alarms synced and scheduled in AlarmManager!"
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(strings.reschedule7Days, style = MaterialTheme.typography.labelMedium)
+                }
+
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
@@ -1503,8 +2087,12 @@ fun SoundPickerDialog(
     onDismiss: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    val playbackState by AthanAudioEngine.playbackState.collectAsState()
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = {
+        AthanAudioEngine.stop()
+        onDismiss()
+    }) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surface,
@@ -1555,22 +2143,39 @@ fun SoundPickerDialog(
                                         onClick = { onSelectSound(sound) }
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = strings.soundTypeName(sound),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
+                                    Column {
+                                        Text(
+                                            text = strings.soundTypeName(sound),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                        val subtitle = strings.soundTypeSubtitle(sound)
+                                        if (subtitle.isNotEmpty()) {
+                                            Text(
+                                                text = subtitle,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
                                 }
 
                                 if (sound != NotificationSoundType.SILENT && sound != NotificationSoundType.VIBRATE_ONLY) {
+                                    val isThisPlaying = playbackState.isPlaying && playbackState.title.contains(sound.displayName, ignoreCase = true)
                                     IconButton(
-                                        onClick = { onPreviewSound(sound) },
+                                        onClick = {
+                                            if (playbackState.isPlaying) {
+                                                AthanAudioEngine.stop()
+                                            } else {
+                                                onPreviewSound(sound)
+                                            }
+                                        },
                                         modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.PlayArrow,
-                                            contentDescription = "Preview",
-                                            tint = MaterialTheme.colorScheme.primary
+                                            imageVector = if (isThisPlaying) Icons.Default.Close else Icons.Default.PlayArrow,
+                                            contentDescription = if (isThisPlaying) "Stop" else "Preview",
+                                            tint = if (isThisPlaying) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                                         )
                                     }
                                 }

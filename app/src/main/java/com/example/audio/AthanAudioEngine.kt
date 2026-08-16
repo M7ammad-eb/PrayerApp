@@ -9,6 +9,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
 import com.example.R
+import com.example.data.models.AthanAudioStream
 import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
 import kotlinx.coroutines.CoroutineScope
@@ -22,18 +23,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class AdhanVerse(
-    val arabic: String,
-    val transliteration: String,
-    val translation: String,
-    val durationSeconds: Float
-)
-
 data class AdhanPlaybackState(
     val isPlaying: Boolean = false,
     val currentPrayer: PrayerType = PrayerType.FAJR,
-    val currentVerseIndex: Int = 0,
-    val currentVerse: AdhanVerse? = null,
     val progress: Float = 0f,
     val title: String = "Makkah Adhan"
 )
@@ -41,39 +33,6 @@ data class AdhanPlaybackState(
 object AthanAudioEngine {
 
     private const val TAG = "AthanAudioEngine"
-
-    private val STANDARD_ADHAN_VERSES = listOf(
-        AdhanVerse("اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ", "Allahu Akbar, Allahu Akbar", "Allah is the Greatest, Allah is the Greatest", 5.0f),
-        AdhanVerse("اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ", "Allahu Akbar, Allahu Akbar", "Allah is the Greatest, Allah is the Greatest", 5.0f),
-        AdhanVerse("أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللَّهُ", "Ash-hadu an la ilaha illallah", "I bear witness that there is no god but Allah", 5.5f),
-        AdhanVerse("أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللَّهُ", "Ash-hadu an la ilaha illallah", "I bear witness that there is no god but Allah", 5.5f),
-        AdhanVerse("أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ", "Ash-hadu anna Muhammadan Rasulullah", "I bear witness that Muhammad is the Messenger of Allah", 5.5f),
-        AdhanVerse("أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ", "Ash-hadu anna Muhammadan Rasulullah", "I bear witness that Muhammad is the Messenger of Allah", 5.5f),
-        AdhanVerse("حَيَّ عَلَى الصَّلَاةِ", "Hayya 'ala as-Salah", "Hasten to prayer", 5.0f),
-        AdhanVerse("حَيَّ عَلَى الصَّلَاةِ", "Hayya 'ala as-Salah", "Hasten to prayer", 5.0f),
-        AdhanVerse("حَيَّ عَلَى الْفَلَاحِ", "Hayya 'ala al-Falah", "Hasten to success", 5.0f),
-        AdhanVerse("حَيَّ عَلَى الْفَلَاحِ", "Hayya 'ala al-Falah", "Hasten to success", 5.0f),
-        AdhanVerse("اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ", "Allahu Akbar, Allahu Akbar", "Allah is the Greatest, Allah is the Greatest", 5.0f),
-        AdhanVerse("لَا إِلٰهَ إِلَّا اللَّهُ", "La ilaha illallah", "There is no god but Allah", 6.0f)
-    )
-
-    private val FAJR_EXTRA_VERSE = AdhanVerse(
-        "الصَّلَاةُ خَيْرٌ مِنَ النَّوْمِ",
-        "As-Salatu Khayrun Minan-Nawm",
-        "Prayer is better than sleep",
-        5.5f
-    )
-
-    fun getVersesForPrayer(prayerType: PrayerType): List<AdhanVerse> {
-        return if (prayerType == PrayerType.FAJR) {
-            val list = STANDARD_ADHAN_VERSES.toMutableList()
-            list.add(10, FAJR_EXTRA_VERSE)
-            list.add(11, FAJR_EXTRA_VERSE)
-            list
-        } else {
-            STANDARD_ADHAN_VERSES
-        }
-    }
 
     private val _playbackState = MutableStateFlow(AdhanPlaybackState())
     val playbackState: StateFlow<AdhanPlaybackState> = _playbackState.asStateFlow()
@@ -85,34 +44,91 @@ object AthanAudioEngine {
 
     fun getRawResourceForSoundType(soundType: NotificationSoundType): Int {
         return when (soundType) {
-            NotificationSoundType.FULL_ATHAN -> R.raw.athan_makkah
-            NotificationSoundType.ATHAN_MADINAH -> R.raw.athan_madinah
-            NotificationSoundType.ATHAN_AL_AQSA -> R.raw.athan_al_aqsa
-            NotificationSoundType.ATHAN_CAIRO -> R.raw.athan_cairo
+            NotificationSoundType.ATHAN_MAKKAH_MULLA -> R.raw.athan_makkah_ali_bin_ahmad_mula
+            NotificationSoundType.ATHAN_FAJR1_KWAIT_ALAFASY -> R.raw.athan_fajr1_kwait_mashary_alafasy
+            NotificationSoundType.ATHAN_FAJR2_JORDAN_ALLALA -> R.raw.athan_fajr2_jordan_kamel_allala
+            NotificationSoundType.ATHAN_RIYADH_QATAMI -> R.raw.athan_riyadh_naser_alqatami
+            NotificationSoundType.ATHAN_QATAR_NABET -> R.raw.athan_qatar_saleh_alnabet
+            NotificationSoundType.ATHAN_QUDS_QAZAZ_1 -> R.raw.athan_palastine_quds_nagi_qazaz_1
+            NotificationSoundType.ATHAN_QUDS_QAZAZ_2 -> R.raw.athan_palastine_quds_nagi_qazaz_2
+            NotificationSoundType.ATHAN_EGYPT_DAWOD -> R.raw.athan_egypt_ahmad_dawod
+            NotificationSoundType.ATHAN_EGYPT_ALALFI -> R.raw.athan_egypt_salah_alalfi
+            NotificationSoundType.ATHAN_EGYPT_ABDULAATI -> R.raw.athan_egypt_alhusain_sayed_abdulaati
+            NotificationSoundType.ATHAN_IRAQ_ALAMOURI -> R.raw.athan_iraq_abu_omar_alamouri
+            NotificationSoundType.ATHAN_GEORGIA -> R.raw.athan_georgia
             NotificationSoundType.SHORT_TAKBEER -> R.raw.takbeer
             NotificationSoundType.MELODIC_TONE -> R.raw.chime
-            else -> R.raw.athan_makkah
+            else -> R.raw.athan_riyadh_naser_alqatami
         }
     }
 
+    private fun createPreparedPlayer(context: Context, rawResId: Int, audioStream: AthanAudioStream): MediaPlayer? {
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(audioStream.audioUsage)
+            .setContentType(
+                if (audioStream == AthanAudioStream.ALARM) AudioAttributes.CONTENT_TYPE_SONIFICATION
+                else AudioAttributes.CONTENT_TYPE_MUSIC
+            )
+            .build()
+
+        // 1. Direct MediaPlayer with setDataSource & openRawResourceFd (Sets attributes in IDLE state)
+        try {
+            val player = MediaPlayer()
+            player.setAudioAttributes(audioAttributes)
+            val afd = context.resources.openRawResourceFd(rawResId)
+            if (afd != null) {
+                player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                afd.close()
+                player.prepare()
+                player.setVolume(1.0f, 1.0f)
+                return player
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Method 1 (openRawResourceFd) failed: ${e.message}, trying Method 2")
+        }
+
+        // 2. MediaPlayer.create with AudioAttributes (API 21+)
+        try {
+            val player = MediaPlayer.create(context.applicationContext, rawResId, audioAttributes, 0)
+            if (player != null) {
+                player.setVolume(1.0f, 1.0f)
+                return player
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Method 2 (create with audioAttributes) failed: ${e.message}, trying Method 3")
+        }
+
+        // 3. Fallback MediaPlayer.create without post-preparation attribute modification
+        try {
+            val player = MediaPlayer.create(context.applicationContext, rawResId)
+            if (player != null) {
+                player.setVolume(1.0f, 1.0f)
+                return player
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Method 3 (standard create) failed: ${e.message}")
+        }
+
+        return null
+    }
+
     /**
-     * Plays authentic Athan audio using Android's native MediaPlayer with progress & lyrics synchronization.
+     * Plays authentic Athan audio using Android's native MediaPlayer with progress tracking.
      */
     fun playAthan(
         context: Context,
         prayerType: PrayerType = PrayerType.DHUHR,
         soundType: NotificationSoundType = NotificationSoundType.FULL_ATHAN,
-        onVerseChange: ((AdhanVerse, Int, Float) -> Unit)? = null,
+        audioStream: AthanAudioStream = AthanAudioStream.ALARM,
         onFinished: (() -> Unit)? = null
     ) {
         stop()
 
         val rawResId = getRawResourceForSoundType(soundType)
-        val verses = getVersesForPrayer(prayerType)
         val styleTitle = "${soundType.displayName} • ${prayerType.title}"
 
         try {
-            val player = MediaPlayer.create(context.applicationContext, rawResId)
+            val player = createPreparedPlayer(context, rawResId, audioStream)
             if (player == null) {
                 Log.e(TAG, "Failed to create MediaPlayer for resource: $rawResId")
                 onFinished?.invoke()
@@ -120,23 +136,14 @@ object AthanAudioEngine {
             }
 
             mediaPlayer = player
-
-            val audioAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
-            player.setAudioAttributes(audioAttributes)
             player.setVolume(1.0f, 1.0f)
 
             _playbackState.value = AdhanPlaybackState(
                 isPlaying = true,
                 currentPrayer = prayerType,
-                currentVerseIndex = 0,
-                currentVerse = verses.firstOrNull(),
                 progress = 0f,
                 title = styleTitle
             )
-            verses.firstOrNull()?.let { onVerseChange?.invoke(it, 0, 0f) }
 
             player.setOnCompletionListener {
                 stop()
@@ -152,37 +159,19 @@ object AthanAudioEngine {
 
             player.start()
 
-            // Synchronize lyrics/verses with audio position
+            // Track audio progress smoothly
             trackingJob = audioScope.launch {
                 val duration = player.duration.coerceAtLeast(1)
-                val totalVerseSeconds = verses.sumOf { it.durationSeconds.toDouble() }.toFloat()
 
                 while (isActive && mediaPlayer?.isPlaying == true) {
                     val currentPosMs = try { mediaPlayer?.currentPosition ?: 0 } catch (e: Exception) { 0 }
                     val currentProgress = (currentPosMs.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
 
-                    // Map current audio progress to current verse
-                    val scaledSeconds = currentProgress * totalVerseSeconds
-                    var accumulatedSec = 0f
-                    var matchedVerseIndex = 0
-                    for ((idx, verse) in verses.withIndex()) {
-                        accumulatedSec += verse.durationSeconds
-                        if (scaledSeconds <= accumulatedSec || idx == verses.lastIndex) {
-                            matchedVerseIndex = idx
-                            break
-                        }
-                    }
-
-                    val activeVerse = verses.getOrNull(matchedVerseIndex) ?: verses.first()
-
                     _playbackState.value = _playbackState.value.copy(
-                        currentVerseIndex = matchedVerseIndex,
-                        currentVerse = activeVerse,
                         progress = currentProgress
                     )
-                    onVerseChange?.invoke(activeVerse, matchedVerseIndex, currentProgress)
 
-                    delay(150)
+                    delay(200)
                 }
             }
 
@@ -200,22 +189,21 @@ object AthanAudioEngine {
         context: Context,
         soundType: NotificationSoundType,
         prayerType: PrayerType = PrayerType.DHUHR,
-        onVerseChange: ((AdhanVerse, Int, Float) -> Unit)? = null,
+        audioStream: AthanAudioStream = AthanAudioStream.ALARM,
         onFinished: (() -> Unit)? = null
     ) {
         stop()
+        if (soundType.isFullAthan) {
+            playAthan(context, prayerType, soundType, audioStream, onFinished)
+            return
+        }
+
         when (soundType) {
-            NotificationSoundType.FULL_ATHAN,
-            NotificationSoundType.ATHAN_MADINAH,
-            NotificationSoundType.ATHAN_AL_AQSA,
-            NotificationSoundType.ATHAN_CAIRO -> {
-                playAthan(context, prayerType, soundType, onVerseChange, onFinished)
-            }
             NotificationSoundType.SHORT_TAKBEER -> {
-                playTakbeer(context, onFinished)
+                playTakbeer(context, audioStream, onFinished)
             }
             NotificationSoundType.MELODIC_TONE -> {
-                playGentleChime(context, onFinished)
+                playGentleChime(context, audioStream, onFinished)
             }
             NotificationSoundType.VIBRATE_ONLY -> {
                 vibrateDevice(context)
@@ -224,29 +212,33 @@ object AthanAudioEngine {
             NotificationSoundType.SILENT -> {
                 onFinished?.invoke()
             }
+            else -> {
+                playAthan(context, prayerType, soundType, audioStream, onFinished)
+            }
         }
     }
 
     /**
      * Plays authentic Mishari Alafasy Takbeerat.
      */
-    fun playTakbeer(context: Context, onFinished: (() -> Unit)? = null) {
+    fun playTakbeer(
+        context: Context,
+        audioStream: AthanAudioStream = AthanAudioStream.ALARM,
+        onFinished: (() -> Unit)? = null
+    ) {
         stop()
         try {
-            val player = MediaPlayer.create(context.applicationContext, R.raw.takbeer) ?: run {
+            val player = createPreparedPlayer(context, R.raw.takbeer, audioStream) ?: run {
                 onFinished?.invoke()
                 return
             }
             mediaPlayer = player
+            player.setVolume(1.0f, 1.0f)
+
             _playbackState.value = AdhanPlaybackState(
                 isPlaying = true,
                 title = "Takbeerat",
-                currentVerse = AdhanVerse(
-                    "اللَّهُ أَكْبَرُ ، اللَّهُ أَكْبَرُ ، لَا إِلٰهَ إِلَّا اللَّهُ",
-                    "Allahu Akbar, Allahu Akbar, La ilaha illallah",
-                    "Allah is the Greatest, Allah is the Greatest, there is no god but Allah",
-                    4.0f
-                )
+                progress = 0f
             )
 
             player.setOnCompletionListener {
@@ -269,18 +261,24 @@ object AthanAudioEngine {
     /**
      * Plays gentle crystal chime tone.
      */
-    fun playGentleChime(context: Context? = null, onFinished: (() -> Unit)? = null) {
+    fun playGentleChime(
+        context: Context? = null,
+        audioStream: AthanAudioStream = AthanAudioStream.ALARM,
+        onFinished: (() -> Unit)? = null
+    ) {
         stop()
         if (context == null) {
             onFinished?.invoke()
             return
         }
         try {
-            val player = MediaPlayer.create(context.applicationContext, R.raw.chime) ?: run {
+            val player = createPreparedPlayer(context, R.raw.chime, audioStream) ?: run {
                 onFinished?.invoke()
                 return
             }
             mediaPlayer = player
+            player.setVolume(1.0f, 1.0f)
+
             _playbackState.value = AdhanPlaybackState(
                 isPlaying = true,
                 title = "Prayer Reminder Chime"
