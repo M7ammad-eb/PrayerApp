@@ -499,7 +499,7 @@ class PrayerPreferences(private val context: Context) {
             .putBoolean(KEY_WIDGET_SHOW_SUNRISE, settings.showSunrise)
             .putBoolean(KEY_WIDGET_SHOW_ALL, settings.showAllPrayersList)
             .putBoolean(KEY_WIDGET_SHOW_HERO, settings.showHeroCard)
-            .apply()
+            .commit()
         context.dataStore.edit { prefs ->
             prefs[Keys.WIDGET_THEME_MODE] = settings.themeMode.name
             prefs[Keys.WIDGET_BG_STYLE] = settings.bgStyle.name

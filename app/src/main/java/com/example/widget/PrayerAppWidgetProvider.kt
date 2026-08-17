@@ -7,7 +7,6 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.util.SizeF
@@ -18,9 +17,7 @@ import androidx.core.graphics.ColorUtils
 import com.example.MainActivity
 import com.example.R
 import com.example.data.calculator.PrayerTimesCalculator
-import com.example.data.models.AppColorPreset
 import com.example.data.models.AppLanguage
-import com.example.data.models.AppThemeMode
 import com.example.data.models.DailyPrayerSchedule
 import com.example.data.models.PrayerTimeItem
 import com.example.data.models.PrayerType
@@ -46,7 +43,6 @@ data class WidgetColorScheme(
     val textPrimaryColor: Int,
     val textSecondaryColor: Int,
     val textOnAccentColor: Int,
-    val textOnHeroColor: Int,
     val activePrayerBgColor: Int,
     val inactivePrayerBgColor: Int,
     val countdownBgColor: Int,
@@ -79,88 +75,90 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             val wSet = settings.widgetSettings
             val opacityFrac = (wSet.opacityPercent / 100f).coerceIn(0f, 1f)
 
-            data class ColorTuple(val accent: Int, val bg: Int, val hero: Int, val textPrimary: Int, val textSecondary: Int)
+            data class ColorPalette(val primaryAccent: Int, val bgCardColor: Int, val textPrimary: Int, val textSecondary: Int)
 
-            val isDark = when (settings.themeMode) {
-                AppThemeMode.DARK -> true
-                AppThemeMode.LIGHT -> false
-                AppThemeMode.SYSTEM -> (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-            }
-
-            val colors = when (wSet.themeMode) {
-                WidgetThemeMode.APP_THEME -> {
-                    when (settings.colorPreset) {
-                        AppColorPreset.EMERALD_GOLD -> if (isDark) {
-                            ColorTuple(0xFF4ADE80.toInt(), 0xFF121820.toInt(), 0xFF1E293B.toInt(), 0xFFF1F5F9.toInt(), 0xFF94A3B8.toInt())
-                        } else {
-                            ColorTuple(0xFF165B33.toInt(), 0xFFF8FAFC.toInt(), 0xFFFFFFFF.toInt(), 0xFF0F172A.toInt(), 0xFF64748B.toInt())
-                        }
-                        AppColorPreset.ROYAL_AMBER -> if (isDark) {
-                            ColorTuple(0xFFFBBF24.toInt(), 0xFF291B0F.toInt(), 0xFF451A03.toInt(), 0xFFFEF3C7.toInt(), 0xFFD4D4D8.toInt())
-                        } else {
-                            ColorTuple(0xFFB45309.toInt(), 0xFFFFFBEB.toInt(), 0xFFFFFFFF.toInt(), 0xFF78350F.toInt(), 0xFF71717A.toInt())
-                        }
-                        AppColorPreset.SAPPHIRE_NIGHT -> if (isDark) {
-                            ColorTuple(0xFF60A5FA.toInt(), 0xFF0F172A.toInt(), 0xFF1E293B.toInt(), 0xFFF0F9FF.toInt(), 0xFF94A3B8.toInt())
-                        } else {
-                            ColorTuple(0xFF1E40AF.toInt(), 0xFFF0F9FF.toInt(), 0xFFFFFFFF.toInt(), 0xFF0C4A6E.toInt(), 0xFF64748B.toInt())
-                        }
-                        AppColorPreset.MEDINA_TEAL -> if (isDark) {
-                            ColorTuple(0xFF2DD4BF.toInt(), 0xFF042F2E.toInt(), 0xFF115E59.toInt(), 0xFFF0FDFA.toInt(), 0xFF99F6E4.toInt())
-                        } else {
-                            ColorTuple(0xFF0F766E.toInt(), 0xFFF0FDFA.toInt(), 0xFFFFFFFF.toInt(), 0xFF134E4A.toInt(), 0xFF5EEAD4.toInt())
-                        }
-                        AppColorPreset.ROSE_CLOVE -> if (isDark) {
-                            ColorTuple(0xFFFB7185.toInt(), 0xFF2A1218.toInt(), 0xFF4C0519.toInt(), 0xFFFFF1F2.toInt(), 0xFFFDA4AF.toInt())
-                        } else {
-                            ColorTuple(0xFFE11D48.toInt(), 0xFFFFF1F2.toInt(), 0xFFFFFFFF.toInt(), 0xFF881337.toInt(), 0xFF6B7280.toInt())
-                        }
-                        AppColorPreset.SLATE_CHARCOAL -> if (isDark) {
-                            ColorTuple(0xFF94A3B8.toInt(), 0xFF0F172A.toInt(), 0xFF1E293B.toInt(), 0xFFF8FAFC.toInt(), 0xFF64748B.toInt())
-                        } else {
-                            ColorTuple(0xFF475569.toInt(), 0xFFF8FAFC.toInt(), 0xFFFFFFFF.toInt(), 0xFF0F172A.toInt(), 0xFF64748B.toInt())
-                        }
-                        AppColorPreset.SYSTEM_DYNAMIC -> {
-                            ColorTuple(0xFF38BDF8.toInt(), 0xFF1E293B.toInt(), 0xFF334155.toInt(), 0xFFF8FAFC.toInt(), 0xFF94A3B8.toInt())
-                        }
-                    }
-                }
-                WidgetThemeMode.MATERIAL_YOU -> ColorTuple(0xFF7DD3FC.toInt(), 0xFF1E293B.toInt(), 0xFF334155.toInt(), 0xFFF8FAFC.toInt(), 0xFF94A3B8.toInt())
-                WidgetThemeMode.DARK_ELEGANT -> ColorTuple(0xFF10B981.toInt(), 0xFF121820.toInt(), 0xFF1E293B.toInt(), 0xFFF1F5F9.toInt(), 0xFF94A3B8.toInt())
-                WidgetThemeMode.LIGHT_CLEAN -> ColorTuple(0xFF059669.toInt(), 0xFFF8FAFC.toInt(), 0xFFFFFFFF.toInt(), 0xFF0F172A.toInt(), 0xFF475569.toInt())
-                WidgetThemeMode.OLED_BLACK -> ColorTuple(0xFF34D399.toInt(), 0xFF000000.toInt(), 0xFF121212.toInt(), 0xFFFFFFFF.toInt(), 0xFFA1A1AA.toInt())
-                WidgetThemeMode.EMERALD_ISLAMIC -> ColorTuple(0xFFF59E0B.toInt(), 0xFF064E3B.toInt(), 0xFF065F46.toInt(), 0xFFECFDF5.toInt(), 0xFFA7F3D0.toInt())
-                WidgetThemeMode.GOLDEN_HOUR -> ColorTuple(0xFFF59E0B.toInt(), 0xFF451A03.toInt(), 0xFF572204.toInt(), 0xFFFEF3C7.toInt(), 0xFFFDE68A.toInt())
-                WidgetThemeMode.ROYAL_BLUE -> ColorTuple(0xFF38BDF8.toInt(), 0xFF0F172A.toInt(), 0xFF1E293B.toInt(), 0xFFF0F9FF.toInt(), 0xFFBAE6FD.toInt())
-                WidgetThemeMode.MONOCHROME -> ColorTuple(0xFFE4E4E7.toInt(), 0xFF18181B.toInt(), 0xFF27272A.toInt(), 0xFFFAFAFA.toInt(), 0xFFA1A1AA.toInt())
+            // Exact match with SettingsWidgetSubScreen.kt resolveWidgetPreviewTheme
+            val palette = when (wSet.themeMode) {
+                WidgetThemeMode.APP_THEME -> ColorPalette(
+                    primaryAccent = 0xFF165B33.toInt(),
+                    bgCardColor = 0xFF1E293B.toInt(),
+                    textPrimary = 0xFFF8FAFC.toInt(),
+                    textSecondary = 0xFF94A3B8.toInt()
+                )
+                WidgetThemeMode.MATERIAL_YOU -> ColorPalette(
+                    primaryAccent = 0xFF3F51B5.toInt(),
+                    bgCardColor = 0xFF1C1B1F.toInt(),
+                    textPrimary = 0xFFE6E1E5.toInt(),
+                    textSecondary = 0xFFCAC4D0.toInt()
+                )
+                WidgetThemeMode.DARK_ELEGANT -> ColorPalette(
+                    primaryAccent = 0xFF10B981.toInt(),
+                    bgCardColor = 0xFF121820.toInt(),
+                    textPrimary = 0xFFF1F5F9.toInt(),
+                    textSecondary = 0xFF94A3B8.toInt()
+                )
+                WidgetThemeMode.LIGHT_CLEAN -> ColorPalette(
+                    primaryAccent = 0xFF059669.toInt(),
+                    bgCardColor = 0xFFFFFFFF.toInt(),
+                    textPrimary = 0xFF0F172A.toInt(),
+                    textSecondary = 0xFF64748B.toInt()
+                )
+                WidgetThemeMode.OLED_BLACK -> ColorPalette(
+                    primaryAccent = 0xFF34D399.toInt(),
+                    bgCardColor = 0xFF000000.toInt(),
+                    textPrimary = 0xFFFFFFFF.toInt(),
+                    textSecondary = 0xFFA1A1AA.toInt()
+                )
+                WidgetThemeMode.EMERALD_ISLAMIC -> ColorPalette(
+                    primaryAccent = 0xFFF59E0B.toInt(),
+                    bgCardColor = 0xFF064E3B.toInt(),
+                    textPrimary = 0xFFECFDF5.toInt(),
+                    textSecondary = 0xFFA7F3D0.toInt()
+                )
+                WidgetThemeMode.GOLDEN_HOUR -> ColorPalette(
+                    primaryAccent = 0xFFF59E0B.toInt(),
+                    bgCardColor = 0xFF451A03.toInt(),
+                    textPrimary = 0xFFFEF3C7.toInt(),
+                    textSecondary = 0xFFFDE68A.toInt()
+                )
+                WidgetThemeMode.ROYAL_BLUE -> ColorPalette(
+                    primaryAccent = 0xFF38BDF8.toInt(),
+                    bgCardColor = 0xFF0F172A.toInt(),
+                    textPrimary = 0xFFF0F9FF.toInt(),
+                    textSecondary = 0xFFBAE6FD.toInt()
+                )
+                WidgetThemeMode.MONOCHROME -> ColorPalette(
+                    primaryAccent = 0xFFFAFAFA.toInt(),
+                    bgCardColor = 0xFF18181B.toInt(),
+                    textPrimary = 0xFFFAFAFA.toInt(),
+                    textSecondary = 0xFFA1A1AA.toInt()
+                )
             }
 
             val finalRootBg = when (wSet.bgStyle) {
                 WidgetBackgroundStyle.TRANSPARENT_CLEAN -> Color.TRANSPARENT
-                WidgetBackgroundStyle.MINIMAL_BORDER -> ColorUtils.setAlphaComponent(colors.bg, (opacityFrac * 40).toInt())
-                WidgetBackgroundStyle.SOLID_SURFACE -> ColorUtils.setAlphaComponent(colors.bg, 255)
-                WidgetBackgroundStyle.FROSTED_GLASS -> ColorUtils.setAlphaComponent(colors.bg, (opacityFrac * 210).toInt())
-                WidgetBackgroundStyle.TRANSLUCENT -> ColorUtils.setAlphaComponent(colors.bg, (opacityFrac * 255).toInt())
+                WidgetBackgroundStyle.MINIMAL_BORDER -> ColorUtils.setAlphaComponent(0xFF000000.toInt(), (0.15f * opacityFrac * 255).toInt())
+                else -> ColorUtils.setAlphaComponent(palette.bgCardColor, (opacityFrac * 255).toInt())
             }
 
             val rootBorder = when (wSet.bgStyle) {
-                WidgetBackgroundStyle.MINIMAL_BORDER -> ColorUtils.setAlphaComponent(colors.accent, (opacityFrac * 180).toInt().coerceAtLeast(40))
                 WidgetBackgroundStyle.TRANSPARENT_CLEAN -> Color.TRANSPARENT
-                else -> ColorUtils.setAlphaComponent(if (isDark) Color.WHITE else Color.BLACK, (opacityFrac * 35).toInt())
+                WidgetBackgroundStyle.MINIMAL_BORDER -> ColorUtils.setAlphaComponent(palette.primaryAccent, (0.80f * 255).toInt())
+                else -> ColorUtils.setAlphaComponent(palette.primaryAccent, (0.25f * 255).toInt())
             }
 
-            val finalHeroBg = when (wSet.bgStyle) {
-                WidgetBackgroundStyle.TRANSPARENT_CLEAN -> ColorUtils.setAlphaComponent(colors.hero, (opacityFrac * 50).toInt())
-                else -> ColorUtils.setAlphaComponent(colors.hero, (opacityFrac * 240).toInt().coerceAtLeast(40))
+            val heroBg = when (wSet.bgStyle) {
+                WidgetBackgroundStyle.TRANSPARENT_CLEAN -> ColorUtils.setAlphaComponent(palette.textPrimary, (0.05f * 255).toInt())
+                else -> ColorUtils.setAlphaComponent(palette.textPrimary, (0.08f * 255).toInt())
             }
 
-            val heroStroke = ColorUtils.setAlphaComponent(if (isDark) Color.WHITE else Color.BLACK, (opacityFrac * 25).toInt())
+            val heroStroke = ColorUtils.setAlphaComponent(palette.primaryAccent, (0.15f * 255).toInt())
 
-            val activePrayerBg = colors.accent
-            val inactivePrayerBg = ColorUtils.setAlphaComponent(colors.hero, (opacityFrac * 140).toInt().coerceAtLeast(30))
-            val countdownBg = colors.accent
+            val activePrayerBg = palette.primaryAccent
+            val inactivePrayerBg = ColorUtils.setAlphaComponent(palette.textPrimary, (0.06f * 255).toInt())
+            val countdownBg = palette.primaryAccent
 
-            val textOnAccent = if (ColorUtils.calculateLuminance(colors.accent) > 0.55) {
+            val textOnAccent = if (ColorUtils.calculateLuminance(palette.primaryAccent) > 0.60) {
                 0xFF0F172A.toInt()
             } else {
                 Color.WHITE
@@ -169,13 +167,12 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             return WidgetColorScheme(
                 rootBgColor = finalRootBg,
                 rootBorderColor = rootBorder,
-                heroBgColor = finalHeroBg,
+                heroBgColor = heroBg,
                 heroStrokeColor = heroStroke,
-                accentColor = colors.accent,
-                textPrimaryColor = colors.textPrimary,
-                textSecondaryColor = colors.textSecondary,
+                accentColor = palette.primaryAccent,
+                textPrimaryColor = palette.textPrimary,
+                textSecondaryColor = palette.textSecondary,
                 textOnAccentColor = textOnAccent,
-                textOnHeroColor = colors.textPrimary,
                 activePrayerBgColor = activePrayerBg,
                 inactivePrayerBgColor = inactivePrayerBg,
                 countdownBgColor = countdownBg,
@@ -430,15 +427,14 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             )
 
             val widgetViews: RemoteViews = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                // Responsive multi-size layouts in Android 12+ (Material You)
                 RemoteViews(
                     mapOf(
-                        SizeF(50f, 110f) to verticalViews,  // 1-column wide, multi-rows (1x2, 1x3, 1x4)
-                        SizeF(70f, 40f) to smallViews,       // 1x1, 2x1 compact
-                        SizeF(150f, 40f) to slimViews,      // 3x1, 4x1, 5x1 slim bar
-                        SizeF(140f, 80f) to mediumViews,    // 2x2, 3x2 split card
-                        SizeF(210f, 80f) to largeViews,     // 3x2, 4x2, 5x2, 4x3, 5x3 ribbon layout
-                        SizeF(220f, 250f) to expandedViews  // 4x4, 5x4, 5x5 full expanded layout
+                        SizeF(50f, 110f) to verticalViews,
+                        SizeF(70f, 40f) to smallViews,
+                        SizeF(150f, 40f) to slimViews,
+                        SizeF(140f, 80f) to mediumViews,
+                        SizeF(210f, 80f) to largeViews,
+                        SizeF(220f, 250f) to expandedViews
                     )
                 )
             } else {
@@ -502,7 +498,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             views.setTextViewTextSize(R.id.widget_vert_next_name, TypedValue.COMPLEX_UNIT_SP, 11f * scale)
 
             views.setTextViewText(R.id.widget_vert_next_time, prayerTime)
-            views.setTextColor(R.id.widget_vert_next_time, colors.textOnHeroColor)
+            views.setTextColor(R.id.widget_vert_next_time, colors.textPrimaryColor)
             views.setTextViewTextSize(R.id.widget_vert_next_time, TypedValue.COMPLEX_UNIT_SP, 14f * scale)
 
             if (wSet.showCountdown) {
@@ -649,7 +645,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         views.setTextViewTextSize(R.id.widget_small_prayer_name, TypedValue.COMPLEX_UNIT_SP, 13f * scale)
 
         views.setTextViewText(R.id.widget_small_prayer_time, prayerTime)
-        views.setTextColor(R.id.widget_small_prayer_time, colors.textOnHeroColor)
+        views.setTextColor(R.id.widget_small_prayer_time, colors.textPrimaryColor)
         views.setTextViewTextSize(R.id.widget_small_prayer_time, TypedValue.COMPLEX_UNIT_SP, 18f * scale)
 
         if (wSet.showCountdown) {
@@ -706,7 +702,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         views.setTextViewTextSize(R.id.widget_med_next_prayer_name, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
 
         views.setTextViewText(R.id.widget_med_next_prayer_time, prayerTime)
-        views.setTextColor(R.id.widget_med_next_prayer_time, colors.textOnHeroColor)
+        views.setTextColor(R.id.widget_med_next_prayer_time, colors.textPrimaryColor)
         views.setTextViewTextSize(R.id.widget_med_next_prayer_time, TypedValue.COMPLEX_UNIT_SP, 19f * scale)
 
         if (wSet.showCountdown) {
@@ -788,6 +784,9 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             views.setViewVisibility(R.id.widget_root_border_img, View.GONE)
         }
 
+        views.setInt(R.id.widget_mosque_icon, "setColorFilter", colors.accentColor)
+        views.setInt(R.id.widget_refresh_button, "setColorFilter", colors.textSecondaryColor)
+
         if (wSet.showLocation) {
             views.setViewVisibility(R.id.widget_location_text, View.VISIBLE)
             views.setTextViewText(R.id.widget_location_text, locationText)
@@ -816,7 +815,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             views.setTextViewTextSize(R.id.widget_next_prayer_name, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
 
             views.setTextViewText(R.id.widget_next_prayer_time, prayerTime)
-            views.setTextColor(R.id.widget_next_prayer_time, colors.textOnHeroColor)
+            views.setTextColor(R.id.widget_next_prayer_time, colors.textPrimaryColor)
             views.setTextViewTextSize(R.id.widget_next_prayer_time, TypedValue.COMPLEX_UNIT_SP, 20f * scale)
 
             if (wSet.showCountdown) {
@@ -895,6 +894,9 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             views.setViewVisibility(R.id.widget_exp_root_border_img, View.GONE)
         }
 
+        views.setInt(R.id.widget_exp_mosque_icon, "setColorFilter", colors.accentColor)
+        views.setInt(R.id.widget_exp_refresh_btn, "setColorFilter", colors.textSecondaryColor)
+
         if (wSet.showLocation) {
             views.setViewVisibility(R.id.widget_exp_location, View.VISIBLE)
             views.setTextViewText(R.id.widget_exp_location, locationText)
@@ -923,7 +925,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             views.setTextViewTextSize(R.id.widget_exp_next_prayer_name, TypedValue.COMPLEX_UNIT_SP, 13f * scale)
 
             views.setTextViewText(R.id.widget_exp_next_prayer_time, prayerTime)
-            views.setTextColor(R.id.widget_exp_next_prayer_time, colors.textOnHeroColor)
+            views.setTextColor(R.id.widget_exp_next_prayer_time, colors.textPrimaryColor)
             views.setTextViewTextSize(R.id.widget_exp_next_prayer_time, TypedValue.COMPLEX_UNIT_SP, 24f * scale)
 
             if (wSet.showCountdown) {
