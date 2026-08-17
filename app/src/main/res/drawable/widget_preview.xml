@@ -1,0 +1,63 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="280dp"
+    android:height="140dp"
+    android:viewportWidth="280"
+    android:viewportHeight="140">
+    <!-- Card Background -->
+    <path
+        android:pathData="M 16,0 L 264,0 A 16,16 0 0,1 280,16 L 280,124 A 16,16 0 0,1 264,140 L 16,140 A 16,16 0 0,1 0,124 L 0,16 A 16,16 0 0,1 16,0 Z"
+        android:fillColor="#1E293B" />
+
+    <!-- Mosque Icon Circle -->
+    <path
+        android:pathData="M 28,16 A 10,10 0 1,1 28,36 A 10,10 0 1,1 28,16 Z"
+        android:fillColor="#165B33" />
+
+    <!-- Header / Location & Date -->
+    <path
+        android:pathData="M 44,22 L 120,22 A 3,3 0 0,1 120,28 L 44,28 A 3,3 0 0,1 44,22 Z"
+        android:fillColor="#F8FAFC" />
+    <path
+        android:pathData="M 44,32 L 95,32 A 2,2 0 0,1 95,36 L 44,36 A 2,2 0 0,1 44,32 Z"
+        android:fillColor="#94A3B8" />
+
+    <!-- Hero Card -->
+    <path
+        android:pathData="M 20,48 L 260,48 A 10,10 0 0,1 270,58 L 270,82 A 10,10 0 0,1 260,92 L 20,92 A 10,10 0 0,1 10,82 L 10,58 A 10,10 0 0,1 20,48 Z"
+        android:fillColor="#2A384C" />
+
+    <!-- Next Prayer Badge & Time -->
+    <path
+        android:pathData="M 24,58 L 70,58 A 3,3 0 0,1 70,64 L 24,64 A 3,3 0 0,1 24,58 Z"
+        android:fillColor="#34D399" />
+    <path
+        android:pathData="M 24,70 L 90,70 A 5,5 0 0,1 90,80 L 24,80 A 5,5 0 0,1 24,70 Z"
+        android:fillColor="#F8FAFC" />
+
+    <!-- Countdown Pill -->
+    <path
+        android:pathData="M 200,60 L 250,60 A 8,8 0 0,1 258,68 L 258,72 A 8,8 0 0,1 250,80 L 200,80 A 8,8 0 0,1 192,72 L 192,68 A 8,8 0 0,1 200,60 Z"
+        android:fillColor="#165B33" />
+
+    <!-- Prayer List Ribbon (5 slots) -->
+    <!-- Fajr -->
+    <path
+        android:pathData="M 16,102 L 56,102 A 6,6 0 0,1 62,108 L 62,126 A 6,6 0 0,1 56,132 L 16,132 A 6,6 0 0,1 10,126 L 10,108 A 6,6 0 0,1 16,102 Z"
+        android:fillColor="#2A384C" />
+    <!-- Dhuhr -->
+    <path
+        android:pathData="M 68,102 L 108,102 A 6,6 0 0,1 114,108 L 114,126 A 6,6 0 0,1 108,132 L 68,132 A 6,6 0 0,1 62,126 L 62,108 A 6,6 0 0,1 68,102 Z"
+        android:fillColor="#2A384C" />
+    <!-- Asr (Active) -->
+    <path
+        android:pathData="M 120,102 L 160,102 A 6,6 0 0,1 166,108 L 166,126 A 6,6 0 0,1 160,132 L 120,132 A 6,6 0 0,1 114,126 L 114,108 A 6,6 0 0,1 120,102 Z"
+        android:fillColor="#165B33" />
+    <!-- Maghrib -->
+    <path
+        android:pathData="M 172,102 L 212,102 A 6,6 0 0,1 218,108 L 218,126 A 6,6 0 0,1 212,132 L 172,132 A 6,6 0 0,1 166,126 L 166,108 A 6,6 0 0,1 172,102 Z"
+        android:fillColor="#2A384C" />
+    <!-- Isha -->
+    <path
+        android:pathData="M 224,102 L 264,102 A 6,6 0 0,1 270,108 L 270,126 A 6,6 0 0,1 264,132 L 224,132 A 6,6 0 0,1 218,126 L 218,108 A 6,6 0 0,1 224,102 Z"
+        android:fillColor="#2A384C" />
+</vector>
