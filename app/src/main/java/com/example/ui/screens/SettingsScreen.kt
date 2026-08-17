@@ -112,6 +112,7 @@ import com.example.ui.locale.LocalAppStrings
 enum class SettingsSubScreen {
     MAIN,
     THEME,
+    WIDGETS,
     CALCULATION,
     LOCATION,
     NOTIFICATIONS,
@@ -136,6 +137,9 @@ fun SettingsScreen(
     onUpdateThemeMode: (AppThemeMode) -> Unit,
     onUpdateColorPreset: (com.example.data.models.AppColorPreset) -> Unit = {},
     onUpdateFollowSystemColors: (Boolean) -> Unit = {},
+    onUpdateWidgetFollowSystemColors: (Boolean) -> Unit = {},
+    onUpdateWidgetSettings: (com.example.data.models.WidgetCustomizationSettings) -> Unit = {},
+    onRefreshAllWidgets: () -> Unit = {},
     onUpdatePrayerAdjustment: (PrayerType, Int) -> Unit,
     onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit,
     onTestNotification: (PrayerType, NotificationSoundType) -> Unit,
@@ -148,7 +152,8 @@ fun SettingsScreen(
     onDismissDynamicIsland: () -> Unit = {},
     onUpdateAudioStream: (AthanAudioStream) -> Unit = {},
     onUpdateWakeScreen: (Boolean) -> Unit = {},
-    onPreviewFullScreenAlarm: (PrayerType) -> Unit = {}
+    onPreviewFullScreenAlarm: (PrayerType) -> Unit = {},
+    onResetOnboarding: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     var currentSubScreen by remember { mutableStateOf(SettingsSubScreen.MAIN) }
@@ -177,7 +182,8 @@ fun SettingsScreen(
             SettingsSubScreen.MAIN -> {
                 SettingsMainHub(
                     settings = settings,
-                    onNavigateTo = { currentSubScreen = it }
+                    onNavigateTo = { currentSubScreen = it },
+                    onResetOnboarding = onResetOnboarding
                 )
             }
             SettingsSubScreen.THEME -> {
@@ -186,6 +192,15 @@ fun SettingsScreen(
                     onUpdateThemeMode = onUpdateThemeMode,
                     onUpdateColorPreset = onUpdateColorPreset,
                     onUpdateFollowSystemColors = onUpdateFollowSystemColors,
+                    onUpdateWidgetFollowSystemColors = onUpdateWidgetFollowSystemColors,
+                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
+                )
+            }
+            SettingsSubScreen.WIDGETS -> {
+                SettingsWidgetSubScreen(
+                    settings = settings,
+                    onUpdateWidgetSettings = onUpdateWidgetSettings,
+                    onRefreshAllWidgets = onRefreshAllWidgets,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
             }
@@ -262,7 +277,8 @@ fun SettingsScreen(
 @Composable
 private fun SettingsMainHub(
     settings: AppPrayerSettings,
-    onNavigateTo: (SettingsSubScreen) -> Unit
+    onNavigateTo: (SettingsSubScreen) -> Unit,
+    onResetOnboarding: () -> Unit
 ) {
     val strings = LocalAppStrings.current
 
@@ -283,6 +299,17 @@ private fun SettingsMainHub(
             iconTint = MaterialTheme.colorScheme.primary,
             testTag = "settings_cat_theme",
             onClick = { onNavigateTo(SettingsSubScreen.THEME) }
+        )
+
+        // Widgets (التطبيقات المصغرة)
+        SettingsHubCategoryCard(
+            title = strings.widgetsSection,
+            subtitle = if (strings.isArabic) "${settings.widgetSettings.themeMode.titleAr} • شفافية ${settings.widgetSettings.opacityPercent}%" else "${settings.widgetSettings.themeMode.titleEn} • ${settings.widgetSettings.opacityPercent}% Opacity",
+            icon = Icons.Default.StayCurrentPortrait,
+            badgeColor = MaterialTheme.colorScheme.secondaryContainer,
+            iconTint = MaterialTheme.colorScheme.secondary,
+            testTag = "settings_cat_widgets",
+            onClick = { onNavigateTo(SettingsSubScreen.WIDGETS) }
         )
 
         // Calculation
@@ -362,6 +389,17 @@ private fun SettingsMainHub(
             iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
             testTag = "settings_cat_about",
             onClick = { onNavigateTo(SettingsSubScreen.ABOUT) }
+        )
+
+        // Re-run Setup Wizard
+        SettingsHubCategoryCard(
+            title = if (strings.isArabic) "إعادة تشغيل معالج الإعداد الأولي" else "Re-run Setup Wizard",
+            subtitle = if (strings.isArabic) "إعادة تخصيص اللغة والموقع والأذان والتصميم" else "Re-configure language, location, athan & style",
+            icon = Icons.Default.AutoAwesome,
+            badgeColor = MaterialTheme.colorScheme.primaryContainer,
+            iconTint = MaterialTheme.colorScheme.primary,
+            testTag = "settings_cat_rerun_setup",
+            onClick = onResetOnboarding
         )
 
         Spacer(modifier = Modifier.height(70.dp))
@@ -479,6 +517,7 @@ private fun SettingsThemeSubScreen(
     onUpdateThemeMode: (AppThemeMode) -> Unit,
     onUpdateColorPreset: (com.example.data.models.AppColorPreset) -> Unit,
     onUpdateFollowSystemColors: (Boolean) -> Unit,
+    onUpdateWidgetFollowSystemColors: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val strings = LocalAppStrings.current
@@ -540,7 +579,7 @@ private fun SettingsThemeSubScreen(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            // Follow System Colors Card (Dynamic Theming)
+            // Follow System Colors Card (App Theming)
             Card(
                 onClick = { onUpdateFollowSystemColors(!settings.followSystemColors) },
                 shape = RoundedCornerShape(20.dp),
@@ -597,6 +636,67 @@ private fun SettingsThemeSubScreen(
                     Switch(
                         checked = settings.followSystemColors,
                         onCheckedChange = { onUpdateFollowSystemColors(it) }
+                    )
+                }
+            }
+
+            // Widget Follow System Colors Card (Home Screen Widget Dynamic Theming)
+            Card(
+                onClick = { onUpdateWidgetFollowSystemColors(!settings.widgetFollowSystemColors) },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (settings.widgetFollowSystemColors) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                ),
+                border = if (settings.widgetFollowSystemColors) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(if (settings.widgetFollowSystemColors) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Palette,
+                                contentDescription = null,
+                                tint = if (settings.widgetFollowSystemColors) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column {
+                            Text(
+                                text = strings.widgetFollowSystemColorsTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = strings.widgetFollowSystemColorsDesc,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Switch(
+                        checked = settings.widgetFollowSystemColors,
+                        onCheckedChange = { onUpdateWidgetFollowSystemColors(it) }
                     )
                 }
             }
@@ -926,19 +1026,7 @@ private fun SettingsLocationSubScreen(
     onBack: () -> Unit
 ) {
     val strings = LocalAppStrings.current
-    var showManualDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-
-    if (showManualDialog) {
-        ManualCoordinatesDialog(
-            currentLocation = settings.location,
-            onSaveLocation = {
-                onSelectCity(it)
-                showManualDialog = false
-            },
-            onDismiss = { showManualDialog = false }
-        )
-    }
 
     val filteredCities = remember(searchQuery) {
         if (searchQuery.isBlank()) CityDatabase.popularCities
@@ -994,18 +1082,6 @@ private fun SettingsLocationSubScreen(
                     }
                 }
             }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        OutlinedButton(
-            onClick = { showManualDialog = true },
-            shape = RoundedCornerShape(14.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(imageVector = Icons.Default.PinDrop, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = strings.manualCoordinates, fontWeight = FontWeight.SemiBold)
         }
 
         Spacer(modifier = Modifier.height(14.dp))

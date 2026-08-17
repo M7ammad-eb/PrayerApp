@@ -44,7 +44,6 @@ import com.example.ui.locale.LocalAppStrings
 @Composable
 fun CityPickerDialog(
     onSelectCity: (UserLocation) -> Unit,
-    onOpenManualCoordinates: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val strings = LocalAppStrings.current
@@ -97,18 +96,6 @@ fun CityPickerDialog(
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedButton(
-                    onClick = onOpenManualCoordinates,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.PinDrop, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.manualCoordinates, style = MaterialTheme.typography.bodySmall)
-                }
 
                 Spacer(modifier = Modifier.height(10.dp))
 

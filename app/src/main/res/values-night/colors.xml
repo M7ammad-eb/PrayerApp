@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- AppWidget Theme Colors (Dark fallback) -->
-    <color name="widget_bg">#FF141218</color>
-    <color name="widget_bg_stroke">#FF2D2B33</color>
-    <color name="widget_hero_bg">#FF1E2430</color>
-    <color name="widget_hero_bg_stroke">#FF2A364B</color>
-    <color name="widget_active_prayer_bg">#FFA8C7FA</color>
-    <color name="widget_active_prayer_stroke">#FFD3E3FD</color>
-    <color name="widget_inactive_prayer_bg">#FF232128</color>
-    <color name="widget_countdown_badge_bg">#FFA8C7FA</color>
-    <color name="widget_text_primary">#FFF3F0F5</color>
-    <color name="widget_text_secondary">#FFC4C6D0</color>
-    <color name="widget_text_on_hero">#FFD3E3FD</color>
-    <color name="widget_text_accent">#FFA8C7FA</color>
-    <color name="widget_text_on_accent">#FF00284D</color>
-    <color name="widget_icon_tint">#FFA8C7FA</color>
-    <color name="widget_progress_track">#FF2A364B</color>
+    <color name="widget_bg">#FF1C1B1F</color>
+    <color name="widget_bg_stroke">#00000000</color>
+    <color name="widget_hero_bg">#FF2B2930</color>
+    <color name="widget_hero_bg_stroke">#00000000</color>
+    <color name="widget_active_prayer_bg">#FF81C784</color>
+    <color name="widget_active_prayer_stroke">#00000000</color>
+    <color name="widget_inactive_prayer_bg">#FF2B2930</color>
+    <color name="widget_countdown_badge_bg">#FF81C784</color>
+    <color name="widget_text_primary">#FFE6E1E5</color>
+    <color name="widget_text_secondary">#FFCAC4D0</color>
+    <color name="widget_text_on_hero">#FFE6E1E5</color>
+    <color name="widget_text_accent">#FF81C784</color>
+    <color name="widget_text_on_accent">#FF00391F</color>
+    <color name="widget_icon_tint">#FF81C784</color>
+    <color name="widget_progress_track">#FF49454F</color>
+    <color name="widget_progress_indicator">#FF81C784</color>
 </resources>

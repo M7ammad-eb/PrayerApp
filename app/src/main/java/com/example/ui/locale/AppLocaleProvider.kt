@@ -244,8 +244,10 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
     }
 
     val colorPaletteSection: String = if (isArabic) "لوحة الألوان وسمة التطبيق" else "Color Palette & Accent Colors"
-    val followSystemColorsTitle: String = if (isArabic) "متابعة ألوان النظام (Material You)" else "Follow System Colors"
-    val followSystemColorsDesc: String = if (isArabic) "استخراج الألوان التلقائي المتناسق مع خلفية جهازك" else "Dynamically match device wallpaper and system accents"
+    val followSystemColorsTitle: String = if (isArabic) "متابعة ألوان النظام في التطبيق (Material You)" else "App Follow System Colors"
+    val followSystemColorsDesc: String = if (isArabic) "استخراج الألوان التلقائي المتناسق مع خلفية جهازك لواجهة التطبيق" else "Dynamically match device wallpaper and system accents in app"
+    val widgetFollowSystemColorsTitle: String = if (isArabic) "ويدجت الشاشة يتبع ألوان النظام (Material You)" else "Widget Follows System Colors"
+    val widgetFollowSystemColorsDesc: String = if (isArabic) "مطابقة ألوان الويدجت تلقائياً مع نظام الجهاز (مثل Google Calendar)" else "Match widget colors with device wallpaper dynamic palette (like Google Calendar)"
     val presetColorsTitle: String = if (isArabic) "لوحات ألوان جاهزة" else "Preset Color Palettes"
     val presetColorsDesc: String = if (isArabic) "اختر لوناً مميزاً لتخصيص واجهة التطبيق" else "Select a curated color palette for the app interface"
 
@@ -373,6 +375,46 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
     val locationNameLabel: String = if (isArabic) "اسم الموقع / الوصف" else "Location Name / Label"
     val timeZoneLabel: String = if (isArabic) "المنطقة الزمنية" else "Time Zone"
     val applyCoordinates: String = if (isArabic) "تطبيق الإحداثيات" else "Apply Coordinates"
+
+    // Setup & First-Time Onboarding
+    val welcomeToApp: String = if (isArabic) "مرحباً بك في نور" else "Welcome to Noor"
+    val setupSubtitle: String = if (isArabic) "دعنا نضبط تطبيقك في خطوات بسيطة لتجربة صلاة متكاملة ودقيقة." else "Let's personalize your prayer experience in a few quick steps."
+    val stepLanguageTitle: String = if (isArabic) "اختر لغة التطبيق" else "Choose Language"
+    val stepLanguageDesc: String = if (isArabic) "يمكنك التبديل بين العربية والإنجليزية في أي وقت من الإعدادات." else "You can switch between Arabic and English anytime in settings."
+    val stepLocationTitle: String = if (isArabic) "حدد موقعك الجغرافي" else "Set Your Location"
+    val stepLocationDesc: String = if (isArabic) "نحتاج إلى موقعك لحساب أوقات الصلاة واتجاه القبلة بدقة شرعية عالية." else "Required to calculate exact prayer times and Qibla direction for your location."
+    val privacyNoticeTitle: String = if (isArabic) "خصوصيتك محمية بالكامل" else "Your Privacy is 100% Protected"
+    val privacyNoticeDesc: String = if (isArabic) "بيانات موقعك لا تُجمع، ولا تُخزن على أي خوادم خارجية، ولا يتم تتبعك إطلاقاً. تُستخدم الإحداثيات محلياً على جهازك فقط لحساب المواقيت والقبلة." else "Your location data is never collected, tracked, or uploaded to any server. All astronomical prayer and Qibla calculations run entirely offline on your device."
+    val useGpsButton: String = if (isArabic) "تحديد الموقع التلقائي (GPS)" else "Detect Location (GPS)"
+    val searchCityPlaceholder: String = if (isArabic) "أو ابحث عن مدينتك (مكة، القاهرة، لندن...)" else "Or search your city (Makkah, Cairo, London...)"
+    val selectedLocationLabel: String = if (isArabic) "الموقع المحدد:" else "Selected Location:"
+    val stepNotificationsTitle: String = if (isArabic) "تنبيهات الأذان والإشعارات" else "Athan Alerts & Notifications"
+    val stepNotificationsDesc: String = if (isArabic) "تفعيل إذن الإشعارات والمنبه الدقيق لضمان انطلاق صوت الأذان والتنبيهات في وقت الصلاة تماماً حتى عند قفل الهاتف." else "Enable notifications and exact alarm permissions so the Athan sounds on time, even when your phone is locked or screen is off."
+    val stepNotificationsExplanation: String = if (isArabic) "لماذا نحتاج هذا الإذن؟\n• إطلاق صوت الأذان الشريف مع دخول وقت الصلاة.\n• عرض كبسولة العد التنازلي التفاعلية (Dynamic Island).\n• تذكيرك بالسنن والأيام البيض." else "Why are permissions needed?\n• Play the holy Athan recitation at exact prayer times.\n• Show interactive countdown activities before prayer.\n• Remind you of Sunnah fasting and White Days."
+    val grantNotificationPermissionBtn: String = if (isArabic) "منح إذن الإشعارات" else "Grant Notification Permission"
+    val permissionGrantedStatus: String = if (isArabic) "تم تفعيل الإشعارات بنجاح ✓" else "Notifications Enabled ✓"
+    val stepAthanSoundsTitle: String = if (isArabic) "أصوات الأذان والتنبيهات" else "Athan Sounds & Alerts"
+    val stepAthanSoundsDesc: String = if (isArabic) "اختر صوت الأذان المفضل لكل صلاة. يمكنك تغييرها وتخصيصها لاحقاً." else "Choose your preferred Athan recitation for each prayer. You can customize them anytime."
+    val stepStyleTitle: String = if (isArabic) "المظهر والتصميم" else "Appearance & Style"
+    val stepStyleDesc: String = if (isArabic) "اختر الثيم ونمط الألوان المفضل لديك." else "Choose your favorite theme and color palette."
+    val getStartedBtn: String = if (isArabic) "ابدأ الآن واستمتع بنور" else "Get Started"
+    val nextStepBtn: String = if (isArabic) "التالي" else "Next"
+    val previousStepBtn: String = if (isArabic) "السابق" else "Back"
+    val stepIndicatorText: String = if (isArabic) "الخطوة" else "Step"
+    val ofStepText: String = if (isArabic) "من" else "of"
+    val gpsDetecting: String = if (isArabic) "جارٍ تحديد الموقع عبر GPS..." else "Detecting GPS location..."
+
+    // Widget Customization Strings
+    val widgetsSection: String = if (isArabic) "التطبيقات المصغرة (الودجت)" else "Home Screen Widgets"
+    val widgetsSectionSubtitle: String = if (isArabic) "تخصيص الألوان، الشفافية، الخط والمحتوى" else "Customize colors, opacity, fonts & content"
+    val widgetThemeModeTitle: String = if (isArabic) "ثيم وألوان الودجت" else "Widget Theme & Palette"
+    val widgetBgStyleTitle: String = if (isArabic) "نمط الخلفية" else "Background Style"
+    val widgetOpacityTitle: String = if (isArabic) "درجة الشفافية" else "Background Opacity"
+    val widgetFontSizeTitle: String = if (isArabic) "حجم الخط" else "Font Size"
+    val widgetContentTitle: String = if (isArabic) "محتوى وعناصر الودجت" else "Widget Content & Toggles"
+    val widgetPreviewTitle: String = if (isArabic) "معاينة تفاعلية حية" else "Live Interactive Preview"
+    val widgetRefreshAll: String = if (isArabic) "تحديث وتطبيق الودجت الآن" else "Apply & Refresh Widgets"
+    val widgetResetDefaults: String = if (isArabic) "استعادة الإعدادات الافتراضية" else "Reset to Defaults"
 
     // Number & Time formatters that STRICTLY use 123 (Western Arabic Digits)
     fun formatNumber(number: Number): String {

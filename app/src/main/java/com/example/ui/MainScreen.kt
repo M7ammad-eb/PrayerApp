@@ -155,181 +155,220 @@ fun MainScreen(
     ProvideAppLocale(appLanguage = settings.language) {
         val strings = LocalAppStrings.current
 
-        if (showCityPickerFromHeader) {
-            CityPickerDialog(
-                onSelectCity = {
-                    viewModel.selectCity(it)
-                    showCityPickerFromHeader = false
+        if (!settings.onboardingCompleted) {
+            com.example.ui.screens.OnboardingScreen(
+                settings = settings,
+                isGpsLoading = isGpsLoading,
+                onUpdateLanguage = { viewModel.updateLanguage(it) },
+                onSelectCity = { viewModel.selectCity(it) },
+                onRequestGps = {
+                    if (onRequestLocationPermission != null) {
+                        onRequestLocationPermission()
+                    } else {
+                        val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                        val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                        if (fine || coarse) {
+                            viewModel.requestGpsLocation(context)
+                        } else {
+                            locationPermissionLauncher.launch(
+                                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+                            )
+                        }
+                    }
                 },
-                onOpenManualCoordinates = {
-                    showCityPickerFromHeader = false
-                    selectedTab = AppNavTab.SETTINGS.ordinal
+                onUpdateNotificationConfig = { prayer, enabled, sound, reminder ->
+                    viewModel.updatePrayerNotification(prayer, enabled, sound, reminder)
                 },
-                onDismiss = { showCityPickerFromHeader = false }
+                onPreviewSound = { sound, prayer ->
+                    viewModel.previewNotificationSound(sound, prayer)
+                },
+                onUpdateThemeMode = { viewModel.updateThemeMode(it) },
+                onUpdateColorPreset = { viewModel.updateColorPreset(it) },
+                onUpdateFollowSystemColors = { viewModel.updateFollowSystemColors(it) },
+                onCompleteOnboarding = {
+                    viewModel.completeOnboarding()
+                    viewModel.rescheduleAllAlarms()
+                }
             )
-        }
-
-        fun tabTitle(tab: AppNavTab): String = when (tab) {
-            AppNavTab.PRAYER_TIMES -> strings.navPrayerTimes
-            AppNavTab.QIBLA -> strings.navQibla
-            AppNavTab.MONTHLY -> strings.navCalendar
-            AppNavTab.SETTINGS -> strings.navSettings
-        }
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-            containerColor = MaterialTheme.colorScheme.background,
-            topBar = {
-                // Expressive Floating Header Toolbar
-                ExpressiveTopHeader(
-                    currentTab = AppNavTab.values()[selectedTab],
-                    settings = settings,
-                    strings = strings,
-                    onLocationClick = { showCityPickerFromHeader = true }
-                )
-            },
-            bottomBar = {
-                // Expressive Floating Bottom Navigation Bar
-                ExpressiveFloatingBottomBar(
-                    selectedTab = selectedTab,
-                    onSelectTab = { selectedTab = it },
-                    tabTitle = { tabTitle(it) }
+        } else {
+            if (showCityPickerFromHeader) {
+                CityPickerDialog(
+                    onSelectCity = {
+                        viewModel.selectCity(it)
+                        showCityPickerFromHeader = false
+                    },
+                    onDismiss = { showCityPickerFromHeader = false }
                 )
             }
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                when (AppNavTab.values()[selectedTab]) {
-                    AppNavTab.PRAYER_TIMES -> {
-                        PrayerHomeScreen(
-                            dailySchedule = dailySchedule,
-                            nextPrayerInfo = nextPrayerInfo,
-                            settings = settings,
-                            selectedDate = selectedDate,
-                            audioPlaybackState = audioPlaybackState,
-                            onPreviousDay = { viewModel.previousDay() },
-                            onNextDay = { viewModel.nextDay() },
-                            onSelectToday = { viewModel.selectToday() },
-                            onDatePicked = { viewModel.setSelectedDate(it) },
-                            onPlayPrayerAthan = { viewModel.playAthanPreview(it) },
-                            onStopAudio = { viewModel.stopAudio() },
-                            onUpdateNotificationConfig = { prayer, enabled, sound, reminder ->
-                                viewModel.updatePrayerNotification(prayer, enabled, sound, reminder)
-                            },
-                            onRequestNotificationPermission = {
-                                if (onRequestNotificationPermission != null) {
-                                    onRequestNotificationPermission()
-                                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                }
-                            }
-                        )
-                    }
-                    AppNavTab.QIBLA -> {
-                        QiblaScreen(
-                            compassSensorManager = viewModel.compassManager,
-                            compassState = compassState,
-                            location = settings.location
-                        )
-                    }
-                    AppNavTab.MONTHLY -> {
-                        MonthlyCalendarScreen(
-                            monthlySchedule = monthlySchedule,
-                            selectedDate = selectedDate,
-                            location = settings.location,
-                            is24HourFormat = settings.is24HourFormat,
-                            onPreviousMonth = { viewModel.setSelectedDate(selectedDate.minusMonths(1)) },
-                            onNextMonth = { viewModel.setSelectedDate(selectedDate.plusMonths(1)) }
-                        )
-                    }
-                    AppNavTab.SETTINGS -> {
-                        SettingsScreen(
-                            settings = settings,
-                            isGpsLoading = isGpsLoading,
-                            onSelectCity = { viewModel.selectCity(it) },
-                            onRequestGps = {
-                                if (onRequestLocationPermission != null) {
-                                    onRequestLocationPermission()
-                                } else {
-                                    val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                                    val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                                    if (fine || coarse) {
-                                        viewModel.requestGpsLocation(context)
-                                    } else {
-                                        locationPermissionLauncher.launch(
-                                            arrayOf(
-                                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                                Manifest.permission.ACCESS_COARSE_LOCATION
-                                            )
-                                        )
+
+            fun tabTitle(tab: AppNavTab): String = when (tab) {
+                AppNavTab.PRAYER_TIMES -> strings.navPrayerTimes
+                AppNavTab.QIBLA -> strings.navQibla
+                AppNavTab.MONTHLY -> strings.navCalendar
+                AppNavTab.SETTINGS -> strings.navSettings
+            }
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+                containerColor = MaterialTheme.colorScheme.background,
+                topBar = {
+                    // Expressive Floating Header Toolbar
+                    ExpressiveTopHeader(
+                        currentTab = AppNavTab.values()[selectedTab],
+                        settings = settings,
+                        strings = strings,
+                        onLocationClick = { showCityPickerFromHeader = true }
+                    )
+                },
+                bottomBar = {
+                    // Expressive Floating Bottom Navigation Bar
+                    ExpressiveFloatingBottomBar(
+                        selectedTab = selectedTab,
+                        onSelectTab = { selectedTab = it },
+                        tabTitle = { tabTitle(it) }
+                    )
+                }
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    when (AppNavTab.values()[selectedTab]) {
+                        AppNavTab.PRAYER_TIMES -> {
+                            PrayerHomeScreen(
+                                dailySchedule = dailySchedule,
+                                nextPrayerInfo = nextPrayerInfo,
+                                settings = settings,
+                                selectedDate = selectedDate,
+                                audioPlaybackState = audioPlaybackState,
+                                onPreviousDay = { viewModel.previousDay() },
+                                onNextDay = { viewModel.nextDay() },
+                                onSelectToday = { viewModel.selectToday() },
+                                onDatePicked = { viewModel.setSelectedDate(it) },
+                                onPlayPrayerAthan = { viewModel.playAthanPreview(it) },
+                                onStopAudio = { viewModel.stopAudio() },
+                                onUpdateNotificationConfig = { prayer, enabled, sound, reminder ->
+                                    viewModel.updatePrayerNotification(prayer, enabled, sound, reminder)
+                                },
+                                onRequestNotificationPermission = {
+                                    if (onRequestNotificationPermission != null) {
+                                        onRequestNotificationPermission()
+                                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                     }
                                 }
-                            },
-                            onUpdateCalculationMethod = { viewModel.updateCalculationMethod(it) },
-                            onUpdateJuristicMethod = { viewModel.updateJuristicMethod(it) },
-                            onUpdateHighLatitudeRule = { viewModel.updateHighLatitudeRule(it) },
-                            onUpdateHijriOffset = { viewModel.updateHijriOffset(it) },
-                            onToggle24Hour = { viewModel.toggle24HourFormat() },
-                            onUpdateLanguage = { viewModel.updateLanguage(it) },
-                            onUpdateThemeMode = { viewModel.updateThemeMode(it) },
-                            onUpdateColorPreset = { viewModel.updateColorPreset(it) },
-                            onUpdateFollowSystemColors = { viewModel.updateFollowSystemColors(it) },
-                            onUpdatePrayerAdjustment = { prayer, mins ->
-                                viewModel.updatePrayerAdjustment(prayer, mins)
-                            },
-                            onUpdateNotificationConfig = { prayer, enabled, sound, reminder ->
-                                viewModel.updatePrayerNotification(prayer, enabled, sound, reminder)
-                            },
-                            onTestNotification = { prayer, sound ->
-                                viewModel.testNotification(prayer, sound)
-                            },
-                            onTestAlarmInSeconds = { prayer, sound, seconds ->
-                                viewModel.testAlarmInSeconds(prayer, sound, seconds)
-                            },
-                            onRescheduleAlarms = {
-                                viewModel.rescheduleAllAlarms()
-                            },
-                            onRequestNotificationPermission = {
-                                if (onRequestNotificationPermission != null) {
-                                    onRequestNotificationPermission()
-                                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            )
+                        }
+                        AppNavTab.QIBLA -> {
+                            QiblaScreen(
+                                compassSensorManager = viewModel.compassManager,
+                                compassState = compassState,
+                                location = settings.location
+                            )
+                        }
+                        AppNavTab.MONTHLY -> {
+                            MonthlyCalendarScreen(
+                                monthlySchedule = monthlySchedule,
+                                selectedDate = selectedDate,
+                                location = settings.location,
+                                is24HourFormat = settings.is24HourFormat,
+                                onPreviousMonth = { viewModel.setSelectedDate(selectedDate.minusMonths(1)) },
+                                onNextMonth = { viewModel.setSelectedDate(selectedDate.plusMonths(1)) }
+                            )
+                        }
+                        AppNavTab.SETTINGS -> {
+                            SettingsScreen(
+                                settings = settings,
+                                isGpsLoading = isGpsLoading,
+                                onSelectCity = { viewModel.selectCity(it) },
+                                onRequestGps = {
+                                    if (onRequestLocationPermission != null) {
+                                        onRequestLocationPermission()
+                                    } else {
+                                        val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                                        val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                                        if (fine || coarse) {
+                                            viewModel.requestGpsLocation(context)
+                                        } else {
+                                            locationPermissionLauncher.launch(
+                                                arrayOf(
+                                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                                )
+                                            )
+                                        }
+                                    }
+                                },
+                                onUpdateCalculationMethod = { viewModel.updateCalculationMethod(it) },
+                                onUpdateJuristicMethod = { viewModel.updateJuristicMethod(it) },
+                                onUpdateHighLatitudeRule = { viewModel.updateHighLatitudeRule(it) },
+                                onUpdateHijriOffset = { viewModel.updateHijriOffset(it) },
+                                onToggle24Hour = { viewModel.toggle24HourFormat() },
+                                onUpdateLanguage = { viewModel.updateLanguage(it) },
+                                onUpdateThemeMode = { viewModel.updateThemeMode(it) },
+                                onUpdateColorPreset = { viewModel.updateColorPreset(it) },
+                                onUpdateFollowSystemColors = { viewModel.updateFollowSystemColors(it) },
+                                onUpdateWidgetFollowSystemColors = { viewModel.updateWidgetFollowSystemColors(it) },
+                                onUpdateWidgetSettings = { viewModel.updateWidgetSettings(it) },
+                                onRefreshAllWidgets = { viewModel.refreshAllWidgets() },
+                                onUpdatePrayerAdjustment = { prayer, mins ->
+                                    viewModel.updatePrayerAdjustment(prayer, mins)
+                                },
+                                onUpdateNotificationConfig = { prayer, enabled, sound, reminder ->
+                                    viewModel.updatePrayerNotification(prayer, enabled, sound, reminder)
+                                },
+                                onTestNotification = { prayer, sound ->
+                                    viewModel.testNotification(prayer, sound)
+                                },
+                                onTestAlarmInSeconds = { prayer, sound, seconds ->
+                                    viewModel.testAlarmInSeconds(prayer, sound, seconds)
+                                },
+                                onRescheduleAlarms = {
+                                    viewModel.rescheduleAllAlarms()
+                                },
+                                onRequestNotificationPermission = {
+                                    if (onRequestNotificationPermission != null) {
+                                        onRequestNotificationPermission()
+                                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                },
+                                onPreviewSound = { sound, prayer ->
+                                    viewModel.previewNotificationSound(sound, prayer)
+                                },
+                                onUpdateDynamicIslandSettings = { enabled, minutes ->
+                                    viewModel.updateDynamicIslandSettings(enabled, minutes)
+                                },
+                                onPreviewDynamicIsland = {
+                                    viewModel.previewDynamicIsland()
+                                },
+                                onDismissDynamicIsland = {
+                                    viewModel.dismissDynamicIsland()
+                                },
+                                onUpdateAudioStream = { stream ->
+                                    viewModel.updateAudioStream(stream)
+                                },
+                                onUpdateWakeScreen = { wake ->
+                                    viewModel.updateWakeScreenOnAlarm(wake)
+                                },
+                                onPreviewFullScreenAlarm = { prayer ->
+                                    val intent = com.example.ui.alarm.PrayerAlarmActivity.createIntent(
+                                        context = context,
+                                        prayerType = prayer,
+                                        prayerTime = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern(if (settings.is24HourFormat) "HH:mm" else "h:mm a")),
+                                        locationName = settings.location.name.ifEmpty { "Current Location" },
+                                        soundType = settings.prayerConfigs[prayer]?.soundType ?: com.example.data.models.NotificationSoundType.FULL_ATHAN
+                                    )
+                                    context.startActivity(intent)
+                                },
+                                onResetOnboarding = {
+                                    viewModel.setOnboardingCompleted(false)
                                 }
-                            },
-                            onPreviewSound = { sound, prayer ->
-                                viewModel.previewNotificationSound(sound, prayer)
-                            },
-                            onUpdateDynamicIslandSettings = { enabled, minutes ->
-                                viewModel.updateDynamicIslandSettings(enabled, minutes)
-                            },
-                            onPreviewDynamicIsland = {
-                                viewModel.previewDynamicIsland()
-                            },
-                            onDismissDynamicIsland = {
-                                viewModel.dismissDynamicIsland()
-                            },
-                            onUpdateAudioStream = { stream ->
-                                viewModel.updateAudioStream(stream)
-                            },
-                            onUpdateWakeScreen = { wake ->
-                                viewModel.updateWakeScreenOnAlarm(wake)
-                            },
-                            onPreviewFullScreenAlarm = { prayer ->
-                                val intent = com.example.ui.alarm.PrayerAlarmActivity.createIntent(
-                                    context = context,
-                                    prayerType = prayer,
-                                    prayerTime = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern(if (settings.is24HourFormat) "HH:mm" else "h:mm a")),
-                                    locationName = settings.location.name.ifEmpty { "Current Location" },
-                                    soundType = settings.prayerConfigs[prayer]?.soundType ?: com.example.data.models.NotificationSoundType.FULL_ATHAN
-                                )
-                                context.startActivity(intent)
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }

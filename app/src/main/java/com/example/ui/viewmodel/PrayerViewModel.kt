@@ -369,6 +369,12 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun updateWidgetFollowSystemColors(follow: Boolean) {
+        viewModelScope.launch {
+            prefs.updateWidgetFollowSystemColors(follow)
+        }
+    }
+
     fun updatePrayerAdjustment(prayer: PrayerType, minutes: Int) {
         viewModelScope.launch {
             prefs.updatePrayerAdjustment(prayer, minutes)
@@ -391,6 +397,16 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             prefs.updateWakeScreenOnAlarm(wakeScreen)
         }
+    }
+
+    fun updateWidgetSettings(settings: com.example.data.models.WidgetCustomizationSettings) {
+        viewModelScope.launch {
+            prefs.updateWidgetSettings(settings)
+        }
+    }
+
+    fun refreshAllWidgets() {
+        PrayerAppWidgetProvider.updateAllWidgets(getApplication())
     }
 
     fun updateDynamicIslandSettings(enabled: Boolean, minutesBefore: Int) {
@@ -441,6 +457,18 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun rescheduleAllAlarms() {
         PrayerNotificationScheduler.scheduleDailyAlarms(getApplication(), settings.value)
+    }
+
+    fun completeOnboarding() {
+        viewModelScope.launch {
+            prefs.updateOnboardingCompleted(true)
+        }
+    }
+
+    fun setOnboardingCompleted(completed: Boolean) {
+        viewModelScope.launch {
+            prefs.updateOnboardingCompleted(completed)
+        }
     }
 
     override fun onCleared() {

@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dynamic Material You system colors (Dark) -->
+    <!-- Dynamic Material You system colors (Dark) - Harmonized with Google Calendar / M3 -->
     <color name="widget_bg">@android:color/system_neutral1_900</color>
-    <color name="widget_bg_stroke">@android:color/system_neutral1_700</color>
-    <color name="widget_hero_bg">@android:color/system_accent1_800</color>
-    <color name="widget_hero_bg_stroke">@android:color/system_accent1_700</color>
-    <color name="widget_active_prayer_bg">@android:color/system_accent1_300</color>
-    <color name="widget_active_prayer_stroke">@android:color/system_accent1_200</color>
+    <color name="widget_bg_stroke">@android:color/transparent</color>
+    <color name="widget_hero_bg">@android:color/system_neutral1_800</color>
+    <color name="widget_hero_bg_stroke">@android:color/transparent</color>
+    <color name="widget_active_prayer_bg">@android:color/system_accent1_200</color>
+    <color name="widget_active_prayer_stroke">@android:color/transparent</color>
     <color name="widget_inactive_prayer_bg">@android:color/system_neutral1_800</color>
-    <color name="widget_countdown_badge_bg">@android:color/system_accent1_300</color>
-    <color name="widget_text_primary">@android:color/system_neutral1_100</color>
+    <color name="widget_countdown_badge_bg">@android:color/system_accent1_200</color>
+    <color name="widget_text_primary">@android:color/system_neutral1_50</color>
     <color name="widget_text_secondary">@android:color/system_neutral2_200</color>
-    <color name="widget_text_on_hero">@android:color/system_accent1_50</color>
+    <color name="widget_text_on_hero">@android:color/system_neutral1_50</color>
     <color name="widget_text_accent">@android:color/system_accent1_200</color>
     <color name="widget_text_on_accent">@android:color/system_accent1_900</color>
-    <color name="widget_icon_tint">@android:color/system_accent1_300</color>
-    <color name="widget_progress_track">@android:color/system_accent1_700</color>
+    <color name="widget_icon_tint">@android:color/system_accent1_200</color>
+    <color name="widget_progress_track">@android:color/system_neutral2_700</color>
+    <color name="widget_progress_indicator">@android:color/system_accent1_200</color>
 </resources>

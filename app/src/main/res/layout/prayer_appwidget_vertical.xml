@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_vert"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/widget_vert_root_bg_img"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="fitXY"
+        android:src="@drawable/shape_widget_root_bg" />
+
+    <ImageView
+        android:id="@+id/widget_vert_root_border_img"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="fitXY"
+        android:src="@drawable/shape_widget_root_border" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <!-- Top mini header: Mosque & City -->
+        <LinearLayout
+            android:id="@+id/widget_vert_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingBottom="4dp">
+
+            <ImageView
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_widget_mosque" />
+
+            <TextView
+                android:id="@+id/widget_vert_location"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Makkah"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Hero summary pill for Next Prayer -->
+        <FrameLayout
+            android:id="@+id/widget_vert_hero"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp">
+
+            <ImageView
+                android:id="@+id/widget_vert_hero_bg_img"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="fitXY"
+                android:src="@drawable/shape_widget_hero_bg" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="6dp">
+
+                <TextView
+                    android:id="@+id/widget_vert_next_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Asr"
+                    android:textColor="@color/widget_text_accent"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_vert_next_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:text="3:45 PM"
+                    android:textColor="@color/widget_text_on_hero"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <FrameLayout
+                    android:id="@+id/widget_vert_countdown_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp">
+
+                    <ImageView
+                        android:id="@+id/widget_vert_countdown_bg_img"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@null"
+                        android:scaleType="fitXY"
+                        android:src="@drawable/shape_widget_pill_bg" />
+
+                    <TextView
+                        android:id="@+id/widget_vert_countdown"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="6dp"
+                        android:paddingTop="1dp"
+                        android:paddingEnd="6dp"
+                        android:paddingBottom="1dp"
+                        android:text="45m"
+                        android:textColor="@color/widget_text_on_accent"
+                        android:textSize="9sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
+            </LinearLayout>
+        </FrameLayout>
+
+        <!-- 6 Stacked Prayer Rows -->
+        <LinearLayout
+            android:id="@+id/widget_vert_list"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <!-- Fajr -->
+            <FrameLayout
+                android:id="@+id/widget_vert_fajr_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="2dp"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/widget_vert_fajr_bg_img"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/shape_widget_card_item_bg" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp">
+
+                    <TextView
+                        android:id="@+id/widget_vert_fajr_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Fajr"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_secondary"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_vert_fajr_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="05:12"
+                        android:textAlignment="viewEnd"
+                        android:textColor="@color/widget_text_primary"
+                        android:textSize="10sp" />
+                </RelativeLayout>
+            </FrameLayout>
+
+            <!-- Sunrise -->
+            <FrameLayout
+                android:id="@+id/widget_vert_sunrise_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="2dp"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/widget_vert_sunrise_bg_img"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/shape_widget_card_item_bg" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp">
+
+                    <TextView
+                        android:id="@+id/widget_vert_sunrise_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Sunrise"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_secondary"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_vert_sunrise_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="06:34"
+                        android:textAlignment="viewEnd"
+                        android:textColor="@color/widget_text_primary"
+                        android:textSize="10sp" />
+                </RelativeLayout>
+            </FrameLayout>
+
+            <!-- Dhuhr -->
+            <FrameLayout
+                android:id="@+id/widget_vert_dhuhr_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="2dp"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/widget_vert_dhuhr_bg_img"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/shape_widget_card_item_bg" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp">
+
+                    <TextView
+                        android:id="@+id/widget_vert_dhuhr_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Dhuhr"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_secondary"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_vert_dhuhr_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="12:20"
+                        android:textAlignment="viewEnd"
+                        android:textColor="@color/widget_text_primary"
+                        android:textSize="10sp" />
+                </RelativeLayout>
+            </FrameLayout>
+
+            <!-- Asr -->
+            <FrameLayout
+                android:id="@+id/widget_vert_asr_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="2dp"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/widget_vert_asr_bg_img"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/shape_widget_card_item_bg" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp">
+
+                    <TextView
+                        android:id="@+id/widget_vert_asr_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Asr"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_on_accent"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_vert_asr_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="15:45"
+                        android:textAlignment="viewEnd"
+                        android:textColor="@color/widget_text_on_accent"
+                        android:textSize="10sp" />
+                </RelativeLayout>
+            </FrameLayout>
+
+            <!-- Maghrib -->
+            <FrameLayout
+                android:id="@+id/widget_vert_maghrib_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="2dp"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/widget_vert_maghrib_bg_img"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/shape_widget_card_item_bg" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp">
+
+                    <TextView
+                        android:id="@+id/widget_vert_maghrib_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Maghrib"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_secondary"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_vert_maghrib_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="18:05"
+                        android:textAlignment="viewEnd"
+                        android:textColor="@color/widget_text_primary"
+                        android:textSize="10sp" />
+                </RelativeLayout>
+            </FrameLayout>
+
+            <!-- Isha -->
+            <FrameLayout
+                android:id="@+id/widget_vert_isha_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/widget_vert_isha_bg_img"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/shape_widget_card_item_bg" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp">
+
+                    <TextView
+                        android:id="@+id/widget_vert_isha_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Isha"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_secondary"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_vert_isha_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="19:35"
+                        android:textAlignment="viewEnd"
+                        android:textColor="@color/widget_text_primary"
+                        android:textSize="10sp" />
+                </RelativeLayout>
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

@@ -24,6 +24,10 @@ import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerTimeAdjustments
 import com.example.data.models.PrayerType
 import com.example.data.models.UserLocation
+import com.example.data.models.WidgetBackgroundStyle
+import com.example.data.models.WidgetCustomizationSettings
+import com.example.data.models.WidgetFontSize
+import com.example.data.models.WidgetThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -40,10 +44,13 @@ data class AppPrayerSettings(
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     val colorPreset: AppColorPreset = AppColorPreset.SYSTEM_DYNAMIC,
     val followSystemColors: Boolean = true,
+    val widgetFollowSystemColors: Boolean = true,
+    val widgetSettings: WidgetCustomizationSettings = WidgetCustomizationSettings(),
     val dynamicIslandEnabled: Boolean = true,
     val dynamicIslandMinutesBefore: Int = 15,
     val audioStream: AthanAudioStream = AthanAudioStream.ALARM,
     val wakeScreenOnAlarm: Boolean = true,
+    val onboardingCompleted: Boolean = false,
     val prayerConfigs: Map<PrayerType, NotificationPrayerConfig> = PrayerType.values().associateWith {
         NotificationPrayerConfig(
             enabled = it != PrayerType.SUNRISE, // Sunrise not a prayer, so disabled by default or reminder only
@@ -66,7 +73,20 @@ class PrayerPreferences(private val context: Context) {
         private const val KEY_THEME = "cached_theme"
         private const val KEY_COLOR_PRESET = "cached_color_preset"
         private const val KEY_FOLLOW_SYSTEM_COLORS = "cached_follow_system_colors"
+        private const val KEY_WIDGET_FOLLOW_SYSTEM_COLORS = "cached_widget_follow_sys_colors"
         private const val KEY_24H = "cached_24h"
+
+        private const val KEY_WIDGET_THEME = "cached_w_theme"
+        private const val KEY_WIDGET_BG = "cached_w_bg"
+        private const val KEY_WIDGET_OPACITY = "cached_w_opacity"
+        private const val KEY_WIDGET_FONT = "cached_w_font"
+        private const val KEY_WIDGET_SHOW_LOC = "cached_w_show_loc"
+        private const val KEY_WIDGET_SHOW_HIJRI = "cached_w_show_hijri"
+        private const val KEY_WIDGET_SHOW_COUNTDOWN = "cached_w_show_cd"
+        private const val KEY_WIDGET_SHOW_PROGRESS = "cached_w_show_prog"
+        private const val KEY_WIDGET_SHOW_SUNRISE = "cached_w_show_sunrise"
+        private const val KEY_WIDGET_SHOW_ALL = "cached_w_show_all"
+        private const val KEY_WIDGET_SHOW_HERO = "cached_w_show_hero"
 
         private const val KEY_LOC_NAME = "cached_loc_name"
         private const val KEY_LOC_COUNTRY = "cached_loc_country"
@@ -91,6 +111,7 @@ class PrayerPreferences(private val context: Context) {
         private const val KEY_DYNAMIC_ISLAND_MINUTES = "cached_dyn_island_minutes"
         private const val KEY_AUDIO_STREAM = "cached_audio_stream"
         private const val KEY_WAKE_SCREEN = "cached_wake_screen"
+        private const val KEY_ONBOARDING_COMPLETED = "cached_onboarding_completed"
 
         fun getInitialSettings(context: Context): AppPrayerSettings {
             val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
@@ -162,6 +183,7 @@ class PrayerPreferences(private val context: Context) {
             } ?: AppColorPreset.SYSTEM_DYNAMIC
 
             val followSys = fastPrefs.getBoolean(KEY_FOLLOW_SYSTEM_COLORS, true)
+            val widgetFollowSys = fastPrefs.getBoolean(KEY_WIDGET_FOLLOW_SYSTEM_COLORS, true)
             val is24h = fastPrefs.getBoolean(KEY_24H, false)
 
             val dynIsland = fastPrefs.getBoolean(KEY_DYNAMIC_ISLAND_ENABLED, true)
@@ -173,6 +195,41 @@ class PrayerPreferences(private val context: Context) {
             } ?: AthanAudioStream.ALARM
 
             val wakeScreen = fastPrefs.getBoolean(KEY_WAKE_SCREEN, true)
+            val onboardingCompleted = fastPrefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+
+            // Widget Customization
+            val wThemeStr = fastPrefs.getString(KEY_WIDGET_THEME, null)
+            val wTheme = wThemeStr?.let { try { WidgetThemeMode.valueOf(it) } catch (e: Exception) { WidgetThemeMode.APP_THEME } } ?: WidgetThemeMode.APP_THEME
+
+            val wBgStr = fastPrefs.getString(KEY_WIDGET_BG, null)
+            val wBg = wBgStr?.let { try { WidgetBackgroundStyle.valueOf(it) } catch (e: Exception) { WidgetBackgroundStyle.TRANSLUCENT } } ?: WidgetBackgroundStyle.TRANSLUCENT
+
+            val wOpacity = fastPrefs.getInt(KEY_WIDGET_OPACITY, 85)
+
+            val wFontStr = fastPrefs.getString(KEY_WIDGET_FONT, null)
+            val wFont = wFontStr?.let { try { WidgetFontSize.valueOf(it) } catch (e: Exception) { WidgetFontSize.STANDARD } } ?: WidgetFontSize.STANDARD
+
+            val wShowLoc = fastPrefs.getBoolean(KEY_WIDGET_SHOW_LOC, true)
+            val wShowHijri = fastPrefs.getBoolean(KEY_WIDGET_SHOW_HIJRI, true)
+            val wShowCd = fastPrefs.getBoolean(KEY_WIDGET_SHOW_COUNTDOWN, true)
+            val wShowProg = fastPrefs.getBoolean(KEY_WIDGET_SHOW_PROGRESS, true)
+            val wShowSunrise = fastPrefs.getBoolean(KEY_WIDGET_SHOW_SUNRISE, true)
+            val wShowAll = fastPrefs.getBoolean(KEY_WIDGET_SHOW_ALL, true)
+            val wShowHero = fastPrefs.getBoolean(KEY_WIDGET_SHOW_HERO, true)
+
+            val widgetSettings = WidgetCustomizationSettings(
+                themeMode = wTheme,
+                bgStyle = wBg,
+                opacityPercent = wOpacity,
+                fontSize = wFont,
+                showLocation = wShowLoc,
+                showHijriDate = wShowHijri,
+                showCountdown = wShowCd,
+                showProgressBar = wShowProg,
+                showSunrise = wShowSunrise,
+                showAllPrayersList = wShowAll,
+                showHeroCard = wShowHero
+            )
 
             return AppPrayerSettings(
                 location = location,
@@ -185,10 +242,13 @@ class PrayerPreferences(private val context: Context) {
                 themeMode = theme,
                 colorPreset = color,
                 followSystemColors = followSys,
+                widgetFollowSystemColors = widgetFollowSys,
+                widgetSettings = widgetSettings,
                 dynamicIslandEnabled = dynIsland,
                 dynamicIslandMinutesBefore = dynMinutes,
                 audioStream = audioStream,
                 wakeScreenOnAlarm = wakeScreen,
+                onboardingCompleted = onboardingCompleted,
                 adjustments = adjustments
             )
         }
@@ -211,10 +271,25 @@ class PrayerPreferences(private val context: Context) {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val COLOR_PRESET = stringPreferencesKey("color_preset")
         val FOLLOW_SYSTEM_COLORS = booleanPreferencesKey("follow_system_colors")
+        val WIDGET_FOLLOW_SYSTEM_COLORS = booleanPreferencesKey("widget_follow_system_colors")
         val DYNAMIC_ISLAND_ENABLED = booleanPreferencesKey("dynamic_island_enabled")
         val DYNAMIC_ISLAND_MINUTES = intPreferencesKey("dynamic_island_minutes")
         val AUDIO_STREAM = stringPreferencesKey("audio_stream")
         val WAKE_SCREEN_ON_ALARM = booleanPreferencesKey("wake_screen_on_alarm")
+        val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+
+        // Widget Settings
+        val WIDGET_THEME_MODE = stringPreferencesKey("widget_theme_mode")
+        val WIDGET_BG_STYLE = stringPreferencesKey("widget_bg_style")
+        val WIDGET_OPACITY = intPreferencesKey("widget_opacity")
+        val WIDGET_FONT_SIZE = stringPreferencesKey("widget_font_size")
+        val WIDGET_SHOW_LOC = booleanPreferencesKey("widget_show_loc")
+        val WIDGET_SHOW_HIJRI = booleanPreferencesKey("widget_show_hijri")
+        val WIDGET_SHOW_COUNTDOWN = booleanPreferencesKey("widget_show_countdown")
+        val WIDGET_SHOW_PROGRESS = booleanPreferencesKey("widget_show_progress")
+        val WIDGET_SHOW_SUNRISE = booleanPreferencesKey("widget_show_sunrise")
+        val WIDGET_SHOW_ALL = booleanPreferencesKey("widget_show_all")
+        val WIDGET_SHOW_HERO = booleanPreferencesKey("widget_show_hero")
 
         // Adjustments
         val ADJ_FAJR = intPreferencesKey("adj_fajr")
@@ -270,6 +345,41 @@ class PrayerPreferences(private val context: Context) {
         } ?: AppColorPreset.SYSTEM_DYNAMIC
 
         val followSystemColors = prefs[Keys.FOLLOW_SYSTEM_COLORS] ?: (colorPreset == AppColorPreset.SYSTEM_DYNAMIC)
+        val widgetFollowSystemColors = prefs[Keys.WIDGET_FOLLOW_SYSTEM_COLORS] ?: true
+
+        // Widget settings
+        val wThemeStr = prefs[Keys.WIDGET_THEME_MODE]
+        val wTheme = wThemeStr?.let { try { WidgetThemeMode.valueOf(it) } catch (e: Exception) { WidgetThemeMode.APP_THEME } } ?: WidgetThemeMode.APP_THEME
+
+        val wBgStr = prefs[Keys.WIDGET_BG_STYLE]
+        val wBg = wBgStr?.let { try { WidgetBackgroundStyle.valueOf(it) } catch (e: Exception) { WidgetBackgroundStyle.TRANSLUCENT } } ?: WidgetBackgroundStyle.TRANSLUCENT
+
+        val wOpacity = prefs[Keys.WIDGET_OPACITY] ?: 85
+
+        val wFontStr = prefs[Keys.WIDGET_FONT_SIZE]
+        val wFont = wFontStr?.let { try { WidgetFontSize.valueOf(it) } catch (e: Exception) { WidgetFontSize.STANDARD } } ?: WidgetFontSize.STANDARD
+
+        val wShowLoc = prefs[Keys.WIDGET_SHOW_LOC] ?: true
+        val wShowHijri = prefs[Keys.WIDGET_SHOW_HIJRI] ?: true
+        val wShowCd = prefs[Keys.WIDGET_SHOW_COUNTDOWN] ?: true
+        val wShowProg = prefs[Keys.WIDGET_SHOW_PROGRESS] ?: true
+        val wShowSunrise = prefs[Keys.WIDGET_SHOW_SUNRISE] ?: true
+        val wShowAll = prefs[Keys.WIDGET_SHOW_ALL] ?: true
+        val wShowHero = prefs[Keys.WIDGET_SHOW_HERO] ?: true
+
+        val widgetSettings = WidgetCustomizationSettings(
+            themeMode = wTheme,
+            bgStyle = wBg,
+            opacityPercent = wOpacity,
+            fontSize = wFont,
+            showLocation = wShowLoc,
+            showHijriDate = wShowHijri,
+            showCountdown = wShowCd,
+            showProgressBar = wShowProg,
+            showSunrise = wShowSunrise,
+            showAllPrayersList = wShowAll,
+            showHeroCard = wShowHero
+        )
 
         val audioStreamStr = prefs[Keys.AUDIO_STREAM]
         val audioStream = audioStreamStr?.let {
@@ -277,6 +387,7 @@ class PrayerPreferences(private val context: Context) {
         } ?: AthanAudioStream.ALARM
 
         val wakeScreenOnAlarm = prefs[Keys.WAKE_SCREEN_ON_ALARM] ?: true
+        val onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: false
 
         val adjustments = PrayerTimeAdjustments(
             fajr = prefs[Keys.ADJ_FAJR] ?: 0,
@@ -315,6 +426,18 @@ class PrayerPreferences(private val context: Context) {
             .putString(KEY_THEME, themeMode.name)
             .putString(KEY_COLOR_PRESET, colorPreset.name)
             .putBoolean(KEY_FOLLOW_SYSTEM_COLORS, followSystemColors)
+            .putBoolean(KEY_WIDGET_FOLLOW_SYSTEM_COLORS, widgetFollowSystemColors)
+            .putString(KEY_WIDGET_THEME, widgetSettings.themeMode.name)
+            .putString(KEY_WIDGET_BG, widgetSettings.bgStyle.name)
+            .putInt(KEY_WIDGET_OPACITY, widgetSettings.opacityPercent)
+            .putString(KEY_WIDGET_FONT, widgetSettings.fontSize.name)
+            .putBoolean(KEY_WIDGET_SHOW_LOC, widgetSettings.showLocation)
+            .putBoolean(KEY_WIDGET_SHOW_HIJRI, widgetSettings.showHijriDate)
+            .putBoolean(KEY_WIDGET_SHOW_COUNTDOWN, widgetSettings.showCountdown)
+            .putBoolean(KEY_WIDGET_SHOW_PROGRESS, widgetSettings.showProgressBar)
+            .putBoolean(KEY_WIDGET_SHOW_SUNRISE, widgetSettings.showSunrise)
+            .putBoolean(KEY_WIDGET_SHOW_ALL, widgetSettings.showAllPrayersList)
+            .putBoolean(KEY_WIDGET_SHOW_HERO, widgetSettings.showHeroCard)
             .putBoolean(KEY_24H, is24Hour)
             .putString(KEY_LOC_NAME, location.name)
             .putString(KEY_LOC_COUNTRY, location.country)
@@ -336,6 +459,7 @@ class PrayerPreferences(private val context: Context) {
             .putInt(KEY_DYNAMIC_ISLAND_MINUTES, dynamicIslandMinutes)
             .putString(KEY_AUDIO_STREAM, audioStream.name)
             .putBoolean(KEY_WAKE_SCREEN, wakeScreenOnAlarm)
+            .putBoolean(KEY_ONBOARDING_COMPLETED, onboardingCompleted)
             .apply()
 
         AppPrayerSettings(
@@ -349,13 +473,47 @@ class PrayerPreferences(private val context: Context) {
             themeMode = themeMode,
             colorPreset = colorPreset,
             followSystemColors = followSystemColors,
+            widgetFollowSystemColors = widgetFollowSystemColors,
+            widgetSettings = widgetSettings,
             dynamicIslandEnabled = dynamicIslandEnabled,
             dynamicIslandMinutesBefore = dynamicIslandMinutes,
             audioStream = audioStream,
             wakeScreenOnAlarm = wakeScreenOnAlarm,
+            onboardingCompleted = onboardingCompleted,
             prayerConfigs = prayerConfigs,
             adjustments = adjustments
         )
+    }
+
+    suspend fun updateWidgetSettings(settings: WidgetCustomizationSettings) {
+        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
+        fastPrefs.edit()
+            .putString(KEY_WIDGET_THEME, settings.themeMode.name)
+            .putString(KEY_WIDGET_BG, settings.bgStyle.name)
+            .putInt(KEY_WIDGET_OPACITY, settings.opacityPercent)
+            .putString(KEY_WIDGET_FONT, settings.fontSize.name)
+            .putBoolean(KEY_WIDGET_SHOW_LOC, settings.showLocation)
+            .putBoolean(KEY_WIDGET_SHOW_HIJRI, settings.showHijriDate)
+            .putBoolean(KEY_WIDGET_SHOW_COUNTDOWN, settings.showCountdown)
+            .putBoolean(KEY_WIDGET_SHOW_PROGRESS, settings.showProgressBar)
+            .putBoolean(KEY_WIDGET_SHOW_SUNRISE, settings.showSunrise)
+            .putBoolean(KEY_WIDGET_SHOW_ALL, settings.showAllPrayersList)
+            .putBoolean(KEY_WIDGET_SHOW_HERO, settings.showHeroCard)
+            .apply()
+        context.dataStore.edit { prefs ->
+            prefs[Keys.WIDGET_THEME_MODE] = settings.themeMode.name
+            prefs[Keys.WIDGET_BG_STYLE] = settings.bgStyle.name
+            prefs[Keys.WIDGET_OPACITY] = settings.opacityPercent
+            prefs[Keys.WIDGET_FONT_SIZE] = settings.fontSize.name
+            prefs[Keys.WIDGET_SHOW_LOC] = settings.showLocation
+            prefs[Keys.WIDGET_SHOW_HIJRI] = settings.showHijriDate
+            prefs[Keys.WIDGET_SHOW_COUNTDOWN] = settings.showCountdown
+            prefs[Keys.WIDGET_SHOW_PROGRESS] = settings.showProgressBar
+            prefs[Keys.WIDGET_SHOW_SUNRISE] = settings.showSunrise
+            prefs[Keys.WIDGET_SHOW_ALL] = settings.showAllPrayersList
+            prefs[Keys.WIDGET_SHOW_HERO] = settings.showHeroCard
+        }
+        com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
     }
 
     suspend fun updateAudioStream(audioStream: AthanAudioStream) {
@@ -474,6 +632,7 @@ class PrayerPreferences(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[Keys.THEME_MODE] = themeMode.name
         }
+        com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
     }
 
     suspend fun updateColorPreset(preset: AppColorPreset) {
@@ -485,6 +644,7 @@ class PrayerPreferences(private val context: Context) {
                 prefs[Keys.FOLLOW_SYSTEM_COLORS] = false
             }
         }
+        com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
     }
 
     suspend fun updateFollowSystemColors(follow: Boolean) {
@@ -496,6 +656,16 @@ class PrayerPreferences(private val context: Context) {
                 prefs[Keys.COLOR_PRESET] = AppColorPreset.SYSTEM_DYNAMIC.name
             }
         }
+        com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
+    }
+
+    suspend fun updateWidgetFollowSystemColors(follow: Boolean) {
+        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
+        fastPrefs.edit().putBoolean(KEY_WIDGET_FOLLOW_SYSTEM_COLORS, follow).apply()
+        context.dataStore.edit { prefs ->
+            prefs[Keys.WIDGET_FOLLOW_SYSTEM_COLORS] = follow
+        }
+        com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
     }
 
     suspend fun updatePrayerAdjustment(prayer: PrayerType, offsetMinutes: Int) {
@@ -530,6 +700,14 @@ class PrayerPreferences(private val context: Context) {
             prefs[Keys.notifEnabled(prayer)] = enabled
             prefs[Keys.notifSound(prayer)] = soundType.name
             prefs[Keys.notifPreReminder(prayer)] = preReminderMinutes
+        }
+    }
+
+    suspend fun updateOnboardingCompleted(completed: Boolean) {
+        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
+        fastPrefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply()
+        context.dataStore.edit { prefs ->
+            prefs[Keys.ONBOARDING_COMPLETED] = completed
         }
     }
 }

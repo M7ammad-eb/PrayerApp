@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_root"
+    android:id="@+id/widget_root_expanded"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <!-- Background Layers -->
     <ImageView
-        android:id="@+id/widget_root_bg_img"
+        android:id="@+id/widget_exp_root_bg_img"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:contentDescription="@null"
@@ -14,7 +14,7 @@
         android:src="@drawable/shape_widget_root_bg" />
 
     <ImageView
-        android:id="@+id/widget_root_border_img"
+        android:id="@+id/widget_exp_root_border_img"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:contentDescription="@null"
@@ -27,18 +27,20 @@
         android:orientation="vertical"
         android:padding="12dp">
 
-        <!-- Header: Location, Hijri Date, and Refresh Action -->
+        <!-- Header -->
         <RelativeLayout
+            android:id="@+id/widget_exp_header"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:paddingBottom="4dp">
 
             <LinearLayout
-                android:id="@+id/widget_header_info"
+                android:id="@+id/widget_exp_header_info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-                android:layout_toStartOf="@+id/widget_refresh_button"
+                android:layout_toStartOf="@+id/widget_exp_refresh_btn"
                 android:gravity="start|center_vertical"
                 android:orientation="vertical">
 
@@ -49,14 +51,14 @@
                     android:orientation="horizontal">
 
                     <ImageView
-                        android:id="@+id/widget_mosque_icon"
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
+                        android:id="@+id/widget_exp_mosque_icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_widget_mosque" />
 
                     <TextView
-                        android:id="@+id/widget_location_text"
+                        android:id="@+id/widget_exp_location"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
@@ -66,12 +68,12 @@
                         android:text="Makkah, Saudi Arabia"
                         android:textAlignment="viewStart"
                         android:textColor="@color/widget_text_primary"
-                        android:textSize="12sp"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/widget_hijri_text"
+                    android:id="@+id/widget_exp_hijri"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
@@ -81,31 +83,32 @@
                     android:text="14 Safar 1448 AH"
                     android:textAlignment="viewStart"
                     android:textColor="@color/widget_text_secondary"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <ImageButton
-                android:id="@+id/widget_refresh_button"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:id="@+id/widget_exp_refresh_btn"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Refresh Widget"
-                android:padding="5dp"
+                android:padding="6dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_widget_refresh" />
         </RelativeLayout>
 
-        <!-- Hero Card: Next Prayer Details & Countdown -->
+        <!-- Hero Card -->
         <FrameLayout
-            android:id="@+id/widget_hero_card"
+            android:id="@+id/widget_exp_hero_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp">
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="6dp">
 
             <ImageView
-                android:id="@+id/widget_hero_bg_img"
+                android:id="@+id/widget_exp_hero_bg_img"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="@null"
@@ -113,7 +116,7 @@
                 android:src="@drawable/shape_widget_hero_bg" />
 
             <ImageView
-                android:id="@+id/widget_hero_border_img"
+                android:id="@+id/widget_exp_hero_border_img"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="@null"
@@ -124,13 +127,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="10dp">
+                android:padding="12dp">
 
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
 
-                    <!-- Next Prayer Label & Time -->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -140,39 +142,38 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/widget_next_prayer_name"
+                            android:id="@+id/widget_exp_next_prayer_name"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:gravity="start"
                             android:text="Asr"
                             android:textAlignment="viewStart"
                             android:textColor="@color/widget_text_accent"
-                            android:textSize="12sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
 
                         <TextView
-                            android:id="@+id/widget_next_prayer_time"
+                            android:id="@+id/widget_exp_next_prayer_time"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
+                            android:layout_marginTop="2dp"
                             android:gravity="start"
                             android:text="3:45 PM"
                             android:textAlignment="viewStart"
                             android:textColor="@color/widget_text_on_hero"
-                            android:textSize="20sp"
+                            android:textSize="24sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
-                    <!-- Countdown Timer Badge -->
                     <FrameLayout
-                        android:id="@+id/widget_countdown_container"
+                        android:id="@+id/widget_exp_countdown_container"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true">
 
                         <ImageView
-                            android:id="@+id/widget_countdown_bg_img"
+                            android:id="@+id/widget_exp_countdown_bg_img"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:contentDescription="@null"
@@ -184,37 +185,36 @@
                             android:layout_height="wrap_content"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:paddingStart="10dp"
-                            android:paddingTop="4dp"
-                            android:paddingEnd="10dp"
-                            android:paddingBottom="4dp">
+                            android:paddingStart="12dp"
+                            android:paddingTop="5dp"
+                            android:paddingEnd="12dp"
+                            android:paddingBottom="5dp">
 
                             <TextView
-                                android:id="@+id/widget_countdown_text"
+                                android:id="@+id/widget_exp_countdown_text"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="In 1h 45m"
                                 android:textColor="@color/widget_text_on_accent"
-                                android:textSize="11sp"
+                                android:textSize="12sp"
                                 android:textStyle="bold" />
 
                             <TextView
-                                android:id="@+id/widget_status_text"
+                                android:id="@+id/widget_exp_status_text"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Remaining"
                                 android:textColor="@color/widget_text_on_accent"
-                                android:textSize="8sp" />
+                                android:textSize="9sp" />
                         </LinearLayout>
                     </FrameLayout>
                 </RelativeLayout>
 
-                <!-- Interval Progress Bar -->
                 <ProgressBar
-                    android:id="@+id/widget_prayer_progress"
+                    android:id="@+id/widget_exp_prayer_progress"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
-                    android:layout_height="4dp"
+                    android:layout_height="5dp"
                     android:layout_marginTop="8dp"
                     android:max="100"
                     android:progress="65"
@@ -222,295 +222,299 @@
             </LinearLayout>
         </FrameLayout>
 
-        <!-- Daily Prayer Times Ribbon -->
+        <!-- Schedule List: 6 prayers, each a rounded card -->
         <LinearLayout
-            android:id="@+id/widget_prayer_ribbon"
+            android:id="@+id/widget_exp_schedule_list"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:weightSum="6">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <!-- Fajr -->
             <FrameLayout
-                android:id="@+id/widget_fajr_container"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="3dp"
+                android:id="@+id/widget_exp_fajr_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="3dp"
                 android:layout_weight="1">
 
                 <ImageView
-                    android:id="@+id/widget_fajr_bg_img"
+                    android:id="@+id/widget_exp_fajr_bg_img"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="@null"
                     android:scaleType="fitXY"
                     android:src="@drawable/shape_widget_card_item_bg" />
 
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="5dp">
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
 
                     <TextView
-                        android:id="@+id/widget_fajr_name"
+                        android:id="@+id/widget_exp_fajr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
                         android:text="Fajr"
+                        android:textAlignment="viewStart"
                         android:textColor="@color/widget_text_secondary"
-                        android:textSize="9sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/widget_fajr_time"
+                        android:id="@+id/widget_exp_fajr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="05:12"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="05:12 AM"
+                        android:textAlignment="viewEnd"
                         android:textColor="@color/widget_text_primary"
-                        android:textSize="9sp" />
-                </LinearLayout>
+                        android:textSize="12sp" />
+                </RelativeLayout>
             </FrameLayout>
 
             <!-- Sunrise -->
             <FrameLayout
-                android:id="@+id/widget_sunrise_container"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="3dp"
+                android:id="@+id/widget_exp_sunrise_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="3dp"
                 android:layout_weight="1">
 
                 <ImageView
-                    android:id="@+id/widget_sunrise_bg_img"
+                    android:id="@+id/widget_exp_sunrise_bg_img"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="@null"
                     android:scaleType="fitXY"
                     android:src="@drawable/shape_widget_card_item_bg" />
 
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="5dp">
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
 
                     <TextView
-                        android:id="@+id/widget_sunrise_name"
+                        android:id="@+id/widget_exp_sunrise_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
                         android:text="Sunrise"
+                        android:textAlignment="viewStart"
                         android:textColor="@color/widget_text_secondary"
-                        android:textSize="9sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/widget_sunrise_time"
+                        android:id="@+id/widget_exp_sunrise_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="06:34"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="06:34 AM"
+                        android:textAlignment="viewEnd"
                         android:textColor="@color/widget_text_primary"
-                        android:textSize="9sp" />
-                </LinearLayout>
+                        android:textSize="12sp" />
+                </RelativeLayout>
             </FrameLayout>
 
             <!-- Dhuhr -->
             <FrameLayout
-                android:id="@+id/widget_dhuhr_container"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="3dp"
+                android:id="@+id/widget_exp_dhuhr_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="3dp"
                 android:layout_weight="1">
 
                 <ImageView
-                    android:id="@+id/widget_dhuhr_bg_img"
+                    android:id="@+id/widget_exp_dhuhr_bg_img"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="@null"
                     android:scaleType="fitXY"
                     android:src="@drawable/shape_widget_card_item_bg" />
 
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="5dp">
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
 
                     <TextView
-                        android:id="@+id/widget_dhuhr_name"
+                        android:id="@+id/widget_exp_dhuhr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
                         android:text="Dhuhr"
+                        android:textAlignment="viewStart"
                         android:textColor="@color/widget_text_secondary"
-                        android:textSize="9sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/widget_dhuhr_time"
+                        android:id="@+id/widget_exp_dhuhr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="12:20"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="12:20 PM"
+                        android:textAlignment="viewEnd"
                         android:textColor="@color/widget_text_primary"
-                        android:textSize="9sp" />
-                </LinearLayout>
+                        android:textSize="12sp" />
+                </RelativeLayout>
             </FrameLayout>
 
             <!-- Asr -->
             <FrameLayout
-                android:id="@+id/widget_asr_container"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="3dp"
+                android:id="@+id/widget_exp_asr_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="3dp"
                 android:layout_weight="1">
 
                 <ImageView
-                    android:id="@+id/widget_asr_bg_img"
+                    android:id="@+id/widget_exp_asr_bg_img"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="@null"
                     android:scaleType="fitXY"
                     android:src="@drawable/shape_widget_card_item_bg" />
 
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="5dp">
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
 
                     <TextView
-                        android:id="@+id/widget_asr_name"
+                        android:id="@+id/widget_exp_asr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
                         android:text="Asr"
+                        android:textAlignment="viewStart"
                         android:textColor="@color/widget_text_on_accent"
-                        android:textSize="9sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/widget_asr_time"
+                        android:id="@+id/widget_exp_asr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="15:45"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="03:45 PM"
+                        android:textAlignment="viewEnd"
                         android:textColor="@color/widget_text_on_accent"
-                        android:textSize="9sp" />
-                </LinearLayout>
+                        android:textSize="12sp" />
+                </RelativeLayout>
             </FrameLayout>
 
             <!-- Maghrib -->
             <FrameLayout
-                android:id="@+id/widget_maghrib_container"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="3dp"
+                android:id="@+id/widget_exp_maghrib_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="3dp"
                 android:layout_weight="1">
 
                 <ImageView
-                    android:id="@+id/widget_maghrib_bg_img"
+                    android:id="@+id/widget_exp_maghrib_bg_img"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="@null"
                     android:scaleType="fitXY"
                     android:src="@drawable/shape_widget_card_item_bg" />
 
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="5dp">
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
 
                     <TextView
-                        android:id="@+id/widget_maghrib_name"
+                        android:id="@+id/widget_exp_maghrib_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
                         android:text="Maghrib"
+                        android:textAlignment="viewStart"
                         android:textColor="@color/widget_text_secondary"
-                        android:textSize="9sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/widget_maghrib_time"
+                        android:id="@+id/widget_exp_maghrib_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="18:05"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="06:05 PM"
+                        android:textAlignment="viewEnd"
                         android:textColor="@color/widget_text_primary"
-                        android:textSize="9sp" />
-                </LinearLayout>
+                        android:textSize="12sp" />
+                </RelativeLayout>
             </FrameLayout>
 
             <!-- Isha -->
             <FrameLayout
-                android:id="@+id/widget_isha_container"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:id="@+id/widget_exp_isha_row"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1">
 
                 <ImageView
-                    android:id="@+id/widget_isha_bg_img"
+                    android:id="@+id/widget_exp_isha_bg_img"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="@null"
                     android:scaleType="fitXY"
                     android:src="@drawable/shape_widget_card_item_bg" />
 
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="5dp">
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
 
                     <TextView
-                        android:id="@+id/widget_isha_name"
+                        android:id="@+id/widget_exp_isha_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
                         android:text="Isha"
+                        android:textAlignment="viewStart"
                         android:textColor="@color/widget_text_secondary"
-                        android:textSize="9sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/widget_isha_time"
+                        android:id="@+id/widget_exp_isha_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="19:35"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="07:35 PM"
+                        android:textAlignment="viewEnd"
                         android:textColor="@color/widget_text_primary"
-                        android:textSize="9sp" />
-                </LinearLayout>
+                        android:textSize="12sp" />
+                </RelativeLayout>
             </FrameLayout>
         </LinearLayout>
 
