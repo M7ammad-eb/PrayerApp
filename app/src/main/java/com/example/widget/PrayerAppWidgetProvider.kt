@@ -272,7 +272,12 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             val inactivePrayerBg = ColorUtils.setAlphaComponent(palette.textPrimary, (0.14f * 255).toInt())
             val countdownBg = palette.primaryAccent
 
-            val textOnAccent = if (ColorUtils.calculateLuminance(palette.primaryAccent) > 0.60) {
+            // Threshold lowered from 0.60: Google's own widgets (e.g. Calendar event chips)
+            // default to dark text on their colored badges far more readily than a strict
+            // "only if very light" rule would - most of our accent colors are bright/saturated
+            // enough to read fine with dark text, and it reads as more consistent with that
+            // convention than defaulting to white so often.
+            val textOnAccent = if (ColorUtils.calculateLuminance(palette.primaryAccent) > 0.42) {
                 0xFF0F172A.toInt()
             } else {
                 Color.WHITE
@@ -457,6 +462,14 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         val prayerDisplayName = getPrayerName(if (showingPrevious) previousPrayerType else nextPrayerType, settings.language)
         val formattedNextTime = (if (showingPrevious) previousPrayerZoned else nextPrayerZoned).format(timeFormatter)
         val countdownFormatted = if (showingPrevious) sinceFormatted else formatCountdown(diffSeconds, isArabic)
+
+        // For heroTimeMode=BOTH: the true next/previous values regardless of the single-hero
+        // fallback above, used by the dual side-by-side display on wide widgets.
+        val previousPrayerDisplayName = getPrayerName(previousPrayerType, settings.language)
+        val formattedPreviousTime = previousPrayerZoned.format(timeFormatter)
+        val nextPrayerDisplayName = getPrayerName(nextPrayerType, settings.language)
+        val trueNextFormattedTime = nextPrayerZoned.format(timeFormatter)
+
         val colors = resolveWidgetColors(context, settings)
 
         for (appWidgetId in appWidgetIds) {
@@ -465,6 +478,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 100)
 
             val hijriInline = minWidth >= 220
+            val showBothHero = settings.widgetSettings.heroTimeMode == WidgetHeroTimeMode.BOTH && minWidth >= 220
 
             val microViews = buildMicroWidget(
                 context = context,
@@ -552,7 +566,13 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 mainIntent = mainPendingIntent,
                 refreshIntent = refreshPendingIntent,
                 layoutDirection = layoutDirection,
-                isArabic = isArabic
+                isArabic = isArabic,
+                showBothHero = showBothHero,
+                previousPrayerName = previousPrayerDisplayName,
+                previousPrayerTime = formattedPreviousTime,
+                sinceText = sinceFormatted,
+                nextPrayerName = nextPrayerDisplayName,
+                nextPrayerTimeText = trueNextFormattedTime
             )
 
             val expandedViews = buildExpandedWidget(
@@ -574,7 +594,13 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 mainIntent = mainPendingIntent,
                 refreshIntent = refreshPendingIntent,
                 layoutDirection = layoutDirection,
-                isArabic = isArabic
+                isArabic = isArabic,
+                showBothHero = showBothHero,
+                previousPrayerName = previousPrayerDisplayName,
+                previousPrayerTime = formattedPreviousTime,
+                sinceText = sinceFormatted,
+                nextPrayerName = nextPrayerDisplayName,
+                nextPrayerTimeText = trueNextFormattedTime
             )
 
             // Size buckets are calibrated to each layout's real minimum content size
@@ -973,7 +999,13 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         mainIntent: PendingIntent,
         refreshIntent: PendingIntent,
         layoutDirection: Int,
-        isArabic: Boolean
+        isArabic: Boolean,
+        showBothHero: Boolean,
+        previousPrayerName: String,
+        previousPrayerTime: String,
+        sinceText: String,
+        nextPrayerName: String,
+        nextPrayerTimeText: String
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.prayer_appwidget_layout)
         val wSet = settings.widgetSettings
@@ -1024,42 +1056,70 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             tintShape(views, R.id.widget_hero_bg_img, colors.heroBgColor)
             tintShape(views, R.id.widget_hero_border_img, colors.heroStrokeColor)
 
-            views.setTextViewText(R.id.widget_next_prayer_name, prayerName)
-            views.setTextColor(R.id.widget_next_prayer_name, colors.accentColor)
-            views.setTextViewTextSize(R.id.widget_next_prayer_name, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
+            if (showBothHero) {
+                views.setViewVisibility(R.id.widget_hero_single_content, View.GONE)
+                views.setViewVisibility(R.id.widget_hero_dual_content, View.VISIBLE)
 
-            views.setTextViewText(R.id.widget_next_prayer_time, prayerTime)
-            views.setTextColor(R.id.widget_next_prayer_time, colors.textPrimaryColor)
-            views.setTextViewTextSize(R.id.widget_next_prayer_time, TypedValue.COMPLEX_UNIT_SP, 20f * scale)
+                views.setTextViewText(R.id.widget_hero_prev_label, if (isArabic) "الصلاة السابقة" else "PREVIOUS")
+                views.setTextColor(R.id.widget_hero_prev_label, colors.textSecondaryColor)
+                views.setTextViewText(R.id.widget_hero_prev_name, previousPrayerName)
+                views.setTextColor(R.id.widget_hero_prev_name, colors.accentColor)
+                views.setTextViewText(R.id.widget_hero_prev_time, previousPrayerTime)
+                views.setTextColor(R.id.widget_hero_prev_time, colors.textPrimaryColor)
+                views.setTextViewText(R.id.widget_hero_prev_since, sinceText)
+                views.setTextColor(R.id.widget_hero_prev_since, colors.textSecondaryColor)
 
-            if (wSet.showCountdown) {
-                views.setViewVisibility(R.id.widget_countdown_container, View.VISIBLE)
-                tintShape(views, R.id.widget_countdown_bg_img, colors.countdownBgColor)
-                tintContainerBackground(views, R.id.widget_countdown_container, colors.countdownBgColor)
-                views.setTextViewText(R.id.widget_countdown_text, countdown)
-                views.setTextColor(R.id.widget_countdown_text, colors.textOnAccentColor)
-                views.setTextViewTextSize(R.id.widget_countdown_text, TypedValue.COMPLEX_UNIT_SP, 11f * scale)
+                views.setTextViewText(R.id.widget_hero_next_label, if (isArabic) "الصلاة القادمة" else "NEXT")
+                views.setTextColor(R.id.widget_hero_next_label, colors.textSecondaryColor)
+                views.setTextViewText(R.id.widget_hero_next_name, nextPrayerName)
+                views.setTextColor(R.id.widget_hero_next_name, colors.accentColor)
+                views.setTextViewText(R.id.widget_hero_next_time, nextPrayerTimeText)
+                views.setTextColor(R.id.widget_hero_next_time, colors.textPrimaryColor)
+                views.setTextViewText(R.id.widget_hero_next_in, countdown)
+                views.setTextColor(R.id.widget_hero_next_in, colors.textSecondaryColor)
 
-                // "In 2h 41m" already says everything; a "Remaining" label under it just reads
-                // redundantly. Only show a status line once the prayer time has actually
-                // arrived, where it adds real information.
-                if (wSet.heroTimeMode == WidgetHeroTimeMode.NEXT && diffSeconds <= 60) {
-                    views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
-                    views.setTextViewText(R.id.widget_status_text, if (isArabic) "حان وقت الصلاة" else "Prayer Time!")
-                    views.setTextColor(R.id.widget_status_text, colors.textOnAccentColor)
-                    views.setTextViewTextSize(R.id.widget_status_text, TypedValue.COMPLEX_UNIT_SP, 8f * scale)
-                } else {
-                    views.setViewVisibility(R.id.widget_status_text, View.GONE)
-                }
-            } else {
-                views.setViewVisibility(R.id.widget_countdown_container, View.GONE)
-            }
-
-            if (wSet.showProgressBar) {
-                views.setViewVisibility(R.id.widget_prayer_progress, View.VISIBLE)
-                views.setProgressBar(R.id.widget_prayer_progress, 100, progressPercent, false)
-            } else {
                 views.setViewVisibility(R.id.widget_prayer_progress, View.GONE)
+            } else {
+                views.setViewVisibility(R.id.widget_hero_single_content, View.VISIBLE)
+                views.setViewVisibility(R.id.widget_hero_dual_content, View.GONE)
+
+                views.setTextViewText(R.id.widget_next_prayer_name, prayerName)
+                views.setTextColor(R.id.widget_next_prayer_name, colors.accentColor)
+                views.setTextViewTextSize(R.id.widget_next_prayer_name, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
+
+                views.setTextViewText(R.id.widget_next_prayer_time, prayerTime)
+                views.setTextColor(R.id.widget_next_prayer_time, colors.textPrimaryColor)
+                views.setTextViewTextSize(R.id.widget_next_prayer_time, TypedValue.COMPLEX_UNIT_SP, 20f * scale)
+
+                if (wSet.showCountdown) {
+                    views.setViewVisibility(R.id.widget_countdown_container, View.VISIBLE)
+                    tintShape(views, R.id.widget_countdown_bg_img, colors.countdownBgColor)
+                    tintContainerBackground(views, R.id.widget_countdown_container, colors.countdownBgColor)
+                    views.setTextViewText(R.id.widget_countdown_text, countdown)
+                    views.setTextColor(R.id.widget_countdown_text, colors.textOnAccentColor)
+                    views.setTextViewTextSize(R.id.widget_countdown_text, TypedValue.COMPLEX_UNIT_SP, 11f * scale)
+
+                    // "In 2h 41m" already says everything; a "Remaining" label under it just
+                    // reads redundantly. Only show a status line once the prayer time has
+                    // actually arrived, where it adds real information.
+                    if (wSet.heroTimeMode == WidgetHeroTimeMode.NEXT && diffSeconds <= 60) {
+                        views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
+                        views.setTextViewText(R.id.widget_status_text, if (isArabic) "حان وقت الصلاة" else "Prayer Time!")
+                        views.setTextColor(R.id.widget_status_text, colors.textOnAccentColor)
+                        views.setTextViewTextSize(R.id.widget_status_text, TypedValue.COMPLEX_UNIT_SP, 8f * scale)
+                    } else {
+                        views.setViewVisibility(R.id.widget_status_text, View.GONE)
+                    }
+                } else {
+                    views.setViewVisibility(R.id.widget_countdown_container, View.GONE)
+                }
+
+                if (wSet.showProgressBar) {
+                    views.setViewVisibility(R.id.widget_prayer_progress, View.VISIBLE)
+                    views.setProgressBar(R.id.widget_prayer_progress, 100, progressPercent, false)
+                } else {
+                    views.setViewVisibility(R.id.widget_prayer_progress, View.GONE)
+                }
             }
         } else {
             views.setViewVisibility(R.id.widget_hero_card, View.GONE)
@@ -1098,7 +1158,13 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         mainIntent: PendingIntent,
         refreshIntent: PendingIntent,
         layoutDirection: Int,
-        isArabic: Boolean
+        isArabic: Boolean,
+        showBothHero: Boolean,
+        previousPrayerName: String,
+        previousPrayerTime: String,
+        sinceText: String,
+        nextPrayerName: String,
+        nextPrayerTimeText: String
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.prayer_appwidget_expanded)
         val wSet = settings.widgetSettings
@@ -1149,39 +1215,67 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             tintShape(views, R.id.widget_exp_hero_bg_img, colors.heroBgColor)
             tintShape(views, R.id.widget_exp_hero_border_img, colors.heroStrokeColor)
 
-            views.setTextViewText(R.id.widget_exp_next_prayer_name, prayerName)
-            views.setTextColor(R.id.widget_exp_next_prayer_name, colors.accentColor)
-            views.setTextViewTextSize(R.id.widget_exp_next_prayer_name, TypedValue.COMPLEX_UNIT_SP, 13f * scale)
+            if (showBothHero) {
+                views.setViewVisibility(R.id.widget_exp_hero_single_content, View.GONE)
+                views.setViewVisibility(R.id.widget_exp_hero_dual_content, View.VISIBLE)
 
-            views.setTextViewText(R.id.widget_exp_next_prayer_time, prayerTime)
-            views.setTextColor(R.id.widget_exp_next_prayer_time, colors.textPrimaryColor)
-            views.setTextViewTextSize(R.id.widget_exp_next_prayer_time, TypedValue.COMPLEX_UNIT_SP, 24f * scale)
+                views.setTextViewText(R.id.widget_exp_hero_prev_label, if (isArabic) "الصلاة السابقة" else "PREVIOUS")
+                views.setTextColor(R.id.widget_exp_hero_prev_label, colors.textSecondaryColor)
+                views.setTextViewText(R.id.widget_exp_hero_prev_name, previousPrayerName)
+                views.setTextColor(R.id.widget_exp_hero_prev_name, colors.accentColor)
+                views.setTextViewText(R.id.widget_exp_hero_prev_time, previousPrayerTime)
+                views.setTextColor(R.id.widget_exp_hero_prev_time, colors.textPrimaryColor)
+                views.setTextViewText(R.id.widget_exp_hero_prev_since, sinceText)
+                views.setTextColor(R.id.widget_exp_hero_prev_since, colors.textSecondaryColor)
 
-            if (wSet.showCountdown) {
-                views.setViewVisibility(R.id.widget_exp_countdown_container, View.VISIBLE)
-                tintShape(views, R.id.widget_exp_countdown_bg_img, colors.countdownBgColor)
-                tintContainerBackground(views, R.id.widget_exp_countdown_container, colors.countdownBgColor)
-                views.setTextViewText(R.id.widget_exp_countdown_text, countdown)
-                views.setTextColor(R.id.widget_exp_countdown_text, colors.textOnAccentColor)
-                views.setTextViewTextSize(R.id.widget_exp_countdown_text, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
+                views.setTextViewText(R.id.widget_exp_hero_next_label, if (isArabic) "الصلاة القادمة" else "NEXT")
+                views.setTextColor(R.id.widget_exp_hero_next_label, colors.textSecondaryColor)
+                views.setTextViewText(R.id.widget_exp_hero_next_name, nextPrayerName)
+                views.setTextColor(R.id.widget_exp_hero_next_name, colors.accentColor)
+                views.setTextViewText(R.id.widget_exp_hero_next_time, nextPrayerTimeText)
+                views.setTextColor(R.id.widget_exp_hero_next_time, colors.textPrimaryColor)
+                views.setTextViewText(R.id.widget_exp_hero_next_in, countdown)
+                views.setTextColor(R.id.widget_exp_hero_next_in, colors.textSecondaryColor)
 
-                if (wSet.heroTimeMode == WidgetHeroTimeMode.NEXT && diffSeconds <= 60) {
-                    views.setViewVisibility(R.id.widget_exp_status_text, View.VISIBLE)
-                    views.setTextViewText(R.id.widget_exp_status_text, if (isArabic) "حان وقت الصلاة" else "Prayer Time!")
-                    views.setTextColor(R.id.widget_exp_status_text, colors.textOnAccentColor)
-                    views.setTextViewTextSize(R.id.widget_exp_status_text, TypedValue.COMPLEX_UNIT_SP, 9f * scale)
-                } else {
-                    views.setViewVisibility(R.id.widget_exp_status_text, View.GONE)
-                }
-            } else {
-                views.setViewVisibility(R.id.widget_exp_countdown_container, View.GONE)
-            }
-
-            if (wSet.showProgressBar) {
-                views.setViewVisibility(R.id.widget_exp_prayer_progress, View.VISIBLE)
-                views.setProgressBar(R.id.widget_exp_prayer_progress, 100, progressPercent, false)
-            } else {
                 views.setViewVisibility(R.id.widget_exp_prayer_progress, View.GONE)
+            } else {
+                views.setViewVisibility(R.id.widget_exp_hero_single_content, View.VISIBLE)
+                views.setViewVisibility(R.id.widget_exp_hero_dual_content, View.GONE)
+
+                views.setTextViewText(R.id.widget_exp_next_prayer_name, prayerName)
+                views.setTextColor(R.id.widget_exp_next_prayer_name, colors.accentColor)
+                views.setTextViewTextSize(R.id.widget_exp_next_prayer_name, TypedValue.COMPLEX_UNIT_SP, 13f * scale)
+
+                views.setTextViewText(R.id.widget_exp_next_prayer_time, prayerTime)
+                views.setTextColor(R.id.widget_exp_next_prayer_time, colors.textPrimaryColor)
+                views.setTextViewTextSize(R.id.widget_exp_next_prayer_time, TypedValue.COMPLEX_UNIT_SP, 24f * scale)
+
+                if (wSet.showCountdown) {
+                    views.setViewVisibility(R.id.widget_exp_countdown_container, View.VISIBLE)
+                    tintShape(views, R.id.widget_exp_countdown_bg_img, colors.countdownBgColor)
+                    tintContainerBackground(views, R.id.widget_exp_countdown_container, colors.countdownBgColor)
+                    views.setTextViewText(R.id.widget_exp_countdown_text, countdown)
+                    views.setTextColor(R.id.widget_exp_countdown_text, colors.textOnAccentColor)
+                    views.setTextViewTextSize(R.id.widget_exp_countdown_text, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
+
+                    if (wSet.heroTimeMode == WidgetHeroTimeMode.NEXT && diffSeconds <= 60) {
+                        views.setViewVisibility(R.id.widget_exp_status_text, View.VISIBLE)
+                        views.setTextViewText(R.id.widget_exp_status_text, if (isArabic) "حان وقت الصلاة" else "Prayer Time!")
+                        views.setTextColor(R.id.widget_exp_status_text, colors.textOnAccentColor)
+                        views.setTextViewTextSize(R.id.widget_exp_status_text, TypedValue.COMPLEX_UNIT_SP, 9f * scale)
+                    } else {
+                        views.setViewVisibility(R.id.widget_exp_status_text, View.GONE)
+                    }
+                } else {
+                    views.setViewVisibility(R.id.widget_exp_countdown_container, View.GONE)
+                }
+
+                if (wSet.showProgressBar) {
+                    views.setViewVisibility(R.id.widget_exp_prayer_progress, View.VISIBLE)
+                    views.setProgressBar(R.id.widget_exp_prayer_progress, 100, progressPercent, false)
+                } else {
+                    views.setViewVisibility(R.id.widget_exp_prayer_progress, View.GONE)
+                }
             }
         } else {
             views.setViewVisibility(R.id.widget_exp_hero_card, View.GONE)

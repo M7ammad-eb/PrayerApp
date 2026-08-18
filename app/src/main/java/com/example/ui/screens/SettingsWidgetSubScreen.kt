@@ -58,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -825,6 +826,10 @@ private fun WidgetCanvasPreview(
         WidgetTextStyle.DARK -> Color(0xFF0F172A) to Color(0xFF334155)
     }
 
+    // Mirrors PrayerAppWidgetProvider.resolveWidgetColors' textOnAccent exactly (same 0.42
+    // threshold) - the preview previously hardcoded white pill/badge text regardless of theme.
+    val textOnAccent = if (primaryAccent.luminance() > 0.42f) Color(0xFF0F172A) else Color.White
+
     val alpha = (widgetSettings.opacityPercent / 100f).coerceIn(0f, 1f)
     // Mirrors PrayerAppWidgetProvider.resolveWidgetColors exactly so the preview matches the
     // real widget for every background style, not just the default TRANSLUCENT one.
@@ -894,6 +899,7 @@ private fun WidgetCanvasPreview(
                         primaryAccent = primaryAccent,
                         textPrimary = textPrimary,
                         textSecondary = textSecondary,
+                        textOnAccent = textOnAccent,
                         isArabic = isArabic
                     )
                 }
@@ -904,6 +910,7 @@ private fun WidgetCanvasPreview(
                         primaryAccent = primaryAccent,
                         textPrimary = textPrimary,
                         textSecondary = textSecondary,
+                        textOnAccent = textOnAccent,
                         isArabic = isArabic
                     )
                 }
@@ -914,6 +921,7 @@ private fun WidgetCanvasPreview(
                         primaryAccent = primaryAccent,
                         textPrimary = textPrimary,
                         textSecondary = textSecondary,
+                        textOnAccent = textOnAccent,
                         isArabic = isArabic
                     )
                 }
@@ -924,6 +932,7 @@ private fun WidgetCanvasPreview(
                         primaryAccent = primaryAccent,
                         textPrimary = textPrimary,
                         textSecondary = textSecondary,
+                        textOnAccent = textOnAccent,
                         isArabic = isArabic
                     )
                 }
@@ -934,6 +943,7 @@ private fun WidgetCanvasPreview(
                         primaryAccent = primaryAccent,
                         textPrimary = textPrimary,
                         textSecondary = textSecondary,
+                        textOnAccent = textOnAccent,
                         isArabic = isArabic
                     )
                 }
@@ -949,6 +959,7 @@ private fun PreviewStandard4x2(
     primaryAccent: Color,
     textPrimary: Color,
     textSecondary: Color,
+    textOnAccent: Color,
     isArabic: Boolean
 ) {
     val scale = wSet.fontSize.scaleFactor
@@ -1030,7 +1041,7 @@ private fun PreviewStandard4x2(
                             ) {
                                 Text(
                                     text = heroCountdown,
-                                    color = Color.White,
+                                    color = textOnAccent,
                                     fontSize = 11.sp * scale,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -1079,13 +1090,13 @@ private fun PreviewStandard4x2(
                                 fontSize = 8.sp * scale,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
-                                color = if (isActive) Color.White else textSecondary
+                                color = if (isActive) textOnAccent else textSecondary
                             )
                             Text(
                                 text = time,
                                 fontSize = 8.sp * scale,
                                 maxLines = 1,
-                                color = if (isActive) Color.White else textPrimary
+                                color = if (isActive) textOnAccent else textPrimary
                             )
                         }
                     }
@@ -1102,6 +1113,7 @@ private fun PreviewExpandedMax(
     primaryAccent: Color,
     textPrimary: Color,
     textSecondary: Color,
+    textOnAccent: Color,
     isArabic: Boolean
 ) {
     val scale = wSet.fontSize.scaleFactor
@@ -1177,7 +1189,7 @@ private fun PreviewExpandedMax(
                             ) {
                                 Text(
                                     text = heroCountdown,
-                                    color = Color.White,
+                                    color = textOnAccent,
                                     fontSize = 12.sp * scale,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -1225,13 +1237,13 @@ private fun PreviewExpandedMax(
                                 text = name,
                                 fontSize = 12.sp * scale,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isActive) Color.White else textSecondary
+                                color = if (isActive) textOnAccent else textSecondary
                             )
                             Text(
                                 text = time,
                                 fontSize = 12.sp * scale,
                                 fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isActive) Color.White else textPrimary
+                                color = if (isActive) textOnAccent else textPrimary
                             )
                         }
                     }
@@ -1248,6 +1260,7 @@ private fun PreviewVertical1Col(
     primaryAccent: Color,
     textPrimary: Color,
     textSecondary: Color,
+    textOnAccent: Color,
     isArabic: Boolean
 ) {
     val scale = wSet.fontSize.scaleFactor
@@ -1278,7 +1291,7 @@ private fun PreviewVertical1Col(
                     Text(text = if (isPrevious) "12:20 PM" else "3:45 PM", fontSize = 12.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)
                     if (wSet.showCountdown) {
                         Surface(color = primaryAccent, shape = RoundedCornerShape(6.dp)) {
-                            Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "خلال 45د" else "In 45m"), color = Color.White, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                            Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "خلال 45د" else "In 45m"), color = textOnAccent, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                         }
                     }
                 }
@@ -1301,8 +1314,8 @@ private fun PreviewVertical1Col(
                             .padding(horizontal = 6.dp, vertical = 3.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(text = name, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, color = if (isActive) Color.White else textSecondary)
-                        Text(text = time, fontSize = 8.sp * scale, color = if (isActive) Color.White else textPrimary)
+                        Text(text = name, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, color = if (isActive) textOnAccent else textSecondary)
+                        Text(text = time, fontSize = 8.sp * scale, color = if (isActive) textOnAccent else textPrimary)
                     }
                 }
             }
@@ -1317,6 +1330,7 @@ private fun PreviewSlimBar(
     primaryAccent: Color,
     textPrimary: Color,
     textSecondary: Color,
+    textOnAccent: Color,
     isArabic: Boolean
 ) {
     val scale = wSet.fontSize.scaleFactor
@@ -1345,7 +1359,7 @@ private fun PreviewSlimBar(
             if (wSet.showCountdown) {
                 val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
                 Surface(color = primaryAccent, shape = RoundedCornerShape(8.dp)) {
-                    Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "خلال 45د" else "In 45m"), color = Color.White, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                    Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "خلال 45د" else "In 45m"), color = textOnAccent, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                 }
             }
             Spacer(modifier = Modifier.width(6.dp))
@@ -1361,6 +1375,7 @@ private fun PreviewCompact2x1(
     primaryAccent: Color,
     textPrimary: Color,
     textSecondary: Color,
+    textOnAccent: Color,
     isArabic: Boolean
 ) {
     val scale = wSet.fontSize.scaleFactor
@@ -1380,7 +1395,7 @@ private fun PreviewCompact2x1(
 
         if (wSet.showCountdown) {
             Surface(color = primaryAccent, shape = RoundedCornerShape(8.dp)) {
-                Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "45د" else "45m"), color = Color.White, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "45د" else "45m"), color = textOnAccent, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
             }
         }
     }

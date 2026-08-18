@@ -186,6 +186,10 @@ enum class WidgetHeroTimeMode(
     PREVIOUS(
         titleEn = "Current Prayer (Since...)",
         titleAr = "الصلاة الحالية (منذ...)"
+    ),
+    BOTH(
+        titleEn = "Both (Wide Widgets)",
+        titleAr = "كلاهما (للودجت العريض)"
     )
 }
 

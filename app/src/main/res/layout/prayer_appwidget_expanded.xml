@@ -152,6 +152,7 @@
                 android:src="@drawable/shape_widget_hero_border" />
 
             <LinearLayout
+                android:id="@+id/widget_exp_hero_single_content"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -264,6 +265,108 @@
                     android:max="100"
                     android:progress="65"
                     android:progressDrawable="@drawable/widget_progress_bar" />
+            </LinearLayout>
+
+            <!-- Dual mode: previous + next side by side, shown instead of the single content
+                 above only when heroTimeMode=BOTH and the widget is wide enough (4+ columns). -->
+            <LinearLayout
+                android:id="@+id/widget_exp_hero_dual_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/widget_exp_hero_prev_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_secondary"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/widget_exp_hero_prev_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_accent"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_exp_hero_prev_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_on_hero"
+                        android:textSize="19sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_exp_hero_prev_since"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_secondary"
+                        android:textSize="10sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="10dp"
+                    android:background="@color/widget_text_secondary" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/widget_exp_hero_next_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_secondary"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/widget_exp_hero_next_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_accent"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_exp_hero_next_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_on_hero"
+                        android:textSize="19sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_exp_hero_next_in"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_secondary"
+                        android:textSize="10sp" />
+                </LinearLayout>
             </LinearLayout>
         </FrameLayout>
 
