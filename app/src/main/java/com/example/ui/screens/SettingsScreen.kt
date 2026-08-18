@@ -137,7 +137,6 @@ fun SettingsScreen(
     onUpdateThemeMode: (AppThemeMode) -> Unit,
     onUpdateColorPreset: (com.example.data.models.AppColorPreset) -> Unit = {},
     onUpdateFollowSystemColors: (Boolean) -> Unit = {},
-    onUpdateWidgetFollowSystemColors: (Boolean) -> Unit = {},
     onUpdateWidgetSettings: (com.example.data.models.WidgetCustomizationSettings) -> Unit = {},
     onRefreshAllWidgets: () -> Unit = {},
     onUpdatePrayerAdjustment: (PrayerType, Int) -> Unit,
@@ -192,7 +191,6 @@ fun SettingsScreen(
                     onUpdateThemeMode = onUpdateThemeMode,
                     onUpdateColorPreset = onUpdateColorPreset,
                     onUpdateFollowSystemColors = onUpdateFollowSystemColors,
-                    onUpdateWidgetFollowSystemColors = onUpdateWidgetFollowSystemColors,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
             }
@@ -517,7 +515,6 @@ private fun SettingsThemeSubScreen(
     onUpdateThemeMode: (AppThemeMode) -> Unit,
     onUpdateColorPreset: (com.example.data.models.AppColorPreset) -> Unit,
     onUpdateFollowSystemColors: (Boolean) -> Unit,
-    onUpdateWidgetFollowSystemColors: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val strings = LocalAppStrings.current
@@ -636,67 +633,6 @@ private fun SettingsThemeSubScreen(
                     Switch(
                         checked = settings.followSystemColors,
                         onCheckedChange = { onUpdateFollowSystemColors(it) }
-                    )
-                }
-            }
-
-            // Widget Follow System Colors Card (Home Screen Widget Dynamic Theming)
-            Card(
-                onClick = { onUpdateWidgetFollowSystemColors(!settings.widgetFollowSystemColors) },
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (settings.widgetFollowSystemColors) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-                ),
-                border = if (settings.widgetFollowSystemColors) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(if (settings.widgetFollowSystemColors) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Palette,
-                                contentDescription = null,
-                                tint = if (settings.widgetFollowSystemColors) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(14.dp))
-
-                        Column {
-                            Text(
-                                text = strings.widgetFollowSystemColorsTitle,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = strings.widgetFollowSystemColorsDesc,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Switch(
-                        checked = settings.widgetFollowSystemColors,
-                        onCheckedChange = { onUpdateWidgetFollowSystemColors(it) }
                     )
                 }
             }

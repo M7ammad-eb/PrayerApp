@@ -42,6 +42,10 @@
                 android:src="@drawable/ic_widget_mosque" />
 
             <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                 android:id="@+id/widget_vert_location"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -77,6 +81,10 @@
                 android:padding="6dp">
 
                 <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                     android:id="@+id/widget_vert_next_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -88,6 +96,10 @@
                     android:textStyle="bold" />
 
                 <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                     android:id="@+id/widget_vert_next_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -99,6 +111,7 @@
 
                 <FrameLayout
                     android:id="@+id/widget_vert_countdown_container"
+                    android:background="@drawable/shape_widget_pill_bg"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp">
@@ -112,6 +125,10 @@
                         android:src="@drawable/shape_widget_pill_bg" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_countdown"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -159,6 +176,10 @@
                     android:paddingEnd="6dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_fajr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -173,6 +194,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_fajr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -209,6 +234,10 @@
                     android:paddingEnd="6dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_sunrise_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -223,6 +252,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_sunrise_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -259,6 +292,10 @@
                     android:paddingEnd="6dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_dhuhr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -273,6 +310,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_dhuhr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -309,6 +350,10 @@
                     android:paddingEnd="6dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_asr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -323,6 +368,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_asr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -359,6 +408,10 @@
                     android:paddingEnd="6dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_maghrib_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -373,6 +426,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_maghrib_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -408,6 +465,10 @@
                     android:paddingEnd="6dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_isha_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -422,6 +483,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_vert_isha_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

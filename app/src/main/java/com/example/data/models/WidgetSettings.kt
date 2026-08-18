@@ -157,11 +157,30 @@ enum class WidgetFontSize(
     )
 }
 
+enum class WidgetTextStyle(
+    val titleEn: String,
+    val titleAr: String
+) {
+    AUTO(
+        titleEn = "Auto (Theme Default)",
+        titleAr = "تلقائي (حسب السمة)"
+    ),
+    LIGHT(
+        titleEn = "Always Light Text",
+        titleAr = "نص فاتح دائماً"
+    ),
+    DARK(
+        titleEn = "Always Dark Text",
+        titleAr = "نص داكن دائماً"
+    )
+}
+
 data class WidgetCustomizationSettings(
     val themeMode: WidgetThemeMode = WidgetThemeMode.APP_THEME,
     val bgStyle: WidgetBackgroundStyle = WidgetBackgroundStyle.TRANSLUCENT,
     val opacityPercent: Int = 85,
     val fontSize: WidgetFontSize = WidgetFontSize.STANDARD,
+    val textStyle: WidgetTextStyle = WidgetTextStyle.AUTO,
     val showLocation: Boolean = true,
     val showHijriDate: Boolean = true,
     val showCountdown: Boolean = true,

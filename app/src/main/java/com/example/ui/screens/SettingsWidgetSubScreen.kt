@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -56,6 +57,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -64,6 +67,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.models.WidgetBackgroundStyle
 import com.example.data.models.WidgetCustomizationSettings
 import com.example.data.models.WidgetFontSize
+import com.example.data.models.WidgetTextStyle
 import com.example.data.models.WidgetThemeMode
 import com.example.data.preferences.AppPrayerSettings
 import com.example.ui.locale.LocalAppStrings
@@ -385,6 +389,27 @@ fun SettingsWidgetSubScreen(
 
             HorizontalDivider()
 
+            // Text Color Style - a manual escape hatch for when the theme's own text colors
+            // can't be trusted for contrast, since a transparent/near-transparent widget has no
+            // way to know what's actually behind it (see PrayerAppWidgetProvider.resolveWidgetColors).
+            Text(
+                text = if (strings.isArabic) "لون النص" else "Text Color",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            WidgetTextStyleSelector(
+                currentStyle = wSet.textStyle,
+                isArabic = strings.isArabic,
+                onSelectStyle = {
+                    onUpdateWidgetSettings(wSet.copy(textStyle = it))
+                    onRefreshAllWidgets()
+                }
+            )
+
+            HorizontalDivider()
+
             // 4. Content & Toggles
             Text(
                 text = strings.widgetContentTitle,
@@ -553,10 +578,15 @@ private fun WidgetThemeSelector(
     }
 }
 
+@Composable
 private fun getThemePreviewColors(theme: WidgetThemeMode): Triple<Color, Color, Color> {
     return when (theme) {
         WidgetThemeMode.APP_THEME -> Triple(Color(0xFF165B33), Color(0xFF81C784), Color(0xFFF1F5F9))
-        WidgetThemeMode.MATERIAL_YOU -> Triple(Color(0xFF3F51B5), Color(0xFF9FA8DA), Color(0xFFE8EAF6))
+        WidgetThemeMode.MATERIAL_YOU -> {
+            val dynamic = resolveSystemDynamicPreviewPalette()
+            if (dynamic != null) Triple(dynamic.first, dynamic.third, dynamic.second)
+            else Triple(Color(0xFF3F51B5), Color(0xFF9FA8DA), Color(0xFFE8EAF6))
+        }
         WidgetThemeMode.DARK_ELEGANT -> Triple(Color(0xFF10B981), Color(0xFF1E293B), Color(0xFF0F172A))
         WidgetThemeMode.LIGHT_CLEAN -> Triple(Color(0xFF059669), Color(0xFFF8FAFC), Color(0xFFE2E8F0))
         WidgetThemeMode.OLED_BLACK -> Triple(Color(0xFF34D399), Color(0xFF18181B), Color(0xFF000000))
@@ -659,6 +689,41 @@ private fun WidgetFontSizeSelector(
 }
 
 // ---------------------------------------------------------------------------
+// TEXT STYLE SELECTOR
+// ---------------------------------------------------------------------------
+@Composable
+private fun WidgetTextStyleSelector(
+    currentStyle: WidgetTextStyle,
+    isArabic: Boolean,
+    onSelectStyle: (WidgetTextStyle) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        WidgetTextStyle.values().forEach { style ->
+            val isSelected = currentStyle == style
+            FilledTonalButton(
+                onClick = { onSelectStyle(style) },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
+                Text(
+                    text = if (isArabic) style.titleAr else style.titleEn,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // TOGGLE ROW
 // ---------------------------------------------------------------------------
 @Composable
@@ -696,41 +761,71 @@ private fun WidgetCanvasPreview(
     previewType: WidgetPreviewType,
     isArabic: Boolean
 ) {
-    val (primaryAccent, bgCardColor, textPrimary, textSecondary) = resolveWidgetPreviewTheme(widgetSettings.themeMode)
+    val (primaryAccent, bgCardColor, themeTextPrimary, themeTextSecondary) = resolveWidgetPreviewTheme(widgetSettings.themeMode)
+    // Mirrors PrayerAppWidgetProvider.resolveWidgetColors' textStyle override exactly.
+    val (textPrimary, textSecondary) = when (widgetSettings.textStyle) {
+        WidgetTextStyle.AUTO -> themeTextPrimary to themeTextSecondary
+        WidgetTextStyle.LIGHT -> Color(0xFFFFFFFF) to Color(0xFFE2E8F0)
+        WidgetTextStyle.DARK -> Color(0xFF0F172A) to Color(0xFF334155)
+    }
 
     val alpha = (widgetSettings.opacityPercent / 100f).coerceIn(0f, 1f)
+    // Mirrors PrayerAppWidgetProvider.resolveWidgetColors exactly so the preview matches the
+    // real widget for every background style, not just the default TRANSLUCENT one.
     val finalBgColor = when (widgetSettings.bgStyle) {
         WidgetBackgroundStyle.TRANSPARENT_CLEAN -> Color.Transparent
         WidgetBackgroundStyle.MINIMAL_BORDER -> Color.Black.copy(alpha = 0.15f * alpha)
-        else -> bgCardColor.copy(alpha = alpha)
+        WidgetBackgroundStyle.SOLID_SURFACE -> bgCardColor.copy(alpha = 1f)
+        WidgetBackgroundStyle.FROSTED_GLASS -> lerp(bgCardColor, Color.White, 0.25f).copy(alpha = alpha.coerceAtLeast(0.55f))
+        WidgetBackgroundStyle.TRANSLUCENT -> bgCardColor.copy(alpha = alpha)
+    }
+    val borderWidth = if (widgetSettings.bgStyle == WidgetBackgroundStyle.MINIMAL_BORDER) 1.5.dp else 0.5.dp
+    val borderColor = when (widgetSettings.bgStyle) {
+        WidgetBackgroundStyle.MINIMAL_BORDER -> primaryAccent.copy(alpha = 0.8f)
+        WidgetBackgroundStyle.SOLID_SURFACE -> primaryAccent.copy(alpha = 0.35f)
+        WidgetBackgroundStyle.FROSTED_GLASS -> Color.White.copy(alpha = 0.20f)
+        else -> primaryAccent.copy(alpha = 0.25f)
     }
 
-    // Simulated Wallpaper Background container
+    // Simulated Wallpaper Background container - deliberately bright & busy rather than an
+    // idealized dark gradient, since a faint translucent overlay reads very differently on
+    // a dark backdrop vs. a real (often bright, photographic) home screen wallpaper.
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(
-                Brush.verticalGradient(
+                Brush.linearGradient(
                     listOf(
-                        Color(0xFF1E293B),
-                        Color(0xFF0F172A),
-                        Color(0xFF020617)
+                        Color(0xFFB8C6D9),
+                        Color(0xFFE8DCC4),
+                        Color(0xFF9CAF88),
+                        Color(0xFFD9C4A8)
                     )
                 )
             )
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Widget Card Box
+        // Widget Card Box - a fixed height per preview type, independent of font size or which
+        // toggles are on. A real widget's footprint is fixed by its home screen grid placement;
+        // it never grows or shrinks to fit its content, so the mockup shouldn't either.
+        val cardHeight = when (previewType) {
+            WidgetPreviewType.STANDARD_4X2 -> 210.dp
+            WidgetPreviewType.EXPANDED_MAX -> 340.dp
+            WidgetPreviewType.VERTICAL_1_COL -> 320.dp
+            WidgetPreviewType.SLIM_BAR -> 72.dp
+            WidgetPreviewType.COMPACT_2X1 -> 110.dp
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth(if (previewType == WidgetPreviewType.VERTICAL_1_COL) 0.52f else 1f)
+                .height(cardHeight)
                 .clip(RoundedCornerShape(24.dp))
                 .background(finalBgColor)
                 .border(
-                    width = if (widgetSettings.bgStyle == WidgetBackgroundStyle.MINIMAL_BORDER) 1.5.dp else 0.5.dp,
-                    color = primaryAccent.copy(alpha = if (widgetSettings.bgStyle == WidgetBackgroundStyle.MINIMAL_BORDER) 0.8f else 0.25f),
+                    width = borderWidth,
+                    color = borderColor,
                     shape = RoundedCornerShape(24.dp)
                 )
                 .padding(14.dp)
@@ -800,37 +895,36 @@ private fun PreviewStandard4x2(
     textSecondary: Color,
     isArabic: Boolean
 ) {
+    val scale = wSet.fontSize.scaleFactor
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // Header
+        // Header - at 4+ columns the real widget shows Hijri date inline next to location
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (wSet.showLocation || wSet.showHijriDate) {
-                Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     if (wSet.showLocation) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Mosque,
-                                contentDescription = null,
-                                tint = primaryAccent,
-                                modifier = Modifier.size(13.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "${settings.location.name}, ${settings.location.country}",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = textPrimary
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Mosque,
+                            contentDescription = null,
+                            tint = primaryAccent,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = settings.location.name,
+                            fontSize = 11.sp * scale,
+                            fontWeight = FontWeight.Bold,
+                            color = textPrimary
+                        )
                     }
                     if (wSet.showHijriDate) {
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "14 Safar 1448 AH",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 9.sp,
+                            text = "• 14 Safar 1448 AH",
+                            fontSize = 9.sp * scale,
                             color = textSecondary
                         )
                     }
@@ -848,7 +942,7 @@ private fun PreviewStandard4x2(
         // Hero Card
         if (wSet.showHeroCard) {
             Surface(
-                color = textPrimary.copy(alpha = 0.08f),
+                color = textPrimary.copy(alpha = 0.16f),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
@@ -860,13 +954,13 @@ private fun PreviewStandard4x2(
                         Column {
                             Text(
                                 text = if (isArabic) "العصر" else "Asr",
-                                style = MaterialTheme.typography.labelMedium,
+                                fontSize = 12.sp * scale,
                                 fontWeight = FontWeight.Bold,
                                 color = primaryAccent
                             )
                             Text(
                                 text = "3:45 PM",
-                                style = MaterialTheme.typography.titleLarge,
+                                fontSize = 20.sp * scale,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = textPrimary
                             )
@@ -880,7 +974,7 @@ private fun PreviewStandard4x2(
                                 Text(
                                     text = if (isArabic) "خلال 1س 45د" else "In 1h 45m",
                                     color = Color.White,
-                                    style = MaterialTheme.typography.labelSmall,
+                                    fontSize = 11.sp * scale,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
@@ -916,7 +1010,7 @@ private fun PreviewStandard4x2(
                     val isActive = name == (if (isArabic) "العصر" else "Asr")
                     Surface(
                         modifier = Modifier.weight(1f),
-                        color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.06f),
+                        color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.14f),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Column(
@@ -925,14 +1019,14 @@ private fun PreviewStandard4x2(
                         ) {
                             Text(
                                 text = name,
-                                fontSize = 8.sp,
+                                fontSize = 8.sp * scale,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 color = if (isActive) Color.White else textSecondary
                             )
                             Text(
                                 text = time,
-                                fontSize = 8.sp,
+                                fontSize = 8.sp * scale,
                                 maxLines = 1,
                                 color = if (isActive) Color.White else textPrimary
                             )
@@ -953,33 +1047,36 @@ private fun PreviewExpandedMax(
     textSecondary: Color,
     isArabic: Boolean
 ) {
+    val scale = wSet.fontSize.scaleFactor
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // Header
+        // Header - at 4+ columns the real widget shows Hijri date inline next to location
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Mosque,
-                    contentDescription = null,
-                    tint = primaryAccent,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Column {
-                    val locStr = if (isArabic) "${settings.location.name}، ${settings.location.country}" else "${settings.location.name}, ${settings.location.country}"
-                    Text(
-                        text = locStr,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = textPrimary
-                    )
-                    if (wSet.showHijriDate) {
+            if (wSet.showLocation || wSet.showHijriDate) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (wSet.showLocation) {
+                        Icon(
+                            imageVector = Icons.Default.Mosque,
+                            contentDescription = null,
+                            tint = primaryAccent,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (isArabic) "١٤ صفر ١٤٤٨ هـ" else "14 Safar 1448 AH",
-                            style = MaterialTheme.typography.labelSmall,
+                            text = settings.location.name,
+                            fontSize = 13.sp * scale,
+                            fontWeight = FontWeight.Bold,
+                            color = textPrimary
+                        )
+                    }
+                    if (wSet.showHijriDate) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isArabic) "• ١٤ صفر ١٤٤٨ هـ" else "• 14 Safar 1448 AH",
+                            fontSize = 11.sp * scale,
                             color = textSecondary
                         )
                     }
@@ -989,92 +1086,96 @@ private fun PreviewExpandedMax(
         }
 
         // Expanded Hero Card
-        Surface(
-            color = textPrimary.copy(alpha = 0.08f),
-            shape = RoundedCornerShape(14.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = if (isArabic) "العصر" else "Next: Asr",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = primaryAccent
-                        )
-                        Text(
-                            text = "3:45 PM",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = textPrimary
-                        )
-                    }
-
-                    if (wSet.showCountdown) {
-                        Surface(
-                            color = primaryAccent,
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
+        if (wSet.showHeroCard) {
+            Surface(
+                color = textPrimary.copy(alpha = 0.16f),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
                             Text(
-                                text = if (isArabic) "خلال 1س 45د" else "In 1h 45m",
-                                color = Color.White,
-                                style = MaterialTheme.typography.labelMedium,
+                                text = if (isArabic) "العصر" else "Next: Asr",
+                                fontSize = 13.sp * scale,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                color = primaryAccent
+                            )
+                            Text(
+                                text = "3:45 PM",
+                                fontSize = 24.sp * scale,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = textPrimary
                             )
                         }
-                    }
-                }
 
-                if (wSet.showProgressBar) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        progress = { 0.65f },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(5.dp)
-                            .clip(RoundedCornerShape(3.dp)),
-                        color = primaryAccent,
-                        trackColor = textSecondary.copy(alpha = 0.2f)
-                    )
+                        if (wSet.showCountdown) {
+                            Surface(
+                                color = primaryAccent,
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text(
+                                    text = if (isArabic) "خلال 1س 45د" else "In 1h 45m",
+                                    color = Color.White,
+                                    fontSize = 12.sp * scale,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    if (wSet.showProgressBar) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            progress = { 0.65f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(5.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = primaryAccent,
+                            trackColor = textSecondary.copy(alpha = 0.2f)
+                        )
+                    }
                 }
             }
         }
 
         // Expanded Prayer Rows List (Evenly distributed)
-        val prayers = getPreviewPrayers(isArabic, wSet.showSunrise)
+        if (wSet.showAllPrayersList) {
+            val prayers = getPreviewPrayers(isArabic, wSet.showSunrise)
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            prayers.forEach { (name, time) ->
-                val isActive = name == (if (isArabic) "العصر" else "Asr")
-                Surface(
-                    color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.05f),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 5.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                prayers.forEach { (name, time) ->
+                    val isActive = name == (if (isArabic) "العصر" else "Asr")
+                    Surface(
+                        color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.14f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = name,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isActive) Color.White else textSecondary
-                        )
-                        Text(
-                            text = time,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isActive) Color.White else textPrimary
-                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = name,
+                                fontSize = 12.sp * scale,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isActive) Color.White else textSecondary
+                            )
+                            Text(
+                                text = time,
+                                fontSize = 12.sp * scale,
+                                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isActive) Color.White else textPrimary
+                            )
+                        }
                     }
                 }
             }
@@ -1091,6 +1192,7 @@ private fun PreviewVertical1Col(
     textSecondary: Color,
     isArabic: Boolean
 ) {
+    val scale = wSet.fontSize.scaleFactor
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -1099,13 +1201,13 @@ private fun PreviewVertical1Col(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = Icons.Default.Mosque, contentDescription = null, tint = primaryAccent, modifier = Modifier.size(11.dp))
                 Spacer(modifier = Modifier.width(3.dp))
-                Text(text = settings.location.name, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = textPrimary)
+                Text(text = settings.location.name, fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
             }
         }
 
         if (wSet.showHeroCard) {
             Surface(
-                color = textPrimary.copy(alpha = 0.08f),
+                color = textPrimary.copy(alpha = 0.16f),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -1113,11 +1215,11 @@ private fun PreviewVertical1Col(
                     modifier = Modifier.padding(6.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = if (isArabic) "العصر" else "Asr", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = primaryAccent)
-                    Text(text = "3:45 PM", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = textPrimary)
+                    Text(text = if (isArabic) "العصر" else "Asr", fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
+                    Text(text = "3:45 PM", fontSize = 12.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)
                     if (wSet.showCountdown) {
                         Surface(color = primaryAccent, shape = RoundedCornerShape(6.dp)) {
-                            Text(text = "45m", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                            Text(text = "45m", color = Color.White, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                         }
                     }
                 }
@@ -1130,7 +1232,7 @@ private fun PreviewVertical1Col(
             prayers.forEach { (name, time) ->
                 val isActive = name == (if (isArabic) "العصر" else "Asr")
                 Surface(
-                    color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.05f),
+                    color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.14f),
                     shape = RoundedCornerShape(6.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -1140,8 +1242,8 @@ private fun PreviewVertical1Col(
                             .padding(horizontal = 6.dp, vertical = 3.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(text = name, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = if (isActive) Color.White else textSecondary)
-                        Text(text = time, fontSize = 8.sp, color = if (isActive) Color.White else textPrimary)
+                        Text(text = name, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, color = if (isActive) Color.White else textSecondary)
+                        Text(text = time, fontSize = 8.sp * scale, color = if (isActive) Color.White else textPrimary)
                     }
                 }
             }
@@ -1158,6 +1260,7 @@ private fun PreviewSlimBar(
     textSecondary: Color,
     isArabic: Boolean
 ) {
+    val scale = wSet.fontSize.scaleFactor
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1168,12 +1271,12 @@ private fun PreviewSlimBar(
             Spacer(modifier = Modifier.width(8.dp))
             Column {
                 if (wSet.showLocation) {
-                    Text(text = settings.location.name, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = textSecondary)
+                    Text(text = settings.location.name, fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = if (isArabic) "العصر" else "Asr", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = primaryAccent)
+                    Text(text = if (isArabic) "العصر" else "Asr", fontSize = 12.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "3:45 PM", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = textPrimary)
+                    Text(text = "3:45 PM", fontSize = 13.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
                 }
             }
         }
@@ -1181,7 +1284,7 @@ private fun PreviewSlimBar(
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (wSet.showCountdown) {
                 Surface(color = primaryAccent, shape = RoundedCornerShape(8.dp)) {
-                    Text(text = if (isArabic) "خلال 45د" else "In 45m", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                    Text(text = if (isArabic) "خلال 45د" else "In 45m", color = Color.White, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                 }
             }
             Spacer(modifier = Modifier.width(6.dp))
@@ -1199,6 +1302,7 @@ private fun PreviewCompact2x1(
     textSecondary: Color,
     isArabic: Boolean
 ) {
+    val scale = wSet.fontSize.scaleFactor
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1206,15 +1310,15 @@ private fun PreviewCompact2x1(
     ) {
         Column {
             if (wSet.showLocation) {
-                Text(text = settings.location.name, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = textSecondary)
+                Text(text = settings.location.name, fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
             }
-            Text(text = if (isArabic) "العصر" else "Asr Prayer", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = primaryAccent)
-            Text(text = "3:45 PM", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = textPrimary)
+            Text(text = if (isArabic) "العصر" else "Asr Prayer", fontSize = 11.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
+            Text(text = "3:45 PM", fontSize = 18.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)
         }
 
         if (wSet.showCountdown) {
             Surface(color = primaryAccent, shape = RoundedCornerShape(8.dp)) {
-                Text(text = if (isArabic) "45د" else "45m", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                Text(text = if (isArabic) "45د" else "45m", color = Color.White, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
             }
         }
     }
@@ -1233,10 +1337,34 @@ private fun getPreviewPrayers(isArabic: Boolean, showSunrise: Boolean): List<Pai
     return list
 }
 
+// Mirrors PrayerAppWidgetProvider.resolveSystemDynamicPalette exactly (same dynamicDarkColorScheme
+// derivation) so the preview shows the same colors "Material You Dynamic" will actually render with.
+@Composable
+private fun resolveSystemDynamicPreviewPalette(): Quadruple<Color, Color, Color, Color>? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
+    val context = LocalContext.current
+    return try {
+        val scheme = androidx.compose.material3.dynamicDarkColorScheme(context)
+        Quadruple(scheme.primary, scheme.surface, scheme.onSurface, scheme.onSurfaceVariant)
+    } catch (e: Exception) {
+        null
+    }
+}
+
+@Composable
 private fun resolveWidgetPreviewTheme(theme: WidgetThemeMode): Quadruple<Color, Color, Color, Color> {
     return when (theme) {
-        WidgetThemeMode.APP_THEME -> Quadruple(Color(0xFF165B33), Color(0xFF1E293B), Color(0xFFF8FAFC), Color(0xFF94A3B8))
-        WidgetThemeMode.MATERIAL_YOU -> Quadruple(Color(0xFF3F51B5), Color(0xFF1C1B1F), Color(0xFFE6E1E5), Color(0xFFCAC4D0))
+        // MaterialTheme.colorScheme here is already exactly what "Match App Theme" should
+        // mirror - the app is already composed inside MyApplicationTheme, so this always tracks
+        // the user's actual current theme/color preset/light-dark mode with no separate logic.
+        WidgetThemeMode.APP_THEME -> Quadruple(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.onSurface,
+            MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        WidgetThemeMode.MATERIAL_YOU -> resolveSystemDynamicPreviewPalette()
+            ?: Quadruple(Color(0xFF3F51B5), Color(0xFF1C1B1F), Color(0xFFE6E1E5), Color(0xFFCAC4D0))
         WidgetThemeMode.DARK_ELEGANT -> Quadruple(Color(0xFF10B981), Color(0xFF121820), Color(0xFFF1F5F9), Color(0xFF94A3B8))
         WidgetThemeMode.LIGHT_CLEAN -> Quadruple(Color(0xFF059669), Color(0xFFFFFFFF), Color(0xFF0F172A), Color(0xFF64748B))
         WidgetThemeMode.OLED_BLACK -> Quadruple(Color(0xFF34D399), Color(0xFF000000), Color(0xFFFFFFFF), Color(0xFFA1A1AA))

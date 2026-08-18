@@ -7,21 +7,29 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.util.SizeF
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
 import com.example.MainActivity
 import com.example.R
 import com.example.data.calculator.PrayerTimesCalculator
+import com.example.data.models.AppColorPreset
 import com.example.data.models.AppLanguage
+import com.example.data.models.AppThemeMode
 import com.example.data.models.DailyPrayerSchedule
 import com.example.data.models.PrayerTimeItem
 import com.example.data.models.PrayerType
 import com.example.data.models.WidgetBackgroundStyle
+import com.example.data.models.WidgetTextStyle
 import com.example.data.models.WidgetThemeMode
 import com.example.data.preferences.AppPrayerSettings
 import com.example.data.preferences.PrayerPreferences
@@ -77,15 +85,83 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
             data class ColorPalette(val primaryAccent: Int, val bgCardColor: Int, val textPrimary: Int, val textSecondary: Int)
 
-            // Exact match with SettingsWidgetSubScreen.kt resolveWidgetPreviewTheme
+            // Reads the device's real Android 12+ Material You dynamic color scheme instead of a
+            // hardcoded guess, so this theme actually tracks the system wallpaper colors like it
+            // claims to. Uses the same dynamicDarkColorScheme() derivation as MyApplicationTheme
+            // (Theme.kt) and this file's own "Match App Theme" resolver, rather than hand-picked
+            // raw tonal-palette tokens - other apps that properly implement Material You dynamic
+            // theming go through this same official derivation, so this is what actually lines
+            // up with them. Returns null (falls back to the hardcoded palette below) on API < 31
+            // or if dynamic color isn't available for some reason.
+            fun resolveSystemDynamicPalette(): ColorPalette? {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
+                return try {
+                    val scheme = dynamicDarkColorScheme(context)
+                    ColorPalette(
+                        primaryAccent = scheme.primary.toArgb(),
+                        bgCardColor = scheme.surface.toArgb(),
+                        textPrimary = scheme.onSurface.toArgb(),
+                        textSecondary = scheme.onSurfaceVariant.toArgb()
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+            // "Match App Theme" mirrors MyApplicationTheme's own resolution logic
+            // (Theme.kt: getPresetColorScheme + the dynamic-color branch) instead of a fixed
+            // dark-green palette, so it actually tracks the app's current theme/color preset -
+            // including switching with light/dark mode and the user's chosen accent color.
+            fun resolveAppThemePalette(): ColorPalette {
+                val isDark = when (settings.themeMode) {
+                    AppThemeMode.SYSTEM ->
+                        (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                    AppThemeMode.LIGHT -> false
+                    AppThemeMode.DARK -> true
+                }
+
+                val useDynamic = settings.followSystemColors &&
+                    settings.colorPreset == AppColorPreset.SYSTEM_DYNAMIC &&
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                if (useDynamic) {
+                    try {
+                        val scheme = if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+                        return ColorPalette(
+                            primaryAccent = scheme.primary.toArgb(),
+                            bgCardColor = scheme.surface.toArgb(),
+                            textPrimary = scheme.onSurface.toArgb(),
+                            textSecondary = scheme.onSurfaceVariant.toArgb()
+                        )
+                    } catch (e: Exception) {
+                        // fall through to the preset palette below
+                    }
+                }
+
+                val preset = if (settings.colorPreset == AppColorPreset.SYSTEM_DYNAMIC) {
+                    AppColorPreset.EMERALD_GOLD
+                } else {
+                    settings.colorPreset
+                }
+                return if (isDark) {
+                    ColorPalette(
+                        primaryAccent = preset.primaryDark.toInt(),
+                        bgCardColor = 0xFF161E1A.toInt(),
+                        textPrimary = 0xFFE8EFEA.toInt(),
+                        textSecondary = 0xFFC0CEC5.toInt()
+                    )
+                } else {
+                    ColorPalette(
+                        primaryAccent = preset.primaryLight.toInt(),
+                        bgCardColor = 0xFFFFFFFF.toInt(),
+                        textPrimary = 0xFF191C1B.toInt(),
+                        textSecondary = 0xFF434E48.toInt()
+                    )
+                }
+            }
+
             val palette = when (wSet.themeMode) {
-                WidgetThemeMode.APP_THEME -> ColorPalette(
-                    primaryAccent = 0xFF165B33.toInt(),
-                    bgCardColor = 0xFF1E293B.toInt(),
-                    textPrimary = 0xFFF8FAFC.toInt(),
-                    textSecondary = 0xFF94A3B8.toInt()
-                )
-                WidgetThemeMode.MATERIAL_YOU -> ColorPalette(
+                WidgetThemeMode.APP_THEME -> resolveAppThemePalette()
+                WidgetThemeMode.MATERIAL_YOU -> resolveSystemDynamicPalette() ?: ColorPalette(
                     primaryAccent = 0xFF3F51B5.toInt(),
                     bgCardColor = 0xFF1C1B1F.toInt(),
                     textPrimary = 0xFFE6E1E5.toInt(),
@@ -133,29 +209,58 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                     textPrimary = 0xFFFAFAFA.toInt(),
                     textSecondary = 0xFFA1A1AA.toInt()
                 )
+            }.let { p ->
+                // Manual light/dark text override - a theme's own text colors can't be relied
+                // on for contrast when the background is fully or mostly transparent, since
+                // there's no way to know what's actually behind the widget (see textStyle docs).
+                when (wSet.textStyle) {
+                    WidgetTextStyle.AUTO -> p
+                    WidgetTextStyle.LIGHT -> p.copy(textPrimary = 0xFFFFFFFF.toInt(), textSecondary = 0xFFE2E8F0.toInt())
+                    WidgetTextStyle.DARK -> p.copy(textPrimary = 0xFF0F172A.toInt(), textSecondary = 0xFF334155.toInt())
+                }
             }
 
+            // Each style now renders distinctly instead of TRANSLUCENT/SOLID_SURFACE/FROSTED_GLASS
+            // all falling through to the same look:
+            //  - SOLID_SURFACE ignores the opacity slider and stays fully opaque ("highest
+            //    readability" per its own description).
+            //  - FROSTED_GLASS blends the card color toward white and floors the opacity so it
+            //    reads as a soft frosted panel even at a low slider value (RemoteViews can't do
+            //    a real Gaussian blur of the wallpaper, so this is the closest approximation).
+            //  - MINIMAL_BORDER pairs a near-invisible interior with a strong stroke, rendered
+            //    through shape_widget_root_border.xml's real outline (transparent fill + stroke)
+            //    rather than a solid wash.
             val finalRootBg = when (wSet.bgStyle) {
                 WidgetBackgroundStyle.TRANSPARENT_CLEAN -> Color.TRANSPARENT
                 WidgetBackgroundStyle.MINIMAL_BORDER -> ColorUtils.setAlphaComponent(0xFF000000.toInt(), (0.15f * opacityFrac * 255).toInt())
-                else -> ColorUtils.setAlphaComponent(palette.bgCardColor, (opacityFrac * 255).toInt())
+                WidgetBackgroundStyle.SOLID_SURFACE -> ColorUtils.setAlphaComponent(palette.bgCardColor, 255)
+                WidgetBackgroundStyle.FROSTED_GLASS -> {
+                    val frosted = ColorUtils.blendARGB(palette.bgCardColor, Color.WHITE, 0.25f)
+                    ColorUtils.setAlphaComponent(frosted, (opacityFrac.coerceAtLeast(0.55f) * 255).toInt())
+                }
+                WidgetBackgroundStyle.TRANSLUCENT -> ColorUtils.setAlphaComponent(palette.bgCardColor, (opacityFrac * 255).toInt())
             }
 
             val rootBorder = when (wSet.bgStyle) {
                 WidgetBackgroundStyle.TRANSPARENT_CLEAN -> Color.TRANSPARENT
                 WidgetBackgroundStyle.MINIMAL_BORDER -> ColorUtils.setAlphaComponent(palette.primaryAccent, (0.80f * 255).toInt())
-                else -> ColorUtils.setAlphaComponent(palette.primaryAccent, (0.25f * 255).toInt())
+                WidgetBackgroundStyle.SOLID_SURFACE -> ColorUtils.setAlphaComponent(palette.primaryAccent, (0.35f * 255).toInt())
+                WidgetBackgroundStyle.FROSTED_GLASS -> ColorUtils.setAlphaComponent(Color.WHITE, (0.20f * 255).toInt())
+                WidgetBackgroundStyle.TRANSLUCENT -> ColorUtils.setAlphaComponent(palette.primaryAccent, (0.25f * 255).toInt())
             }
 
+            // Alpha bumped above the "looks fine on a dark mockup" range: a real home screen
+            // wallpaper is often bright/busy, and a faint white wash barely registers against it
+            // (the same wash reads much stronger against the Settings preview's dark backdrop).
             val heroBg = when (wSet.bgStyle) {
-                WidgetBackgroundStyle.TRANSPARENT_CLEAN -> ColorUtils.setAlphaComponent(palette.textPrimary, (0.05f * 255).toInt())
-                else -> ColorUtils.setAlphaComponent(palette.textPrimary, (0.08f * 255).toInt())
+                WidgetBackgroundStyle.TRANSPARENT_CLEAN -> ColorUtils.setAlphaComponent(palette.textPrimary, (0.12f * 255).toInt())
+                else -> ColorUtils.setAlphaComponent(palette.textPrimary, (0.16f * 255).toInt())
             }
 
             val heroStroke = ColorUtils.setAlphaComponent(palette.primaryAccent, (0.15f * 255).toInt())
 
             val activePrayerBg = palette.primaryAccent
-            val inactivePrayerBg = ColorUtils.setAlphaComponent(palette.textPrimary, (0.06f * 255).toInt())
+            val inactivePrayerBg = ColorUtils.setAlphaComponent(palette.textPrimary, (0.14f * 255).toInt())
             val countdownBg = palette.primaryAccent
 
             val textOnAccent = if (ColorUtils.calculateLuminance(palette.primaryAccent) > 0.60) {
@@ -229,7 +334,12 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         val settings = PrayerPreferences.getInitialSettings(context)
-        val isArabic = settings.language == AppLanguage.ARABIC
+        val isArabic = when (settings.language) {
+            AppLanguage.ARABIC -> true
+            AppLanguage.ENGLISH -> false
+            AppLanguage.SYSTEM -> Locale.getDefault().language.equals("ar", ignoreCase = true)
+        }
+        val layoutDirection = if (isArabic) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
         val zoneId = try {
             ZoneId.of(settings.location.timeZoneId)
         } catch (e: Exception) {
@@ -297,7 +407,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         val progressPercent = ((elapsed.toFloat() / totalSpanSeconds) * 100).toInt().coerceIn(0, 100)
 
         // Location & Hijri display strings
-        val locationFormatted = formatLocationString(settings.location.name, settings.location.country, isArabic)
+        val locationFormatted = formatLocationString(settings.location.name, settings.location.country)
         val hijriFormatted = if (isArabic) {
             todaySchedule.hijriDate?.formattedAr ?: todaySchedule.hijriDateString
         } else {
@@ -333,6 +443,16 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 200)
             val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 100)
 
+            val hijriInline = minWidth >= 220
+
+            val microViews = buildMicroWidget(
+                context = context,
+                colors = colors,
+                prayerTime = formattedNextTime,
+                mainIntent = mainPendingIntent,
+                layoutDirection = layoutDirection
+            )
+
             val verticalViews = buildVerticalWidget(
                 context = context,
                 settings = settings,
@@ -345,7 +465,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 prayerTime = formattedNextTime,
                 countdown = countdownFormatted,
                 timeFormatter = timeFormatter,
-                mainIntent = mainPendingIntent
+                mainIntent = mainPendingIntent,
+                layoutDirection = layoutDirection
             )
 
             val smallViews = buildSmallWidget(
@@ -357,7 +478,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 prayerTime = formattedNextTime,
                 countdown = countdownFormatted,
                 mainIntent = mainPendingIntent,
-                refreshIntent = refreshPendingIntent
+                refreshIntent = refreshPendingIntent,
+                layoutDirection = layoutDirection
             )
 
             val slimViews = buildSlimWidget(
@@ -369,7 +491,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 prayerTime = formattedNextTime,
                 countdown = countdownFormatted,
                 mainIntent = mainPendingIntent,
-                refreshIntent = refreshPendingIntent
+                refreshIntent = refreshPendingIntent,
+                layoutDirection = layoutDirection
             )
 
             val mediumViews = buildMediumWidget(
@@ -385,7 +508,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 progressPercent = progressPercent,
                 timeFormatter = timeFormatter,
                 mainIntent = mainPendingIntent,
-                refreshIntent = refreshPendingIntent
+                refreshIntent = refreshPendingIntent,
+                layoutDirection = layoutDirection
             )
 
             val largeViews = buildLargeWidget(
@@ -394,6 +518,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 colors = colors,
                 locationText = locationFormatted,
                 hijriText = hijriFormatted,
+                hijriInline = hijriInline,
                 todaySchedule = todaySchedule,
                 nextPrayerType = nextPrayerType,
                 isTomorrowFajr = isTomorrowFajr,
@@ -404,7 +529,9 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 progressPercent = progressPercent,
                 timeFormatter = timeFormatter,
                 mainIntent = mainPendingIntent,
-                refreshIntent = refreshPendingIntent
+                refreshIntent = refreshPendingIntent,
+                layoutDirection = layoutDirection,
+                isArabic = isArabic
             )
 
             val expandedViews = buildExpandedWidget(
@@ -413,6 +540,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 colors = colors,
                 locationText = locationFormatted,
                 hijriText = hijriFormatted,
+                hijriInline = hijriInline,
                 todaySchedule = todaySchedule,
                 nextPrayerType = nextPrayerType,
                 isTomorrowFajr = isTomorrowFajr,
@@ -423,28 +551,42 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 progressPercent = progressPercent,
                 timeFormatter = timeFormatter,
                 mainIntent = mainPendingIntent,
-                refreshIntent = refreshPendingIntent
+                refreshIntent = refreshPendingIntent,
+                layoutDirection = layoutDirection,
+                isArabic = isArabic
             )
 
+            // Size buckets are calibrated to each layout's real minimum content size
+            // (not aspirational targets), using Android's cell-size formula 70*n-30dp,
+            // so the OS never force-fits a layout into a box too small for its content:
+            //  - 1 row (h<90dp), 1 col (w<90dp)  -> micro (icon + time only)
+            //  - 1 row (h<90dp), 2+ cols          -> slim (single horizontal bar)
+            //  - 2+ rows, 1 col (w<110dp)         -> vertical (stacked 6-row column)
+            //  - 2+ rows, 2-3 cols                -> small (compact square card)
+            //  - 2 rows, 4+ cols                  -> medium (hero + 3-slot split)
+            //  - 3-4 rows, 4+ cols                 -> large (header + hero + ribbon)
+            //  - 5+ rows, 4+ cols                  -> expanded (full 6-row schedule)
             val widgetViews: RemoteViews = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 RemoteViews(
                     mapOf(
-                        SizeF(50f, 110f) to verticalViews,
-                        SizeF(70f, 40f) to smallViews,
-                        SizeF(150f, 40f) to slimViews,
-                        SizeF(140f, 80f) to mediumViews,
-                        SizeF(210f, 80f) to largeViews,
-                        SizeF(220f, 250f) to expandedViews
+                        SizeF(40f, 40f) to microViews,
+                        SizeF(90f, 40f) to slimViews,
+                        SizeF(40f, 110f) to verticalViews,
+                        SizeF(110f, 100f) to smallViews,
+                        SizeF(230f, 90f) to mediumViews,
+                        SizeF(250f, 180f) to largeViews,
+                        SizeF(250f, 320f) to expandedViews
                     )
                 )
             } else {
                 when {
-                    minWidth < 130 && minHeight >= 110 -> verticalViews
-                    minHeight < 75 && minWidth >= 150 -> slimViews
-                    minHeight < 80 && minWidth < 150 -> smallViews
-                    minHeight >= 250 -> expandedViews
-                    minWidth >= 210 -> largeViews
-                    else -> mediumViews
+                    minHeight < 90 && minWidth < 90 -> microViews
+                    minHeight < 90 -> slimViews
+                    minWidth < 110 -> verticalViews
+                    minWidth >= 250 && minHeight >= 320 -> expandedViews
+                    minWidth >= 250 && minHeight >= 180 -> largeViews
+                    minWidth >= 230 -> mediumViews
+                    else -> smallViews
                 }
             }
 
@@ -452,6 +594,32 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         }
 
         scheduleNextWidgetUpdate(context, nextPrayerZoned)
+    }
+
+    private fun buildMicroWidget(
+        context: Context,
+        colors: WidgetColorScheme,
+        prayerTime: String,
+        mainIntent: PendingIntent,
+        layoutDirection: Int
+    ): RemoteViews {
+        val views = RemoteViews(context.packageName, R.layout.prayer_appwidget_micro)
+
+        views.setInt(R.id.widget_root_micro, "setLayoutDirection", layoutDirection)
+        tintShape(views, R.id.widget_micro_root_bg_img, colors.rootBgColor)
+        if (colors.rootBorderColor != Color.TRANSPARENT) {
+            views.setViewVisibility(R.id.widget_micro_root_border_img, View.VISIBLE)
+            tintShape(views, R.id.widget_micro_root_border_img, colors.rootBorderColor)
+        } else {
+            views.setViewVisibility(R.id.widget_micro_root_border_img, View.GONE)
+        }
+
+        tintShape(views, R.id.widget_micro_icon, colors.accentColor)
+        views.setTextViewText(R.id.widget_micro_time, prayerTime)
+        views.setTextColor(R.id.widget_micro_time, colors.textPrimaryColor)
+
+        views.setOnClickPendingIntent(R.id.widget_root_micro, mainIntent)
+        return views
     }
 
     private fun buildVerticalWidget(
@@ -466,16 +634,18 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         prayerTime: String,
         countdown: String,
         timeFormatter: DateTimeFormatter,
-        mainIntent: PendingIntent
+        mainIntent: PendingIntent,
+        layoutDirection: Int
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.prayer_appwidget_vertical)
         val wSet = settings.widgetSettings
         val scale = colors.fontScale
 
-        views.setInt(R.id.widget_vert_root_bg_img, "setColorFilter", colors.rootBgColor)
+        views.setInt(R.id.widget_root_vert, "setLayoutDirection", layoutDirection)
+        tintShape(views, R.id.widget_vert_root_bg_img, colors.rootBgColor)
         if (colors.rootBorderColor != Color.TRANSPARENT) {
             views.setViewVisibility(R.id.widget_vert_root_border_img, View.VISIBLE)
-            views.setInt(R.id.widget_vert_root_border_img, "setColorFilter", colors.rootBorderColor)
+            tintShape(views, R.id.widget_vert_root_border_img, colors.rootBorderColor)
         } else {
             views.setViewVisibility(R.id.widget_vert_root_border_img, View.GONE)
         }
@@ -491,7 +661,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
         if (wSet.showHeroCard) {
             views.setViewVisibility(R.id.widget_vert_hero, View.VISIBLE)
-            views.setInt(R.id.widget_vert_hero_bg_img, "setColorFilter", colors.heroBgColor)
+            tintShape(views, R.id.widget_vert_hero_bg_img, colors.heroBgColor)
 
             views.setTextViewText(R.id.widget_vert_next_name, prayerName)
             views.setTextColor(R.id.widget_vert_next_name, colors.accentColor)
@@ -503,7 +673,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
             if (wSet.showCountdown) {
                 views.setViewVisibility(R.id.widget_vert_countdown_container, View.VISIBLE)
-                views.setInt(R.id.widget_vert_countdown_bg_img, "setColorFilter", colors.countdownBgColor)
+                tintShape(views, R.id.widget_vert_countdown_bg_img, colors.countdownBgColor)
+                tintContainerBackground(views, R.id.widget_vert_countdown_container, colors.countdownBgColor)
                 views.setTextViewText(R.id.widget_vert_countdown, countdown)
                 views.setTextColor(R.id.widget_vert_countdown, colors.textOnAccentColor)
                 views.setTextViewTextSize(R.id.widget_vert_countdown, TypedValue.COMPLEX_UNIT_SP, 9f * scale)
@@ -530,11 +701,11 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
             val isHighlighted = !isTomorrowFajr && nextPrayerType == type
             if (isHighlighted) {
-                views.setInt(bgId, "setColorFilter", colors.activePrayerBgColor)
+                tintShape(views, bgId, colors.activePrayerBgColor)
                 views.setTextColor(nameId, colors.textOnAccentColor)
                 views.setTextColor(timeId, colors.textOnAccentColor)
             } else {
-                views.setInt(bgId, "setColorFilter", colors.inactivePrayerBgColor)
+                tintShape(views, bgId, colors.inactivePrayerBgColor)
                 views.setTextColor(nameId, colors.textSecondaryColor)
                 views.setTextColor(timeId, colors.textPrimaryColor)
             }
@@ -560,16 +731,18 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         prayerTime: String,
         countdown: String,
         mainIntent: PendingIntent,
-        refreshIntent: PendingIntent
+        refreshIntent: PendingIntent,
+        layoutDirection: Int
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.prayer_appwidget_slim)
         val wSet = settings.widgetSettings
         val scale = colors.fontScale
 
-        views.setInt(R.id.widget_slim_root_bg_img, "setColorFilter", colors.rootBgColor)
+        views.setInt(R.id.widget_root_slim, "setLayoutDirection", layoutDirection)
+        tintShape(views, R.id.widget_slim_root_bg_img, colors.rootBgColor)
         if (colors.rootBorderColor != Color.TRANSPARENT) {
             views.setViewVisibility(R.id.widget_slim_root_border_img, View.VISIBLE)
-            views.setInt(R.id.widget_slim_root_border_img, "setColorFilter", colors.rootBorderColor)
+            tintShape(views, R.id.widget_slim_root_border_img, colors.rootBorderColor)
         } else {
             views.setViewVisibility(R.id.widget_slim_root_border_img, View.GONE)
         }
@@ -593,7 +766,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
         if (wSet.showCountdown) {
             views.setViewVisibility(R.id.widget_slim_countdown_container, View.VISIBLE)
-            views.setInt(R.id.widget_slim_countdown_bg_img, "setColorFilter", colors.countdownBgColor)
+            tintShape(views, R.id.widget_slim_countdown_bg_img, colors.countdownBgColor)
+            tintContainerBackground(views, R.id.widget_slim_countdown_container, colors.countdownBgColor)
             views.setTextViewText(R.id.widget_slim_countdown, countdown)
             views.setTextColor(R.id.widget_slim_countdown, colors.textOnAccentColor)
             views.setTextViewTextSize(R.id.widget_slim_countdown, TypedValue.COMPLEX_UNIT_SP, 11f * scale)
@@ -615,21 +789,23 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         prayerTime: String,
         countdown: String,
         mainIntent: PendingIntent,
-        refreshIntent: PendingIntent
+        refreshIntent: PendingIntent,
+        layoutDirection: Int
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.prayer_appwidget_small)
         val wSet = settings.widgetSettings
         val scale = colors.fontScale
 
-        views.setInt(R.id.widget_small_root_bg_img, "setColorFilter", colors.rootBgColor)
+        views.setInt(R.id.widget_root_small, "setLayoutDirection", layoutDirection)
+        tintShape(views, R.id.widget_small_root_bg_img, colors.rootBgColor)
         if (colors.rootBorderColor != Color.TRANSPARENT) {
             views.setViewVisibility(R.id.widget_small_root_border_img, View.VISIBLE)
-            views.setInt(R.id.widget_small_root_border_img, "setColorFilter", colors.rootBorderColor)
+            tintShape(views, R.id.widget_small_root_border_img, colors.rootBorderColor)
         } else {
             views.setViewVisibility(R.id.widget_small_root_border_img, View.GONE)
         }
 
-        views.setInt(R.id.widget_small_hero_bg_img, "setColorFilter", colors.heroBgColor)
+        tintShape(views, R.id.widget_small_hero_bg_img, colors.heroBgColor)
 
         if (wSet.showLocation) {
             views.setViewVisibility(R.id.widget_small_location, View.VISIBLE)
@@ -650,7 +826,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
         if (wSet.showCountdown) {
             views.setViewVisibility(R.id.widget_small_countdown_container, View.VISIBLE)
-            views.setInt(R.id.widget_small_countdown_bg_img, "setColorFilter", colors.countdownBgColor)
+            tintShape(views, R.id.widget_small_countdown_bg_img, colors.countdownBgColor)
+            tintContainerBackground(views, R.id.widget_small_countdown_container, colors.countdownBgColor)
             views.setTextViewText(R.id.widget_small_countdown, countdown)
             views.setTextColor(R.id.widget_small_countdown, colors.textOnAccentColor)
             views.setTextViewTextSize(R.id.widget_small_countdown, TypedValue.COMPLEX_UNIT_SP, 10f * scale)
@@ -676,22 +853,24 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         progressPercent: Int,
         timeFormatter: DateTimeFormatter,
         mainIntent: PendingIntent,
-        refreshIntent: PendingIntent
+        refreshIntent: PendingIntent,
+        layoutDirection: Int
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.prayer_appwidget_medium)
         val wSet = settings.widgetSettings
         val scale = colors.fontScale
 
-        views.setInt(R.id.widget_med_root_bg_img, "setColorFilter", colors.rootBgColor)
+        views.setInt(R.id.widget_root_medium, "setLayoutDirection", layoutDirection)
+        tintShape(views, R.id.widget_med_root_bg_img, colors.rootBgColor)
         if (colors.rootBorderColor != Color.TRANSPARENT) {
             views.setViewVisibility(R.id.widget_med_root_border_img, View.VISIBLE)
-            views.setInt(R.id.widget_med_root_border_img, "setColorFilter", colors.rootBorderColor)
+            tintShape(views, R.id.widget_med_root_border_img, colors.rootBorderColor)
         } else {
             views.setViewVisibility(R.id.widget_med_root_border_img, View.GONE)
         }
 
-        views.setInt(R.id.widget_med_hero_bg_img, "setColorFilter", colors.heroBgColor)
-        views.setInt(R.id.widget_med_hero_border_img, "setColorFilter", colors.heroStrokeColor)
+        tintShape(views, R.id.widget_med_hero_bg_img, colors.heroBgColor)
+        tintShape(views, R.id.widget_med_hero_border_img, colors.heroStrokeColor)
 
         views.setTextViewText(R.id.widget_med_location, locationText)
         views.setTextColor(R.id.widget_med_location, colors.textPrimaryColor)
@@ -707,7 +886,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
         if (wSet.showCountdown) {
             views.setViewVisibility(R.id.widget_med_countdown_container, View.VISIBLE)
-            views.setInt(R.id.widget_med_countdown_bg_img, "setColorFilter", colors.countdownBgColor)
+            tintShape(views, R.id.widget_med_countdown_bg_img, colors.countdownBgColor)
+            tintContainerBackground(views, R.id.widget_med_countdown_container, colors.countdownBgColor)
             views.setTextViewText(R.id.widget_med_countdown, countdown)
             views.setTextColor(R.id.widget_med_countdown, colors.textOnAccentColor)
             views.setTextViewTextSize(R.id.widget_med_countdown, TypedValue.COMPLEX_UNIT_SP, 10f * scale)
@@ -733,11 +913,11 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             views.setTextViewTextSize(timeId, TypedValue.COMPLEX_UNIT_SP, 9f * scale)
 
             if (nextPrayerType == type) {
-                views.setInt(bgId, "setColorFilter", colors.activePrayerBgColor)
+                tintShape(views, bgId, colors.activePrayerBgColor)
                 views.setTextColor(nameId, colors.textOnAccentColor)
                 views.setTextColor(timeId, colors.textOnAccentColor)
             } else {
-                views.setInt(bgId, "setColorFilter", colors.inactivePrayerBgColor)
+                tintShape(views, bgId, colors.inactivePrayerBgColor)
                 views.setTextColor(nameId, colors.textSecondaryColor)
                 views.setTextColor(timeId, colors.textPrimaryColor)
             }
@@ -759,6 +939,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         colors: WidgetColorScheme,
         locationText: String,
         hijriText: String,
+        hijriInline: Boolean,
         todaySchedule: DailyPrayerSchedule,
         nextPrayerType: PrayerType,
         isTomorrowFajr: Boolean,
@@ -769,23 +950,25 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         progressPercent: Int,
         timeFormatter: DateTimeFormatter,
         mainIntent: PendingIntent,
-        refreshIntent: PendingIntent
+        refreshIntent: PendingIntent,
+        layoutDirection: Int,
+        isArabic: Boolean
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.prayer_appwidget_layout)
-        val isArabic = settings.language == AppLanguage.ARABIC
         val wSet = settings.widgetSettings
         val scale = colors.fontScale
 
-        views.setInt(R.id.widget_root_bg_img, "setColorFilter", colors.rootBgColor)
+        views.setInt(R.id.widget_root, "setLayoutDirection", layoutDirection)
+        tintShape(views, R.id.widget_root_bg_img, colors.rootBgColor)
         if (colors.rootBorderColor != Color.TRANSPARENT) {
             views.setViewVisibility(R.id.widget_root_border_img, View.VISIBLE)
-            views.setInt(R.id.widget_root_border_img, "setColorFilter", colors.rootBorderColor)
+            tintShape(views, R.id.widget_root_border_img, colors.rootBorderColor)
         } else {
             views.setViewVisibility(R.id.widget_root_border_img, View.GONE)
         }
 
-        views.setInt(R.id.widget_mosque_icon, "setColorFilter", colors.accentColor)
-        views.setInt(R.id.widget_refresh_button, "setColorFilter", colors.textSecondaryColor)
+        tintShape(views, R.id.widget_mosque_icon, colors.accentColor)
+        tintShape(views, R.id.widget_refresh_button, colors.textSecondaryColor)
 
         if (wSet.showLocation) {
             views.setViewVisibility(R.id.widget_location_text, View.VISIBLE)
@@ -797,18 +980,28 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         }
 
         if (wSet.showHijriDate) {
-            views.setViewVisibility(R.id.widget_hijri_text, View.VISIBLE)
-            views.setTextViewText(R.id.widget_hijri_text, hijriText)
-            views.setTextColor(R.id.widget_hijri_text, colors.textSecondaryColor)
-            views.setTextViewTextSize(R.id.widget_hijri_text, TypedValue.COMPLEX_UNIT_SP, 10f * scale)
+            if (hijriInline) {
+                views.setViewVisibility(R.id.widget_hijri_text_inline, View.VISIBLE)
+                views.setTextViewText(R.id.widget_hijri_text_inline, "• $hijriText")
+                views.setTextColor(R.id.widget_hijri_text_inline, colors.textSecondaryColor)
+                views.setTextViewTextSize(R.id.widget_hijri_text_inline, TypedValue.COMPLEX_UNIT_SP, 10f * scale)
+                views.setViewVisibility(R.id.widget_hijri_text, View.GONE)
+            } else {
+                views.setViewVisibility(R.id.widget_hijri_text, View.VISIBLE)
+                views.setTextViewText(R.id.widget_hijri_text, hijriText)
+                views.setTextColor(R.id.widget_hijri_text, colors.textSecondaryColor)
+                views.setTextViewTextSize(R.id.widget_hijri_text, TypedValue.COMPLEX_UNIT_SP, 10f * scale)
+                views.setViewVisibility(R.id.widget_hijri_text_inline, View.GONE)
+            }
         } else {
             views.setViewVisibility(R.id.widget_hijri_text, View.GONE)
+            views.setViewVisibility(R.id.widget_hijri_text_inline, View.GONE)
         }
 
         if (wSet.showHeroCard) {
             views.setViewVisibility(R.id.widget_hero_card, View.VISIBLE)
-            views.setInt(R.id.widget_hero_bg_img, "setColorFilter", colors.heroBgColor)
-            views.setInt(R.id.widget_hero_border_img, "setColorFilter", colors.heroStrokeColor)
+            tintShape(views, R.id.widget_hero_bg_img, colors.heroBgColor)
+            tintShape(views, R.id.widget_hero_border_img, colors.heroStrokeColor)
 
             views.setTextViewText(R.id.widget_next_prayer_name, prayerName)
             views.setTextColor(R.id.widget_next_prayer_name, colors.accentColor)
@@ -820,21 +1013,23 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
             if (wSet.showCountdown) {
                 views.setViewVisibility(R.id.widget_countdown_container, View.VISIBLE)
-                views.setInt(R.id.widget_countdown_bg_img, "setColorFilter", colors.countdownBgColor)
+                tintShape(views, R.id.widget_countdown_bg_img, colors.countdownBgColor)
+                tintContainerBackground(views, R.id.widget_countdown_container, colors.countdownBgColor)
                 views.setTextViewText(R.id.widget_countdown_text, countdown)
                 views.setTextColor(R.id.widget_countdown_text, colors.textOnAccentColor)
                 views.setTextViewTextSize(R.id.widget_countdown_text, TypedValue.COMPLEX_UNIT_SP, 11f * scale)
 
-                views.setTextViewText(
-                    R.id.widget_status_text,
-                    if (diffSeconds <= 60) {
-                        if (isArabic) "حان وقت الصلاة" else "Prayer Time!"
-                    } else {
-                        if (isArabic) "متبقي" else "Remaining"
-                    }
-                )
-                views.setTextColor(R.id.widget_status_text, colors.textOnAccentColor)
-                views.setTextViewTextSize(R.id.widget_status_text, TypedValue.COMPLEX_UNIT_SP, 8f * scale)
+                // "In 2h 41m" already says everything; a "Remaining" label under it just reads
+                // redundantly. Only show a status line once the prayer time has actually
+                // arrived, where it adds real information.
+                if (diffSeconds <= 60) {
+                    views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_status_text, if (isArabic) "حان وقت الصلاة" else "Prayer Time!")
+                    views.setTextColor(R.id.widget_status_text, colors.textOnAccentColor)
+                    views.setTextViewTextSize(R.id.widget_status_text, TypedValue.COMPLEX_UNIT_SP, 8f * scale)
+                } else {
+                    views.setViewVisibility(R.id.widget_status_text, View.GONE)
+                }
             } else {
                 views.setViewVisibility(R.id.widget_countdown_container, View.GONE)
             }
@@ -869,6 +1064,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         colors: WidgetColorScheme,
         locationText: String,
         hijriText: String,
+        hijriInline: Boolean,
         todaySchedule: DailyPrayerSchedule,
         nextPrayerType: PrayerType,
         isTomorrowFajr: Boolean,
@@ -879,23 +1075,25 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         progressPercent: Int,
         timeFormatter: DateTimeFormatter,
         mainIntent: PendingIntent,
-        refreshIntent: PendingIntent
+        refreshIntent: PendingIntent,
+        layoutDirection: Int,
+        isArabic: Boolean
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.prayer_appwidget_expanded)
-        val isArabic = settings.language == AppLanguage.ARABIC
         val wSet = settings.widgetSettings
         val scale = colors.fontScale
 
-        views.setInt(R.id.widget_exp_root_bg_img, "setColorFilter", colors.rootBgColor)
+        views.setInt(R.id.widget_root_expanded, "setLayoutDirection", layoutDirection)
+        tintShape(views, R.id.widget_exp_root_bg_img, colors.rootBgColor)
         if (colors.rootBorderColor != Color.TRANSPARENT) {
             views.setViewVisibility(R.id.widget_exp_root_border_img, View.VISIBLE)
-            views.setInt(R.id.widget_exp_root_border_img, "setColorFilter", colors.rootBorderColor)
+            tintShape(views, R.id.widget_exp_root_border_img, colors.rootBorderColor)
         } else {
             views.setViewVisibility(R.id.widget_exp_root_border_img, View.GONE)
         }
 
-        views.setInt(R.id.widget_exp_mosque_icon, "setColorFilter", colors.accentColor)
-        views.setInt(R.id.widget_exp_refresh_btn, "setColorFilter", colors.textSecondaryColor)
+        tintShape(views, R.id.widget_exp_mosque_icon, colors.accentColor)
+        tintShape(views, R.id.widget_exp_refresh_btn, colors.textSecondaryColor)
 
         if (wSet.showLocation) {
             views.setViewVisibility(R.id.widget_exp_location, View.VISIBLE)
@@ -907,18 +1105,28 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         }
 
         if (wSet.showHijriDate) {
-            views.setViewVisibility(R.id.widget_exp_hijri, View.VISIBLE)
-            views.setTextViewText(R.id.widget_exp_hijri, hijriText)
-            views.setTextColor(R.id.widget_exp_hijri, colors.textSecondaryColor)
-            views.setTextViewTextSize(R.id.widget_exp_hijri, TypedValue.COMPLEX_UNIT_SP, 11f * scale)
+            if (hijriInline) {
+                views.setViewVisibility(R.id.widget_exp_hijri_inline, View.VISIBLE)
+                views.setTextViewText(R.id.widget_exp_hijri_inline, "• $hijriText")
+                views.setTextColor(R.id.widget_exp_hijri_inline, colors.textSecondaryColor)
+                views.setTextViewTextSize(R.id.widget_exp_hijri_inline, TypedValue.COMPLEX_UNIT_SP, 11f * scale)
+                views.setViewVisibility(R.id.widget_exp_hijri, View.GONE)
+            } else {
+                views.setViewVisibility(R.id.widget_exp_hijri, View.VISIBLE)
+                views.setTextViewText(R.id.widget_exp_hijri, hijriText)
+                views.setTextColor(R.id.widget_exp_hijri, colors.textSecondaryColor)
+                views.setTextViewTextSize(R.id.widget_exp_hijri, TypedValue.COMPLEX_UNIT_SP, 11f * scale)
+                views.setViewVisibility(R.id.widget_exp_hijri_inline, View.GONE)
+            }
         } else {
             views.setViewVisibility(R.id.widget_exp_hijri, View.GONE)
+            views.setViewVisibility(R.id.widget_exp_hijri_inline, View.GONE)
         }
 
         if (wSet.showHeroCard) {
             views.setViewVisibility(R.id.widget_exp_hero_card, View.VISIBLE)
-            views.setInt(R.id.widget_exp_hero_bg_img, "setColorFilter", colors.heroBgColor)
-            views.setInt(R.id.widget_exp_hero_border_img, "setColorFilter", colors.heroStrokeColor)
+            tintShape(views, R.id.widget_exp_hero_bg_img, colors.heroBgColor)
+            tintShape(views, R.id.widget_exp_hero_border_img, colors.heroStrokeColor)
 
             views.setTextViewText(R.id.widget_exp_next_prayer_name, prayerName)
             views.setTextColor(R.id.widget_exp_next_prayer_name, colors.accentColor)
@@ -930,21 +1138,20 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
             if (wSet.showCountdown) {
                 views.setViewVisibility(R.id.widget_exp_countdown_container, View.VISIBLE)
-                views.setInt(R.id.widget_exp_countdown_bg_img, "setColorFilter", colors.countdownBgColor)
+                tintShape(views, R.id.widget_exp_countdown_bg_img, colors.countdownBgColor)
+                tintContainerBackground(views, R.id.widget_exp_countdown_container, colors.countdownBgColor)
                 views.setTextViewText(R.id.widget_exp_countdown_text, countdown)
                 views.setTextColor(R.id.widget_exp_countdown_text, colors.textOnAccentColor)
                 views.setTextViewTextSize(R.id.widget_exp_countdown_text, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
 
-                views.setTextViewText(
-                    R.id.widget_exp_status_text,
-                    if (diffSeconds <= 60) {
-                        if (isArabic) "حان وقت الصلاة" else "Prayer Time!"
-                    } else {
-                        if (isArabic) "متبقي" else "Remaining"
-                    }
-                )
-                views.setTextColor(R.id.widget_exp_status_text, colors.textOnAccentColor)
-                views.setTextViewTextSize(R.id.widget_exp_status_text, TypedValue.COMPLEX_UNIT_SP, 9f * scale)
+                if (diffSeconds <= 60) {
+                    views.setViewVisibility(R.id.widget_exp_status_text, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_exp_status_text, if (isArabic) "حان وقت الصلاة" else "Prayer Time!")
+                    views.setTextColor(R.id.widget_exp_status_text, colors.textOnAccentColor)
+                    views.setTextViewTextSize(R.id.widget_exp_status_text, TypedValue.COMPLEX_UNIT_SP, 9f * scale)
+                } else {
+                    views.setViewVisibility(R.id.widget_exp_status_text, View.GONE)
+                }
             } else {
                 views.setViewVisibility(R.id.widget_exp_countdown_container, View.GONE)
             }
@@ -975,11 +1182,11 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
             val isHighlighted = !isTomorrowFajr && nextPrayerType == type
             if (isHighlighted) {
-                views.setInt(bgId, "setColorFilter", colors.activePrayerBgColor)
+                tintShape(views, bgId, colors.activePrayerBgColor)
                 views.setTextColor(nameId, colors.textOnAccentColor)
                 views.setTextColor(timeId, colors.textOnAccentColor)
             } else {
-                views.setInt(bgId, "setColorFilter", colors.inactivePrayerBgColor)
+                tintShape(views, bgId, colors.inactivePrayerBgColor)
                 views.setTextColor(nameId, colors.textSecondaryColor)
                 views.setTextColor(timeId, colors.textPrimaryColor)
             }
@@ -1036,11 +1243,11 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
             val isHighlighted = !isTomorrowFajr && nextType == type
             if (isHighlighted) {
-                views.setInt(bgId, "setColorFilter", colors.activePrayerBgColor)
+                tintShape(views, bgId, colors.activePrayerBgColor)
                 views.setTextColor(nameId, colors.textOnAccentColor)
                 views.setTextColor(timeId, colors.textOnAccentColor)
             } else {
-                views.setInt(bgId, "setColorFilter", colors.inactivePrayerBgColor)
+                tintShape(views, bgId, colors.inactivePrayerBgColor)
                 views.setTextColor(nameId, colors.textSecondaryColor)
                 views.setTextColor(timeId, colors.textPrimaryColor)
             }
@@ -1054,14 +1261,38 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         updateSlot(R.id.widget_isha_container, R.id.widget_isha_bg_img, R.id.widget_isha_name, R.id.widget_isha_time, PrayerType.ISHA)
     }
 
-    private fun formatLocationString(city: String, country: String, isArabic: Boolean): String {
-        if (city.isBlank()) return country
-        if (country.isBlank()) return city
-        return if (isArabic) {
-            "$city، $country"
-        } else {
-            "$city, $country"
+    /**
+     * Tints a shape-backed ImageView (the drawable's base fill must be opaque).
+     * ImageView.setColorFilter(int) uses PorterDuff.Mode.SRC_ATOP, whose result
+     * alpha always equals the *destination* alpha, not the source color's alpha.
+     * So variable transparency (opacity slider, transparent styles) can't be baked
+     * into the filter color itself - it has to be applied separately via
+     * setImageAlpha, after tinting with a fully opaque version of the color.
+     */
+    private fun tintShape(views: RemoteViews, viewId: Int, color: Int) {
+        views.setInt(viewId, "setColorFilter", ColorUtils.setAlphaComponent(color, 255))
+        views.setInt(viewId, "setImageAlpha", Color.alpha(color))
+    }
+
+    /**
+     * A second, independent way to color a pill badge, used alongside tintShape() on its
+     * ImageView. The countdown pill kept rendering with no visible background across multiple
+     * rebuilds - including a structural layout rewrite - which pointed away from a pure XML/
+     * layout bug and toward the widget host reapplying updates onto a cached View tree rather
+     * than a fresh inflate (a real RemoteViews optimization when the layout id is unchanged).
+     * setColorStateList/setBackgroundTintList tints a background drawable declared directly in
+     * XML on the container itself - a completely different code path from the ImageView overlay,
+     * so if one is affected by stale-view reuse the other still has a chance to render correctly.
+     * API 31+ only (older devices keep relying on the ImageView alone).
+     */
+    private fun tintContainerBackground(views: RemoteViews, containerId: Int, color: Int) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            views.setColorStateList(containerId, "setBackgroundTintList", ColorStateList.valueOf(color))
         }
+    }
+
+    private fun formatLocationString(city: String, country: String): String {
+        return city.ifBlank { country }
     }
 
     private fun getPrayerName(type: PrayerType, language: AppLanguage): String {

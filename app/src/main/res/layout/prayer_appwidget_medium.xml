@@ -59,16 +59,22 @@
                 android:orientation="vertical"
                 android:padding="10dp">
 
-                <RelativeLayout
+                <!-- LinearLayout, not RelativeLayout: see prayer_appwidget_layout.xml for why. -->
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_med_next_prayer_name"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:layout_centerVertical="true"
+                        android:layout_weight="1"
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:text="Asr"
@@ -79,10 +85,9 @@
 
                     <FrameLayout
                         android:id="@+id/widget_med_countdown_container"
+                        android:background="@drawable/shape_widget_pill_bg"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true">
+                        android:layout_height="wrap_content">
 
                         <ImageView
                             android:id="@+id/widget_med_countdown_bg_img"
@@ -93,6 +98,10 @@
                             android:src="@drawable/shape_widget_pill_bg" />
 
                         <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                             android:id="@+id/widget_med_countdown"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -105,9 +114,13 @@
                             android:textSize="10sp"
                             android:textStyle="bold" />
                     </FrameLayout>
-                </RelativeLayout>
+                </LinearLayout>
 
                 <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                     android:id="@+id/widget_med_next_prayer_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -145,6 +158,10 @@
                 android:layout_marginBottom="4dp">
 
                 <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                     android:id="@+id/widget_med_location"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -204,6 +221,10 @@
                         android:padding="4dp">
 
                         <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                             android:id="@+id/widget_med_slot1_name"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -215,6 +236,10 @@
                             android:textStyle="bold" />
 
                         <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                             android:id="@+id/widget_med_slot1_time"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -251,6 +276,10 @@
                         android:padding="4dp">
 
                         <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                             android:id="@+id/widget_med_slot2_name"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -262,6 +291,10 @@
                             android:textStyle="bold" />
 
                         <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                             android:id="@+id/widget_med_slot2_time"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -297,6 +330,10 @@
                         android:padding="4dp">
 
                         <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                             android:id="@+id/widget_med_slot3_name"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -308,6 +345,10 @@
                             android:textStyle="bold" />
 
                         <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                             android:id="@+id/widget_med_slot3_time"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"

@@ -27,6 +27,7 @@ import com.example.data.models.UserLocation
 import com.example.data.models.WidgetBackgroundStyle
 import com.example.data.models.WidgetCustomizationSettings
 import com.example.data.models.WidgetFontSize
+import com.example.data.models.WidgetTextStyle
 import com.example.data.models.WidgetThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -44,7 +45,6 @@ data class AppPrayerSettings(
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     val colorPreset: AppColorPreset = AppColorPreset.SYSTEM_DYNAMIC,
     val followSystemColors: Boolean = true,
-    val widgetFollowSystemColors: Boolean = true,
     val widgetSettings: WidgetCustomizationSettings = WidgetCustomizationSettings(),
     val dynamicIslandEnabled: Boolean = true,
     val dynamicIslandMinutesBefore: Int = 15,
@@ -73,13 +73,13 @@ class PrayerPreferences(private val context: Context) {
         private const val KEY_THEME = "cached_theme"
         private const val KEY_COLOR_PRESET = "cached_color_preset"
         private const val KEY_FOLLOW_SYSTEM_COLORS = "cached_follow_system_colors"
-        private const val KEY_WIDGET_FOLLOW_SYSTEM_COLORS = "cached_widget_follow_sys_colors"
         private const val KEY_24H = "cached_24h"
 
         private const val KEY_WIDGET_THEME = "cached_w_theme"
         private const val KEY_WIDGET_BG = "cached_w_bg"
         private const val KEY_WIDGET_OPACITY = "cached_w_opacity"
         private const val KEY_WIDGET_FONT = "cached_w_font"
+        private const val KEY_WIDGET_TEXT_STYLE = "cached_w_text_style"
         private const val KEY_WIDGET_SHOW_LOC = "cached_w_show_loc"
         private const val KEY_WIDGET_SHOW_HIJRI = "cached_w_show_hijri"
         private const val KEY_WIDGET_SHOW_COUNTDOWN = "cached_w_show_cd"
@@ -183,7 +183,6 @@ class PrayerPreferences(private val context: Context) {
             } ?: AppColorPreset.SYSTEM_DYNAMIC
 
             val followSys = fastPrefs.getBoolean(KEY_FOLLOW_SYSTEM_COLORS, true)
-            val widgetFollowSys = fastPrefs.getBoolean(KEY_WIDGET_FOLLOW_SYSTEM_COLORS, true)
             val is24h = fastPrefs.getBoolean(KEY_24H, false)
 
             val dynIsland = fastPrefs.getBoolean(KEY_DYNAMIC_ISLAND_ENABLED, true)
@@ -209,6 +208,9 @@ class PrayerPreferences(private val context: Context) {
             val wFontStr = fastPrefs.getString(KEY_WIDGET_FONT, null)
             val wFont = wFontStr?.let { try { WidgetFontSize.valueOf(it) } catch (e: Exception) { WidgetFontSize.STANDARD } } ?: WidgetFontSize.STANDARD
 
+            val wTextStyleStr = fastPrefs.getString(KEY_WIDGET_TEXT_STYLE, null)
+            val wTextStyle = wTextStyleStr?.let { try { WidgetTextStyle.valueOf(it) } catch (e: Exception) { WidgetTextStyle.AUTO } } ?: WidgetTextStyle.AUTO
+
             val wShowLoc = fastPrefs.getBoolean(KEY_WIDGET_SHOW_LOC, true)
             val wShowHijri = fastPrefs.getBoolean(KEY_WIDGET_SHOW_HIJRI, true)
             val wShowCd = fastPrefs.getBoolean(KEY_WIDGET_SHOW_COUNTDOWN, true)
@@ -222,6 +224,7 @@ class PrayerPreferences(private val context: Context) {
                 bgStyle = wBg,
                 opacityPercent = wOpacity,
                 fontSize = wFont,
+                textStyle = wTextStyle,
                 showLocation = wShowLoc,
                 showHijriDate = wShowHijri,
                 showCountdown = wShowCd,
@@ -242,7 +245,6 @@ class PrayerPreferences(private val context: Context) {
                 themeMode = theme,
                 colorPreset = color,
                 followSystemColors = followSys,
-                widgetFollowSystemColors = widgetFollowSys,
                 widgetSettings = widgetSettings,
                 dynamicIslandEnabled = dynIsland,
                 dynamicIslandMinutesBefore = dynMinutes,
@@ -271,7 +273,6 @@ class PrayerPreferences(private val context: Context) {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val COLOR_PRESET = stringPreferencesKey("color_preset")
         val FOLLOW_SYSTEM_COLORS = booleanPreferencesKey("follow_system_colors")
-        val WIDGET_FOLLOW_SYSTEM_COLORS = booleanPreferencesKey("widget_follow_system_colors")
         val DYNAMIC_ISLAND_ENABLED = booleanPreferencesKey("dynamic_island_enabled")
         val DYNAMIC_ISLAND_MINUTES = intPreferencesKey("dynamic_island_minutes")
         val AUDIO_STREAM = stringPreferencesKey("audio_stream")
@@ -283,6 +284,7 @@ class PrayerPreferences(private val context: Context) {
         val WIDGET_BG_STYLE = stringPreferencesKey("widget_bg_style")
         val WIDGET_OPACITY = intPreferencesKey("widget_opacity")
         val WIDGET_FONT_SIZE = stringPreferencesKey("widget_font_size")
+        val WIDGET_TEXT_STYLE = stringPreferencesKey("widget_text_style")
         val WIDGET_SHOW_LOC = booleanPreferencesKey("widget_show_loc")
         val WIDGET_SHOW_HIJRI = booleanPreferencesKey("widget_show_hijri")
         val WIDGET_SHOW_COUNTDOWN = booleanPreferencesKey("widget_show_countdown")
@@ -345,7 +347,6 @@ class PrayerPreferences(private val context: Context) {
         } ?: AppColorPreset.SYSTEM_DYNAMIC
 
         val followSystemColors = prefs[Keys.FOLLOW_SYSTEM_COLORS] ?: (colorPreset == AppColorPreset.SYSTEM_DYNAMIC)
-        val widgetFollowSystemColors = prefs[Keys.WIDGET_FOLLOW_SYSTEM_COLORS] ?: true
 
         // Widget settings
         val wThemeStr = prefs[Keys.WIDGET_THEME_MODE]
@@ -358,6 +359,9 @@ class PrayerPreferences(private val context: Context) {
 
         val wFontStr = prefs[Keys.WIDGET_FONT_SIZE]
         val wFont = wFontStr?.let { try { WidgetFontSize.valueOf(it) } catch (e: Exception) { WidgetFontSize.STANDARD } } ?: WidgetFontSize.STANDARD
+
+        val wTextStyleStr = prefs[Keys.WIDGET_TEXT_STYLE]
+        val wTextStyle = wTextStyleStr?.let { try { WidgetTextStyle.valueOf(it) } catch (e: Exception) { WidgetTextStyle.AUTO } } ?: WidgetTextStyle.AUTO
 
         val wShowLoc = prefs[Keys.WIDGET_SHOW_LOC] ?: true
         val wShowHijri = prefs[Keys.WIDGET_SHOW_HIJRI] ?: true
@@ -372,6 +376,7 @@ class PrayerPreferences(private val context: Context) {
             bgStyle = wBg,
             opacityPercent = wOpacity,
             fontSize = wFont,
+            textStyle = wTextStyle,
             showLocation = wShowLoc,
             showHijriDate = wShowHijri,
             showCountdown = wShowCd,
@@ -426,11 +431,11 @@ class PrayerPreferences(private val context: Context) {
             .putString(KEY_THEME, themeMode.name)
             .putString(KEY_COLOR_PRESET, colorPreset.name)
             .putBoolean(KEY_FOLLOW_SYSTEM_COLORS, followSystemColors)
-            .putBoolean(KEY_WIDGET_FOLLOW_SYSTEM_COLORS, widgetFollowSystemColors)
             .putString(KEY_WIDGET_THEME, widgetSettings.themeMode.name)
             .putString(KEY_WIDGET_BG, widgetSettings.bgStyle.name)
             .putInt(KEY_WIDGET_OPACITY, widgetSettings.opacityPercent)
             .putString(KEY_WIDGET_FONT, widgetSettings.fontSize.name)
+            .putString(KEY_WIDGET_TEXT_STYLE, widgetSettings.textStyle.name)
             .putBoolean(KEY_WIDGET_SHOW_LOC, widgetSettings.showLocation)
             .putBoolean(KEY_WIDGET_SHOW_HIJRI, widgetSettings.showHijriDate)
             .putBoolean(KEY_WIDGET_SHOW_COUNTDOWN, widgetSettings.showCountdown)
@@ -473,7 +478,6 @@ class PrayerPreferences(private val context: Context) {
             themeMode = themeMode,
             colorPreset = colorPreset,
             followSystemColors = followSystemColors,
-            widgetFollowSystemColors = widgetFollowSystemColors,
             widgetSettings = widgetSettings,
             dynamicIslandEnabled = dynamicIslandEnabled,
             dynamicIslandMinutesBefore = dynamicIslandMinutes,
@@ -492,6 +496,7 @@ class PrayerPreferences(private val context: Context) {
             .putString(KEY_WIDGET_BG, settings.bgStyle.name)
             .putInt(KEY_WIDGET_OPACITY, settings.opacityPercent)
             .putString(KEY_WIDGET_FONT, settings.fontSize.name)
+            .putString(KEY_WIDGET_TEXT_STYLE, settings.textStyle.name)
             .putBoolean(KEY_WIDGET_SHOW_LOC, settings.showLocation)
             .putBoolean(KEY_WIDGET_SHOW_HIJRI, settings.showHijriDate)
             .putBoolean(KEY_WIDGET_SHOW_COUNTDOWN, settings.showCountdown)
@@ -505,6 +510,7 @@ class PrayerPreferences(private val context: Context) {
             prefs[Keys.WIDGET_BG_STYLE] = settings.bgStyle.name
             prefs[Keys.WIDGET_OPACITY] = settings.opacityPercent
             prefs[Keys.WIDGET_FONT_SIZE] = settings.fontSize.name
+            prefs[Keys.WIDGET_TEXT_STYLE] = settings.textStyle.name
             prefs[Keys.WIDGET_SHOW_LOC] = settings.showLocation
             prefs[Keys.WIDGET_SHOW_HIJRI] = settings.showHijriDate
             prefs[Keys.WIDGET_SHOW_COUNTDOWN] = settings.showCountdown
@@ -655,15 +661,6 @@ class PrayerPreferences(private val context: Context) {
             if (follow) {
                 prefs[Keys.COLOR_PRESET] = AppColorPreset.SYSTEM_DYNAMIC.name
             }
-        }
-        com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
-    }
-
-    suspend fun updateWidgetFollowSystemColors(follow: Boolean) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putBoolean(KEY_WIDGET_FOLLOW_SYSTEM_COLORS, follow).apply()
-        context.dataStore.edit { prefs ->
-            prefs[Keys.WIDGET_FOLLOW_SYSTEM_COLORS] = follow
         }
         com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
     }

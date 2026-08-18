@@ -58,6 +58,10 @@
                         android:src="@drawable/ic_widget_mosque" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_location"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -70,9 +74,33 @@
                         android:textColor="@color/widget_text_primary"
                         android:textSize="13sp"
                         android:textStyle="bold" />
+
+                    <!-- Inline Hijri date, shown next to location on wide (4+ column) widgets -->
+                    <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
+                        android:id="@+id/widget_exp_hijri_inline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:ellipsize="end"
+                        android:gravity="start|center_vertical"
+                        android:maxLines="1"
+                        android:text="• 14 Safar 1448 AH"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_secondary"
+                        android:textSize="11sp"
+                        android:visibility="gone" />
                 </LinearLayout>
 
+                <!-- Stacked Hijri date, shown below location on narrower widgets -->
                 <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                     android:id="@+id/widget_exp_hijri"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -129,19 +157,25 @@
                 android:orientation="vertical"
                 android:padding="12dp">
 
-                <RelativeLayout
+                <!-- LinearLayout, not RelativeLayout: see prayer_appwidget_layout.xml for why. -->
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:layout_centerVertical="true"
+                        android:layout_weight="1"
                         android:gravity="start|center_vertical"
                         android:orientation="vertical">
 
                         <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                             android:id="@+id/widget_exp_next_prayer_name"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -153,6 +187,10 @@
                             android:textStyle="bold" />
 
                         <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                             android:id="@+id/widget_exp_next_prayer_time"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -167,10 +205,9 @@
 
                     <FrameLayout
                         android:id="@+id/widget_exp_countdown_container"
+                        android:background="@drawable/shape_widget_pill_bg"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true">
+                        android:layout_height="wrap_content">
 
                         <ImageView
                             android:id="@+id/widget_exp_countdown_bg_img"
@@ -191,6 +228,10 @@
                             android:paddingBottom="5dp">
 
                             <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                                 android:id="@+id/widget_exp_countdown_text"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -200,6 +241,10 @@
                                 android:textStyle="bold" />
 
                             <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                                 android:id="@+id/widget_exp_status_text"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -208,7 +253,7 @@
                                 android:textSize="9sp" />
                         </LinearLayout>
                     </FrameLayout>
-                </RelativeLayout>
+                </LinearLayout>
 
                 <ProgressBar
                     android:id="@+id/widget_exp_prayer_progress"
@@ -254,6 +299,10 @@
                     android:paddingEnd="12dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_fajr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -266,6 +315,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_fajr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -302,6 +355,10 @@
                     android:paddingEnd="12dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_sunrise_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -314,6 +371,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_sunrise_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -350,6 +411,10 @@
                     android:paddingEnd="12dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_dhuhr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -362,6 +427,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_dhuhr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -398,6 +467,10 @@
                     android:paddingEnd="12dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_asr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -410,6 +483,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_asr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -446,6 +523,10 @@
                     android:paddingEnd="12dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_maghrib_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -458,6 +539,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_maghrib_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -493,6 +578,10 @@
                     android:paddingEnd="12dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_isha_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -505,6 +594,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_exp_isha_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

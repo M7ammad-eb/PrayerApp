@@ -311,7 +311,6 @@ fun MainScreen(
                                 onUpdateThemeMode = { viewModel.updateThemeMode(it) },
                                 onUpdateColorPreset = { viewModel.updateColorPreset(it) },
                                 onUpdateFollowSystemColors = { viewModel.updateFollowSystemColors(it) },
-                                onUpdateWidgetFollowSystemColors = { viewModel.updateWidgetFollowSystemColors(it) },
                                 onUpdateWidgetSettings = { viewModel.updateWidgetSettings(it) },
                                 onRefreshAllWidgets = { viewModel.refreshAllWidgets() },
                                 onUpdatePrayerAdjustment = { prayer, mins ->

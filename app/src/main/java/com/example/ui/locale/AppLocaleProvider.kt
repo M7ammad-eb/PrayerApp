@@ -26,7 +26,7 @@ import java.util.Locale
 class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic) AppLanguage.ARABIC else AppLanguage.ENGLISH) {
 
     // App Branding
-    val appBrandName: String = if (isArabic) "نور" else "Noor"
+    val appBrandName: String = if (isArabic) "صلاتي" else "Salati"
     val appSubtitle: String = if (isArabic) "أوقات الصلاة والقبلة" else "Prayer Times & Qibla"
 
     // Bottom Navigation
@@ -246,8 +246,6 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
     val colorPaletteSection: String = if (isArabic) "لوحة الألوان وسمة التطبيق" else "Color Palette & Accent Colors"
     val followSystemColorsTitle: String = if (isArabic) "متابعة ألوان النظام في التطبيق (Material You)" else "App Follow System Colors"
     val followSystemColorsDesc: String = if (isArabic) "استخراج الألوان التلقائي المتناسق مع خلفية جهازك لواجهة التطبيق" else "Dynamically match device wallpaper and system accents in app"
-    val widgetFollowSystemColorsTitle: String = if (isArabic) "ويدجت الشاشة يتبع ألوان النظام (Material You)" else "Widget Follows System Colors"
-    val widgetFollowSystemColorsDesc: String = if (isArabic) "مطابقة ألوان الويدجت تلقائياً مع نظام الجهاز (مثل Google Calendar)" else "Match widget colors with device wallpaper dynamic palette (like Google Calendar)"
     val presetColorsTitle: String = if (isArabic) "لوحات ألوان جاهزة" else "Preset Color Palettes"
     val presetColorsDesc: String = if (isArabic) "اختر لوناً مميزاً لتخصيص واجهة التطبيق" else "Select a curated color palette for the app interface"
 
@@ -377,7 +375,7 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
     val applyCoordinates: String = if (isArabic) "تطبيق الإحداثيات" else "Apply Coordinates"
 
     // Setup & First-Time Onboarding
-    val welcomeToApp: String = if (isArabic) "مرحباً بك في نور" else "Welcome to Noor"
+    val welcomeToApp: String = if (isArabic) "مرحباً بك في صلاتي" else "Welcome to Salati"
     val setupSubtitle: String = if (isArabic) "دعنا نضبط تطبيقك في خطوات بسيطة لتجربة صلاة متكاملة ودقيقة." else "Let's personalize your prayer experience in a few quick steps."
     val stepLanguageTitle: String = if (isArabic) "اختر لغة التطبيق" else "Choose Language"
     val stepLanguageDesc: String = if (isArabic) "يمكنك التبديل بين العربية والإنجليزية في أي وقت من الإعدادات." else "You can switch between Arabic and English anytime in settings."
@@ -397,7 +395,7 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
     val stepAthanSoundsDesc: String = if (isArabic) "اختر صوت الأذان المفضل لكل صلاة. يمكنك تغييرها وتخصيصها لاحقاً." else "Choose your preferred Athan recitation for each prayer. You can customize them anytime."
     val stepStyleTitle: String = if (isArabic) "المظهر والتصميم" else "Appearance & Style"
     val stepStyleDesc: String = if (isArabic) "اختر الثيم ونمط الألوان المفضل لديك." else "Choose your favorite theme and color palette."
-    val getStartedBtn: String = if (isArabic) "ابدأ الآن واستمتع بنور" else "Get Started"
+    val getStartedBtn: String = if (isArabic) "ابدأ الآن واستمتع بصلاتي" else "Get Started"
     val nextStepBtn: String = if (isArabic) "التالي" else "Next"
     val previousStepBtn: String = if (isArabic) "السابق" else "Back"
     val stepIndicatorText: String = if (isArabic) "الخطوة" else "Step"

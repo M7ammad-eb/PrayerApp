@@ -11,6 +11,7 @@ import com.example.audio.AdhanPlaybackState
 import com.example.audio.AthanAudioEngine
 import com.example.data.calculator.PrayerTimesCalculator
 import com.example.data.cities.CityDatabase
+import com.example.data.models.AppLanguage
 import com.example.data.models.CalculationMethod
 import com.example.data.models.DailyPrayerSchedule
 import com.example.data.models.HighLatitudeRule
@@ -270,7 +271,17 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 if (location != null) {
                     viewModelScope.launch(Dispatchers.IO) {
                         try {
-                            val geocoder = Geocoder(context, Locale.getDefault())
+                            // Resolve from the app's own language setting rather than
+                            // Locale.getDefault() - on API < 33 that reflects the device's
+                            // system-wide language, not the in-app override, so a user who set
+                            // the app to English but has an Arabic-language phone would still
+                            // get Arabic-script city/country names back from the geocoder.
+                            val geocoderLocale = when (settings.value.language) {
+                                AppLanguage.ARABIC -> Locale("ar")
+                                AppLanguage.ENGLISH -> Locale.ENGLISH
+                                AppLanguage.SYSTEM -> Locale.getDefault()
+                            }
+                            val geocoder = Geocoder(context, geocoderLocale)
                             val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
                             val address = addresses?.firstOrNull()
                             val cityName = address?.locality ?: address?.subAdminArea ?: "Current GPS Location"
@@ -366,12 +377,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     fun updateFollowSystemColors(follow: Boolean) {
         viewModelScope.launch {
             prefs.updateFollowSystemColors(follow)
-        }
-    }
-
-    fun updateWidgetFollowSystemColors(follow: Boolean) {
-        viewModelScope.launch {
-            prefs.updateWidgetFollowSystemColors(follow)
         }
     }
 

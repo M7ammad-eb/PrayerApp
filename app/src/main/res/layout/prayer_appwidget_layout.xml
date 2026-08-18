@@ -56,6 +56,10 @@
                         android:src="@drawable/ic_widget_mosque" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_location_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -68,9 +72,33 @@
                         android:textColor="@color/widget_text_primary"
                         android:textSize="12sp"
                         android:textStyle="bold" />
+
+                    <!-- Inline Hijri date, shown next to location on wide (4+ column) widgets -->
+                    <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
+                        android:id="@+id/widget_hijri_text_inline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:ellipsize="end"
+                        android:gravity="start|center_vertical"
+                        android:maxLines="1"
+                        android:text="• 14 Safar 1448 AH"
+                        android:textAlignment="viewStart"
+                        android:textColor="@color/widget_text_secondary"
+                        android:textSize="10sp"
+                        android:visibility="gone" />
                 </LinearLayout>
 
+                <!-- Stacked Hijri date, shown below location on narrower widgets -->
                 <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                     android:id="@+id/widget_hijri_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -126,20 +154,31 @@
                 android:orientation="vertical"
                 android:padding="10dp">
 
-                <RelativeLayout
+                <!-- LinearLayout, not RelativeLayout: a RelativeLayout child that is
+                     wrap_content but itself contains a match_parent descendant (the countdown
+                     pill's background ImageView) can fail to size that descendant correctly.
+                     LinearLayout's weight-based sizing is what the ribbon cells already use
+                     successfully, so the countdown pill's background is given the same
+                     unambiguous sizing here. -->
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
                     <!-- Next Prayer Label & Time -->
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:layout_centerVertical="true"
+                        android:layout_weight="1"
                         android:gravity="start|center_vertical"
                         android:orientation="vertical">
 
                         <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                             android:id="@+id/widget_next_prayer_name"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -151,6 +190,10 @@
                             android:textStyle="bold" />
 
                         <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                             android:id="@+id/widget_next_prayer_time"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -166,10 +209,9 @@
                     <!-- Countdown Timer Badge -->
                     <FrameLayout
                         android:id="@+id/widget_countdown_container"
+                        android:background="@drawable/shape_widget_pill_bg"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true">
+                        android:layout_height="wrap_content">
 
                         <ImageView
                             android:id="@+id/widget_countdown_bg_img"
@@ -190,6 +232,10 @@
                             android:paddingBottom="4dp">
 
                             <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                                 android:id="@+id/widget_countdown_text"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -199,6 +245,10 @@
                                 android:textStyle="bold" />
 
                             <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                                 android:id="@+id/widget_status_text"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -207,7 +257,7 @@
                                 android:textSize="8sp" />
                         </LinearLayout>
                     </FrameLayout>
-                </RelativeLayout>
+                </LinearLayout>
 
                 <!-- Interval Progress Bar -->
                 <ProgressBar
@@ -222,15 +272,16 @@
             </LinearLayout>
         </FrameLayout>
 
-        <!-- Daily Prayer Times Ribbon -->
+        <!-- Daily Prayer Times Ribbon. No fixed weightSum: when Sunrise is hidden (GONE), the
+             weight total must shrink from 6 to 5 so the remaining cells expand to fill the row
+             instead of leaving a blank gap where Sunrise used to be. -->
         <LinearLayout
             android:id="@+id/widget_prayer_ribbon"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:orientation="horizontal"
-            android:weightSum="6">
+            android:orientation="horizontal">
 
             <!-- Fajr -->
             <FrameLayout
@@ -256,6 +307,10 @@
                     android:padding="5dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_fajr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -267,6 +322,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_fajr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -303,6 +362,10 @@
                     android:padding="5dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_sunrise_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -314,6 +377,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_sunrise_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -350,6 +417,10 @@
                     android:padding="5dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_dhuhr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -361,6 +432,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_dhuhr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -397,6 +472,10 @@
                     android:padding="5dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_asr_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -408,6 +487,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_asr_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -444,6 +527,10 @@
                     android:padding="5dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_maghrib_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -455,6 +542,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_maghrib_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -490,6 +581,10 @@
                     android:padding="5dp">
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_isha_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -501,6 +596,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:shadowColor="#40000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1.5"
                         android:id="@+id/widget_isha_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
