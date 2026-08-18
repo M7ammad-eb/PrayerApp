@@ -345,6 +345,10 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,
             Intent.ACTION_DATE_CHANGED,
+            // Fired system-wide on light/dark mode toggles (and other config changes) - without
+            // this, Material You/App Theme colors only refreshed on the next scheduled update or
+            // a manual tap, while every other themed widget on the launcher switched instantly.
+            Intent.ACTION_CONFIGURATION_CHANGED,
             "com.example.ACTION_PRAYER_ALARM" -> {
                 updateAllWidgets(context)
             }

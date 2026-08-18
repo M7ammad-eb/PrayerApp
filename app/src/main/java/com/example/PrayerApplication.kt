@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Build
 
 class PrayerApplication : Application() {
@@ -14,9 +15,29 @@ class PrayerApplication : Application() {
         const val CHANNEL_DYNAMIC_ISLAND_ID = "prayer_dynamic_island_channel_v2"
     }
 
+    private var lastNightModeBit = 0
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannels()
+        lastNightModeBit = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+    }
+
+    // System-wide day/night broadcasts don't reach a manifest-registered widget receiver on
+    // modern Android (the same background-execution limits that apply to CONNECTIVITY_ACTION
+    // etc.), so a Material You/dynamic-color widget only re-reads the new colors on its next
+    // scheduled update otherwise. This callback IS delivered reliably whenever the app process
+    // is alive, which covers the common case (app used recently); it's a best-effort catch, not
+    // a guarantee for a fully-killed process - Google's own widgets sidestep this entirely by
+    // using static day/night resource files the launcher re-resolves with no app code involved,
+    // which isn't available to us since Material You's actual colors require a runtime API call.
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val newNightModeBit = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        if (newNightModeBit != lastNightModeBit) {
+            lastNightModeBit = newNightModeBit
+            com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(this)
+        }
     }
 
     private fun createNotificationChannels() {
