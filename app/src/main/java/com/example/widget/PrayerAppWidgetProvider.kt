@@ -99,7 +99,11 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             fun resolveSystemDynamicPalette(): ColorPalette? {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
                 return try {
-                    val scheme = dynamicDarkColorScheme(context)
+                    // Was hardcoded to dynamicDarkColorScheme() regardless of the device's actual
+                    // light/dark setting, so this stayed dark even with the system in light mode.
+                    val isDark = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                        Configuration.UI_MODE_NIGHT_YES
+                    val scheme = if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
                     // Measured against the OS's own themed widgets (Calendar, Weather) on a real
                     // device: none of the flat surfaceContainer* tonal roles matched their
                     // background - those roles are near-neutral (R/G/B within ~8 of each other),
