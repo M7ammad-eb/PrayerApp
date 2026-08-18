@@ -17,7 +17,9 @@ import android.view.View
 import android.widget.RemoteViews
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import com.example.MainActivity
 import com.example.R
@@ -98,13 +100,16 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
                 return try {
                     val scheme = dynamicDarkColorScheme(context)
-                    // surfaceContainerHigh, not the base surface: Material3's own guidance for
-                    // elevated containers (cards, sheets, widgets) is the surfaceContainer* roles
-                    // - base "surface" is the app background tone, which is why this looked flat
-                    // and didn't match other widgets that follow that guidance properly.
+                    // Measured against the OS's own themed widgets (Calendar, Weather) on a real
+                    // device: none of the flat surfaceContainer* tonal roles matched their
+                    // background - those roles are near-neutral (R/G/B within ~8 of each other),
+                    // but the real widgets show a visibly more saturated, primary-tinted tone.
+                    // surfaceColorAtElevation(8.dp) (surface + primary blended in at an
+                    // elevation-scaled alpha - Material3's actual elevation-overlay formula)
+                    // reproduced their measured color within 1-3 units per channel.
                     ColorPalette(
                         primaryAccent = scheme.primary.toArgb(),
-                        bgCardColor = scheme.surfaceContainerHigh.toArgb(),
+                        bgCardColor = scheme.surfaceColorAtElevation(8.dp).toArgb(),
                         textPrimary = scheme.onSurface.toArgb(),
                         textSecondary = scheme.onSurfaceVariant.toArgb()
                     )
@@ -133,7 +138,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                         val scheme = if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
                         return ColorPalette(
                             primaryAccent = scheme.primary.toArgb(),
-                            bgCardColor = scheme.surfaceContainerHigh.toArgb(),
+                            bgCardColor = scheme.surfaceColorAtElevation(8.dp).toArgb(),
                             textPrimary = scheme.onSurface.toArgb(),
                             textSecondary = scheme.onSurfaceVariant.toArgb()
                         )
@@ -154,14 +159,14 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 return if (isDark) {
                     ColorPalette(
                         primaryAccent = preset.primaryDark.toInt(),
-                        bgCardColor = scheme.surfaceContainerHigh.toArgb(),
+                        bgCardColor = scheme.surfaceColorAtElevation(8.dp).toArgb(),
                         textPrimary = scheme.onSurface.toArgb(),
                         textSecondary = scheme.onSurfaceVariant.toArgb()
                     )
                 } else {
                     ColorPalette(
                         primaryAccent = preset.primaryLight.toInt(),
-                        bgCardColor = scheme.surfaceContainerHigh.toArgb(),
+                        bgCardColor = scheme.surfaceColorAtElevation(8.dp).toArgb(),
                         textPrimary = scheme.onSurface.toArgb(),
                         textSecondary = scheme.onSurfaceVariant.toArgb()
                     )
