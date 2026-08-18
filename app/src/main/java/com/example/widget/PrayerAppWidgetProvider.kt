@@ -29,6 +29,7 @@ import com.example.data.models.DailyPrayerSchedule
 import com.example.data.models.PrayerTimeItem
 import com.example.data.models.PrayerType
 import com.example.data.models.WidgetBackgroundStyle
+import com.example.data.models.WidgetHeroTimeMode
 import com.example.data.models.WidgetTextStyle
 import com.example.data.models.WidgetThemeMode
 import com.example.data.preferences.AppPrayerSettings
@@ -97,9 +98,13 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
                 return try {
                     val scheme = dynamicDarkColorScheme(context)
+                    // surfaceContainerHigh, not the base surface: Material3's own guidance for
+                    // elevated containers (cards, sheets, widgets) is the surfaceContainer* roles
+                    // - base "surface" is the app background tone, which is why this looked flat
+                    // and didn't match other widgets that follow that guidance properly.
                     ColorPalette(
                         primaryAccent = scheme.primary.toArgb(),
-                        bgCardColor = scheme.surface.toArgb(),
+                        bgCardColor = scheme.surfaceContainerHigh.toArgb(),
                         textPrimary = scheme.onSurface.toArgb(),
                         textSecondary = scheme.onSurfaceVariant.toArgb()
                     )
@@ -128,7 +133,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                         val scheme = if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
                         return ColorPalette(
                             primaryAccent = scheme.primary.toArgb(),
-                            bgCardColor = scheme.surface.toArgb(),
+                            bgCardColor = scheme.surfaceContainerHigh.toArgb(),
                             textPrimary = scheme.onSurface.toArgb(),
                             textSecondary = scheme.onSurfaceVariant.toArgb()
                         )
@@ -142,19 +147,23 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 } else {
                     settings.colorPreset
                 }
+                // Reuse the app's own getPresetColorScheme() (Theme.kt) rather than a
+                // hand-picked bg guess, so surfaceContainerHigh comes from Compose Material3's
+                // real tonal computation - the same one MyApplicationTheme itself renders with.
+                val scheme = com.example.ui.theme.getPresetColorScheme(preset, isDark)
                 return if (isDark) {
                     ColorPalette(
                         primaryAccent = preset.primaryDark.toInt(),
-                        bgCardColor = 0xFF161E1A.toInt(),
-                        textPrimary = 0xFFE8EFEA.toInt(),
-                        textSecondary = 0xFFC0CEC5.toInt()
+                        bgCardColor = scheme.surfaceContainerHigh.toArgb(),
+                        textPrimary = scheme.onSurface.toArgb(),
+                        textSecondary = scheme.onSurfaceVariant.toArgb()
                     )
                 } else {
                     ColorPalette(
                         primaryAccent = preset.primaryLight.toInt(),
-                        bgCardColor = 0xFFFFFFFF.toInt(),
-                        textPrimary = 0xFF191C1B.toInt(),
-                        textSecondary = 0xFF434E48.toInt()
+                        bgCardColor = scheme.surfaceContainerHigh.toArgb(),
+                        textPrimary = scheme.onSurface.toArgb(),
+                        textSecondary = scheme.onSurfaceVariant.toArgb()
                     )
                 }
             }
@@ -393,7 +402,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         }
 
         val diffSeconds = Duration.between(now, nextPrayerZoned).seconds
-        val countdownFormatted = formatCountdown(diffSeconds, isArabic)
 
         val previousItem = todaySchedule.prayerItems
             .filter { it.type != PrayerType.SUNRISE && it.zonedDateTime.isBefore(nextPrayerZoned) }
@@ -405,6 +413,14 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         }
         val elapsed = totalSpanSeconds - diffSeconds
         val progressPercent = ((elapsed.toFloat() / totalSpanSeconds) * 100).toInt().coerceIn(0, 100)
+
+        // Previous prayer ("current prayer, since...") - falls back to yesterday's Isha before
+        // today's first prayer has happened yet, same as the totalSpanSeconds fallback above.
+        val previousPrayerType = previousItem?.type ?: PrayerType.ISHA
+        val previousPrayerZoned = previousItem?.zonedDateTime
+            ?: today.minusDays(1).atTime(todaySchedule.isha).atZone(zoneId)
+        val sinceSeconds = Duration.between(previousPrayerZoned, now).seconds.coerceAtLeast(0)
+        val sinceFormatted = formatSince(sinceSeconds, isArabic)
 
         // Location & Hijri display strings
         val locationFormatted = formatLocationString(settings.location.name, settings.location.country)
@@ -434,8 +450,13 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val prayerDisplayName = getPrayerName(nextPrayerType, settings.language)
-        val formattedNextTime = nextPrayerZoned.format(timeFormatter)
+        // The hero card shows either the next prayer ("In 2h 41m") or the current/previous one
+        // ("Since 2h 10m"), per widget settings - everything below just reads these three,
+        // so no other builder code needs to know which mode is active.
+        val showingPrevious = settings.widgetSettings.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
+        val prayerDisplayName = getPrayerName(if (showingPrevious) previousPrayerType else nextPrayerType, settings.language)
+        val formattedNextTime = (if (showingPrevious) previousPrayerZoned else nextPrayerZoned).format(timeFormatter)
+        val countdownFormatted = if (showingPrevious) sinceFormatted else formatCountdown(diffSeconds, isArabic)
         val colors = resolveWidgetColors(context, settings)
 
         for (appWidgetId in appWidgetIds) {
@@ -1022,7 +1043,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 // "In 2h 41m" already says everything; a "Remaining" label under it just reads
                 // redundantly. Only show a status line once the prayer time has actually
                 // arrived, where it adds real information.
-                if (diffSeconds <= 60) {
+                if (wSet.heroTimeMode == WidgetHeroTimeMode.NEXT && diffSeconds <= 60) {
                     views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
                     views.setTextViewText(R.id.widget_status_text, if (isArabic) "حان وقت الصلاة" else "Prayer Time!")
                     views.setTextColor(R.id.widget_status_text, colors.textOnAccentColor)
@@ -1144,7 +1165,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 views.setTextColor(R.id.widget_exp_countdown_text, colors.textOnAccentColor)
                 views.setTextViewTextSize(R.id.widget_exp_countdown_text, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
 
-                if (diffSeconds <= 60) {
+                if (wSet.heroTimeMode == WidgetHeroTimeMode.NEXT && diffSeconds <= 60) {
                     views.setViewVisibility(R.id.widget_exp_status_text, View.VISIBLE)
                     views.setTextViewText(R.id.widget_exp_status_text, if (isArabic) "حان وقت الصلاة" else "Prayer Time!")
                     views.setTextColor(R.id.widget_exp_status_text, colors.textOnAccentColor)
@@ -1339,6 +1360,23 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 hours > 0 -> "In ${hours}h ${minutes}m"
                 minutes > 0 -> "In ${minutes}m"
                 else -> "In < 1 min"
+            }
+        }
+    }
+
+    private fun formatSince(seconds: Long, isArabic: Boolean): String {
+        if (seconds <= 60) return if (isArabic) "منذ قليل" else "Just now"
+        val hours = seconds / 3600
+        val minutes = (seconds % 3600) / 60
+        return if (isArabic) {
+            when {
+                hours > 0 -> "منذ $hours س و $minutes د"
+                else -> "منذ $minutes د"
+            }
+        } else {
+            when {
+                hours > 0 -> "${hours}h ${minutes}m ago"
+                else -> "${minutes}m ago"
             }
         }
     }

@@ -175,12 +175,27 @@ enum class WidgetTextStyle(
     )
 }
 
+enum class WidgetHeroTimeMode(
+    val titleEn: String,
+    val titleAr: String
+) {
+    NEXT(
+        titleEn = "Next Prayer (In...)",
+        titleAr = "الصلاة القادمة (خلال...)"
+    ),
+    PREVIOUS(
+        titleEn = "Current Prayer (Since...)",
+        titleAr = "الصلاة الحالية (منذ...)"
+    )
+}
+
 data class WidgetCustomizationSettings(
     val themeMode: WidgetThemeMode = WidgetThemeMode.APP_THEME,
     val bgStyle: WidgetBackgroundStyle = WidgetBackgroundStyle.TRANSLUCENT,
     val opacityPercent: Int = 85,
     val fontSize: WidgetFontSize = WidgetFontSize.STANDARD,
     val textStyle: WidgetTextStyle = WidgetTextStyle.AUTO,
+    val heroTimeMode: WidgetHeroTimeMode = WidgetHeroTimeMode.NEXT,
     val showLocation: Boolean = true,
     val showHijriDate: Boolean = true,
     val showCountdown: Boolean = true,

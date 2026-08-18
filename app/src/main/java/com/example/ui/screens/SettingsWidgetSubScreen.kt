@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.models.WidgetBackgroundStyle
 import com.example.data.models.WidgetCustomizationSettings
 import com.example.data.models.WidgetFontSize
+import com.example.data.models.WidgetHeroTimeMode
 import com.example.data.models.WidgetTextStyle
 import com.example.data.models.WidgetThemeMode
 import com.example.data.preferences.AppPrayerSettings
@@ -410,6 +411,26 @@ fun SettingsWidgetSubScreen(
 
             HorizontalDivider()
 
+            // Hero Card Time Mode - "In 2h 41m" (next prayer) vs "Since 2h 10m" (current/last
+            // prayer). Only one at a time, per user preference.
+            Text(
+                text = if (strings.isArabic) "توقيت البطاقة الرئيسية" else "Hero Card Timing",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            WidgetHeroTimeModeSelector(
+                currentMode = wSet.heroTimeMode,
+                isArabic = strings.isArabic,
+                onSelectMode = {
+                    onUpdateWidgetSettings(wSet.copy(heroTimeMode = it))
+                    onRefreshAllWidgets()
+                }
+            )
+
+            HorizontalDivider()
+
             // 4. Content & Toggles
             Text(
                 text = strings.widgetContentTitle,
@@ -724,6 +745,41 @@ private fun WidgetTextStyleSelector(
 }
 
 // ---------------------------------------------------------------------------
+// HERO TIME MODE SELECTOR
+// ---------------------------------------------------------------------------
+@Composable
+private fun WidgetHeroTimeModeSelector(
+    currentMode: WidgetHeroTimeMode,
+    isArabic: Boolean,
+    onSelectMode: (WidgetHeroTimeMode) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        WidgetHeroTimeMode.values().forEach { mode ->
+            val isSelected = currentMode == mode
+            FilledTonalButton(
+                onClick = { onSelectMode(mode) },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
+                Text(
+                    text = if (isArabic) mode.titleAr else mode.titleEn,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // TOGGLE ROW
 // ---------------------------------------------------------------------------
 @Composable
@@ -946,6 +1002,7 @@ private fun PreviewStandard4x2(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
+                    val (heroName, heroTime, heroCountdown) = previewHeroMock(wSet.heroTimeMode, isArabic)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -953,13 +1010,13 @@ private fun PreviewStandard4x2(
                     ) {
                         Column {
                             Text(
-                                text = if (isArabic) "العصر" else "Asr",
+                                text = heroName,
                                 fontSize = 12.sp * scale,
                                 fontWeight = FontWeight.Bold,
                                 color = primaryAccent
                             )
                             Text(
-                                text = "3:45 PM",
+                                text = heroTime,
                                 fontSize = 20.sp * scale,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = textPrimary
@@ -972,7 +1029,7 @@ private fun PreviewStandard4x2(
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
-                                    text = if (isArabic) "خلال 1س 45د" else "In 1h 45m",
+                                    text = heroCountdown,
                                     color = Color.White,
                                     fontSize = 11.sp * scale,
                                     fontWeight = FontWeight.Bold,
@@ -1092,6 +1149,7 @@ private fun PreviewExpandedMax(
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
+                    val (heroName, heroTime, heroCountdown) = previewHeroMock(wSet.heroTimeMode, isArabic)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1099,13 +1157,13 @@ private fun PreviewExpandedMax(
                     ) {
                         Column {
                             Text(
-                                text = if (isArabic) "العصر" else "Next: Asr",
+                                text = heroName,
                                 fontSize = 13.sp * scale,
                                 fontWeight = FontWeight.Bold,
                                 color = primaryAccent
                             )
                             Text(
-                                text = "3:45 PM",
+                                text = heroTime,
                                 fontSize = 24.sp * scale,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = textPrimary
@@ -1118,7 +1176,7 @@ private fun PreviewExpandedMax(
                                 shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text(
-                                    text = if (isArabic) "خلال 1س 45د" else "In 1h 45m",
+                                    text = heroCountdown,
                                     color = Color.White,
                                     fontSize = 12.sp * scale,
                                     fontWeight = FontWeight.Bold,
@@ -1215,11 +1273,12 @@ private fun PreviewVertical1Col(
                     modifier = Modifier.padding(6.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = if (isArabic) "العصر" else "Asr", fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
-                    Text(text = "3:45 PM", fontSize = 12.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)
+                    val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
+                    Text(text = if (isArabic) (if (isPrevious) "الظهر" else "العصر") else (if (isPrevious) "Dhuhr" else "Asr"), fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
+                    Text(text = if (isPrevious) "12:20 PM" else "3:45 PM", fontSize = 12.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)
                     if (wSet.showCountdown) {
                         Surface(color = primaryAccent, shape = RoundedCornerShape(6.dp)) {
-                            Text(text = "45m", color = Color.White, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                            Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "خلال 45د" else "In 45m"), color = Color.White, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                         }
                     }
                 }
@@ -1274,17 +1333,19 @@ private fun PreviewSlimBar(
                     Text(text = settings.location.name, fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = if (isArabic) "العصر" else "Asr", fontSize = 12.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
+                    val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
+                    Text(text = if (isArabic) (if (isPrevious) "الظهر" else "العصر") else (if (isPrevious) "Dhuhr" else "Asr"), fontSize = 12.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "3:45 PM", fontSize = 13.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
+                    Text(text = if (isPrevious) "12:20 PM" else "3:45 PM", fontSize = 13.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
                 }
             }
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (wSet.showCountdown) {
+                val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
                 Surface(color = primaryAccent, shape = RoundedCornerShape(8.dp)) {
-                    Text(text = if (isArabic) "خلال 45د" else "In 45m", color = Color.White, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                    Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "خلال 45د" else "In 45m"), color = Color.White, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                 }
             }
             Spacer(modifier = Modifier.width(6.dp))
@@ -1308,19 +1369,38 @@ private fun PreviewCompact2x1(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
         Column {
             if (wSet.showLocation) {
                 Text(text = settings.location.name, fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
             }
-            Text(text = if (isArabic) "العصر" else "Asr Prayer", fontSize = 11.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
-            Text(text = "3:45 PM", fontSize = 18.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)
+            Text(text = if (isArabic) (if (isPrevious) "الظهر" else "العصر") else (if (isPrevious) "Dhuhr Prayer" else "Asr Prayer"), fontSize = 11.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
+            Text(text = if (isPrevious) "12:20 PM" else "3:45 PM", fontSize = 18.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)
         }
 
         if (wSet.showCountdown) {
             Surface(color = primaryAccent, shape = RoundedCornerShape(8.dp)) {
-                Text(text = if (isArabic) "45د" else "45m", color = Color.White, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "45د" else "45m"), color = Color.White, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
             }
         }
+    }
+}
+
+// Mock hero card content for the previews - name, time, and the countdown/elapsed label -
+// swapped based on heroTimeMode so the preview reflects the setting it's demonstrating.
+private fun previewHeroMock(heroTimeMode: WidgetHeroTimeMode, isArabic: Boolean): Triple<String, String, String> {
+    return if (heroTimeMode == WidgetHeroTimeMode.PREVIOUS) {
+        Triple(
+            if (isArabic) "الظهر" else "Dhuhr",
+            "12:20 PM",
+            if (isArabic) "منذ 2س 10د" else "2h 10m ago"
+        )
+    } else {
+        Triple(
+            if (isArabic) "العصر" else "Asr",
+            "3:45 PM",
+            if (isArabic) "خلال 1س 45د" else "In 1h 45m"
+        )
     }
 }
 
@@ -1345,7 +1425,7 @@ private fun resolveSystemDynamicPreviewPalette(): Quadruple<Color, Color, Color,
     val context = LocalContext.current
     return try {
         val scheme = androidx.compose.material3.dynamicDarkColorScheme(context)
-        Quadruple(scheme.primary, scheme.surface, scheme.onSurface, scheme.onSurfaceVariant)
+        Quadruple(scheme.primary, scheme.surfaceContainerHigh, scheme.onSurface, scheme.onSurfaceVariant)
     } catch (e: Exception) {
         null
     }
@@ -1359,7 +1439,7 @@ private fun resolveWidgetPreviewTheme(theme: WidgetThemeMode): Quadruple<Color, 
         // the user's actual current theme/color preset/light-dark mode with no separate logic.
         WidgetThemeMode.APP_THEME -> Quadruple(
             MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.surfaceContainerHigh,
             MaterialTheme.colorScheme.onSurface,
             MaterialTheme.colorScheme.onSurfaceVariant
         )

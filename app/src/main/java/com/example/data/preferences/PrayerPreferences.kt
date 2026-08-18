@@ -27,6 +27,7 @@ import com.example.data.models.UserLocation
 import com.example.data.models.WidgetBackgroundStyle
 import com.example.data.models.WidgetCustomizationSettings
 import com.example.data.models.WidgetFontSize
+import com.example.data.models.WidgetHeroTimeMode
 import com.example.data.models.WidgetTextStyle
 import com.example.data.models.WidgetThemeMode
 import kotlinx.coroutines.flow.Flow
@@ -80,6 +81,7 @@ class PrayerPreferences(private val context: Context) {
         private const val KEY_WIDGET_OPACITY = "cached_w_opacity"
         private const val KEY_WIDGET_FONT = "cached_w_font"
         private const val KEY_WIDGET_TEXT_STYLE = "cached_w_text_style"
+        private const val KEY_WIDGET_HERO_TIME_MODE = "cached_w_hero_time_mode"
         private const val KEY_WIDGET_SHOW_LOC = "cached_w_show_loc"
         private const val KEY_WIDGET_SHOW_HIJRI = "cached_w_show_hijri"
         private const val KEY_WIDGET_SHOW_COUNTDOWN = "cached_w_show_cd"
@@ -211,6 +213,9 @@ class PrayerPreferences(private val context: Context) {
             val wTextStyleStr = fastPrefs.getString(KEY_WIDGET_TEXT_STYLE, null)
             val wTextStyle = wTextStyleStr?.let { try { WidgetTextStyle.valueOf(it) } catch (e: Exception) { WidgetTextStyle.AUTO } } ?: WidgetTextStyle.AUTO
 
+            val wHeroTimeModeStr = fastPrefs.getString(KEY_WIDGET_HERO_TIME_MODE, null)
+            val wHeroTimeMode = wHeroTimeModeStr?.let { try { WidgetHeroTimeMode.valueOf(it) } catch (e: Exception) { WidgetHeroTimeMode.NEXT } } ?: WidgetHeroTimeMode.NEXT
+
             val wShowLoc = fastPrefs.getBoolean(KEY_WIDGET_SHOW_LOC, true)
             val wShowHijri = fastPrefs.getBoolean(KEY_WIDGET_SHOW_HIJRI, true)
             val wShowCd = fastPrefs.getBoolean(KEY_WIDGET_SHOW_COUNTDOWN, true)
@@ -225,6 +230,7 @@ class PrayerPreferences(private val context: Context) {
                 opacityPercent = wOpacity,
                 fontSize = wFont,
                 textStyle = wTextStyle,
+                heroTimeMode = wHeroTimeMode,
                 showLocation = wShowLoc,
                 showHijriDate = wShowHijri,
                 showCountdown = wShowCd,
@@ -285,6 +291,7 @@ class PrayerPreferences(private val context: Context) {
         val WIDGET_OPACITY = intPreferencesKey("widget_opacity")
         val WIDGET_FONT_SIZE = stringPreferencesKey("widget_font_size")
         val WIDGET_TEXT_STYLE = stringPreferencesKey("widget_text_style")
+        val WIDGET_HERO_TIME_MODE = stringPreferencesKey("widget_hero_time_mode")
         val WIDGET_SHOW_LOC = booleanPreferencesKey("widget_show_loc")
         val WIDGET_SHOW_HIJRI = booleanPreferencesKey("widget_show_hijri")
         val WIDGET_SHOW_COUNTDOWN = booleanPreferencesKey("widget_show_countdown")
@@ -363,6 +370,9 @@ class PrayerPreferences(private val context: Context) {
         val wTextStyleStr = prefs[Keys.WIDGET_TEXT_STYLE]
         val wTextStyle = wTextStyleStr?.let { try { WidgetTextStyle.valueOf(it) } catch (e: Exception) { WidgetTextStyle.AUTO } } ?: WidgetTextStyle.AUTO
 
+        val wHeroTimeModeStr = prefs[Keys.WIDGET_HERO_TIME_MODE]
+        val wHeroTimeMode = wHeroTimeModeStr?.let { try { WidgetHeroTimeMode.valueOf(it) } catch (e: Exception) { WidgetHeroTimeMode.NEXT } } ?: WidgetHeroTimeMode.NEXT
+
         val wShowLoc = prefs[Keys.WIDGET_SHOW_LOC] ?: true
         val wShowHijri = prefs[Keys.WIDGET_SHOW_HIJRI] ?: true
         val wShowCd = prefs[Keys.WIDGET_SHOW_COUNTDOWN] ?: true
@@ -377,6 +387,7 @@ class PrayerPreferences(private val context: Context) {
             opacityPercent = wOpacity,
             fontSize = wFont,
             textStyle = wTextStyle,
+            heroTimeMode = wHeroTimeMode,
             showLocation = wShowLoc,
             showHijriDate = wShowHijri,
             showCountdown = wShowCd,
@@ -436,6 +447,7 @@ class PrayerPreferences(private val context: Context) {
             .putInt(KEY_WIDGET_OPACITY, widgetSettings.opacityPercent)
             .putString(KEY_WIDGET_FONT, widgetSettings.fontSize.name)
             .putString(KEY_WIDGET_TEXT_STYLE, widgetSettings.textStyle.name)
+            .putString(KEY_WIDGET_HERO_TIME_MODE, widgetSettings.heroTimeMode.name)
             .putBoolean(KEY_WIDGET_SHOW_LOC, widgetSettings.showLocation)
             .putBoolean(KEY_WIDGET_SHOW_HIJRI, widgetSettings.showHijriDate)
             .putBoolean(KEY_WIDGET_SHOW_COUNTDOWN, widgetSettings.showCountdown)
@@ -497,6 +509,7 @@ class PrayerPreferences(private val context: Context) {
             .putInt(KEY_WIDGET_OPACITY, settings.opacityPercent)
             .putString(KEY_WIDGET_FONT, settings.fontSize.name)
             .putString(KEY_WIDGET_TEXT_STYLE, settings.textStyle.name)
+            .putString(KEY_WIDGET_HERO_TIME_MODE, settings.heroTimeMode.name)
             .putBoolean(KEY_WIDGET_SHOW_LOC, settings.showLocation)
             .putBoolean(KEY_WIDGET_SHOW_HIJRI, settings.showHijriDate)
             .putBoolean(KEY_WIDGET_SHOW_COUNTDOWN, settings.showCountdown)
@@ -511,6 +524,7 @@ class PrayerPreferences(private val context: Context) {
             prefs[Keys.WIDGET_OPACITY] = settings.opacityPercent
             prefs[Keys.WIDGET_FONT_SIZE] = settings.fontSize.name
             prefs[Keys.WIDGET_TEXT_STYLE] = settings.textStyle.name
+            prefs[Keys.WIDGET_HERO_TIME_MODE] = settings.heroTimeMode.name
             prefs[Keys.WIDGET_SHOW_LOC] = settings.showLocation
             prefs[Keys.WIDGET_SHOW_HIJRI] = settings.showHijriDate
             prefs[Keys.WIDGET_SHOW_COUNTDOWN] = settings.showCountdown
