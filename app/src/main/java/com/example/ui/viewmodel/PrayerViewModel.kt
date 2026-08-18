@@ -281,8 +281,24 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                                 AppLanguage.ENGLISH -> Locale.ENGLISH
                                 AppLanguage.SYSTEM -> Locale.getDefault()
                             }
-                            val geocoder = Geocoder(context, geocoderLocale)
-                            val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                            // The Locale passed to the Geocoder constructor above isn't reliably
+                            // honored by the underlying backend on real devices - many OEM/Play
+                            // services geocoder implementations format the returned Address using
+                            // the JVM default locale regardless, so an Arabic-system-language
+                            // device kept returning Arabic city/country names even with English
+                            // explicitly requested. Temporarily overriding the JVM default for
+                            // just this blocking call (and restoring it right after) is the
+                            // documented workaround for this specific, well-known quirk.
+                            val previousDefaultLocale = Locale.getDefault()
+                            val geocoder: Geocoder
+                            val addresses: List<android.location.Address>?
+                            try {
+                                Locale.setDefault(geocoderLocale)
+                                geocoder = Geocoder(context, geocoderLocale)
+                                addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                            } finally {
+                                Locale.setDefault(previousDefaultLocale)
+                            }
                             val address = addresses?.firstOrNull()
                             val cityName = address?.locality ?: address?.subAdminArea ?: "Current GPS Location"
                             val countryName = address?.countryName ?: ""

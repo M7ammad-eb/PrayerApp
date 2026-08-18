@@ -107,7 +107,7 @@ fun CityPickerDialog(
                 ) {
                     items(filteredCities) { city ->
                         Card(
-                            onClick = { onSelectCity(city) },
+                            onClick = { onSelectCity(city.toUserLocation(strings.isArabic)) },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                             modifier = Modifier.fillMaxWidth()
@@ -121,12 +121,12 @@ fun CityPickerDialog(
                             ) {
                                 Column {
                                     Text(
-                                        text = city.name,
+                                        text = if (strings.isArabic) city.nameAr else city.nameEn,
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = "${city.country} • ${city.timeZoneId}",
+                                        text = "${if (strings.isArabic) city.countryAr else city.countryEn} • ${city.timeZoneId}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

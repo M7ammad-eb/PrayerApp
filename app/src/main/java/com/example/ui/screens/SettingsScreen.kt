@@ -1039,9 +1039,10 @@ private fun SettingsLocationSubScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(filteredCities) { city ->
-                val isSelected = settings.location.name.equals(city.name, ignoreCase = true)
+                val isSelected = settings.location.name.equals(city.nameEn, ignoreCase = true) ||
+                    settings.location.name == city.nameAr
                 Card(
-                    onClick = { onSelectCity(city) },
+                    onClick = { onSelectCity(city.toUserLocation(strings.isArabic)) },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
@@ -1058,13 +1059,13 @@ private fun SettingsLocationSubScreen(
                     ) {
                         Column {
                             Text(
-                                text = city.name,
+                                text = if (strings.isArabic) city.nameAr else city.nameEn,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${city.country} • ${city.timeZoneId}",
+                                text = "${if (strings.isArabic) city.countryAr else city.countryEn} • ${city.timeZoneId}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

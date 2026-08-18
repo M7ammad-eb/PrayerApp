@@ -477,7 +477,10 @@ fun ManualCoordinatesDialog(
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Text(
-                                        text = "${if (strings.isArabic) "بالقرب من" else "Near"} ${nearCity.name}, ${nearCity.country} (approx. ${distKm.toInt()} km)",
+                                        text = "${if (strings.isArabic) "بالقرب من" else "Near"} " +
+                                            "${if (strings.isArabic) nearCity.nameAr else nearCity.nameEn}, " +
+                                            "${if (strings.isArabic) nearCity.countryAr else nearCity.countryEn} " +
+                                            "(approx. ${distKm.toInt()} km)",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -533,7 +536,9 @@ fun ManualCoordinatesDialog(
                                 val finalName = locationNameText.trim().ifEmpty {
                                     "Custom (${String.format(Locale.US, "%.2f, %.2f", latParsed, lonParsed)})"
                                 }
-                                val finalCountry = nearestCityResult?.let { "Near ${it.first.name}" } ?: "Manual Coordinates"
+                                val finalCountry = nearestCityResult?.let {
+                                    "Near ${if (strings.isArabic) it.first.nameAr else it.first.nameEn}"
+                                } ?: "Manual Coordinates"
                                 val newLocation = UserLocation(
                                     name = finalName,
                                     country = finalCountry,
