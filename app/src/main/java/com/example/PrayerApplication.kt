@@ -15,6 +15,9 @@ class PrayerApplication : Application() {
         const val CHANNEL_ATHAN_ID = "prayer_athan_channel_v2"
         const val CHANNEL_REMINDER_ID = "prayer_reminder_channel_v2"
         const val CHANNEL_DYNAMIC_ISLAND_ID = "prayer_dynamic_island_channel_v2"
+
+        lateinit var instance: PrayerApplication
+            private set
     }
 
     private var lastNightModeBit = 0
@@ -25,6 +28,7 @@ class PrayerApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         createNotificationChannels()
         lastNightModeBit = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
     }

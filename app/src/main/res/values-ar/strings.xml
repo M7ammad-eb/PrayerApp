@@ -1,0 +1,349 @@
+<resources>
+    <string name="app_name">صلاتي</string>
+    <string name="widget_description">يعرض وقت الصلاة القادمة والعد التنازلي على شاشتك الرئيسية.</string>
+
+    <!-- ===== App Branding ===== -->
+    <string name="app_brand_name">صلاتي</string>
+    <string name="app_subtitle">أوقات الصلاة والقبلة</string>
+
+    <!-- ===== Bottom Navigation ===== -->
+    <string name="nav_prayer_times">أوقات الصلاة</string>
+    <string name="nav_qibla">القبلة</string>
+    <string name="nav_calendar">التقويم</string>
+    <string name="nav_settings">الإعدادات</string>
+
+    <!-- ===== Common ===== -->
+    <string name="app_title">أوقات الصلاة</string>
+    <string name="common_today">اليوم</string>
+    <string name="common_tomorrow">غداً</string>
+    <string name="common_yesterday">أمس</string>
+    <string name="common_days">أيام</string>
+    <string name="common_day">يوم</string>
+    <string name="common_cancel">إلغاء</string>
+    <string name="common_save">حفظ</string>
+    <string name="common_done">تم</string>
+    <string name="common_got_it">حسناً</string>
+    <string name="common_close">إغلاق</string>
+    <string name="common_search">بحث</string>
+    <string name="common_change">تغيير</string>
+    <string name="common_remaining">متبقي</string>
+    <string name="common_time_for_prayer">حان الآن وقت الصلاة</string>
+    <string name="common_now">الآن</string>
+    <string name="common_select">اختيار</string>
+    <string name="common_active">مفعّل</string>
+
+    <!-- ===== Next Prayer / Hero ===== -->
+    <string name="hero_next_prayer_label">الصلاة القادمة</string>
+    <string name="hero_tomorrow_prayer_label">صلاة الغد</string>
+    <string name="hero_next_label_prefix">القادمة:</string>
+    <string name="hero_athan_alert">تنبيه الأذان</string>
+    <string name="hero_athan_at">الأذان في</string>
+    <string name="hero_stop_audio">إيقاف الصوت</string>
+    <string name="hero_listen_athan">استماع للأذان</string>
+    <string name="hero_hijri_calendar_details">تفاصيل التقويم الهجري</string>
+
+    <!-- ===== Bento Quick Cards ===== -->
+    <string name="bento_qibla_card_title">القبلة</string>
+    <string name="bento_qibla_accurate_direction">الاتجاه الدقيق</string>
+    <string name="bento_umm_al_qura_title">تقويم أم القرى</string>
+    <string name="bento_makkah_calendar">تقويم مكة المكرمة</string>
+    <string name="bento_white_day_badge">الأيام البيض (سنة)</string>
+    <string name="bento_sacred_month_badge">شهر حرام</string>
+
+    <!-- ===== Date Picker / Navigation ===== -->
+    <string name="date_previous_day">اليوم السابق</string>
+    <string name="date_next_day">اليوم التالي</string>
+    <string name="date_go_to_today">العودة لليوم</string>
+    <string name="date_pick_date">اختيار تاريخ</string>
+
+    <!-- ===== Prayer Names ===== -->
+    <string name="prayer_name_fajr">الفجر</string>
+    <string name="prayer_name_sunrise">الشروق</string>
+    <string name="prayer_name_dhuhr">الظهر</string>
+    <string name="prayer_name_asr">العصر</string>
+    <string name="prayer_name_maghrib">المغرب</string>
+    <string name="prayer_name_isha">العشاء</string>
+
+    <!-- ===== Additional / Sunnah Times Card ===== -->
+    <string name="additional_times_title">أوقات السنن وقيام الليل</string>
+    <string name="additional_midnight">منتصف الليل الإسلامي</string>
+    <string name="additional_last_third_night">ثلث الليل الأخير (قيام الليل والتهجد)</string>
+    <string name="additional_imsak">الإمساك (الصيام)</string>
+    <string name="additional_duha">وقت صلاة الضحى (تقريبي)</string>
+
+    <!-- ===== Notification Sound Types ===== -->
+    <string name="sound_name_athan_makkah_mulla">أذان مكة المكرمة - علي أحمد ملا</string>
+    <string name="sound_name_athan_fajr1_kwait_alafasy">أذان الفجر (الكويت) - مشاري العفاسي</string>
+    <string name="sound_name_athan_fajr2_jordan_allala">أذان الفجر (الأردن) - كامل اللالا</string>
+    <string name="sound_name_athan_riyadh_qatami">أذان الرياض - ناصر القطامي</string>
+    <string name="sound_name_athan_qatar_nabet">أذان قطر - صالح النابت</string>
+    <string name="sound_name_athan_quds_qazaz_1">أذان المسجد الأقصى - ناجي قزاز (١)</string>
+    <string name="sound_name_athan_quds_qazaz_2">أذان المسجد الأقصى - ناجي قزاز (٢)</string>
+    <string name="sound_name_athan_egypt_dawod">أذان مصر - أحمد داود</string>
+    <string name="sound_name_athan_egypt_alalfi">أذان مصر - صلاح الألفي</string>
+    <string name="sound_name_athan_egypt_abdulaati">أذان مصر (الحسين) - سيد عبد العاطي</string>
+    <string name="sound_name_athan_iraq_alamouri">أذان العراق - أبو عمر العامري</string>
+    <string name="sound_name_athan_georgia">أذان جورجيا (تبليسي)</string>
+    <string name="sound_name_short_takbeer">تكبير فقط (الله أكبر)</string>
+    <string name="sound_name_melodic_tone">نغمة هادئة</string>
+    <string name="sound_name_vibrate_only">اهتزاز فقط</string>
+    <string name="sound_name_silent">صامت / إيقاف</string>
+
+    <string name="sound_subtitle_athan_makkah_mulla">أذان الحرم المكي الشريف بصوت شيخ المؤذنين</string>
+    <string name="sound_subtitle_athan_fajr1_kwait_alafasy">أذان الفجر المخصوص بعبارة (الصلاة خير من النوم)</string>
+    <string name="sound_subtitle_athan_fajr2_jordan_allala">أذان الفجر التراثي من المسجد الحسيني الكبير</string>
+    <string name="sound_subtitle_athan_riyadh_qatami">أذان ندي وخاشع من مساجد الرياض</string>
+    <string name="sound_subtitle_athan_qatar_nabet">أذان جامع الإمام محمد بن عبد الوهاب بدولة قطر</string>
+    <string name="sound_subtitle_athan_quds_qazaz_1">أذان المسجد الأقصى المبارك بمقام الحجاز</string>
+    <string name="sound_subtitle_athan_quds_qazaz_2">أذان المسجد الأقصى المبارك بمقام البياتي</string>
+    <string name="sound_subtitle_athan_egypt_dawod">أذان الإذاعة المصرية التراثي الأصيل</string>
+    <string name="sound_subtitle_athan_egypt_alalfi">أذان الجامع الأزهر الشريف ومساجد القاهرة</string>
+    <string name="sound_subtitle_athan_egypt_abdulaati">أذان مسجد الإمام الحسين عليه السلام بالقاهرة</string>
+    <string name="sound_subtitle_athan_iraq_alamouri">أذان بغداد والمساجد العراقية بنغم البياتي العريق</string>
+    <string name="sound_subtitle_athan_georgia">أذان جامع تبليسي التاريخي في جورجيا</string>
+    <string name="sound_subtitle_short_takbeer">تكبيرات العيد والأذان المختصرة</string>
+    <string name="sound_subtitle_melodic_tone">نغمة هادئة للتنبيه في العمل والاجتماعات</string>
+    <string name="sound_subtitle_vibrate_only">اهتزاز فقط دون إصدار صوت</string>
+    <string name="sound_subtitle_silent">إشعار بصري فقط</string>
+
+    <!-- ===== Qibla Screen ===== -->
+    <string name="qibla_title">بوصلة القبلة الدقيقة</string>
+    <string name="qibla_aligned_message">أنت الآن باتجاه الكعبة المشرفة بدقة!</string>
+    <string name="qibla_rotate_prompt">قم بتدوير الهاتف حتى يتطابق المؤشر الذهبي مع الأعلى</string>
+    <string name="qibla_bearing_label">زاوية القبلة:</string>
+    <string name="qibla_current_heading_label">الاتجاه الحالي:</string>
+    <string name="qibla_distance_to_kaaba_label">المسافة إلى الكعبة المشرفة:</string>
+    <string name="qibla_km_unit">كم</string>
+    <string name="qibla_deg_unit">°</string>
+    <string name="qibla_compass_calib_title">معايرة البوصلة</string>
+    <string name="qibla_compass_calib_text">لمعايرة بوصلة الهاتف، حرّك جهازك بسلاسة بشكل رقم 8 في الهواء عدة مرات بعيداً عن المعادن والمغناطيس.</string>
+    <string name="qibla_manual_compass_mode">وضع البوصلة اليدوي (اختبار)</string>
+
+    <!-- ===== Cardinal Directions ===== -->
+    <string-array name="cardinal_directions">
+        <item>شمال (N)</item>
+        <item>شمال شرق (NE)</item>
+        <item>شرق (E)</item>
+        <item>جنوب شرق (SE)</item>
+        <item>جنوب (S)</item>
+        <item>جنوب غرب (SW)</item>
+        <item>غرب (W)</item>
+        <item>شمال غرب (NW)</item>
+    </string-array>
+
+    <!-- ===== Monthly Calendar ===== -->
+    <string name="calendar_title">جدول أوقات الصلاة للشهر</string>
+    <string name="calendar_date_col">اليوم</string>
+    <string name="calendar_hijri_col">الهجري</string>
+    <string name="calendar_prev_month">الشهر السابق</string>
+    <string name="calendar_next_month">الشهر التالي</string>
+
+    <!-- ===== Settings Screen ===== -->
+    <string name="settings_title">الإعدادات والتفضيلات</string>
+    <string name="settings_theme_section">المظهر والألوان</string>
+    <string name="settings_theme_mode_title">وضع المظهر (فاتح / داكن)</string>
+    <string name="settings_system_theme_desc">متابعة إعدادات النظام تلقائياً</string>
+    <string name="settings_light_theme_desc">الوضع الفاتح دائماً</string>
+    <string name="settings_dark_theme_desc">الوضع الداكن دائماً ومريح للعين</string>
+
+    <string name="theme_mode_system">تلقائي حسب النظام</string>
+    <string name="theme_mode_light">الوضع الفاتح</string>
+    <string name="theme_mode_dark">الوضع الداكن</string>
+
+    <string name="settings_color_palette_section">لوحة الألوان وسمة التطبيق</string>
+    <string name="settings_follow_system_colors_title">متابعة ألوان النظام في التطبيق (Material You)</string>
+    <string name="settings_follow_system_colors_desc">استخراج الألوان التلقائي المتناسق مع خلفية جهازك لواجهة التطبيق</string>
+    <string name="settings_preset_colors_title">لوحات ألوان جاهزة</string>
+    <string name="settings_preset_colors_desc">اختر لوناً مميزاً لتخصيص واجهة التطبيق</string>
+
+    <string name="color_preset_system_dynamic">ألوان النظام التلقائية (ماتيريال يو)</string>
+    <string name="color_preset_emerald_gold">الزمرد والذهب (التقليدي)</string>
+    <string name="color_preset_royal_amber">العنبر الصحراوي</string>
+    <string name="color_preset_sapphire_night">الياقوت الأزرق الليلي</string>
+    <string name="color_preset_medina_teal">الأخضر الفيروزي النبوي</string>
+    <string name="color_preset_rose_clove">الورد الدمشقي</string>
+    <string name="color_preset_slate_charcoal">الرمادي الأنيق</string>
+
+    <string name="settings_language_section">اللغة والعرض</string>
+    <string name="settings_app_language">لغة التطبيق</string>
+    <string name="settings_select_language_subtitle">اختر لغة واجهة التطبيق</string>
+    <string name="settings_location_section">الموقع والإحداثيات</string>
+    <string name="settings_use_gps">تحديد الموقع تلقائياً (GPS)</string>
+    <string name="settings_choose_city">اختيار مدينة عالمية</string>
+    <string name="settings_manual_coordinates">إدخال الإحداثيات يدوياً (خط الطول/العرض)</string>
+    <string name="settings_calc_method_section">طريقة الحساب الفلكي</string>
+    <string name="settings_juristic_method_title">المذهب الفقهي لصلاة العصر</string>
+    <string name="settings_standard_juristic">الجمهور (الشافعي، المالكي، الحنبلي)</string>
+    <string name="settings_hanafi_juristic">المذهب الحنفي (ظل المثلين)</string>
+    <string name="settings_high_latitude_section">قاعدة المناطق ذات خطوط العرض العالية</string>
+    <string name="settings_display_hijri_section">العرض والتقويم الهجري</string>
+    <string name="settings_hijri_offset_title">تعديل التاريخ الهجري (تقويم أم القرى)</string>
+    <string name="settings_time_format_title">نظام الوقت 24 ساعة</string>
+    <string name="settings_minute_adjustments_title">تعديل الدقائق يدوياً لكل صلاة</string>
+    <string name="settings_minute_adjustments_subtitle">لمطابقة توقيت المسجد المحلي بالضبط</string>
+    <string name="settings_notif_section_title">تنبيهات الأذان والإشعارات</string>
+    <string name="settings_athan_sound">صوت الأذان والتنبيه</string>
+    <string name="settings_pre_reminder">تنبيه مبكر قبل الصلاة</string>
+    <string name="settings_minutes_before">دقيقة قبل</string>
+    <string name="settings_test_alert">تجربة التنبيه الفوري</string>
+    <string name="settings_test_alarm_5s">تجربة إنذار الصلاة (بعد 5 ثوانٍ)</string>
+    <string name="settings_reschedule_7_days">إعادة جدولة جميع منبهات الأسبوع (7 أيام)</string>
+    <string name="settings_notifications_disabled_warning">تنبيهات الأذان معطلة في إعدادات النظام. يرجى تفعيل الإشعارات حتى يعمل الأذان في موعده.</string>
+    <string name="settings_enable_notifications_btn">تفعيل الإشعارات الآن</string>
+    <string name="settings_notifications_status_active">الإشعارات ومنبهات الأذان مفعلة وجاهزة بنجاح.</string>
+
+    <!-- ===== Audio Output Channel & Wake Screen Settings ===== -->
+    <string name="settings_audio_stream_section_title">قناة صوت الأذان (Audio Stream)</string>
+    <string name="settings_audio_stream_desc">اختر القناة الصوتية التي يعمل بها صوت الأذان ليتبع مستوى صوت النظام المختار.</string>
+    <string name="settings_audio_stream_alarm_title">مستوى صوت المنبه (Alarm)</string>
+    <string name="settings_audio_stream_alarm_desc">يعمل بمستوى صوت منبه الهاتف، ويرن حتى في الوضع الصامت إذا سمح النظام.</string>
+    <string name="settings_audio_stream_media_title">مستوى صوت الوسائط (Media)</string>
+    <string name="settings_audio_stream_media_desc">يعمل بمستوى صوت الموسيقى والفيديوهات.</string>
+    <string name="settings_audio_stream_ringtone_title">مستوى صوت رنين الهاتف (Ringtone)</string>
+    <string name="settings_audio_stream_ringtone_desc">يعمل بمستوى نغمة رنين المكالمات.</string>
+
+    <string name="settings_wake_screen_title">إيقاظ الشاشة وعرض منبه الأذان بالكامل (عند إغلاق الشاشة فقط)</string>
+    <string name="settings_wake_screen_desc">إضاءة الشاشة تلقائياً وعرض اللوحة الفنية الكاملة فقط إذا كانت الشاشة مغلقة. أثناء استخدام الهاتف، يظهر إشعار علوي أنيق دون مقاطعتك.</string>
+    <string name="settings_preview_full_screen_alarm_btn">🖼️ معاينة شاشة منبه الأذان الفنية الكاملة</string>
+
+    <!-- ===== Dynamic Island / Live Countdown Feature ===== -->
+    <string name="settings_dynamic_island_section_title">الجزيرة التفاعلية والعد التنازلي المباشر (Live Activity)</string>
+    <string name="settings_dynamic_island_desc">عرض كبسولة تفاعلية وعد تنازلي مباشر في أعلى الشاشة وشريط الإشعارات قبل حلول وقت الصلاة (مثل Keeta و Live Activities).</string>
+    <string name="settings_dynamic_island_enable_title">تفعيل كبسولة الجزيرة التفاعلية</string>
+    <string name="settings_dynamic_island_lead_time_title">بدء العد التنازلي قبل الصلاة بـ:</string>
+    <string name="settings_dynamic_island_vivo_tip">💡 لأجهزة Vivo / iQOO / OriginOS: لتفعيل كبسولة الجزيرة (Atomic Island)، يرجى التأكد من تشغيل \'الأنشطة الحية / Live Alerts\' لتطبيق مواقيت الصلاة من إعدادات الهاتف &gt; الإشعارات.</string>
+    <string name="settings_preview_dynamic_island_btn">✨ معاينة كبسولة الجزيرة التفاعلية الآن</string>
+    <string name="settings_dismiss_dynamic_island_btn">إخفاء الجزيرة التفاعلية</string>
+
+    <!-- ===== Calculation Method translations ===== -->
+    <string name="calc_method_umm_al_qura">جامعة أم القرى (مكة المكرمة)</string>
+    <string name="calc_method_mwl">رابطة العالم الإسلامي</string>
+    <string name="calc_method_egyptian">الهيئة المصرية العامة للمساحة</string>
+    <string name="calc_method_karachi">جامعة العلوم الإسلامية بكراتشي</string>
+    <string name="calc_method_isna">الجمعية الإسلامية لأمريكا الشمالية (ISNA)</string>
+    <string name="calc_method_gulf">منطقة الخليج العربي (دبي والإمارات)</string>
+    <string name="calc_method_qatar">وزارة الأوقاف والشؤون الإسلامية بقطر</string>
+    <string name="calc_method_kuwait">وزارة الأوقاف والشؤون الإسلامية بالكويت</string>
+    <string name="calc_method_turkey">رئاسة الشؤون الدينية التركية (ديانت)</string>
+    <string name="calc_method_tehran">معهد الجيوفيزياء بجامعة طهران</string>
+    <string name="calc_method_shia_ithna_ashari">معهد لواء (الشيعة الإثنا عشرية)</string>
+    <string name="calc_method_singapore">مجلس الشؤون الإسلامية بسنغافورة (MUIS)</string>
+    <string name="calc_method_france_uoif">اتحاد المنظمات الإسلامية بفرنسا (UOIF)</string>
+    <string name="calc_method_russia">الإدارة الدينية لمسلمي روسيا (SAMR)</string>
+
+    <!-- ===== High Latitude Rule translations ===== -->
+    <string name="high_latitude_midnight">منتصف الليل (Middle of Night)</string>
+    <string name="high_latitude_one_seventh">سُبع الليل (One Seventh of Night)</string>
+    <string name="high_latitude_angle_based">على أساس الزاوية النسبية (Angle-Based)</string>
+    <string name="high_latitude_none">بدون تعديل (None)</string>
+
+    <!-- ===== Athan Player Dialog ===== -->
+    <string name="athan_dialog_title">تلاوة الأذان الشريف</string>
+    <string name="athan_play_adhan">تشغيل الأذان</string>
+    <string name="athan_fajr_adhan">أذان الفجر</string>
+    <string name="athan_stop_btn">إيقاف</string>
+    <string name="athan_prompt_text">استمع إلى النداء المقدس لنداء الصلاة</string>
+
+    <!-- ===== Hijri Dialog ===== -->
+    <string name="hijri_calendar_header">التقويم الهجري</string>
+    <string name="hijri_umm_al_qura_standard">معيار تقويم أم القرى (مكة المكرمة)</string>
+    <string name="hijri_convert_date">تحويل التاريخ</string>
+    <string name="hijri_adjust_days">تعديل الأيام</string>
+    <string name="hijri_sunnah_fasting_day">يوم صيام سنة</string>
+    <string name="hijri_white_days_title">الأيام البيض (الأيام 13 و 14 و 15)</string>
+    <string name="hijri_white_days_desc">صيام الأيام البيض من كل شهر هجري سنة مؤكدة عن النبي ﷺ.</string>
+    <string name="hijri_sacred_month_title">الأشهر الحرم (المحرم، رجب، ذو القعدة، ذو الحجة)</string>
+    <string name="hijri_sacred_month_desc">من الأشهر الحرم الأربعة التي عظم الله شأنها وتتضاعف فيها الأجور.</string>
+    <string name="hijri_monday_thursday_desc">صيام يومي الإثنين والخميس سنة نبوية مباركة.</string>
+    <string name="hijri_about_umm_al_qura_title">عن تقويم أم القرى الرسمي</string>
+    <string name="hijri_about_umm_al_qura_desc">تقويم أم القرى هو التقويم القمري الرسمي الصادر عن مدينة الملك عبد العزيز للعلوم والتقنية (KACST) لمدينة مكة المكرمة ويعتمد الحسابات الفلكية الشرعية الدقيقة.</string>
+
+    <!-- ===== Manual Coordinates Dialog ===== -->
+    <string name="coords_custom_coordinates">الإحداثيات اليدوية</string>
+    <string name="coords_enter_coordinates">إدخال خط الطول وخط العرض بدقة</string>
+    <string name="coords_manual_coordinates_desc">حدد إحداثيات جغرافية دقيقة للمناطق البرية، المخيمات الصحراوية، أو الأماكن التي لا يتوفر فيها اتصال GPS.</string>
+    <string name="coords_quick_presets">إحداثيات مدن سريعة</string>
+    <string name="coords_latitude_label">خط العرض (°)</string>
+    <string name="coords_longitude_label">خط الطول (°)</string>
+    <string name="coords_location_name_label">اسم الموقع / الوصف</string>
+    <string name="coords_time_zone_label">المنطقة الزمنية</string>
+    <string name="coords_apply_coordinates">تطبيق الإحداثيات</string>
+
+    <!-- ===== Setup & First-Time Onboarding ===== -->
+    <string name="onboarding_welcome_to_app">مرحباً بك في صلاتي</string>
+    <string name="onboarding_setup_subtitle">دعنا نضبط تطبيقك في خطوات بسيطة لتجربة صلاة متكاملة ودقيقة.</string>
+    <string name="onboarding_step_language_title">اختر لغة التطبيق</string>
+    <string name="onboarding_step_language_desc">يمكنك التبديل بين العربية والإنجليزية في أي وقت من الإعدادات.</string>
+    <string name="onboarding_step_location_title">حدد موقعك الجغرافي</string>
+    <string name="onboarding_step_location_desc">نحتاج إلى موقعك لحساب أوقات الصلاة واتجاه القبلة بدقة شرعية عالية.</string>
+    <string name="onboarding_privacy_notice_title">خصوصيتك محمية بالكامل</string>
+    <string name="onboarding_privacy_notice_desc">بيانات موقعك لا تُجمع، ولا تُخزن على أي خوادم خارجية، ولا يتم تتبعك إطلاقاً. تُستخدم الإحداثيات محلياً على جهازك فقط لحساب المواقيت والقبلة.</string>
+    <string name="onboarding_use_gps_button">تحديد الموقع التلقائي (GPS)</string>
+    <string name="onboarding_search_city_placeholder">أو ابحث عن مدينتك (مكة، القاهرة، لندن...)</string>
+    <string name="onboarding_selected_location_label">الموقع المحدد:</string>
+    <string name="onboarding_step_notifications_title">تنبيهات الأذان والإشعارات</string>
+    <string name="onboarding_step_notifications_desc">تفعيل إذن الإشعارات والمنبه الدقيق لضمان انطلاق صوت الأذان والتنبيهات في وقت الصلاة تماماً حتى عند قفل الهاتف.</string>
+    <string name="onboarding_step_notifications_explanation">لماذا نحتاج هذا الإذن؟\n• إطلاق صوت الأذان الشريف مع دخول وقت الصلاة.\n• عرض كبسولة العد التنازلي التفاعلية (Dynamic Island).\n• تذكيرك بالسنن والأيام البيض.</string>
+    <string name="onboarding_grant_notification_permission_btn">منح إذن الإشعارات</string>
+    <string name="onboarding_permission_granted_status">تم تفعيل الإشعارات بنجاح ✓</string>
+    <string name="onboarding_step_athan_sounds_title">أصوات الأذان والتنبيهات</string>
+    <string name="onboarding_step_athan_sounds_desc">اختر صوت الأذان المفضل لكل صلاة. يمكنك تغييرها وتخصيصها لاحقاً.</string>
+    <string name="onboarding_step_style_title">المظهر والتصميم</string>
+    <string name="onboarding_step_style_desc">اختر الثيم ونمط الألوان المفضل لديك.</string>
+    <string name="onboarding_get_started_btn">ابدأ الآن واستمتع بصلاتي</string>
+    <string name="onboarding_next_step_btn">التالي</string>
+    <string name="onboarding_previous_step_btn">السابق</string>
+    <string name="onboarding_step_indicator_text">الخطوة</string>
+    <string name="onboarding_of_step_text">من</string>
+    <string name="onboarding_gps_detecting">جارٍ تحديد الموقع عبر GPS...</string>
+
+    <!-- ===== Widget Customization Strings ===== -->
+    <string name="widget_settings_section">التطبيقات المصغرة (الودجت)</string>
+    <string name="widget_settings_section_subtitle">تخصيص الألوان، الشفافية، الخط والمحتوى</string>
+    <string name="widget_settings_theme_mode_title">ثيم وألوان الودجت</string>
+    <string name="widget_settings_bg_style_title">نمط الخلفية</string>
+    <string name="widget_settings_opacity_title">درجة الشفافية</string>
+    <string name="widget_settings_font_size_title">حجم الخط</string>
+    <string name="widget_settings_content_title">محتوى وعناصر الودجت</string>
+    <string name="widget_settings_preview_title">معاينة تفاعلية حية</string>
+    <string name="widget_settings_refresh_all">تحديث وتطبيق الودجت الآن</string>
+    <string name="widget_settings_reset_defaults">استعادة الإعدادات الافتراضية</string>
+
+    <!-- ===== Countdown / Date Formatting ===== -->
+    <string name="countdown_time_for_prayer_now">حان وقت الصلاة الآن!</string>
+    <string name="countdown_hours_minutes">باقي %1$dس و %2$dد</string>
+    <string name="countdown_minutes_seconds">باقي %1$dد و %2$dث</string>
+    <plurals name="countdown_seconds_only">
+        <item quantity="zero">باقي %1$d ثانية</item>
+        <item quantity="one">باقي ثانية واحدة</item>
+        <item quantity="two">باقي ثانيتان</item>
+        <item quantity="few">باقي %1$d ثوانٍ</item>
+        <item quantity="many">باقي %1$d ثانية</item>
+        <item quantity="other">باقي %1$d ثانية</item>
+    </plurals>
+
+    <string-array name="month_names">
+        <item>يناير</item>
+        <item>فبراير</item>
+        <item>مارس</item>
+        <item>أبريل</item>
+        <item>مايو</item>
+        <item>يونيو</item>
+        <item>يوليو</item>
+        <item>أغسطس</item>
+        <item>سبتمبر</item>
+        <item>أكتوبر</item>
+        <item>نوفمبر</item>
+        <item>ديسمبر</item>
+    </string-array>
+
+    <string-array name="day_of_week_names">
+        <item>الإثنين</item>
+        <item>الثلاثاء</item>
+        <item>الأربعاء</item>
+        <item>الخميس</item>
+        <item>الجمعة</item>
+        <item>السبت</item>
+        <item>الأحد</item>
+    </string-array>
+</resources>

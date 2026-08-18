@@ -1,16 +1,22 @@
 package com.example.ui.locale
 
+import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import com.example.PrayerApplication
+import com.example.R
 import com.example.data.models.AppLanguage
+import com.example.data.models.AppColorPreset
+import com.example.data.models.AppThemeMode
 import com.example.data.models.CalculationMethod
 import com.example.data.models.HighLatitudeRule
-import com.example.data.models.JuristicMethod
 import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
 import java.text.DecimalFormat
@@ -21,398 +27,349 @@ import java.util.Locale
 
 /**
  * Provides comprehensive application-wide localization strings, layout direction, and formatting.
+ * Backed by Android string resources (res/values/strings.xml + res/values-ar/strings.xml) rather
+ * than hardcoded literals, resolved via a Resources instance pinned to the app's chosen language
+ * (which can differ from the system locale) so future languages only require new values-* folders.
  * Guaranteed to use Western Arabic numerals (1, 2, 3, 4...) across all Arabic interfaces.
  */
-class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic) AppLanguage.ARABIC else AppLanguage.ENGLISH) {
+class AppStrings(
+    val isArabic: Boolean,
+    val language: AppLanguage = if (isArabic) AppLanguage.ARABIC else AppLanguage.ENGLISH,
+    private val res: Resources = PrayerApplication.instance.resources
+) {
+    private fun s(id: Int): String = res.getString(id)
 
     // App Branding
-    val appBrandName: String = if (isArabic) "صلاتي" else "Salati"
-    val appSubtitle: String = if (isArabic) "أوقات الصلاة والقبلة" else "Prayer Times & Qibla"
+    val appBrandName: String = s(R.string.app_brand_name)
+    val appSubtitle: String = s(R.string.app_subtitle)
 
     // Bottom Navigation
-    val navPrayerTimes: String = if (isArabic) "أوقات الصلاة" else "Prayer Times"
-    val navQibla: String = if (isArabic) "القبلة" else "Qibla"
-    val navCalendar: String = if (isArabic) "التقويم" else "Calendar"
-    val navSettings: String = if (isArabic) "الإعدادات" else "Settings"
+    val navPrayerTimes: String = s(R.string.nav_prayer_times)
+    val navQibla: String = s(R.string.nav_qibla)
+    val navCalendar: String = s(R.string.nav_calendar)
+    val navSettings: String = s(R.string.nav_settings)
 
     // Common
-    val appTitle: String = if (isArabic) "أوقات الصلاة" else "Prayer Times"
-    val today: String = if (isArabic) "اليوم" else "Today"
-    val tomorrow: String = if (isArabic) "غداً" else "Tomorrow"
-    val yesterday: String = if (isArabic) "أمس" else "Yesterday"
-    val days: String = if (isArabic) "أيام" else "days"
-    val day: String = if (isArabic) "يوم" else "day"
-    val cancel: String = if (isArabic) "إلغاء" else "Cancel"
-    val save: String = if (isArabic) "حفظ" else "Save"
-    val done: String = if (isArabic) "تم" else "Done"
-    val gotIt: String = if (isArabic) "حسناً" else "Got It"
-    val close: String = if (isArabic) "إغلاق" else "Close"
-    val search: String = if (isArabic) "بحث" else "Search"
-    val change: String = if (isArabic) "تغيير" else "Change"
-    val remaining: String = if (isArabic) "متبقي" else "Remaining"
-    val timeForPrayer: String = if (isArabic) "حان الآن وقت الصلاة" else "Time for Prayer!"
-    val now: String = if (isArabic) "الآن" else "Now"
-    val select: String = if (isArabic) "اختيار" else "Select"
-    val active: String = if (isArabic) "مفعّل" else "Active"
+    val appTitle: String = s(R.string.app_title)
+    val today: String = s(R.string.common_today)
+    val tomorrow: String = s(R.string.common_tomorrow)
+    val yesterday: String = s(R.string.common_yesterday)
+    val days: String = s(R.string.common_days)
+    val day: String = s(R.string.common_day)
+    val cancel: String = s(R.string.common_cancel)
+    val save: String = s(R.string.common_save)
+    val done: String = s(R.string.common_done)
+    val gotIt: String = s(R.string.common_got_it)
+    val close: String = s(R.string.common_close)
+    val search: String = s(R.string.common_search)
+    val change: String = s(R.string.common_change)
+    val remaining: String = s(R.string.common_remaining)
+    val timeForPrayer: String = s(R.string.common_time_for_prayer)
+    val now: String = s(R.string.common_now)
+    val select: String = s(R.string.common_select)
+    val active: String = s(R.string.common_active)
 
     // Next Prayer / Hero
-    val nextPrayerLabel: String = if (isArabic) "الصلاة القادمة" else "NEXT PRAYER"
-    val tomorrowPrayerLabel: String = if (isArabic) "صلاة الغد" else "TOMORROW'S PRAYER"
-    val nextLabelPrefix: String = if (isArabic) "القادمة:" else "NEXT:"
-    val athanAlert: String = if (isArabic) "تنبيه الأذان" else "Athan Alert"
-    val athanAt: String = if (isArabic) "الأذان في" else "Athan at"
-    val stopAudio: String = if (isArabic) "إيقاف الصوت" else "Stop Audio"
-    val listenAthan: String = if (isArabic) "استماع للأذان" else "Listen to Athan"
-    val hijriCalendarDetails: String = if (isArabic) "تفاصيل التقويم الهجري" else "Hijri Calendar Details"
+    val nextPrayerLabel: String = s(R.string.hero_next_prayer_label)
+    val tomorrowPrayerLabel: String = s(R.string.hero_tomorrow_prayer_label)
+    val nextLabelPrefix: String = s(R.string.hero_next_label_prefix)
+    val athanAlert: String = s(R.string.hero_athan_alert)
+    val athanAt: String = s(R.string.hero_athan_at)
+    val stopAudio: String = s(R.string.hero_stop_audio)
+    val listenAthan: String = s(R.string.hero_listen_athan)
+    val hijriCalendarDetails: String = s(R.string.hero_hijri_calendar_details)
 
     // Bento Quick Cards
-    val qiblaCardTitle: String = if (isArabic) "القبلة" else "QIBLA"
-    val qiblaAccurateDirection: String = if (isArabic) "الاتجاه الدقيق" else "Accurate Direction"
-    val ummAlQuraTitle: String = if (isArabic) "تقويم أم القرى" else "UMM AL-QURA"
-    val makkahCalendar: String = if (isArabic) "تقويم مكة المكرمة" else "Makkah Calendar"
-    val whiteDayBadge: String = if (isArabic) "الأيام البيض (سنة)" else "White Day (Sunnah)"
-    val sacredMonthBadge: String = if (isArabic) "شهر حرام" else "Sacred Month"
+    val qiblaCardTitle: String = s(R.string.bento_qibla_card_title)
+    val qiblaAccurateDirection: String = s(R.string.bento_qibla_accurate_direction)
+    val ummAlQuraTitle: String = s(R.string.bento_umm_al_qura_title)
+    val makkahCalendar: String = s(R.string.bento_makkah_calendar)
+    val whiteDayBadge: String = s(R.string.bento_white_day_badge)
+    val sacredMonthBadge: String = s(R.string.bento_sacred_month_badge)
 
     // Date Picker / Navigation
-    val previousDay: String = if (isArabic) "اليوم السابق" else "Previous Day"
-    val nextDay: String = if (isArabic) "اليوم التالي" else "Next Day"
-    val goToToday: String = if (isArabic) "العودة لليوم" else "Go to Today"
-    val pickDate: String = if (isArabic) "اختيار تاريخ" else "Pick Date"
+    val previousDay: String = s(R.string.date_previous_day)
+    val nextDay: String = s(R.string.date_next_day)
+    val goToToday: String = s(R.string.date_go_to_today)
+    val pickDate: String = s(R.string.date_pick_date)
 
     // Prayer Names (Single clean standard name per language)
-    fun prayerName(type: PrayerType): String {
-        return when (language) {
-            AppLanguage.ARABIC -> when (type) {
-                PrayerType.FAJR -> "الفجر"
-                PrayerType.SUNRISE -> "الشروق"
-                PrayerType.DHUHR -> "الظهر"
-                PrayerType.ASR -> "العصر"
-                PrayerType.MAGHRIB -> "المغرب"
-                PrayerType.ISHA -> "العشاء"
-            }
-            AppLanguage.ENGLISH -> type.title
-            AppLanguage.SYSTEM -> {
-                if (isArabic) {
-                    when (type) {
-                        PrayerType.FAJR -> "الفجر"
-                        PrayerType.SUNRISE -> "الشروق"
-                        PrayerType.DHUHR -> "الظهر"
-                        PrayerType.ASR -> "العصر"
-                        PrayerType.MAGHRIB -> "المغرب"
-                        PrayerType.ISHA -> "العشاء"
-                    }
-                } else {
-                    type.title
-                }
-            }
-        }
-    }
+    private val prayerNameRes: Map<PrayerType, Int> = mapOf(
+        PrayerType.FAJR to R.string.prayer_name_fajr,
+        PrayerType.SUNRISE to R.string.prayer_name_sunrise,
+        PrayerType.DHUHR to R.string.prayer_name_dhuhr,
+        PrayerType.ASR to R.string.prayer_name_asr,
+        PrayerType.MAGHRIB to R.string.prayer_name_maghrib,
+        PrayerType.ISHA to R.string.prayer_name_isha
+    )
+    fun prayerName(type: PrayerType): String = s(prayerNameRes.getValue(type))
 
     // Additional / Sunnah Times Card
-    val additionalTimesTitle: String = if (isArabic) "أوقات السنن وقيام الليل" else "Sunnah & Night Calculations"
-    val midnight: String = if (isArabic) "منتصف الليل الإسلامي" else "Islamic Midnight"
-    val lastThirdNight: String = if (isArabic) "ثلث الليل الأخير (قيام الليل والتهجد)" else "Qiyam / Last 1/3 of Night"
-    val imsak: String = if (isArabic) "الإمساك (الصيام)" else "Imsak (Fasting Stop)"
-    val duha: String = if (isArabic) "وقت صلاة الضحى (تقريبي)" else "Duha Time (approx.)"
+    val additionalTimesTitle: String = s(R.string.additional_times_title)
+    val midnight: String = s(R.string.additional_midnight)
+    val lastThirdNight: String = s(R.string.additional_last_third_night)
+    val imsak: String = s(R.string.additional_imsak)
+    val duha: String = s(R.string.additional_duha)
 
     // Notification Sound Types
-    fun soundTypeName(type: NotificationSoundType): String {
-        return if (isArabic) {
-            when (type) {
-                NotificationSoundType.ATHAN_MAKKAH_MULLA -> "أذان مكة المكرمة - علي أحمد ملا"
-                NotificationSoundType.ATHAN_FAJR1_KWAIT_ALAFASY -> "أذان الفجر (الكويت) - مشاري العفاسي"
-                NotificationSoundType.ATHAN_FAJR2_JORDAN_ALLALA -> "أذان الفجر (الأردن) - كامل اللالا"
-                NotificationSoundType.ATHAN_RIYADH_QATAMI -> "أذان الرياض - ناصر القطامي"
-                NotificationSoundType.ATHAN_QATAR_NABET -> "أذان قطر - صالح النابت"
-                NotificationSoundType.ATHAN_QUDS_QAZAZ_1 -> "أذان المسجد الأقصى - ناجي قزاز (١)"
-                NotificationSoundType.ATHAN_QUDS_QAZAZ_2 -> "أذان المسجد الأقصى - ناجي قزاز (٢)"
-                NotificationSoundType.ATHAN_EGYPT_DAWOD -> "أذان مصر - أحمد داود"
-                NotificationSoundType.ATHAN_EGYPT_ALALFI -> "أذان مصر - صلاح الألفي"
-                NotificationSoundType.ATHAN_EGYPT_ABDULAATI -> "أذان مصر (الحسين) - سيد عبد العاطي"
-                NotificationSoundType.ATHAN_IRAQ_ALAMOURI -> "أذان العراق - أبو عمر العامري"
-                NotificationSoundType.ATHAN_GEORGIA -> "أذان جورجيا (تبليسي)"
-                NotificationSoundType.SHORT_TAKBEER -> "تكبير فقط (الله أكبر)"
-                NotificationSoundType.MELODIC_TONE -> "نغمة هادئة"
-                NotificationSoundType.VIBRATE_ONLY -> "اهتزاز فقط"
-                NotificationSoundType.SILENT -> "صامت / إيقاف"
-            }
-        } else {
-            when (type) {
-                NotificationSoundType.ATHAN_MAKKAH_MULLA -> "Makkah - Ali Bin Ahmad Mullah"
-                NotificationSoundType.ATHAN_FAJR1_KWAIT_ALAFASY -> "Fajr (Kuwait) - Mishary Alafasy"
-                NotificationSoundType.ATHAN_FAJR2_JORDAN_ALLALA -> "Fajr (Jordan) - Kamel Allala"
-                NotificationSoundType.ATHAN_RIYADH_QATAMI -> "Riyadh - Nasser Al-Qatami"
-                NotificationSoundType.ATHAN_QATAR_NABET -> "Qatar - Saleh Al-Nabet"
-                NotificationSoundType.ATHAN_QUDS_QAZAZ_1 -> "Al-Aqsa Al-Quds - Naji Qazzaz (1)"
-                NotificationSoundType.ATHAN_QUDS_QAZAZ_2 -> "Al-Aqsa Al-Quds - Naji Qazzaz (2)"
-                NotificationSoundType.ATHAN_EGYPT_DAWOD -> "Egypt - Ahmad Dawod"
-                NotificationSoundType.ATHAN_EGYPT_ALALFI -> "Egypt - Salah Al-Alfi"
-                NotificationSoundType.ATHAN_EGYPT_ABDULAATI -> "Egypt (Al-Hussein) - Sayed Abdulaati"
-                NotificationSoundType.ATHAN_IRAQ_ALAMOURI -> "Iraq - Abu Omar Al-Amouri"
-                NotificationSoundType.ATHAN_GEORGIA -> "Georgia Mosque Adhan"
-                NotificationSoundType.SHORT_TAKBEER -> "Takbeer Only"
-                NotificationSoundType.MELODIC_TONE -> "Gentle Chime"
-                NotificationSoundType.VIBRATE_ONLY -> "Vibrate Only"
-                NotificationSoundType.SILENT -> "Silent / Off"
-            }
-        }
-    }
-
-    fun soundTypeSubtitle(type: NotificationSoundType): String {
-        return if (isArabic) {
-            when (type) {
-                NotificationSoundType.ATHAN_MAKKAH_MULLA -> "أذان الحرم المكي الشريف بصوت شيخ المؤذنين"
-                NotificationSoundType.ATHAN_FAJR1_KWAIT_ALAFASY -> "أذان الفجر المخصوص بعبارة (الصلاة خير من النوم)"
-                NotificationSoundType.ATHAN_FAJR2_JORDAN_ALLALA -> "أذان الفجر التراثي من المسجد الحسيني الكبير"
-                NotificationSoundType.ATHAN_RIYADH_QATAMI -> "أذان ندي وخاشع من مساجد الرياض"
-                NotificationSoundType.ATHAN_QATAR_NABET -> "أذan جامع الإمام محمد بن عبد الوهاب بدولة قطر"
-                NotificationSoundType.ATHAN_QUDS_QAZAZ_1 -> "أذان المسجد الأقصى المبارك بمقام الحجاز"
-                NotificationSoundType.ATHAN_QUDS_QAZAZ_2 -> "أذان المسجد الأقصى المبارك بمقام البياتي"
-                NotificationSoundType.ATHAN_EGYPT_DAWOD -> "أذان الإذاعة المصرية التراثي الأصيل"
-                NotificationSoundType.ATHAN_EGYPT_ALALFI -> "أذان الجامع الأزهر الشريف ومساجد القاهرة"
-                NotificationSoundType.ATHAN_EGYPT_ABDULAATI -> "أذان مسجد الإمام الحسين عليه السلام بالقاهرة"
-                NotificationSoundType.ATHAN_IRAQ_ALAMOURI -> "أذان بغداد والمساجد العراقية بنغم البياتي العريق"
-                NotificationSoundType.ATHAN_GEORGIA -> "أذان جامع تبليسي التاريخي في جورجيا"
-                NotificationSoundType.SHORT_TAKBEER -> "تكبيرات العيد والأذان المختصرة"
-                NotificationSoundType.MELODIC_TONE -> "نغمة هادئة للتنبيه في العمل والاجتماعات"
-                NotificationSoundType.VIBRATE_ONLY -> "اهتزاز فقط دون إصدار صوت"
-                NotificationSoundType.SILENT -> "إشعار بصري فقط"
-            }
-        } else {
-            type.subtitle
-        }
-    }
+    private val soundNameRes: Map<NotificationSoundType, Int> = mapOf(
+        NotificationSoundType.ATHAN_MAKKAH_MULLA to R.string.sound_name_athan_makkah_mulla,
+        NotificationSoundType.ATHAN_FAJR1_KWAIT_ALAFASY to R.string.sound_name_athan_fajr1_kwait_alafasy,
+        NotificationSoundType.ATHAN_FAJR2_JORDAN_ALLALA to R.string.sound_name_athan_fajr2_jordan_allala,
+        NotificationSoundType.ATHAN_RIYADH_QATAMI to R.string.sound_name_athan_riyadh_qatami,
+        NotificationSoundType.ATHAN_QATAR_NABET to R.string.sound_name_athan_qatar_nabet,
+        NotificationSoundType.ATHAN_QUDS_QAZAZ_1 to R.string.sound_name_athan_quds_qazaz_1,
+        NotificationSoundType.ATHAN_QUDS_QAZAZ_2 to R.string.sound_name_athan_quds_qazaz_2,
+        NotificationSoundType.ATHAN_EGYPT_DAWOD to R.string.sound_name_athan_egypt_dawod,
+        NotificationSoundType.ATHAN_EGYPT_ALALFI to R.string.sound_name_athan_egypt_alalfi,
+        NotificationSoundType.ATHAN_EGYPT_ABDULAATI to R.string.sound_name_athan_egypt_abdulaati,
+        NotificationSoundType.ATHAN_IRAQ_ALAMOURI to R.string.sound_name_athan_iraq_alamouri,
+        NotificationSoundType.ATHAN_GEORGIA to R.string.sound_name_athan_georgia,
+        NotificationSoundType.SHORT_TAKBEER to R.string.sound_name_short_takbeer,
+        NotificationSoundType.MELODIC_TONE to R.string.sound_name_melodic_tone,
+        NotificationSoundType.VIBRATE_ONLY to R.string.sound_name_vibrate_only,
+        NotificationSoundType.SILENT to R.string.sound_name_silent
+    )
+    private val soundSubtitleRes: Map<NotificationSoundType, Int> = mapOf(
+        NotificationSoundType.ATHAN_MAKKAH_MULLA to R.string.sound_subtitle_athan_makkah_mulla,
+        NotificationSoundType.ATHAN_FAJR1_KWAIT_ALAFASY to R.string.sound_subtitle_athan_fajr1_kwait_alafasy,
+        NotificationSoundType.ATHAN_FAJR2_JORDAN_ALLALA to R.string.sound_subtitle_athan_fajr2_jordan_allala,
+        NotificationSoundType.ATHAN_RIYADH_QATAMI to R.string.sound_subtitle_athan_riyadh_qatami,
+        NotificationSoundType.ATHAN_QATAR_NABET to R.string.sound_subtitle_athan_qatar_nabet,
+        NotificationSoundType.ATHAN_QUDS_QAZAZ_1 to R.string.sound_subtitle_athan_quds_qazaz_1,
+        NotificationSoundType.ATHAN_QUDS_QAZAZ_2 to R.string.sound_subtitle_athan_quds_qazaz_2,
+        NotificationSoundType.ATHAN_EGYPT_DAWOD to R.string.sound_subtitle_athan_egypt_dawod,
+        NotificationSoundType.ATHAN_EGYPT_ALALFI to R.string.sound_subtitle_athan_egypt_alalfi,
+        NotificationSoundType.ATHAN_EGYPT_ABDULAATI to R.string.sound_subtitle_athan_egypt_abdulaati,
+        NotificationSoundType.ATHAN_IRAQ_ALAMOURI to R.string.sound_subtitle_athan_iraq_alamouri,
+        NotificationSoundType.ATHAN_GEORGIA to R.string.sound_subtitle_athan_georgia,
+        NotificationSoundType.SHORT_TAKBEER to R.string.sound_subtitle_short_takbeer,
+        NotificationSoundType.MELODIC_TONE to R.string.sound_subtitle_melodic_tone,
+        NotificationSoundType.VIBRATE_ONLY to R.string.sound_subtitle_vibrate_only,
+        NotificationSoundType.SILENT to R.string.sound_subtitle_silent
+    )
+    fun soundTypeName(type: NotificationSoundType): String = s(soundNameRes.getValue(type))
+    fun soundTypeSubtitle(type: NotificationSoundType): String = s(soundSubtitleRes.getValue(type))
 
     // Qibla Screen
-    val qiblaTitle: String = if (isArabic) "بوصلة القبلة الدقيقة" else "Qibla Direction Compass"
-    val qiblaAlignedMessage: String = if (isArabic) "أنت الآن باتجاه الكعبة المشرفة بدقة!" else "You are facing the Kaaba precisely!"
-    val qiblaRotatePrompt: String = if (isArabic) "قم بتدوير الهاتف حتى يتطابق المؤشر الذهبي مع الأعلى" else "Rotate your device to align with the Golden Kaaba marker"
-    val qiblaBearingLabel: String = if (isArabic) "زاوية القبلة:" else "Qibla Bearing:"
-    val currentHeadingLabel: String = if (isArabic) "الاتجاه الحالي:" else "Current Heading:"
-    val distanceToKaabaLabel: String = if (isArabic) "المسافة إلى الكعبة المشرفة:" else "Distance to Kaaba:"
-    val kmUnit: String = if (isArabic) "كم" else "km"
-    val degUnit: String = if (isArabic) "°" else "°"
-    val compassCalibTitle: String = if (isArabic) "معايرة البوصلة" else "Compass Calibration"
-    val compassCalibText: String = if (isArabic) "لمعايرة بوصلة الهاتف، حرّك جهازك بسلاسة بشكل رقم 8 في الهواء عدة مرات بعيداً عن المعادن والمغناطيس." else "To calibrate your device's magnetic compass, move your phone smoothly in a figure-8 motion several times away from metal objects."
-    val manualCompassMode: String = if (isArabic) "وضع البوصلة اليدوي (اختبار)" else "Manual Compass Test Slider"
+    val qiblaTitle: String = s(R.string.qibla_title)
+    val qiblaAlignedMessage: String = s(R.string.qibla_aligned_message)
+    val qiblaRotatePrompt: String = s(R.string.qibla_rotate_prompt)
+    val qiblaBearingLabel: String = s(R.string.qibla_bearing_label)
+    val currentHeadingLabel: String = s(R.string.qibla_current_heading_label)
+    val distanceToKaabaLabel: String = s(R.string.qibla_distance_to_kaaba_label)
+    val kmUnit: String = s(R.string.qibla_km_unit)
+    val degUnit: String = s(R.string.qibla_deg_unit)
+    val compassCalibTitle: String = s(R.string.qibla_compass_calib_title)
+    val compassCalibText: String = s(R.string.qibla_compass_calib_text)
+    val manualCompassMode: String = s(R.string.qibla_manual_compass_mode)
 
     // Cardinal directions
+    private val cardinalDirections: List<String> = res.getStringArray(R.array.cardinal_directions).toList()
     fun cardinalDirection(heading: Double): String {
         val normalized = ((heading % 360) + 360) % 360
-        return if (isArabic) {
-            when {
-                normalized >= 337.5 || normalized < 22.5 -> "شمال (N)"
-                normalized < 67.5 -> "شمال شرق (NE)"
-                normalized < 112.5 -> "شرق (E)"
-                normalized < 157.5 -> "جنوب شرق (SE)"
-                normalized < 202.5 -> "جنوب (S)"
-                normalized < 247.5 -> "جنوب غرب (SW)"
-                normalized < 292.5 -> "غرب (W)"
-                else -> "شمال غرب (NW)"
-            }
-        } else {
-            when {
-                normalized >= 337.5 || normalized < 22.5 -> "N"
-                normalized < 67.5 -> "NE"
-                normalized < 112.5 -> "E"
-                normalized < 157.5 -> "SE"
-                normalized < 202.5 -> "S"
-                normalized < 247.5 -> "SW"
-                normalized < 292.5 -> "W"
-                else -> "NW"
-            }
+        val index = when {
+            normalized >= 337.5 || normalized < 22.5 -> 0 // N
+            normalized < 67.5 -> 1 // NE
+            normalized < 112.5 -> 2 // E
+            normalized < 157.5 -> 3 // SE
+            normalized < 202.5 -> 4 // S
+            normalized < 247.5 -> 5 // SW
+            normalized < 292.5 -> 6 // W
+            else -> 7 // NW
         }
+        return cardinalDirections[index]
     }
 
     // Monthly Calendar
-    val monthlyCalendarTitle: String = if (isArabic) "جدول أوقات الصلاة للشهر" else "Monthly Prayer Timetable"
-    val dateCol: String = if (isArabic) "اليوم" else "Date"
-    val hijriCol: String = if (isArabic) "الهجري" else "Hijri"
-    val prevMonth: String = if (isArabic) "الشهر السابق" else "Previous Month"
-    val nextMonth: String = if (isArabic) "الشهر التالي" else "Next Month"
+    val monthlyCalendarTitle: String = s(R.string.calendar_title)
+    val dateCol: String = s(R.string.calendar_date_col)
+    val hijriCol: String = s(R.string.calendar_hijri_col)
+    val prevMonth: String = s(R.string.calendar_prev_month)
+    val nextMonth: String = s(R.string.calendar_next_month)
 
     // Settings Screen
-    val settingsTitle: String = if (isArabic) "الإعدادات والتفضيلات" else "Settings & Preferences"
-    val themeSection: String = if (isArabic) "المظهر والألوان" else "Appearance & Theme"
-    val themeModeTitle: String = if (isArabic) "وضع المظهر (فاتح / داكن)" else "Theme Mode"
-    val systemThemeDesc: String = if (isArabic) "متابعة إعدادات النظام تلقائياً" else "Follow system dark/light settings"
-    val lightThemeDesc: String = if (isArabic) "الوضع الفاتح دائماً" else "Always use light theme"
-    val darkThemeDesc: String = if (isArabic) "الوضع الداكن دائماً ومريح للعين" else "Always use dark theme"
+    val settingsTitle: String = s(R.string.settings_title)
+    val themeSection: String = s(R.string.settings_theme_section)
+    val themeModeTitle: String = s(R.string.settings_theme_mode_title)
+    val systemThemeDesc: String = s(R.string.settings_system_theme_desc)
+    val lightThemeDesc: String = s(R.string.settings_light_theme_desc)
+    val darkThemeDesc: String = s(R.string.settings_dark_theme_desc)
 
-    fun themeModeName(mode: com.example.data.models.AppThemeMode): String {
-        return if (isArabic) mode.arabicTitle else mode.title
-    }
+    private val themeModeNameRes: Map<AppThemeMode, Int> = mapOf(
+        AppThemeMode.SYSTEM to R.string.theme_mode_system,
+        AppThemeMode.LIGHT to R.string.theme_mode_light,
+        AppThemeMode.DARK to R.string.theme_mode_dark
+    )
+    fun themeModeName(mode: AppThemeMode): String = s(themeModeNameRes.getValue(mode))
 
-    val colorPaletteSection: String = if (isArabic) "لوحة الألوان وسمة التطبيق" else "Color Palette & Accent Colors"
-    val followSystemColorsTitle: String = if (isArabic) "متابعة ألوان النظام في التطبيق (Material You)" else "App Follow System Colors"
-    val followSystemColorsDesc: String = if (isArabic) "استخراج الألوان التلقائي المتناسق مع خلفية جهازك لواجهة التطبيق" else "Dynamically match device wallpaper and system accents in app"
-    val presetColorsTitle: String = if (isArabic) "لوحات ألوان جاهزة" else "Preset Color Palettes"
-    val presetColorsDesc: String = if (isArabic) "اختر لوناً مميزاً لتخصيص واجهة التطبيق" else "Select a curated color palette for the app interface"
+    val colorPaletteSection: String = s(R.string.settings_color_palette_section)
+    val followSystemColorsTitle: String = s(R.string.settings_follow_system_colors_title)
+    val followSystemColorsDesc: String = s(R.string.settings_follow_system_colors_desc)
+    val presetColorsTitle: String = s(R.string.settings_preset_colors_title)
+    val presetColorsDesc: String = s(R.string.settings_preset_colors_desc)
 
-    fun colorPresetName(preset: com.example.data.models.AppColorPreset): String {
-        return if (isArabic) preset.arabicTitle else preset.title
-    }
+    private val colorPresetNameRes: Map<AppColorPreset, Int> = mapOf(
+        AppColorPreset.SYSTEM_DYNAMIC to R.string.color_preset_system_dynamic,
+        AppColorPreset.EMERALD_GOLD to R.string.color_preset_emerald_gold,
+        AppColorPreset.ROYAL_AMBER to R.string.color_preset_royal_amber,
+        AppColorPreset.SAPPHIRE_NIGHT to R.string.color_preset_sapphire_night,
+        AppColorPreset.MEDINA_TEAL to R.string.color_preset_medina_teal,
+        AppColorPreset.ROSE_CLOVE to R.string.color_preset_rose_clove,
+        AppColorPreset.SLATE_CHARCOAL to R.string.color_preset_slate_charcoal
+    )
+    fun colorPresetName(preset: AppColorPreset): String = s(colorPresetNameRes.getValue(preset))
 
-    val languageSection: String = if (isArabic) "اللغة والعرض" else "Language & Localization"
-    val appLanguage: String = if (isArabic) "لغة التطبيق" else "App Language"
-    val selectLanguageSubtitle: String = if (isArabic) "اختر لغة واجهة التطبيق" else "Choose application interface language"
-    val locationSection: String = if (isArabic) "الموقع والإحداثيات" else "Location & Coordinates"
-    val useGps: String = if (isArabic) "تحديد الموقع تلقائياً (GPS)" else "Use GPS Location"
-    val chooseCity: String = if (isArabic) "اختيار مدينة عالمية" else "World Cities"
-    val manualCoordinates: String = if (isArabic) "إدخال الإحداثيات يدوياً (خط الطول/العرض)" else "Enter Lat / Lon Coordinates"
-    val calcMethodSection: String = if (isArabic) "طريقة الحساب الفلكي" else "Calculation Method"
-    val juristicMethodTitle: String = if (isArabic) "المذهب الفقهي لصلاة العصر" else "Asr Juristic Method"
-    val standardJuristic: String = if (isArabic) "الجمهور (الشافعي، المالكي، الحنبلي)" else "Standard (Shafi/Maliki/Hanbali)"
-    val hanafiJuristic: String = if (isArabic) "المذهب الحنفي (ظل المثلين)" else "Hanafi"
-    val highLatitudeSection: String = if (isArabic) "قاعدة المناطق ذات خطوط العرض العالية" else "High Latitude Rule"
-    val displayHijriSection: String = if (isArabic) "العرض والتقويم الهجري" else "Display & Hijri Adjustments"
-    val hijriOffsetTitle: String = if (isArabic) "تعديل التاريخ الهجري (تقويم أم القرى)" else "Hijri Date Offset (Umm al-Qura)"
-    val timeFormatTitle: String = if (isArabic) "نظام الوقت 24 ساعة" else "24-Hour Time Format"
-    val minuteAdjustmentsTitle: String = if (isArabic) "تعديل الدقائق يدوياً لكل صلاة" else "Manual Minute Adjustments"
-    val minuteAdjustmentsSubtitle: String = if (isArabic) "لمطابقة توقيت المسجد المحلي بالضبط" else "Sync with your local mosque timetable"
-    val notifSectionTitle: String = if (isArabic) "تنبيهات الأذان والإشعارات" else "Athan & Prayer Notifications"
-    val athanSound: String = if (isArabic) "صوت الأذان والتنبيه" else "Athan Sound"
-    val preReminder: String = if (isArabic) "تنبيه مبكر قبل الصلاة" else "Pre-Prayer Reminder"
-    val minutesBefore: String = if (isArabic) "دقيقة قبل" else "min before"
-    val testAlert: String = if (isArabic) "تجربة التنبيه الفوري" else "Test Instant Alert"
-    val testAlarm5s: String = if (isArabic) "تجربة إنذار الصلاة (بعد 5 ثوانٍ)" else "Test Prayer Alarm (in 5s)"
-    val reschedule7Days: String = if (isArabic) "إعادة جدولة جميع منبهات الأسبوع (7 أيام)" else "Reschedule 7-Day Alarms"
-    val notificationsDisabledWarning: String = if (isArabic) "تنبيهات الأذان معطلة في إعدادات النظام. يرجى تفعيل الإشعارات حتى يعمل الأذان في موعده." else "Prayer alerts & Athan notifications are disabled in system settings. Please enable them to receive timely prayer alarms."
-    val enableNotificationsBtn: String = if (isArabic) "تفعيل الإشعارات الآن" else "Enable Notifications"
-    val notificationsStatusActive: String = if (isArabic) "الإشعارات ومنبهات الأذان مفعلة وجاهزة بنجاح." else "Prayer notifications & exact alarms are active and ready."
+    val languageSection: String = s(R.string.settings_language_section)
+    val appLanguage: String = s(R.string.settings_app_language)
+    val selectLanguageSubtitle: String = s(R.string.settings_select_language_subtitle)
+    val locationSection: String = s(R.string.settings_location_section)
+    val useGps: String = s(R.string.settings_use_gps)
+    val chooseCity: String = s(R.string.settings_choose_city)
+    val manualCoordinates: String = s(R.string.settings_manual_coordinates)
+    val calcMethodSection: String = s(R.string.settings_calc_method_section)
+    val juristicMethodTitle: String = s(R.string.settings_juristic_method_title)
+    val standardJuristic: String = s(R.string.settings_standard_juristic)
+    val hanafiJuristic: String = s(R.string.settings_hanafi_juristic)
+    val highLatitudeSection: String = s(R.string.settings_high_latitude_section)
+    val displayHijriSection: String = s(R.string.settings_display_hijri_section)
+    val hijriOffsetTitle: String = s(R.string.settings_hijri_offset_title)
+    val timeFormatTitle: String = s(R.string.settings_time_format_title)
+    val minuteAdjustmentsTitle: String = s(R.string.settings_minute_adjustments_title)
+    val minuteAdjustmentsSubtitle: String = s(R.string.settings_minute_adjustments_subtitle)
+    val notifSectionTitle: String = s(R.string.settings_notif_section_title)
+    val athanSound: String = s(R.string.settings_athan_sound)
+    val preReminder: String = s(R.string.settings_pre_reminder)
+    val minutesBefore: String = s(R.string.settings_minutes_before)
+    val testAlert: String = s(R.string.settings_test_alert)
+    val testAlarm5s: String = s(R.string.settings_test_alarm_5s)
+    val reschedule7Days: String = s(R.string.settings_reschedule_7_days)
+    val notificationsDisabledWarning: String = s(R.string.settings_notifications_disabled_warning)
+    val enableNotificationsBtn: String = s(R.string.settings_enable_notifications_btn)
+    val notificationsStatusActive: String = s(R.string.settings_notifications_status_active)
 
     // Audio Output Channel & Wake Screen Settings
-    val audioStreamSectionTitle: String = if (isArabic) "قناة صوت الأذان (Audio Stream)" else "Athan Audio Stream Channel"
-    val audioStreamDesc: String = if (isArabic) "اختر القناة الصوتية التي يعمل بها صوت الأذان ليتبع مستوى صوت النظام المختار." else "Choose which system audio channel the Athan plays through. It will follow your device's system volume."
-    val audioStreamAlarmTitle: String = if (isArabic) "مستوى صوت المنبه (Alarm)" else "Alarm Stream (Recommended)"
-    val audioStreamAlarmDesc: String = if (isArabic) "يعمل بمستوى صوت منبه الهاتف، ويرن حتى في الوضع الصامت إذا سمح النظام." else "Plays at alarm volume level, sounds reliably when idle or silent."
-    val audioStreamMediaTitle: String = if (isArabic) "مستوى صوت الوسائط (Media)" else "Media Stream"
-    val audioStreamMediaDesc: String = if (isArabic) "يعمل بمستوى صوت الموسيقى والفيديوهات." else "Plays at music/video media volume level."
-    val audioStreamRingtoneTitle: String = if (isArabic) "مستوى صوت رنين الهاتف (Ringtone)" else "Ringtone Stream"
-    val audioStreamRingtoneDesc: String = if (isArabic) "يعمل بمستوى نغمة رنين المكالمات." else "Plays at incoming call ringtone volume level."
-    
-    val wakeScreenTitle: String = if (isArabic) "إيقاظ الشاشة وعرض منبه الأذان بالكامل (عند إغلاق الشاشة فقط)" else "Wake Screen & Full-Screen Alarm (Screen Off Only)"
-    val wakeScreenDesc: String = if (isArabic) "إضاءة الشاشة تلقائياً وعرض اللوحة الفنية الكاملة فقط إذا كانت الشاشة مغلقة. أثناء استخدام الهاتف، يظهر إشعار علوي أنيق دون مقاطعتك." else "Turn on the display and show full-screen prayer artwork only if the phone is locked/idle. When actively using your phone, a heads-up notification appears."
-    val previewFullScreenAlarmBtn: String = if (isArabic) "🖼️ معاينة شاشة منبه الأذان الفنية الكاملة" else "🖼️ Preview Full-Screen Alarm Artwork"
+    val audioStreamSectionTitle: String = s(R.string.settings_audio_stream_section_title)
+    val audioStreamDesc: String = s(R.string.settings_audio_stream_desc)
+    val audioStreamAlarmTitle: String = s(R.string.settings_audio_stream_alarm_title)
+    val audioStreamAlarmDesc: String = s(R.string.settings_audio_stream_alarm_desc)
+    val audioStreamMediaTitle: String = s(R.string.settings_audio_stream_media_title)
+    val audioStreamMediaDesc: String = s(R.string.settings_audio_stream_media_desc)
+    val audioStreamRingtoneTitle: String = s(R.string.settings_audio_stream_ringtone_title)
+    val audioStreamRingtoneDesc: String = s(R.string.settings_audio_stream_ringtone_desc)
+
+    val wakeScreenTitle: String = s(R.string.settings_wake_screen_title)
+    val wakeScreenDesc: String = s(R.string.settings_wake_screen_desc)
+    val previewFullScreenAlarmBtn: String = s(R.string.settings_preview_full_screen_alarm_btn)
 
     // Dynamic Island / Live Countdown Feature
-    val dynamicIslandSectionTitle: String = if (isArabic) "الجزيرة التفاعلية والعد التنازلي المباشر (Live Activity)" else "Dynamic Island & Live Activity Countdown"
-    val dynamicIslandDesc: String = if (isArabic) "عرض كبسولة تفاعلية وعد تنازلي مباشر في أعلى الشاشة وشريط الإشعارات قبل حلول وقت الصلاة (مثل Keeta و Live Activities)." else "Display a live interactive countdown capsule at the top of your screen and notification bar before prayer time (similar to Keeta Live Activities)."
-    val dynamicIslandEnableTitle: String = if (isArabic) "تفعيل كبسولة الجزيرة التفاعلية" else "Enable Dynamic Island Capsule"
-    val dynamicIslandLeadTimeTitle: String = if (isArabic) "بدء العد التنازلي قبل الصلاة بـ:" else "Start Countdown Before Prayer:"
-    val dynamicIslandVivoTip: String = if (isArabic) "💡 لأجهزة Vivo / iQOO / OriginOS: لتفعيل كبسولة الجزيرة (Atomic Island)، يرجى التأكد من تشغيل 'الأنشطة الحية / Live Alerts' لتطبيق مواقيت الصلاة من إعدادات الهاتف > الإشعارات." else "💡 For Vivo / iQOO / OriginOS users: Ensure 'Live Alerts / Atomic Island' is turned ON for Prayer Times in Phone Settings > Notifications."
-    val previewDynamicIslandBtn: String = if (isArabic) "✨ معاينة كبسولة الجزيرة التفاعلية الآن" else "✨ Preview Dynamic Island Countdown"
-    val dismissDynamicIslandBtn: String = if (isArabic) "إخفاء الجزيرة التفاعلية" else "Dismiss Island Preview"
+    val dynamicIslandSectionTitle: String = s(R.string.settings_dynamic_island_section_title)
+    val dynamicIslandDesc: String = s(R.string.settings_dynamic_island_desc)
+    val dynamicIslandEnableTitle: String = s(R.string.settings_dynamic_island_enable_title)
+    val dynamicIslandLeadTimeTitle: String = s(R.string.settings_dynamic_island_lead_time_title)
+    val dynamicIslandVivoTip: String = s(R.string.settings_dynamic_island_vivo_tip)
+    val previewDynamicIslandBtn: String = s(R.string.settings_preview_dynamic_island_btn)
+    val dismissDynamicIslandBtn: String = s(R.string.settings_dismiss_dynamic_island_btn)
 
     // Calculation Method translations
-    fun calcMethodName(method: CalculationMethod): String {
-        return if (isArabic) {
-            when (method) {
-                CalculationMethod.UMM_AL_QURA -> "جامعة أم القرى (مكة المكرمة)"
-                CalculationMethod.MUSLIM_WORLD_LEAGUE -> "رابطة العالم الإسلامي"
-                CalculationMethod.EGYPTIAN -> "الهيئة المصرية العامة للمساحة"
-                CalculationMethod.KARACHI -> "جامعة العلوم الإسلامية بكراتشي"
-                CalculationMethod.ISNA -> "الجمعية الإسلامية لأمريكا الشمالية (ISNA)"
-                CalculationMethod.GULF -> "منطقة الخليج العربي (دبي والإمارات)"
-                CalculationMethod.QATAR -> "وزارة الأوقاف والشؤون الإسلامية بقطر"
-                CalculationMethod.KUWAIT -> "وزارة الأوقاف والشؤون الإسلامية بالكويت"
-                CalculationMethod.TURKEY -> "رئاسة الشؤون الدينية التركية (ديانت)"
-                CalculationMethod.TEHRAN -> "معهد الجيوفيزياء بجامعة طهران"
-                CalculationMethod.SHIA_ITHNA_ASHARI -> "معهد لواء (الشيعة الإثنا عشرية)"
-                CalculationMethod.SINGAPORE -> "مجلس الشؤون الإسلامية بسنغافورة (MUIS)"
-                CalculationMethod.FRANCE_UOIF -> "اتحاد المنظمات الإسلامية بفرنسا (UOIF)"
-                CalculationMethod.RUSSIA -> "الإدارة الدينية لمسلمي روسيا (SAMR)"
-            }
-        } else {
-            method.displayName
-        }
-    }
+    private val calcMethodNameRes: Map<CalculationMethod, Int> = mapOf(
+        CalculationMethod.UMM_AL_QURA to R.string.calc_method_umm_al_qura,
+        CalculationMethod.MUSLIM_WORLD_LEAGUE to R.string.calc_method_mwl,
+        CalculationMethod.EGYPTIAN to R.string.calc_method_egyptian,
+        CalculationMethod.KARACHI to R.string.calc_method_karachi,
+        CalculationMethod.ISNA to R.string.calc_method_isna,
+        CalculationMethod.GULF to R.string.calc_method_gulf,
+        CalculationMethod.QATAR to R.string.calc_method_qatar,
+        CalculationMethod.KUWAIT to R.string.calc_method_kuwait,
+        CalculationMethod.TURKEY to R.string.calc_method_turkey,
+        CalculationMethod.TEHRAN to R.string.calc_method_tehran,
+        CalculationMethod.SHIA_ITHNA_ASHARI to R.string.calc_method_shia_ithna_ashari,
+        CalculationMethod.SINGAPORE to R.string.calc_method_singapore,
+        CalculationMethod.FRANCE_UOIF to R.string.calc_method_france_uoif,
+        CalculationMethod.RUSSIA to R.string.calc_method_russia
+    )
+    fun calcMethodName(method: CalculationMethod): String = s(calcMethodNameRes.getValue(method))
 
     // High Latitude Rule translations
-    fun highLatitudeName(rule: HighLatitudeRule): String {
-        return if (isArabic) {
-            when (rule) {
-                HighLatitudeRule.MIDNIGHT -> "منتصف الليل (Middle of Night)"
-                HighLatitudeRule.ONE_SEVENTH -> "سُبع الليل (One Seventh of Night)"
-                HighLatitudeRule.ANGLE_BASED -> "على أساس الزاوية النسبية (Angle-Based)"
-                HighLatitudeRule.NONE -> "بدون تعديل (None)"
-            }
-        } else {
-            rule.displayName
-        }
-    }
+    private val highLatitudeNameRes: Map<HighLatitudeRule, Int> = mapOf(
+        HighLatitudeRule.MIDNIGHT to R.string.high_latitude_midnight,
+        HighLatitudeRule.ONE_SEVENTH to R.string.high_latitude_one_seventh,
+        HighLatitudeRule.ANGLE_BASED to R.string.high_latitude_angle_based,
+        HighLatitudeRule.NONE to R.string.high_latitude_none
+    )
+    fun highLatitudeName(rule: HighLatitudeRule): String = s(highLatitudeNameRes.getValue(rule))
 
     // Athan Player Dialog
-    val athanDialogTitle: String = if (isArabic) "تلاوة الأذان الشريف" else "Athan Recitation"
-    val playAdhan: String = if (isArabic) "تشغيل الأذان" else "Play Adhan"
-    val fajrAdhan: String = if (isArabic) "أذان الفجر" else "Fajr Adhan"
-    val stopBtn: String = if (isArabic) "إيقاف" else "Stop"
-    val athanPromptText: String = if (isArabic) "استمع إلى النداء المقدس لنداء الصلاة" else "Listen to the sacred Islamic call to prayer"
+    val athanDialogTitle: String = s(R.string.athan_dialog_title)
+    val playAdhan: String = s(R.string.athan_play_adhan)
+    val fajrAdhan: String = s(R.string.athan_fajr_adhan)
+    val stopBtn: String = s(R.string.athan_stop_btn)
+    val athanPromptText: String = s(R.string.athan_prompt_text)
 
     // Hijri Dialog
-    val hijriCalendarHeader: String = if (isArabic) "التقويم الهجري" else "Hijri Calendar"
-    val ummAlQuraStandard: String = if (isArabic) "معيار تقويم أم القرى (مكة المكرمة)" else "Umm al-Qura Standard"
-    val convertDate: String = if (isArabic) "تحويل التاريخ" else "Convert Date"
-    val adjustDays: String = if (isArabic) "تعديل الأيام" else "Adjust Days"
-    val sunnahFastingDay: String = if (isArabic) "يوم صيام سنة" else "Sunnah Fasting Day"
-    val whiteDaysTitle: String = if (isArabic) "الأيام البيض (الأيام 13 و 14 و 15)" else "White Days (13th, 14th, 15th)"
-    val whiteDaysDesc: String = if (isArabic) "صيام الأيام البيض من كل شهر هجري سنة مؤكدة عن النبي ﷺ." else "Fasting the 13th, 14th, and 15th of each Hijri month is an established Sunnah of the Prophet ﷺ."
-    val sacredMonthTitle: String = if (isArabic) "الأشهر الحرم (المحرم، رجب، ذو القعدة، ذو الحجة)" else "Sacred Months (Muharram, Rajab, Dhu al-Qi'dah, Dhu al-Hijjah)"
-    val sacredMonthDesc: String = if (isArabic) "من الأشهر الحرم الأربعة التي عظم الله شأنها وتتضاعف فيها الأجور." else "One of the four sacred months in Islam in which good deeds are amplified."
-    val mondayThursdayDesc: String = if (isArabic) "صيام يومي الإثنين والخميس سنة نبوية مباركة." else "Fasting on Mondays and Thursdays is an authentic Sunnah practice."
-    val aboutUmmAlQuraTitle: String = if (isArabic) "عن تقويم أم القرى الرسمي" else "About Umm al-Qura Calendar"
-    val aboutUmmAlQuraDesc: String = if (isArabic) "تقويم أم القرى هو التقويم القمري الرسمي الصادر عن مدينة الملك عبد العزيز للعلوم والتقنية (KACST) لمدينة مكة المكرمة ويعتمد الحسابات الفلكية الشرعية الدقيقة." else "The Umm al-Qura calendar is the official standardized Islamic lunar calendar calculated for the holy city of Makkah al-Mukarramah."
+    val hijriCalendarHeader: String = s(R.string.hijri_calendar_header)
+    val ummAlQuraStandard: String = s(R.string.hijri_umm_al_qura_standard)
+    val convertDate: String = s(R.string.hijri_convert_date)
+    val adjustDays: String = s(R.string.hijri_adjust_days)
+    val sunnahFastingDay: String = s(R.string.hijri_sunnah_fasting_day)
+    val whiteDaysTitle: String = s(R.string.hijri_white_days_title)
+    val whiteDaysDesc: String = s(R.string.hijri_white_days_desc)
+    val sacredMonthTitle: String = s(R.string.hijri_sacred_month_title)
+    val sacredMonthDesc: String = s(R.string.hijri_sacred_month_desc)
+    val mondayThursdayDesc: String = s(R.string.hijri_monday_thursday_desc)
+    val aboutUmmAlQuraTitle: String = s(R.string.hijri_about_umm_al_qura_title)
+    val aboutUmmAlQuraDesc: String = s(R.string.hijri_about_umm_al_qura_desc)
 
     // Manual Coordinates Dialog
-    val customCoordinates: String = if (isArabic) "الإحداثيات اليدوية" else "Custom Coordinates"
-    val enterCoordinates: String = if (isArabic) "إدخال خط الطول وخط العرض بدقة" else "Enter Latitude & Longitude"
-    val manualCoordinatesDesc: String = if (isArabic) "حدد إحداثيات جغرافية دقيقة للمناطق البرية، المخيمات الصحراوية، أو الأماكن التي لا يتوفر فيها اتصال GPS." else "Specify precise geographical coordinates for off-grid areas, desert camps, or locations without GPS signal."
-    val quickPresets: String = if (isArabic) "إحداثيات مدن سريعة" else "Quick Presets"
-    val latitudeLabel: String = if (isArabic) "خط العرض (°)" else "Latitude (°)"
-    val longitudeLabel: String = if (isArabic) "خط الطول (°)" else "Longitude (°)"
-    val locationNameLabel: String = if (isArabic) "اسم الموقع / الوصف" else "Location Name / Label"
-    val timeZoneLabel: String = if (isArabic) "المنطقة الزمنية" else "Time Zone"
-    val applyCoordinates: String = if (isArabic) "تطبيق الإحداثيات" else "Apply Coordinates"
+    val customCoordinates: String = s(R.string.coords_custom_coordinates)
+    val enterCoordinates: String = s(R.string.coords_enter_coordinates)
+    val manualCoordinatesDesc: String = s(R.string.coords_manual_coordinates_desc)
+    val quickPresets: String = s(R.string.coords_quick_presets)
+    val latitudeLabel: String = s(R.string.coords_latitude_label)
+    val longitudeLabel: String = s(R.string.coords_longitude_label)
+    val locationNameLabel: String = s(R.string.coords_location_name_label)
+    val timeZoneLabel: String = s(R.string.coords_time_zone_label)
+    val applyCoordinates: String = s(R.string.coords_apply_coordinates)
 
     // Setup & First-Time Onboarding
-    val welcomeToApp: String = if (isArabic) "مرحباً بك في صلاتي" else "Welcome to Salati"
-    val setupSubtitle: String = if (isArabic) "دعنا نضبط تطبيقك في خطوات بسيطة لتجربة صلاة متكاملة ودقيقة." else "Let's personalize your prayer experience in a few quick steps."
-    val stepLanguageTitle: String = if (isArabic) "اختر لغة التطبيق" else "Choose Language"
-    val stepLanguageDesc: String = if (isArabic) "يمكنك التبديل بين العربية والإنجليزية في أي وقت من الإعدادات." else "You can switch between Arabic and English anytime in settings."
-    val stepLocationTitle: String = if (isArabic) "حدد موقعك الجغرافي" else "Set Your Location"
-    val stepLocationDesc: String = if (isArabic) "نحتاج إلى موقعك لحساب أوقات الصلاة واتجاه القبلة بدقة شرعية عالية." else "Required to calculate exact prayer times and Qibla direction for your location."
-    val privacyNoticeTitle: String = if (isArabic) "خصوصيتك محمية بالكامل" else "Your Privacy is 100% Protected"
-    val privacyNoticeDesc: String = if (isArabic) "بيانات موقعك لا تُجمع، ولا تُخزن على أي خوادم خارجية، ولا يتم تتبعك إطلاقاً. تُستخدم الإحداثيات محلياً على جهازك فقط لحساب المواقيت والقبلة." else "Your location data is never collected, tracked, or uploaded to any server. All astronomical prayer and Qibla calculations run entirely offline on your device."
-    val useGpsButton: String = if (isArabic) "تحديد الموقع التلقائي (GPS)" else "Detect Location (GPS)"
-    val searchCityPlaceholder: String = if (isArabic) "أو ابحث عن مدينتك (مكة، القاهرة، لندن...)" else "Or search your city (Makkah, Cairo, London...)"
-    val selectedLocationLabel: String = if (isArabic) "الموقع المحدد:" else "Selected Location:"
-    val stepNotificationsTitle: String = if (isArabic) "تنبيهات الأذان والإشعارات" else "Athan Alerts & Notifications"
-    val stepNotificationsDesc: String = if (isArabic) "تفعيل إذن الإشعارات والمنبه الدقيق لضمان انطلاق صوت الأذان والتنبيهات في وقت الصلاة تماماً حتى عند قفل الهاتف." else "Enable notifications and exact alarm permissions so the Athan sounds on time, even when your phone is locked or screen is off."
-    val stepNotificationsExplanation: String = if (isArabic) "لماذا نحتاج هذا الإذن؟\n• إطلاق صوت الأذان الشريف مع دخول وقت الصلاة.\n• عرض كبسولة العد التنازلي التفاعلية (Dynamic Island).\n• تذكيرك بالسنن والأيام البيض." else "Why are permissions needed?\n• Play the holy Athan recitation at exact prayer times.\n• Show interactive countdown activities before prayer.\n• Remind you of Sunnah fasting and White Days."
-    val grantNotificationPermissionBtn: String = if (isArabic) "منح إذن الإشعارات" else "Grant Notification Permission"
-    val permissionGrantedStatus: String = if (isArabic) "تم تفعيل الإشعارات بنجاح ✓" else "Notifications Enabled ✓"
-    val stepAthanSoundsTitle: String = if (isArabic) "أصوات الأذان والتنبيهات" else "Athan Sounds & Alerts"
-    val stepAthanSoundsDesc: String = if (isArabic) "اختر صوت الأذان المفضل لكل صلاة. يمكنك تغييرها وتخصيصها لاحقاً." else "Choose your preferred Athan recitation for each prayer. You can customize them anytime."
-    val stepStyleTitle: String = if (isArabic) "المظهر والتصميم" else "Appearance & Style"
-    val stepStyleDesc: String = if (isArabic) "اختر الثيم ونمط الألوان المفضل لديك." else "Choose your favorite theme and color palette."
-    val getStartedBtn: String = if (isArabic) "ابدأ الآن واستمتع بصلاتي" else "Get Started"
-    val nextStepBtn: String = if (isArabic) "التالي" else "Next"
-    val previousStepBtn: String = if (isArabic) "السابق" else "Back"
-    val stepIndicatorText: String = if (isArabic) "الخطوة" else "Step"
-    val ofStepText: String = if (isArabic) "من" else "of"
-    val gpsDetecting: String = if (isArabic) "جارٍ تحديد الموقع عبر GPS..." else "Detecting GPS location..."
+    val welcomeToApp: String = s(R.string.onboarding_welcome_to_app)
+    val setupSubtitle: String = s(R.string.onboarding_setup_subtitle)
+    val stepLanguageTitle: String = s(R.string.onboarding_step_language_title)
+    val stepLanguageDesc: String = s(R.string.onboarding_step_language_desc)
+    val stepLocationTitle: String = s(R.string.onboarding_step_location_title)
+    val stepLocationDesc: String = s(R.string.onboarding_step_location_desc)
+    val privacyNoticeTitle: String = s(R.string.onboarding_privacy_notice_title)
+    val privacyNoticeDesc: String = s(R.string.onboarding_privacy_notice_desc)
+    val useGpsButton: String = s(R.string.onboarding_use_gps_button)
+    val searchCityPlaceholder: String = s(R.string.onboarding_search_city_placeholder)
+    val selectedLocationLabel: String = s(R.string.onboarding_selected_location_label)
+    val stepNotificationsTitle: String = s(R.string.onboarding_step_notifications_title)
+    val stepNotificationsDesc: String = s(R.string.onboarding_step_notifications_desc)
+    val stepNotificationsExplanation: String = s(R.string.onboarding_step_notifications_explanation)
+    val grantNotificationPermissionBtn: String = s(R.string.onboarding_grant_notification_permission_btn)
+    val permissionGrantedStatus: String = s(R.string.onboarding_permission_granted_status)
+    val stepAthanSoundsTitle: String = s(R.string.onboarding_step_athan_sounds_title)
+    val stepAthanSoundsDesc: String = s(R.string.onboarding_step_athan_sounds_desc)
+    val stepStyleTitle: String = s(R.string.onboarding_step_style_title)
+    val stepStyleDesc: String = s(R.string.onboarding_step_style_desc)
+    val getStartedBtn: String = s(R.string.onboarding_get_started_btn)
+    val nextStepBtn: String = s(R.string.onboarding_next_step_btn)
+    val previousStepBtn: String = s(R.string.onboarding_previous_step_btn)
+    val stepIndicatorText: String = s(R.string.onboarding_step_indicator_text)
+    val ofStepText: String = s(R.string.onboarding_of_step_text)
+    val gpsDetecting: String = s(R.string.onboarding_gps_detecting)
 
     // Widget Customization Strings
-    val widgetsSection: String = if (isArabic) "التطبيقات المصغرة (الودجت)" else "Home Screen Widgets"
-    val widgetsSectionSubtitle: String = if (isArabic) "تخصيص الألوان، الشفافية، الخط والمحتوى" else "Customize colors, opacity, fonts & content"
-    val widgetThemeModeTitle: String = if (isArabic) "ثيم وألوان الودجت" else "Widget Theme & Palette"
-    val widgetBgStyleTitle: String = if (isArabic) "نمط الخلفية" else "Background Style"
-    val widgetOpacityTitle: String = if (isArabic) "درجة الشفافية" else "Background Opacity"
-    val widgetFontSizeTitle: String = if (isArabic) "حجم الخط" else "Font Size"
-    val widgetContentTitle: String = if (isArabic) "محتوى وعناصر الودجت" else "Widget Content & Toggles"
-    val widgetPreviewTitle: String = if (isArabic) "معاينة تفاعلية حية" else "Live Interactive Preview"
-    val widgetRefreshAll: String = if (isArabic) "تحديث وتطبيق الودجت الآن" else "Apply & Refresh Widgets"
-    val widgetResetDefaults: String = if (isArabic) "استعادة الإعدادات الافتراضية" else "Reset to Defaults"
+    val widgetsSection: String = s(R.string.widget_settings_section)
+    val widgetsSectionSubtitle: String = s(R.string.widget_settings_section_subtitle)
+    val widgetThemeModeTitle: String = s(R.string.widget_settings_theme_mode_title)
+    val widgetBgStyleTitle: String = s(R.string.widget_settings_bg_style_title)
+    val widgetOpacityTitle: String = s(R.string.widget_settings_opacity_title)
+    val widgetFontSizeTitle: String = s(R.string.widget_settings_font_size_title)
+    val widgetContentTitle: String = s(R.string.widget_settings_content_title)
+    val widgetPreviewTitle: String = s(R.string.widget_settings_preview_title)
+    val widgetRefreshAll: String = s(R.string.widget_settings_refresh_all)
+    val widgetResetDefaults: String = s(R.string.widget_settings_reset_defaults)
 
     // Number & Time formatters that STRICTLY use 123 (Western Arabic Digits)
     fun formatNumber(number: Number): String {
@@ -422,58 +379,19 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
     }
 
     fun formatCountdown(seconds: Long): String {
-        if (seconds <= 0) return if (isArabic) "حان وقت الصلاة الآن!" else "Time for Prayer!"
+        if (seconds <= 0) return s(R.string.countdown_time_for_prayer_now)
         val hours = seconds / 3600
         val minutes = (seconds % 3600) / 60
         val sec = seconds % 60
-        return if (isArabic) {
-            when {
-                hours > 0 -> "باقي ${hours}س و ${minutes}د"
-                minutes > 0 -> "باقي ${minutes}د و ${sec}ث"
-                else -> "باقي ${sec} ثانية"
-            }
-        } else {
-            when {
-                hours > 0 -> "In ${hours}h ${minutes}m"
-                minutes > 0 -> "In ${minutes}m ${sec}s"
-                else -> "In ${sec}s"
-            }
+        return when {
+            hours > 0 -> res.getString(R.string.countdown_hours_minutes, hours, minutes)
+            minutes > 0 -> res.getString(R.string.countdown_minutes_seconds, minutes, sec)
+            else -> res.getQuantityString(R.plurals.countdown_seconds_only, sec.toInt(), sec.toInt())
         }
     }
 
-    fun monthName(month: Int): String {
-        return if (isArabic) {
-            when (month) {
-                1 -> "يناير"
-                2 -> "فبراير"
-                3 -> "مارس"
-                4 -> "أبريل"
-                5 -> "مايو"
-                6 -> "يونيو"
-                7 -> "يوليو"
-                8 -> "أغسطس"
-                9 -> "سبتمبر"
-                10 -> "أكتوبر"
-                11 -> "نوفمبر"
-                else -> "ديسمبر"
-            }
-        } else {
-            when (month) {
-                1 -> "January"
-                2 -> "February"
-                3 -> "March"
-                4 -> "April"
-                5 -> "May"
-                6 -> "June"
-                7 -> "July"
-                8 -> "August"
-                9 -> "September"
-                10 -> "October"
-                11 -> "November"
-                else -> "December"
-            }
-        }
-    }
+    private val monthNames: List<String> = res.getStringArray(R.array.month_names).toList()
+    fun monthName(month: Int): String = monthNames[month - 1]
 
     fun formatDateShort(date: LocalDate): String {
         val day = date.dayOfMonth
@@ -481,21 +399,8 @@ class AppStrings(val isArabic: Boolean, val language: AppLanguage = if (isArabic
         return "$day $month"
     }
 
-    fun dayOfWeekName(dayOfWeek: DayOfWeek): String {
-        return if (isArabic) {
-            when (dayOfWeek) {
-                DayOfWeek.MONDAY -> "الإثنين"
-                DayOfWeek.TUESDAY -> "الثلاثاء"
-                DayOfWeek.WEDNESDAY -> "الأربعاء"
-                DayOfWeek.THURSDAY -> "الخميس"
-                DayOfWeek.FRIDAY -> "الجمعة"
-                DayOfWeek.SATURDAY -> "السبت"
-                DayOfWeek.SUNDAY -> "الأحد"
-            }
-        } else {
-            dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() }
-        }
-    }
+    private val dayOfWeekNames: List<String> = res.getStringArray(R.array.day_of_week_names).toList()
+    fun dayOfWeekName(dayOfWeek: DayOfWeek): String = dayOfWeekNames[dayOfWeek.value - 1]
 }
 
 val LocalAppStrings = staticCompositionLocalOf {
@@ -527,7 +432,20 @@ fun ProvideAppLocale(
         AppLanguage.ENGLISH -> false
     }
 
-    val appStrings = AppStrings(isArabic, appLanguage)
+    // The app's chosen language can differ from the actual system/Activity locale (there's no
+    // AppCompatDelegate.setApplicationLocales adoption, and the raw LocaleManager override in
+    // PrayerPreferences only works on API 33+), so string resources are resolved against an
+    // explicitly-locale-pinned Resources instance rather than trusting context.resources to
+    // already reflect isArabic.
+    val localizedResources = remember(isArabic) {
+        val locale = Locale(if (isArabic) "ar" else "en")
+        val config = Configuration(context.resources.configuration).apply { setLocale(locale) }
+        context.createConfigurationContext(config).resources
+    }
+
+    val appStrings = remember(isArabic, appLanguage, localizedResources) {
+        AppStrings(isArabic, appLanguage, localizedResources)
+    }
     val layoutDirection = if (isArabic) LayoutDirection.Rtl else LayoutDirection.Ltr
 
     CompositionLocalProvider(

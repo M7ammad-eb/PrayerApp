@@ -1,4 +1,345 @@
 <resources>
     <string name="app_name">Salati - My Prayer</string>
     <string name="widget_description">Displays the next prayer time and countdown on your home screen.</string>
+
+    <!-- ===== App Branding ===== -->
+    <string name="app_brand_name">Salati</string>
+    <string name="app_subtitle">Prayer Times &amp; Qibla</string>
+
+    <!-- ===== Bottom Navigation ===== -->
+    <string name="nav_prayer_times">Prayer Times</string>
+    <string name="nav_qibla">Qibla</string>
+    <string name="nav_calendar">Calendar</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- ===== Common ===== -->
+    <string name="app_title">Prayer Times</string>
+    <string name="common_today">Today</string>
+    <string name="common_tomorrow">Tomorrow</string>
+    <string name="common_yesterday">Yesterday</string>
+    <string name="common_days">days</string>
+    <string name="common_day">day</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_save">Save</string>
+    <string name="common_done">Done</string>
+    <string name="common_got_it">Got It</string>
+    <string name="common_close">Close</string>
+    <string name="common_search">Search</string>
+    <string name="common_change">Change</string>
+    <string name="common_remaining">Remaining</string>
+    <string name="common_time_for_prayer">Time for Prayer!</string>
+    <string name="common_now">Now</string>
+    <string name="common_select">Select</string>
+    <string name="common_active">Active</string>
+
+    <!-- ===== Next Prayer / Hero ===== -->
+    <string name="hero_next_prayer_label">NEXT PRAYER</string>
+    <string name="hero_tomorrow_prayer_label">TOMORROW\'S PRAYER</string>
+    <string name="hero_next_label_prefix">NEXT:</string>
+    <string name="hero_athan_alert">Athan Alert</string>
+    <string name="hero_athan_at">Athan at</string>
+    <string name="hero_stop_audio">Stop Audio</string>
+    <string name="hero_listen_athan">Listen to Athan</string>
+    <string name="hero_hijri_calendar_details">Hijri Calendar Details</string>
+
+    <!-- ===== Bento Quick Cards ===== -->
+    <string name="bento_qibla_card_title">QIBLA</string>
+    <string name="bento_qibla_accurate_direction">Accurate Direction</string>
+    <string name="bento_umm_al_qura_title">UMM AL-QURA</string>
+    <string name="bento_makkah_calendar">Makkah Calendar</string>
+    <string name="bento_white_day_badge">White Day (Sunnah)</string>
+    <string name="bento_sacred_month_badge">Sacred Month</string>
+
+    <!-- ===== Date Picker / Navigation ===== -->
+    <string name="date_previous_day">Previous Day</string>
+    <string name="date_next_day">Next Day</string>
+    <string name="date_go_to_today">Go to Today</string>
+    <string name="date_pick_date">Pick Date</string>
+
+    <!-- ===== Prayer Names ===== -->
+    <string name="prayer_name_fajr">Fajr</string>
+    <string name="prayer_name_sunrise">Sunrise</string>
+    <string name="prayer_name_dhuhr">Dhuhr</string>
+    <string name="prayer_name_asr">Asr</string>
+    <string name="prayer_name_maghrib">Maghrib</string>
+    <string name="prayer_name_isha">Isha</string>
+
+    <!-- ===== Additional / Sunnah Times Card ===== -->
+    <string name="additional_times_title">Sunnah &amp; Night Calculations</string>
+    <string name="additional_midnight">Islamic Midnight</string>
+    <string name="additional_last_third_night">Qiyam / Last 1/3 of Night</string>
+    <string name="additional_imsak">Imsak (Fasting Stop)</string>
+    <string name="additional_duha">Duha Time (approx.)</string>
+
+    <!-- ===== Notification Sound Types ===== -->
+    <string name="sound_name_athan_makkah_mulla">Makkah - Ali Bin Ahmad Mullah</string>
+    <string name="sound_name_athan_fajr1_kwait_alafasy">Fajr (Kuwait) - Mishary Alafasy</string>
+    <string name="sound_name_athan_fajr2_jordan_allala">Fajr (Jordan) - Kamel Allala</string>
+    <string name="sound_name_athan_riyadh_qatami">Riyadh - Nasser Al-Qatami</string>
+    <string name="sound_name_athan_qatar_nabet">Qatar - Saleh Al-Nabet</string>
+    <string name="sound_name_athan_quds_qazaz_1">Al-Aqsa Al-Quds - Naji Qazzaz (1)</string>
+    <string name="sound_name_athan_quds_qazaz_2">Al-Aqsa Al-Quds - Naji Qazzaz (2)</string>
+    <string name="sound_name_athan_egypt_dawod">Egypt - Ahmad Dawod</string>
+    <string name="sound_name_athan_egypt_alalfi">Egypt - Salah Al-Alfi</string>
+    <string name="sound_name_athan_egypt_abdulaati">Egypt (Al-Hussein) - Sayed Abdulaati</string>
+    <string name="sound_name_athan_iraq_alamouri">Iraq - Abu Omar Al-Amouri</string>
+    <string name="sound_name_athan_georgia">Georgia Mosque Adhan</string>
+    <string name="sound_name_short_takbeer">Takbeer Only</string>
+    <string name="sound_name_melodic_tone">Gentle Chime</string>
+    <string name="sound_name_vibrate_only">Vibrate Only</string>
+    <string name="sound_name_silent">Silent / Off</string>
+
+    <string name="sound_subtitle_athan_makkah_mulla">Holy Mosque in Makkah by the chief muezzin\'s voice</string>
+    <string name="sound_subtitle_athan_fajr1_kwait_alafasy">Fajr Adhan with As-Salatu Khayrun Minan-Nawm</string>
+    <string name="sound_subtitle_athan_fajr2_jordan_allala">Traditional Fajr Adhan from the Grand Hussein Mosque</string>
+    <string name="sound_subtitle_athan_riyadh_qatami">Soulful and reverent recitation from Riyadh mosques</string>
+    <string name="sound_subtitle_athan_qatar_nabet">Imam Muhammad Ibn Abd al-Wahhab Mosque, Qatar</string>
+    <string name="sound_subtitle_athan_quds_qazaz_1">Blessed Al-Aqsa Mosque, Hijaz maqam</string>
+    <string name="sound_subtitle_athan_quds_qazaz_2">Blessed Al-Aqsa Mosque, Bayati maqam</string>
+    <string name="sound_subtitle_athan_egypt_dawod">Classic authentic Egyptian radio recitation</string>
+    <string name="sound_subtitle_athan_egypt_alalfi">Al-Azhar Mosque and Cairo mosques recitation</string>
+    <string name="sound_subtitle_athan_egypt_abdulaati">Imam Al-Hussein Mosque, Cairo</string>
+    <string name="sound_subtitle_athan_iraq_alamouri">Baghdad and Iraqi mosques, classic Bayati tune</string>
+    <string name="sound_subtitle_athan_georgia">Historic Tbilisi mosque recitation</string>
+    <string name="sound_subtitle_short_takbeer">Eid takbeers and short Athan alert</string>
+    <string name="sound_subtitle_melodic_tone">Gentle chime for work and meetings</string>
+    <string name="sound_subtitle_vibrate_only">Vibration alert without sound</string>
+    <string name="sound_subtitle_silent">Visual notification only</string>
+
+    <!-- ===== Qibla Screen ===== -->
+    <string name="qibla_title">Qibla Direction Compass</string>
+    <string name="qibla_aligned_message">You are facing the Kaaba precisely!</string>
+    <string name="qibla_rotate_prompt">Rotate your device to align with the Golden Kaaba marker</string>
+    <string name="qibla_bearing_label">Qibla Bearing:</string>
+    <string name="qibla_current_heading_label">Current Heading:</string>
+    <string name="qibla_distance_to_kaaba_label">Distance to Kaaba:</string>
+    <string name="qibla_km_unit">km</string>
+    <string name="qibla_deg_unit">°</string>
+    <string name="qibla_compass_calib_title">Compass Calibration</string>
+    <string name="qibla_compass_calib_text">To calibrate your device\'s magnetic compass, move your phone smoothly in a figure-8 motion several times away from metal objects.</string>
+    <string name="qibla_manual_compass_mode">Manual Compass Test Slider</string>
+
+    <!-- ===== Cardinal Directions ===== -->
+    <string-array name="cardinal_directions">
+        <item>N</item>
+        <item>NE</item>
+        <item>E</item>
+        <item>SE</item>
+        <item>S</item>
+        <item>SW</item>
+        <item>W</item>
+        <item>NW</item>
+    </string-array>
+
+    <!-- ===== Monthly Calendar ===== -->
+    <string name="calendar_title">Monthly Prayer Timetable</string>
+    <string name="calendar_date_col">Date</string>
+    <string name="calendar_hijri_col">Hijri</string>
+    <string name="calendar_prev_month">Previous Month</string>
+    <string name="calendar_next_month">Next Month</string>
+
+    <!-- ===== Settings Screen ===== -->
+    <string name="settings_title">Settings &amp; Preferences</string>
+    <string name="settings_theme_section">Appearance &amp; Theme</string>
+    <string name="settings_theme_mode_title">Theme Mode</string>
+    <string name="settings_system_theme_desc">Follow system dark/light settings</string>
+    <string name="settings_light_theme_desc">Always use light theme</string>
+    <string name="settings_dark_theme_desc">Always use dark theme</string>
+
+    <string name="theme_mode_system">System Default</string>
+    <string name="theme_mode_light">Light Mode</string>
+    <string name="theme_mode_dark">Dark Mode</string>
+
+    <string name="settings_color_palette_section">Color Palette &amp; Accent Colors</string>
+    <string name="settings_follow_system_colors_title">App Follow System Colors</string>
+    <string name="settings_follow_system_colors_desc">Dynamically match device wallpaper and system accents in app</string>
+    <string name="settings_preset_colors_title">Preset Color Palettes</string>
+    <string name="settings_preset_colors_desc">Select a curated color palette for the app interface</string>
+
+    <string name="color_preset_system_dynamic">System Dynamic (Material You)</string>
+    <string name="color_preset_emerald_gold">Emerald &amp; Gold</string>
+    <string name="color_preset_royal_amber">Desert Amber</string>
+    <string name="color_preset_sapphire_night">Midnight Sapphire</string>
+    <string name="color_preset_medina_teal">Medina Teal</string>
+    <string name="color_preset_rose_clove">Damascus Rose</string>
+    <string name="color_preset_slate_charcoal">Minimal Slate</string>
+
+    <string name="settings_language_section">Language &amp; Localization</string>
+    <string name="settings_app_language">App Language</string>
+    <string name="settings_select_language_subtitle">Choose application interface language</string>
+    <string name="settings_location_section">Location &amp; Coordinates</string>
+    <string name="settings_use_gps">Use GPS Location</string>
+    <string name="settings_choose_city">World Cities</string>
+    <string name="settings_manual_coordinates">Enter Lat / Lon Coordinates</string>
+    <string name="settings_calc_method_section">Calculation Method</string>
+    <string name="settings_juristic_method_title">Asr Juristic Method</string>
+    <string name="settings_standard_juristic">Standard (Shafi/Maliki/Hanbali)</string>
+    <string name="settings_hanafi_juristic">Hanafi</string>
+    <string name="settings_high_latitude_section">High Latitude Rule</string>
+    <string name="settings_display_hijri_section">Display &amp; Hijri Adjustments</string>
+    <string name="settings_hijri_offset_title">Hijri Date Offset (Umm al-Qura)</string>
+    <string name="settings_time_format_title">24-Hour Time Format</string>
+    <string name="settings_minute_adjustments_title">Manual Minute Adjustments</string>
+    <string name="settings_minute_adjustments_subtitle">Sync with your local mosque timetable</string>
+    <string name="settings_notif_section_title">Athan &amp; Prayer Notifications</string>
+    <string name="settings_athan_sound">Athan Sound</string>
+    <string name="settings_pre_reminder">Pre-Prayer Reminder</string>
+    <string name="settings_minutes_before">min before</string>
+    <string name="settings_test_alert">Test Instant Alert</string>
+    <string name="settings_test_alarm_5s">Test Prayer Alarm (in 5s)</string>
+    <string name="settings_reschedule_7_days">Reschedule 7-Day Alarms</string>
+    <string name="settings_notifications_disabled_warning">Prayer alerts &amp; Athan notifications are disabled in system settings. Please enable them to receive timely prayer alarms.</string>
+    <string name="settings_enable_notifications_btn">Enable Notifications</string>
+    <string name="settings_notifications_status_active">Prayer notifications &amp; exact alarms are active and ready.</string>
+
+    <!-- ===== Audio Output Channel & Wake Screen Settings ===== -->
+    <string name="settings_audio_stream_section_title">Athan Audio Stream Channel</string>
+    <string name="settings_audio_stream_desc">Choose which system audio channel the Athan plays through. It will follow your device\'s system volume.</string>
+    <string name="settings_audio_stream_alarm_title">Alarm Stream (Recommended)</string>
+    <string name="settings_audio_stream_alarm_desc">Plays at alarm volume level, sounds reliably when idle or silent.</string>
+    <string name="settings_audio_stream_media_title">Media Stream</string>
+    <string name="settings_audio_stream_media_desc">Plays at music/video media volume level.</string>
+    <string name="settings_audio_stream_ringtone_title">Ringtone Stream</string>
+    <string name="settings_audio_stream_ringtone_desc">Plays at incoming call ringtone volume level.</string>
+
+    <string name="settings_wake_screen_title">Wake Screen &amp; Full-Screen Alarm (Screen Off Only)</string>
+    <string name="settings_wake_screen_desc">Turn on the display and show full-screen prayer artwork only if the phone is locked/idle. When actively using your phone, a heads-up notification appears.</string>
+    <string name="settings_preview_full_screen_alarm_btn">🖼️ Preview Full-Screen Alarm Artwork</string>
+
+    <!-- ===== Dynamic Island / Live Countdown Feature ===== -->
+    <string name="settings_dynamic_island_section_title">Dynamic Island &amp; Live Activity Countdown</string>
+    <string name="settings_dynamic_island_desc">Display a live interactive countdown capsule at the top of your screen and notification bar before prayer time (similar to Keeta Live Activities).</string>
+    <string name="settings_dynamic_island_enable_title">Enable Dynamic Island Capsule</string>
+    <string name="settings_dynamic_island_lead_time_title">Start Countdown Before Prayer:</string>
+    <string name="settings_dynamic_island_vivo_tip">💡 For Vivo / iQOO / OriginOS users: Ensure \'Live Alerts / Atomic Island\' is turned ON for Prayer Times in Phone Settings &gt; Notifications.</string>
+    <string name="settings_preview_dynamic_island_btn">✨ Preview Dynamic Island Countdown</string>
+    <string name="settings_dismiss_dynamic_island_btn">Dismiss Island Preview</string>
+
+    <!-- ===== Calculation Method translations ===== -->
+    <string name="calc_method_umm_al_qura">Umm Al-Qura University, Makkah</string>
+    <string name="calc_method_mwl">Muslim World League (MWL)</string>
+    <string name="calc_method_egyptian">Egyptian General Authority of Survey</string>
+    <string name="calc_method_karachi">University of Islamic Sciences, Karachi</string>
+    <string name="calc_method_isna">Islamic Society of North America (ISNA)</string>
+    <string name="calc_method_gulf">Gulf Region (UAE &amp; Dubai)</string>
+    <string name="calc_method_qatar">Qatar Ministry of Awqaf and Islamic Affairs</string>
+    <string name="calc_method_kuwait">Kuwait Ministry of Awqaf and Islamic Affairs</string>
+    <string name="calc_method_turkey">Presidency of Religious Affairs, Turkey (Diyanet)</string>
+    <string name="calc_method_tehran">Institute of Geophysics, University of Tehran</string>
+    <string name="calc_method_shia_ithna_ashari">Shia Ithna Ashari (Leva Institute)</string>
+    <string name="calc_method_singapore">Majlis Ugama Islam Singapura (MUIS)</string>
+    <string name="calc_method_france_uoif">Union des Organisations Islamiques de France (UOIF)</string>
+    <string name="calc_method_russia">Spiritual Administration of Muslims of Russia (SAMR)</string>
+
+    <!-- ===== High Latitude Rule translations ===== -->
+    <string name="high_latitude_midnight">Middle of Night</string>
+    <string name="high_latitude_one_seventh">One Seventh of Night</string>
+    <string name="high_latitude_angle_based">Angle-Based (Recommended)</string>
+    <string name="high_latitude_none">None</string>
+
+    <!-- ===== Athan Player Dialog ===== -->
+    <string name="athan_dialog_title">Athan Recitation</string>
+    <string name="athan_play_adhan">Play Adhan</string>
+    <string name="athan_fajr_adhan">Fajr Adhan</string>
+    <string name="athan_stop_btn">Stop</string>
+    <string name="athan_prompt_text">Listen to the sacred Islamic call to prayer</string>
+
+    <!-- ===== Hijri Dialog ===== -->
+    <string name="hijri_calendar_header">Hijri Calendar</string>
+    <string name="hijri_umm_al_qura_standard">Umm al-Qura Standard</string>
+    <string name="hijri_convert_date">Convert Date</string>
+    <string name="hijri_adjust_days">Adjust Days</string>
+    <string name="hijri_sunnah_fasting_day">Sunnah Fasting Day</string>
+    <string name="hijri_white_days_title">White Days (13th, 14th, 15th)</string>
+    <string name="hijri_white_days_desc">Fasting the 13th, 14th, and 15th of each Hijri month is an established Sunnah of the Prophet ﷺ.</string>
+    <string name="hijri_sacred_month_title">Sacred Months (Muharram, Rajab, Dhu al-Qi\'dah, Dhu al-Hijjah)</string>
+    <string name="hijri_sacred_month_desc">One of the four sacred months in Islam in which good deeds are amplified.</string>
+    <string name="hijri_monday_thursday_desc">Fasting on Mondays and Thursdays is an authentic Sunnah practice.</string>
+    <string name="hijri_about_umm_al_qura_title">About Umm al-Qura Calendar</string>
+    <string name="hijri_about_umm_al_qura_desc">The Umm al-Qura calendar is the official standardized Islamic lunar calendar calculated for the holy city of Makkah al-Mukarramah.</string>
+
+    <!-- ===== Manual Coordinates Dialog ===== -->
+    <string name="coords_custom_coordinates">Custom Coordinates</string>
+    <string name="coords_enter_coordinates">Enter Latitude &amp; Longitude</string>
+    <string name="coords_manual_coordinates_desc">Specify precise geographical coordinates for off-grid areas, desert camps, or locations without GPS signal.</string>
+    <string name="coords_quick_presets">Quick Presets</string>
+    <string name="coords_latitude_label">Latitude (°)</string>
+    <string name="coords_longitude_label">Longitude (°)</string>
+    <string name="coords_location_name_label">Location Name / Label</string>
+    <string name="coords_time_zone_label">Time Zone</string>
+    <string name="coords_apply_coordinates">Apply Coordinates</string>
+
+    <!-- ===== Setup & First-Time Onboarding ===== -->
+    <string name="onboarding_welcome_to_app">Welcome to Salati</string>
+    <string name="onboarding_setup_subtitle">Let\'s personalize your prayer experience in a few quick steps.</string>
+    <string name="onboarding_step_language_title">Choose Language</string>
+    <string name="onboarding_step_language_desc">You can switch between Arabic and English anytime in settings.</string>
+    <string name="onboarding_step_location_title">Set Your Location</string>
+    <string name="onboarding_step_location_desc">Required to calculate exact prayer times and Qibla direction for your location.</string>
+    <string name="onboarding_privacy_notice_title">Your Privacy is 100% Protected</string>
+    <string name="onboarding_privacy_notice_desc">Your location data is never collected, tracked, or uploaded to any server. All astronomical prayer and Qibla calculations run entirely offline on your device.</string>
+    <string name="onboarding_use_gps_button">Detect Location (GPS)</string>
+    <string name="onboarding_search_city_placeholder">Or search your city (Makkah, Cairo, London...)</string>
+    <string name="onboarding_selected_location_label">Selected Location:</string>
+    <string name="onboarding_step_notifications_title">Athan Alerts &amp; Notifications</string>
+    <string name="onboarding_step_notifications_desc">Enable notifications and exact alarm permissions so the Athan sounds on time, even when your phone is locked or screen is off.</string>
+    <string name="onboarding_step_notifications_explanation">Why are permissions needed?\n• Play the holy Athan recitation at exact prayer times.\n• Show interactive countdown activities before prayer.\n• Remind you of Sunnah fasting and White Days.</string>
+    <string name="onboarding_grant_notification_permission_btn">Grant Notification Permission</string>
+    <string name="onboarding_permission_granted_status">Notifications Enabled ✓</string>
+    <string name="onboarding_step_athan_sounds_title">Athan Sounds &amp; Alerts</string>
+    <string name="onboarding_step_athan_sounds_desc">Choose your preferred Athan recitation for each prayer. You can customize them anytime.</string>
+    <string name="onboarding_step_style_title">Appearance &amp; Style</string>
+    <string name="onboarding_step_style_desc">Choose your favorite theme and color palette.</string>
+    <string name="onboarding_get_started_btn">Get Started</string>
+    <string name="onboarding_next_step_btn">Next</string>
+    <string name="onboarding_previous_step_btn">Back</string>
+    <string name="onboarding_step_indicator_text">Step</string>
+    <string name="onboarding_of_step_text">of</string>
+    <string name="onboarding_gps_detecting">Detecting GPS location...</string>
+
+    <!-- ===== Widget Customization Strings ===== -->
+    <string name="widget_settings_section">Home Screen Widgets</string>
+    <string name="widget_settings_section_subtitle">Customize colors, opacity, fonts &amp; content</string>
+    <string name="widget_settings_theme_mode_title">Widget Theme &amp; Palette</string>
+    <string name="widget_settings_bg_style_title">Background Style</string>
+    <string name="widget_settings_opacity_title">Background Opacity</string>
+    <string name="widget_settings_font_size_title">Font Size</string>
+    <string name="widget_settings_content_title">Widget Content &amp; Toggles</string>
+    <string name="widget_settings_preview_title">Live Interactive Preview</string>
+    <string name="widget_settings_refresh_all">Apply &amp; Refresh Widgets</string>
+    <string name="widget_settings_reset_defaults">Reset to Defaults</string>
+
+    <!-- ===== Countdown / Date Formatting ===== -->
+    <string name="countdown_time_for_prayer_now">Time for Prayer!</string>
+    <string name="countdown_hours_minutes">In %1$dh %2$dm</string>
+    <string name="countdown_minutes_seconds">In %1$dm %2$ds</string>
+    <plurals name="countdown_seconds_only">
+        <item quantity="one">In %1$ds</item>
+        <item quantity="other">In %1$ds</item>
+    </plurals>
+
+    <string-array name="month_names">
+        <item>January</item>
+        <item>February</item>
+        <item>March</item>
+        <item>April</item>
+        <item>May</item>
+        <item>June</item>
+        <item>July</item>
+        <item>August</item>
+        <item>September</item>
+        <item>October</item>
+        <item>November</item>
+        <item>December</item>
+    </string-array>
+
+    <string-array name="day_of_week_names">
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+    </string-array>
 </resources>
