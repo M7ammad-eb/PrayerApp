@@ -159,7 +159,7 @@ fun QiblaScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = location.name,
+                            text = com.example.data.cities.CityDatabase.localizedName(location, strings.isArabic),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )

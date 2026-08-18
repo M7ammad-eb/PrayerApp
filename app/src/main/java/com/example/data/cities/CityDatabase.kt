@@ -222,6 +222,31 @@ object CityDatabase {
 
     val popularCities: List<CityPreset> get() = PRESET_CITIES
 
+    /**
+     * Preset cities are stored with fixed, exact lat/lon literals, so an exact match here safely
+     * identifies "this location came from picking a preset" without accidentally matching a
+     * GPS/geocoded location that happens to be nearby but carries far more decimal precision.
+     */
+    private fun findPresetByCoordinates(lat: Double, lon: Double): CityPreset? =
+        PRESET_CITIES.firstOrNull { it.latitude == lat && it.longitude == lon }
+
+    /**
+     * A location selected from the preset list should always display in the *current* app
+     * language, not whichever language was active when it was picked - otherwise switching the
+     * app's language leaves the saved city name stuck until the user manually reselects it. GPS
+     * or manually-entered locations have no second-language variant to fall back to, so they
+     * keep showing whatever the geocoder/user originally provided.
+     */
+    fun localizedName(location: UserLocation, isArabic: Boolean): String {
+        val preset = findPresetByCoordinates(location.latitude, location.longitude)
+        return if (preset != null) (if (isArabic) preset.nameAr else preset.nameEn) else location.name
+    }
+
+    fun localizedCountry(location: UserLocation, isArabic: Boolean): String {
+        val preset = findPresetByCoordinates(location.latitude, location.longitude)
+        return if (preset != null) (if (isArabic) preset.countryAr else preset.countryEn) else location.country
+    }
+
     fun searchCities(query: String): List<CityPreset> {
         val q = query.trim().lowercase()
         return PRESET_CITIES.filter {

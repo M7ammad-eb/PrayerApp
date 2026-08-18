@@ -358,7 +358,7 @@ fun MainScreen(
                                         context = context,
                                         prayerType = prayer,
                                         prayerTime = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern(if (settings.is24HourFormat) "HH:mm" else "h:mm a")),
-                                        locationName = settings.location.name.ifEmpty { "Current Location" },
+                                        locationName = com.example.data.cities.CityDatabase.localizedName(settings.location, strings.isArabic).ifEmpty { "Current Location" },
                                         soundType = settings.prayerConfigs[prayer]?.soundType ?: com.example.data.models.NotificationSoundType.FULL_ATHAN
                                     )
                                     context.startActivity(intent)
@@ -439,7 +439,11 @@ private fun ExpressiveTopHeader(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "${settings.location.name}${if (settings.location.country.isNotEmpty() && !settings.location.country.contains("°")) ", " + settings.location.country else ""}",
+                                text = run {
+                                    val locName = com.example.data.cities.CityDatabase.localizedName(settings.location, strings.isArabic)
+                                    val locCountry = com.example.data.cities.CityDatabase.localizedCountry(settings.location, strings.isArabic)
+                                    "$locName${if (locCountry.isNotEmpty() && !locCountry.contains("°")) ", $locCountry" else ""}"
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface

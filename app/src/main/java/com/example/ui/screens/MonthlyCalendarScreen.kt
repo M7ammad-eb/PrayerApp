@@ -99,7 +99,7 @@ fun MonthlyCalendarScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = location.name,
+                        text = com.example.data.cities.CityDatabase.localizedName(location, strings.isArabic),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

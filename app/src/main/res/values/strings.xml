@@ -342,4 +342,73 @@
         <item>Saturday</item>
         <item>Sunday</item>
     </string-array>
+
+    <!-- ===== Widget Provider (non-Compose RemoteViews) ===== -->
+    <string name="widget_hero_prev_label">PREVIOUS</string>
+    <string name="widget_hero_next_label">NEXT</string>
+    <string name="widget_status_prayer_time">Prayer Time!</string>
+    <string name="widget_countdown_now">Now</string>
+    <string name="widget_countdown_hours_minutes">In %1$dh %2$dm</string>
+    <string name="widget_countdown_minutes_only">In %1$dm</string>
+    <string name="widget_countdown_less_than_min">In &lt; 1 min</string>
+    <string name="widget_since_just_now">Just now</string>
+    <string name="widget_since_hours_minutes">%1$dh %2$dm ago</string>
+    <string name="widget_since_minutes_only">%1$dm ago</string>
+
+    <!-- ===== Widget Customization Screen ===== -->
+    <string name="widget_settings_intro_banner">Customize how the widget looks on your home screen to perfectly fit any grid layout (from 1-column slim to full max expanded).</string>
+    <string name="widget_settings_applied_notice">✓ All home screen widgets refreshed!</string>
+    <string name="widget_settings_opacity_transparent">Transparent (0%)</string>
+    <string name="widget_settings_opacity_solid">Solid (100%)</string>
+    <string name="widget_settings_text_color_title">Text Color</string>
+    <string name="widget_settings_hero_timing_title">Hero Card Timing</string>
+    <string name="widget_settings_toggle_show_location">Show Location &amp; City</string>
+    <string name="widget_settings_toggle_show_hijri">Show Hijri Date</string>
+    <string name="widget_settings_toggle_show_countdown">Show Countdown Timer</string>
+    <string name="widget_settings_toggle_show_progress">Show Interval Progress Bar</string>
+    <string name="widget_settings_toggle_show_sunrise">Show Sunrise in Schedule</string>
+    <string name="widget_settings_toggle_show_hero">Show Next Prayer Hero Card</string>
+    <string name="widget_settings_toggle_show_all_prayers">Show All Prayers Schedule</string>
+
+    <string name="widget_preview_type_standard_4x2">4x2 Ribbon</string>
+    <string name="widget_preview_type_expanded_max">Expanded (Max)</string>
+    <string name="widget_preview_type_vertical_1col">1-Col (1x4 / 1x6)</string>
+    <string name="widget_preview_type_slim_bar">Slim (4x1 / 6x1)</string>
+    <string name="widget_preview_type_compact_2x1">Compact (2x1)</string>
+
+    <string name="widget_theme_app_theme">Match App Theme</string>
+    <string name="widget_theme_material_you">Material You Dynamic</string>
+    <string name="widget_theme_dark_elegant">Dark Charcoal &amp; Emerald</string>
+    <string name="widget_theme_light_clean">Pristine Light</string>
+    <string name="widget_theme_oled_black">AMOLED Pitch Black</string>
+    <string name="widget_theme_emerald_islamic">Islamic Emerald</string>
+    <string name="widget_theme_golden_hour">Desert Amber &amp; Gold</string>
+    <string name="widget_theme_royal_blue">Midnight Sapphire</string>
+    <string name="widget_theme_monochrome">Minimal Monochrome</string>
+
+    <string name="widget_bgstyle_translucent">Translucent Glass</string>
+    <string name="widget_bgstyle_solid_surface">Solid Surface</string>
+    <string name="widget_bgstyle_frosted_glass">Deep Blur Glass</string>
+    <string name="widget_bgstyle_minimal_border">Border Outline Only</string>
+    <string name="widget_bgstyle_transparent_clean">Fully Transparent (Floating)</string>
+
+    <string name="widget_fontsize_compact">Compact</string>
+    <string name="widget_fontsize_standard">Standard</string>
+    <string name="widget_fontsize_large">Large</string>
+    <string name="widget_fontsize_extra_large">Extra Large</string>
+
+    <string name="widget_textstyle_auto">Auto (Theme Default)</string>
+    <string name="widget_textstyle_light">Always Light Text</string>
+    <string name="widget_textstyle_dark">Always Dark Text</string>
+
+    <string name="widget_herotime_next">Next Prayer (In...)</string>
+    <string name="widget_herotime_previous">Current Prayer (Since...)</string>
+    <string name="widget_herotime_both">Both (Wide Widgets)</string>
+
+    <!-- Live preview mock text (fixed example values, not real countdowns) -->
+    <string name="widget_preview_mock_hijri_date">• 14 Safar 1448 AH</string>
+    <string name="widget_preview_mock_minutes_bare">%1$dm</string>
+    <string name="widget_preview_compact_prev_label">Dhuhr Prayer</string>
+    <string name="widget_preview_compact_next_label">Asr Prayer</string>
+    <string name="settings_widget_subtitle_format">%1$s • %2$d%% Opacity</string>
 </resources>

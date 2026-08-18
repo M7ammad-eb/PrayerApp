@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -71,15 +72,18 @@ import com.example.data.models.WidgetFontSize
 import com.example.data.models.WidgetHeroTimeMode
 import com.example.data.models.WidgetTextStyle
 import com.example.data.models.WidgetThemeMode
+import android.content.res.Resources
 import com.example.data.preferences.AppPrayerSettings
 import com.example.ui.locale.LocalAppStrings
+import com.example.util.LocalizedStrings
+import com.example.R
 
-enum class WidgetPreviewType(val labelEn: String, val labelAr: String) {
-    STANDARD_4X2("4x2 Ribbon", "شريط 4×2"),
-    EXPANDED_MAX("Expanded (Max)", "موسع كامل (أقصى حجم)"),
-    VERTICAL_1_COL("1-Col (1x4 / 1x6)", "عمود نحيف 1×6"),
-    SLIM_BAR("Slim (4x1 / 6x1)", "شريط أفقي 4×1"),
-    COMPACT_2X1("Compact (2x1)", "مصغر 2×1")
+enum class WidgetPreviewType(@androidx.annotation.StringRes val labelRes: Int) {
+    STANDARD_4X2(R.string.widget_preview_type_standard_4x2),
+    EXPANDED_MAX(R.string.widget_preview_type_expanded_max),
+    VERTICAL_1_COL(R.string.widget_preview_type_vertical_1col),
+    SLIM_BAR(R.string.widget_preview_type_slim_bar),
+    COMPACT_2X1(R.string.widget_preview_type_compact_2x1)
 }
 
 @Composable
@@ -168,10 +172,7 @@ fun SettingsWidgetSubScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = if (strings.isArabic)
-                            "خصص شكل وحجم التطبيق المصغر على شاشتك الرئيسية ليتناسب تماماً مع أي عدد من الأعمدة والصفوف (من عمود واحد نحيف إلى الشاشة الكاملة)."
-                        else
-                            "Customize how the widget looks on your home screen to perfectly fit any grid layout (from 1-column slim to full max expanded).",
+                        text = stringResource(R.string.widget_settings_intro_banner),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -199,7 +200,7 @@ fun SettingsWidgetSubScreen(
                         onClick = { selectedPreviewType = type },
                         label = {
                             Text(
-                                text = if (strings.isArabic) type.labelAr else type.labelEn,
+                                text = stringResource(type.labelRes),
                                 style = MaterialTheme.typography.labelMedium
                             )
                         },
@@ -246,7 +247,7 @@ fun SettingsWidgetSubScreen(
 
             if (showAppliedNotice) {
                 Text(
-                    text = if (strings.isArabic) "✓ تم تحديث جميع الودجات على الشاشة الرئيسية بنجاح!" else "✓ All home screen widgets refreshed!",
+                    text = stringResource(R.string.widget_settings_applied_notice),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,
@@ -266,7 +267,6 @@ fun SettingsWidgetSubScreen(
 
             WidgetThemeSelector(
                 currentTheme = wSet.themeMode,
-                isArabic = strings.isArabic,
                 onSelectTheme = {
                     onUpdateWidgetSettings(wSet.copy(themeMode = it))
                     onRefreshAllWidgets()
@@ -285,7 +285,6 @@ fun SettingsWidgetSubScreen(
 
             WidgetBackgroundStyleSelector(
                 currentStyle = wSet.bgStyle,
-                isArabic = strings.isArabic,
                 onSelectStyle = {
                     onUpdateWidgetSettings(wSet.copy(bgStyle = it))
                     onRefreshAllWidgets()
@@ -357,12 +356,12 @@ fun SettingsWidgetSubScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = if (strings.isArabic) "شفاف (0%)" else "Transparent (0%)",
+                            text = stringResource(R.string.widget_settings_opacity_transparent),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = if (strings.isArabic) "معتم كامل (100%)" else "Solid (100%)",
+                            text = stringResource(R.string.widget_settings_opacity_solid),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -382,7 +381,6 @@ fun SettingsWidgetSubScreen(
 
             WidgetFontSizeSelector(
                 currentSize = wSet.fontSize,
-                isArabic = strings.isArabic,
                 onSelectSize = {
                     onUpdateWidgetSettings(wSet.copy(fontSize = it))
                     onRefreshAllWidgets()
@@ -395,7 +393,7 @@ fun SettingsWidgetSubScreen(
             // can't be trusted for contrast, since a transparent/near-transparent widget has no
             // way to know what's actually behind it (see PrayerAppWidgetProvider.resolveWidgetColors).
             Text(
-                text = if (strings.isArabic) "لون النص" else "Text Color",
+                text = stringResource(R.string.widget_settings_text_color_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -403,7 +401,6 @@ fun SettingsWidgetSubScreen(
 
             WidgetTextStyleSelector(
                 currentStyle = wSet.textStyle,
-                isArabic = strings.isArabic,
                 onSelectStyle = {
                     onUpdateWidgetSettings(wSet.copy(textStyle = it))
                     onRefreshAllWidgets()
@@ -415,7 +412,7 @@ fun SettingsWidgetSubScreen(
             // Hero Card Time Mode - "In 2h 41m" (next prayer) vs "Since 2h 10m" (current/last
             // prayer). Only one at a time, per user preference.
             Text(
-                text = if (strings.isArabic) "توقيت البطاقة الرئيسية" else "Hero Card Timing",
+                text = stringResource(R.string.widget_settings_hero_timing_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -423,7 +420,6 @@ fun SettingsWidgetSubScreen(
 
             WidgetHeroTimeModeSelector(
                 currentMode = wSet.heroTimeMode,
-                isArabic = strings.isArabic,
                 onSelectMode = {
                     onUpdateWidgetSettings(wSet.copy(heroTimeMode = it))
                     onRefreshAllWidgets()
@@ -451,7 +447,7 @@ fun SettingsWidgetSubScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     WidgetToggleRow(
-                        title = if (strings.isArabic) "إظهار الموقع واسم المدينة" else "Show Location & City",
+                        title = stringResource(R.string.widget_settings_toggle_show_location),
                         checked = wSet.showLocation,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showLocation = it))
@@ -462,7 +458,7 @@ fun SettingsWidgetSubScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
                     WidgetToggleRow(
-                        title = if (strings.isArabic) "إظهار التاريخ الهجري" else "Show Hijri Date",
+                        title = stringResource(R.string.widget_settings_toggle_show_hijri),
                         checked = wSet.showHijriDate,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showHijriDate = it))
@@ -473,7 +469,7 @@ fun SettingsWidgetSubScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
                     WidgetToggleRow(
-                        title = if (strings.isArabic) "إظهار العداد التنازلي المتبقي" else "Show Countdown Timer",
+                        title = stringResource(R.string.widget_settings_toggle_show_countdown),
                         checked = wSet.showCountdown,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showCountdown = it))
@@ -484,7 +480,7 @@ fun SettingsWidgetSubScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
                     WidgetToggleRow(
-                        title = if (strings.isArabic) "إظهار شريط التقدم للوقت المنقضي" else "Show Interval Progress Bar",
+                        title = stringResource(R.string.widget_settings_toggle_show_progress),
                         checked = wSet.showProgressBar,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showProgressBar = it))
@@ -495,7 +491,7 @@ fun SettingsWidgetSubScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
                     WidgetToggleRow(
-                        title = if (strings.isArabic) "إظهار وقت الشروق في القائمة" else "Show Sunrise in Schedule",
+                        title = stringResource(R.string.widget_settings_toggle_show_sunrise),
                         checked = wSet.showSunrise,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showSunrise = it))
@@ -506,7 +502,7 @@ fun SettingsWidgetSubScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
                     WidgetToggleRow(
-                        title = if (strings.isArabic) "إظهار بطاقة الصلاة القادمة (Hero Card)" else "Show Next Prayer Hero Card",
+                        title = stringResource(R.string.widget_settings_toggle_show_hero),
                         checked = wSet.showHeroCard,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showHeroCard = it))
@@ -517,7 +513,7 @@ fun SettingsWidgetSubScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
                     WidgetToggleRow(
-                        title = if (strings.isArabic) "إظهار قائمة كافة الصلوات" else "Show All Prayers Schedule",
+                        title = stringResource(R.string.widget_settings_toggle_show_all_prayers),
                         checked = wSet.showAllPrayersList,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showAllPrayersList = it))
@@ -538,7 +534,6 @@ fun SettingsWidgetSubScreen(
 @Composable
 private fun WidgetThemeSelector(
     currentTheme: WidgetThemeMode,
-    isArabic: Boolean,
     onSelectTheme: (WidgetThemeMode) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -578,7 +573,7 @@ private fun WidgetThemeSelector(
 
                         Column {
                             Text(
-                                text = if (isArabic) mode.titleAr else mode.titleEn,
+                                text = stringResource(mode.titleRes),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -625,7 +620,6 @@ private fun getThemePreviewColors(theme: WidgetThemeMode): Triple<Color, Color, 
 @Composable
 private fun WidgetBackgroundStyleSelector(
     currentStyle: WidgetBackgroundStyle,
-    isArabic: Boolean,
     onSelectStyle: (WidgetBackgroundStyle) -> Unit
 ) {
     Row(
@@ -663,7 +657,7 @@ private fun WidgetBackgroundStyleSelector(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = if (isArabic) style.titleAr else style.titleEn,
+                        text = stringResource(style.titleRes),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         textAlign = TextAlign.Center,
@@ -681,7 +675,6 @@ private fun WidgetBackgroundStyleSelector(
 @Composable
 private fun WidgetFontSizeSelector(
     currentSize: WidgetFontSize,
-    isArabic: Boolean,
     onSelectSize: (WidgetFontSize) -> Unit
 ) {
     Row(
@@ -700,7 +693,7 @@ private fun WidgetFontSizeSelector(
                 )
             ) {
                 Text(
-                    text = if (isArabic) size.titleAr else size.titleEn,
+                    text = stringResource(size.titleRes),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1
@@ -716,7 +709,6 @@ private fun WidgetFontSizeSelector(
 @Composable
 private fun WidgetTextStyleSelector(
     currentStyle: WidgetTextStyle,
-    isArabic: Boolean,
     onSelectStyle: (WidgetTextStyle) -> Unit
 ) {
     Row(
@@ -735,7 +727,7 @@ private fun WidgetTextStyleSelector(
                 )
             ) {
                 Text(
-                    text = if (isArabic) style.titleAr else style.titleEn,
+                    text = stringResource(style.titleRes),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1
@@ -751,7 +743,6 @@ private fun WidgetTextStyleSelector(
 @Composable
 private fun WidgetHeroTimeModeSelector(
     currentMode: WidgetHeroTimeMode,
-    isArabic: Boolean,
     onSelectMode: (WidgetHeroTimeMode) -> Unit
 ) {
     Row(
@@ -770,7 +761,7 @@ private fun WidgetHeroTimeModeSelector(
                 )
             ) {
                 Text(
-                    text = if (isArabic) mode.titleAr else mode.titleEn,
+                    text = stringResource(mode.titleRes),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1
@@ -981,7 +972,7 @@ private fun PreviewStandard4x2(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = settings.location.name,
+                            text = com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic),
                             fontSize = 11.sp * scale,
                             fontWeight = FontWeight.Bold,
                             color = textPrimary
@@ -990,7 +981,7 @@ private fun PreviewStandard4x2(
                     if (wSet.showHijriDate) {
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "• 14 Safar 1448 AH",
+                            text = stringResource(R.string.widget_preview_mock_hijri_date),
                             fontSize = 9.sp * scale,
                             color = textSecondary
                         )
@@ -1013,7 +1004,8 @@ private fun PreviewStandard4x2(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
-                    val (heroName, heroTime, heroCountdown) = previewHeroMock(wSet.heroTimeMode, isArabic)
+                    val previewRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
+                    val (heroName, heroTime, heroCountdown) = previewHeroMock(wSet.heroTimeMode, previewRes)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1068,14 +1060,15 @@ private fun PreviewStandard4x2(
 
         // 6-Prayer Ribbon
         if (wSet.showAllPrayersList) {
-            val prayers = getPreviewPrayers(isArabic, wSet.showSunrise)
+            val ribbonRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
+            val prayers = getPreviewPrayers(ribbonRes, wSet.showSunrise)
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 prayers.forEach { (name, time) ->
-                    val isActive = name == (if (isArabic) "العصر" else "Asr")
+                    val isActive = name == ribbonRes.getString(R.string.prayer_name_asr)
                     Surface(
                         modifier = Modifier.weight(1f),
                         color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.14f),
@@ -1135,7 +1128,7 @@ private fun PreviewExpandedMax(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = settings.location.name,
+                            text = com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic),
                             fontSize = 13.sp * scale,
                             fontWeight = FontWeight.Bold,
                             color = textPrimary
@@ -1144,7 +1137,7 @@ private fun PreviewExpandedMax(
                     if (wSet.showHijriDate) {
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (isArabic) "• ١٤ صفر ١٤٤٨ هـ" else "• 14 Safar 1448 AH",
+                            text = stringResource(R.string.widget_preview_mock_hijri_date),
                             fontSize = 11.sp * scale,
                             color = textSecondary
                         )
@@ -1161,7 +1154,8 @@ private fun PreviewExpandedMax(
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    val (heroName, heroTime, heroCountdown) = previewHeroMock(wSet.heroTimeMode, isArabic)
+                    val previewRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
+                    val (heroName, heroTime, heroCountdown) = previewHeroMock(wSet.heroTimeMode, previewRes)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1216,11 +1210,12 @@ private fun PreviewExpandedMax(
 
         // Expanded Prayer Rows List (Evenly distributed)
         if (wSet.showAllPrayersList) {
-            val prayers = getPreviewPrayers(isArabic, wSet.showSunrise)
+            val ribbonRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
+            val prayers = getPreviewPrayers(ribbonRes, wSet.showSunrise)
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 prayers.forEach { (name, time) ->
-                    val isActive = name == (if (isArabic) "العصر" else "Asr")
+                    val isActive = name == ribbonRes.getString(R.string.prayer_name_asr)
                     Surface(
                         color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.14f),
                         shape = RoundedCornerShape(8.dp),
@@ -1268,11 +1263,12 @@ private fun PreviewVertical1Col(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        val vertRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
         if (wSet.showLocation) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = Icons.Default.Mosque, contentDescription = null, tint = primaryAccent, modifier = Modifier.size(11.dp))
                 Spacer(modifier = Modifier.width(3.dp))
-                Text(text = settings.location.name, fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
+                Text(text = com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
             }
         }
 
@@ -1287,22 +1283,22 @@ private fun PreviewVertical1Col(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
-                    Text(text = if (isArabic) (if (isPrevious) "الظهر" else "العصر") else (if (isPrevious) "Dhuhr" else "Asr"), fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
+                    Text(text = vertRes.getString(if (isPrevious) R.string.prayer_name_dhuhr else R.string.prayer_name_asr), fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
                     Text(text = if (isPrevious) "12:20 PM" else "3:45 PM", fontSize = 12.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)
                     if (wSet.showCountdown) {
                         Surface(color = primaryAccent, shape = RoundedCornerShape(6.dp)) {
-                            Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "خلال 45د" else "In 45m"), color = textOnAccent, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                            Text(text = if (isPrevious) vertRes.getString(R.string.widget_since_minutes_only, 45) else vertRes.getString(R.string.widget_countdown_minutes_only, 45), color = textOnAccent, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                         }
                     }
                 }
             }
         }
 
-        val prayers = getPreviewPrayers(isArabic, wSet.showSunrise)
+        val prayers = getPreviewPrayers(vertRes, wSet.showSunrise)
 
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             prayers.forEach { (name, time) ->
-                val isActive = name == (if (isArabic) "العصر" else "Asr")
+                val isActive = name == vertRes.getString(R.string.prayer_name_asr)
                 Surface(
                     color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.14f),
                     shape = RoundedCornerShape(6.dp),
@@ -1339,16 +1335,17 @@ private fun PreviewSlimBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val slimRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(imageVector = Icons.Default.Mosque, contentDescription = null, tint = primaryAccent, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Column {
                 if (wSet.showLocation) {
-                    Text(text = settings.location.name, fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
+                    Text(text = com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
-                    Text(text = if (isArabic) (if (isPrevious) "الظهر" else "العصر") else (if (isPrevious) "Dhuhr" else "Asr"), fontSize = 12.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
+                    Text(text = slimRes.getString(if (isPrevious) R.string.prayer_name_dhuhr else R.string.prayer_name_asr), fontSize = 12.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(text = if (isPrevious) "12:20 PM" else "3:45 PM", fontSize = 13.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
                 }
@@ -1359,7 +1356,7 @@ private fun PreviewSlimBar(
             if (wSet.showCountdown) {
                 val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
                 Surface(color = primaryAccent, shape = RoundedCornerShape(8.dp)) {
-                    Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "خلال 45د" else "In 45m"), color = textOnAccent, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                    Text(text = if (isPrevious) slimRes.getString(R.string.widget_since_minutes_only, 45) else slimRes.getString(R.string.widget_countdown_minutes_only, 45), color = textOnAccent, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                 }
             }
             Spacer(modifier = Modifier.width(6.dp))
@@ -1385,17 +1382,18 @@ private fun PreviewCompact2x1(
         verticalAlignment = Alignment.CenterVertically
     ) {
         val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
+        val compactRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
         Column {
             if (wSet.showLocation) {
-                Text(text = settings.location.name, fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
+                Text(text = com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
             }
-            Text(text = if (isArabic) (if (isPrevious) "الظهر" else "العصر") else (if (isPrevious) "Dhuhr Prayer" else "Asr Prayer"), fontSize = 11.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
+            Text(text = compactRes.getString(if (isPrevious) R.string.widget_preview_compact_prev_label else R.string.widget_preview_compact_next_label), fontSize = 11.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
             Text(text = if (isPrevious) "12:20 PM" else "3:45 PM", fontSize = 18.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)
         }
 
         if (wSet.showCountdown) {
             Surface(color = primaryAccent, shape = RoundedCornerShape(8.dp)) {
-                Text(text = if (isPrevious) (if (isArabic) "منذ 45د" else "45m ago") else (if (isArabic) "45د" else "45m"), color = textOnAccent, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                Text(text = if (isPrevious) compactRes.getString(R.string.widget_since_minutes_only, 45) else compactRes.getString(R.string.widget_preview_mock_minutes_bare, 45), color = textOnAccent, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
             }
         }
     }
@@ -1403,32 +1401,32 @@ private fun PreviewCompact2x1(
 
 // Mock hero card content for the previews - name, time, and the countdown/elapsed label -
 // swapped based on heroTimeMode so the preview reflects the setting it's demonstrating.
-private fun previewHeroMock(heroTimeMode: WidgetHeroTimeMode, isArabic: Boolean): Triple<String, String, String> {
+private fun previewHeroMock(heroTimeMode: WidgetHeroTimeMode, res: Resources): Triple<String, String, String> {
     return if (heroTimeMode == WidgetHeroTimeMode.PREVIOUS) {
         Triple(
-            if (isArabic) "الظهر" else "Dhuhr",
+            res.getString(R.string.prayer_name_dhuhr),
             "12:20 PM",
-            if (isArabic) "منذ 2س 10د" else "2h 10m ago"
+            res.getString(R.string.widget_since_hours_minutes, 2, 10)
         )
     } else {
         Triple(
-            if (isArabic) "العصر" else "Asr",
+            res.getString(R.string.prayer_name_asr),
             "3:45 PM",
-            if (isArabic) "خلال 1س 45د" else "In 1h 45m"
+            res.getString(R.string.widget_countdown_hours_minutes, 1, 45)
         )
     }
 }
 
-private fun getPreviewPrayers(isArabic: Boolean, showSunrise: Boolean): List<Pair<String, String>> {
+private fun getPreviewPrayers(res: Resources, showSunrise: Boolean): List<Pair<String, String>> {
     val list = mutableListOf<Pair<String, String>>()
-    list.add((if (isArabic) "الفجر" else "Fajr") to "05:12")
+    list.add(res.getString(R.string.prayer_name_fajr) to "05:12")
     if (showSunrise) {
-        list.add((if (isArabic) "الشروق" else "Sunrise") to "06:34")
+        list.add(res.getString(R.string.prayer_name_sunrise) to "06:34")
     }
-    list.add((if (isArabic) "الظهر" else "Dhuhr") to "12:20")
-    list.add((if (isArabic) "العصر" else "Asr") to "15:45")
-    list.add((if (isArabic) "المغرب" else "Maghrib") to "18:05")
-    list.add((if (isArabic) "العشاء" else "Isha") to "19:35")
+    list.add(res.getString(R.string.prayer_name_dhuhr) to "12:20")
+    list.add(res.getString(R.string.prayer_name_asr) to "15:45")
+    list.add(res.getString(R.string.prayer_name_maghrib) to "18:05")
+    list.add(res.getString(R.string.prayer_name_isha) to "19:35")
     return list
 }
 

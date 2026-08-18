@@ -1,196 +1,95 @@
 package com.example.data.models
 
+import androidx.annotation.StringRes
+import com.example.R
+
 enum class WidgetThemeMode(
-    val titleEn: String,
-    val titleAr: String,
-    val descEn: String,
-    val descAr: String,
+    @StringRes val titleRes: Int,
     val previewBgColor: Long,
     val previewAccentColor: Long,
     val previewTextColor: Long
 ) {
     APP_THEME(
-        titleEn = "Match App Theme",
-        titleAr = "مماثل لمظهر التطبيق",
-        descEn = "Automatically adopts your app's current theme & palette",
-        descAr = "يتطابق تلقائياً مع السمة والألوان المختارة في التطبيق",
+        titleRes = R.string.widget_theme_app_theme,
         previewBgColor = 0xFF1E293B,
         previewAccentColor = 0xFF10B981,
         previewTextColor = 0xFFFFFFFF
     ),
     MATERIAL_YOU(
-        titleEn = "Material You Dynamic",
-        titleAr = "ألوان النظام التلقائية",
-        descEn = "Uses Android 12+ dynamic wallpaper colors",
-        descAr = "يستخرج الألوان ديناميكياً من خلفية شاشة جهازك",
+        titleRes = R.string.widget_theme_material_you,
         previewBgColor = 0xFF2A3439,
         previewAccentColor = 0xFF7DD3FC,
         previewTextColor = 0xFFFFFFFF
     ),
     DARK_ELEGANT(
-        titleEn = "Dark Charcoal & Emerald",
-        titleAr = "داكن أنيق مع زمرد",
-        descEn = "Deep charcoal glass with luminous emerald highlights",
-        descAr = "خلفية فحمية داكنة مع لمسات زمردية مضيئة",
+        titleRes = R.string.widget_theme_dark_elegant,
         previewBgColor = 0xFF121820,
         previewAccentColor = 0xFF10B981,
         previewTextColor = 0xFFF1F5F9
     ),
     LIGHT_CLEAN(
-        titleEn = "Pristine Light",
-        titleAr = "فاتح ناصع",
-        descEn = "Clean bright card with crisp typography",
-        descAr = "بطاقة بيضاء نقية مع خطوط عالية التباين",
+        titleRes = R.string.widget_theme_light_clean,
         previewBgColor = 0xFFF8FAFC,
         previewAccentColor = 0xFF059669,
         previewTextColor = 0xFF0F172A
     ),
     OLED_BLACK(
-        titleEn = "AMOLED Pitch Black",
-        titleAr = "أسود داكن عميق (OLED)",
-        descEn = "True #000000 background for AMOLED battery savings",
-        descAr = "أسود نقي تماماً لتوفير طاقة شاشات أموليد",
+        titleRes = R.string.widget_theme_oled_black,
         previewBgColor = 0xFF000000,
         previewAccentColor = 0xFF34D399,
         previewTextColor = 0xFFFFFFFF
     ),
     EMERALD_ISLAMIC(
-        titleEn = "Islamic Emerald",
-        titleAr = "الزمرد الإسلامي",
-        descEn = "Rich traditional green gradient with gold accents",
-        descAr = "أخضر زمردي إسلامي عريق مع لمسات ذهبية",
+        titleRes = R.string.widget_theme_emerald_islamic,
         previewBgColor = 0xFF064E3B,
         previewAccentColor = 0xFFFBBF24,
         previewTextColor = 0xFFECFDF5
     ),
     GOLDEN_HOUR(
-        titleEn = "Desert Amber & Gold",
-        titleAr = "الذهب والكهرمان الصحراوي",
-        descEn = "Warm sunset ochre and golden tones",
-        descAr = "ألوان ذهبية وعنبرية دافئة ومميزة",
+        titleRes = R.string.widget_theme_golden_hour,
         previewBgColor = 0xFF451A03,
         previewAccentColor = 0xFFF59E0B,
         previewTextColor = 0xFFFEF3C7
     ),
     ROYAL_BLUE(
-        titleEn = "Midnight Sapphire",
-        titleAr = "الياقوت الأزرق الليلي",
-        descEn = "Deep ocean navy with sky blue highlights",
-        descAr = "أزرق كحلي ملكي هادئ مع تفاصيل سماوية",
+        titleRes = R.string.widget_theme_royal_blue,
         previewBgColor = 0xFF0F172A,
         previewAccentColor = 0xFF38BDF8,
         previewTextColor = 0xFFF0F9FF
     ),
     MONOCHROME(
-        titleEn = "Minimal Monochrome",
-        titleAr = "أحادي اللون مبسط",
-        descEn = "Clean grayscale minimalist aesthetic",
-        descAr = "تصميم رمادي وأبيض مبسط ومريح للعين",
+        titleRes = R.string.widget_theme_monochrome,
         previewBgColor = 0xFF18181B,
         previewAccentColor = 0xFFE4E4E7,
         previewTextColor = 0xFFFAFAFA
     )
 }
 
-enum class WidgetBackgroundStyle(
-    val titleEn: String,
-    val titleAr: String,
-    val descEn: String,
-    val descAr: String
-) {
-    TRANSLUCENT(
-        titleEn = "Translucent Glass",
-        titleAr = "زجاجي شبه شفاف",
-        descEn = "Modern frosted translucency blending with wallpaper",
-        descAr = "بطاقة شبه شفافة ناعمة تمتزج بانسيابية مع خلفية الشاشة"
-    ),
-    SOLID_SURFACE(
-        titleEn = "Solid Surface",
-        titleAr = "معتم مصمت",
-        descEn = "Opaque solid background with highest readability",
-        descAr = "خلفية معتمة غير شفافة لأعلى درجات الوضوح والتباين"
-    ),
-    FROSTED_GLASS(
-        titleEn = "Deep Blur Glass",
-        titleAr = "زجاج ضبابي عميق",
-        descEn = "Soft blurred tinted glass container",
-        descAr = "تأثير زجاجي مضلل مع إطار خفيف جذاب"
-    ),
-    MINIMAL_BORDER(
-        titleEn = "Border Outline Only",
-        titleAr = "إطار خارجي فقط",
-        descEn = "Transparent background with a subtle crisp outline",
-        descAr = "خلفية شفافة تماماً مع إطار خارجي رفيع وأنيق"
-    ),
-    TRANSPARENT_CLEAN(
-        titleEn = "Fully Transparent (Floating)",
-        titleAr = "شفاف تماماً (عائم)",
-        descEn = "Zero background, prayer times float directly on wallpaper",
-        descAr = "بدون خلفية إطلاقاً، تظهر الأوقات عائمة فوق خلفية الشاشة"
-    )
+enum class WidgetBackgroundStyle(@StringRes val titleRes: Int) {
+    TRANSLUCENT(R.string.widget_bgstyle_translucent),
+    SOLID_SURFACE(R.string.widget_bgstyle_solid_surface),
+    FROSTED_GLASS(R.string.widget_bgstyle_frosted_glass),
+    MINIMAL_BORDER(R.string.widget_bgstyle_minimal_border),
+    TRANSPARENT_CLEAN(R.string.widget_bgstyle_transparent_clean)
 }
 
-enum class WidgetFontSize(
-    val titleEn: String,
-    val titleAr: String,
-    val scaleFactor: Float
-) {
-    COMPACT(
-        titleEn = "Compact",
-        titleAr = "مضغوط وصغير",
-        scaleFactor = 0.88f
-    ),
-    STANDARD(
-        titleEn = "Standard",
-        titleAr = "متوسط قياسي",
-        scaleFactor = 1.0f
-    ),
-    LARGE(
-        titleEn = "Large",
-        titleAr = "كبير وواضح",
-        scaleFactor = 1.15f
-    ),
-    EXTRA_LARGE(
-        titleEn = "Extra Large",
-        titleAr = "كبير جداً",
-        scaleFactor = 1.30f
-    )
+enum class WidgetFontSize(@StringRes val titleRes: Int, val scaleFactor: Float) {
+    COMPACT(R.string.widget_fontsize_compact, 0.88f),
+    STANDARD(R.string.widget_fontsize_standard, 1.0f),
+    LARGE(R.string.widget_fontsize_large, 1.15f),
+    EXTRA_LARGE(R.string.widget_fontsize_extra_large, 1.30f)
 }
 
-enum class WidgetTextStyle(
-    val titleEn: String,
-    val titleAr: String
-) {
-    AUTO(
-        titleEn = "Auto (Theme Default)",
-        titleAr = "تلقائي (حسب السمة)"
-    ),
-    LIGHT(
-        titleEn = "Always Light Text",
-        titleAr = "نص فاتح دائماً"
-    ),
-    DARK(
-        titleEn = "Always Dark Text",
-        titleAr = "نص داكن دائماً"
-    )
+enum class WidgetTextStyle(@StringRes val titleRes: Int) {
+    AUTO(R.string.widget_textstyle_auto),
+    LIGHT(R.string.widget_textstyle_light),
+    DARK(R.string.widget_textstyle_dark)
 }
 
-enum class WidgetHeroTimeMode(
-    val titleEn: String,
-    val titleAr: String
-) {
-    NEXT(
-        titleEn = "Next Prayer (In...)",
-        titleAr = "الصلاة القادمة (خلال...)"
-    ),
-    PREVIOUS(
-        titleEn = "Current Prayer (Since...)",
-        titleAr = "الصلاة الحالية (منذ...)"
-    ),
-    BOTH(
-        titleEn = "Both (Wide Widgets)",
-        titleAr = "كلاهما (للودجت العريض)"
-    )
+enum class WidgetHeroTimeMode(@StringRes val titleRes: Int) {
+    NEXT(R.string.widget_herotime_next),
+    PREVIOUS(R.string.widget_herotime_previous),
+    BOTH(R.string.widget_herotime_both)
 }
 
 data class WidgetCustomizationSettings(

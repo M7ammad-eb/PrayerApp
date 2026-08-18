@@ -10,6 +10,8 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
+import com.example.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -302,7 +304,11 @@ private fun SettingsMainHub(
         // Widgets (التطبيقات المصغرة)
         SettingsHubCategoryCard(
             title = strings.widgetsSection,
-            subtitle = if (strings.isArabic) "${settings.widgetSettings.themeMode.titleAr} • شفافية ${settings.widgetSettings.opacityPercent}%" else "${settings.widgetSettings.themeMode.titleEn} • ${settings.widgetSettings.opacityPercent}% Opacity",
+            subtitle = stringResource(
+                R.string.settings_widget_subtitle_format,
+                stringResource(settings.widgetSettings.themeMode.titleRes),
+                settings.widgetSettings.opacityPercent
+            ),
             icon = Icons.Default.StayCurrentPortrait,
             badgeColor = MaterialTheme.colorScheme.secondaryContainer,
             iconTint = MaterialTheme.colorScheme.secondary,

@@ -36,6 +36,7 @@ import com.example.data.models.WidgetTextStyle
 import com.example.data.models.WidgetThemeMode
 import com.example.data.preferences.AppPrayerSettings
 import com.example.data.preferences.PrayerPreferences
+import com.example.util.LocalizedStrings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -438,10 +439,15 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         val previousPrayerZoned = previousItem?.zonedDateTime
             ?: today.minusDays(1).atTime(todaySchedule.isha).atZone(zoneId)
         val sinceSeconds = Duration.between(previousPrayerZoned, now).seconds.coerceAtLeast(0)
-        val sinceFormatted = formatSince(sinceSeconds, isArabic)
+        val sinceFormatted = formatSince(context, sinceSeconds, isArabic)
 
-        // Location & Hijri display strings
-        val locationFormatted = formatLocationString(settings.location.name, settings.location.country)
+        // Location & Hijri display strings. A preset-picked city always shows in the *current*
+        // app language (not whichever language was active when it was selected) - only a GPS or
+        // manually-entered location, which has no second-language variant, keeps its stored name.
+        val locationFormatted = formatLocationString(
+            com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic),
+            com.example.data.cities.CityDatabase.localizedCountry(settings.location, isArabic)
+        )
         val hijriFormatted = if (isArabic) {
             todaySchedule.hijriDate?.formattedAr ?: todaySchedule.hijriDateString
         } else {
@@ -474,7 +480,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         val showingPrevious = settings.widgetSettings.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
         val prayerDisplayName = getPrayerName(if (showingPrevious) previousPrayerType else nextPrayerType, settings.language)
         val formattedNextTime = (if (showingPrevious) previousPrayerZoned else nextPrayerZoned).format(timeFormatter)
-        val countdownFormatted = if (showingPrevious) sinceFormatted else formatCountdown(diffSeconds, isArabic)
+        val countdownFormatted = if (showingPrevious) sinceFormatted else formatCountdown(context, diffSeconds, isArabic)
 
         // For heroTimeMode=BOTH: the true next/previous values regardless of the single-hero
         // fallback above, used by the dual side-by-side display on wide widgets.
@@ -1073,7 +1079,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.widget_hero_single_content, View.GONE)
                 views.setViewVisibility(R.id.widget_hero_dual_content, View.VISIBLE)
 
-                views.setTextViewText(R.id.widget_hero_prev_label, if (isArabic) "الصلاة السابقة" else "PREVIOUS")
+                val heroLabelRes = LocalizedStrings.forLanguage(context, isArabic)
+                views.setTextViewText(R.id.widget_hero_prev_label, heroLabelRes.getString(R.string.widget_hero_prev_label))
                 views.setTextColor(R.id.widget_hero_prev_label, colors.textSecondaryColor)
                 views.setTextViewText(R.id.widget_hero_prev_name, previousPrayerName)
                 views.setTextColor(R.id.widget_hero_prev_name, colors.accentColor)
@@ -1082,7 +1089,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_hero_prev_since, sinceText)
                 views.setTextColor(R.id.widget_hero_prev_since, colors.textSecondaryColor)
 
-                views.setTextViewText(R.id.widget_hero_next_label, if (isArabic) "الصلاة القادمة" else "NEXT")
+                views.setTextViewText(R.id.widget_hero_next_label, heroLabelRes.getString(R.string.widget_hero_next_label))
                 views.setTextColor(R.id.widget_hero_next_label, colors.textSecondaryColor)
                 views.setTextViewText(R.id.widget_hero_next_name, nextPrayerName)
                 views.setTextColor(R.id.widget_hero_next_name, colors.accentColor)
@@ -1117,7 +1124,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                     // actually arrived, where it adds real information.
                     if (wSet.heroTimeMode == WidgetHeroTimeMode.NEXT && diffSeconds <= 60) {
                         views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
-                        views.setTextViewText(R.id.widget_status_text, if (isArabic) "حان وقت الصلاة" else "Prayer Time!")
+                        views.setTextViewText(R.id.widget_status_text, LocalizedStrings.forLanguage(context, isArabic).getString(R.string.widget_status_prayer_time))
                         views.setTextColor(R.id.widget_status_text, colors.textOnAccentColor)
                         views.setTextViewTextSize(R.id.widget_status_text, TypedValue.COMPLEX_UNIT_SP, 8f * scale)
                     } else {
@@ -1232,7 +1239,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.widget_exp_hero_single_content, View.GONE)
                 views.setViewVisibility(R.id.widget_exp_hero_dual_content, View.VISIBLE)
 
-                views.setTextViewText(R.id.widget_exp_hero_prev_label, if (isArabic) "الصلاة السابقة" else "PREVIOUS")
+                val expHeroLabelRes = LocalizedStrings.forLanguage(context, isArabic)
+                views.setTextViewText(R.id.widget_exp_hero_prev_label, expHeroLabelRes.getString(R.string.widget_hero_prev_label))
                 views.setTextColor(R.id.widget_exp_hero_prev_label, colors.textSecondaryColor)
                 views.setTextViewText(R.id.widget_exp_hero_prev_name, previousPrayerName)
                 views.setTextColor(R.id.widget_exp_hero_prev_name, colors.accentColor)
@@ -1241,7 +1249,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_exp_hero_prev_since, sinceText)
                 views.setTextColor(R.id.widget_exp_hero_prev_since, colors.textSecondaryColor)
 
-                views.setTextViewText(R.id.widget_exp_hero_next_label, if (isArabic) "الصلاة القادمة" else "NEXT")
+                views.setTextViewText(R.id.widget_exp_hero_next_label, expHeroLabelRes.getString(R.string.widget_hero_next_label))
                 views.setTextColor(R.id.widget_exp_hero_next_label, colors.textSecondaryColor)
                 views.setTextViewText(R.id.widget_exp_hero_next_name, nextPrayerName)
                 views.setTextColor(R.id.widget_exp_hero_next_name, colors.accentColor)
@@ -1273,7 +1281,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
 
                     if (wSet.heroTimeMode == WidgetHeroTimeMode.NEXT && diffSeconds <= 60) {
                         views.setViewVisibility(R.id.widget_exp_status_text, View.VISIBLE)
-                        views.setTextViewText(R.id.widget_exp_status_text, if (isArabic) "حان وقت الصلاة" else "Prayer Time!")
+                        views.setTextViewText(R.id.widget_exp_status_text, LocalizedStrings.forLanguage(context, isArabic).getString(R.string.widget_status_prayer_time))
                         views.setTextColor(R.id.widget_exp_status_text, colors.textOnAccentColor)
                         views.setTextViewTextSize(R.id.widget_exp_status_text, TypedValue.COMPLEX_UNIT_SP, 9f * scale)
                     } else {
@@ -1452,39 +1460,26 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private fun formatCountdown(seconds: Long, isArabic: Boolean): String {
-        if (seconds <= 0) return if (isArabic) "الآن" else "Now"
+    private fun formatCountdown(context: Context, seconds: Long, isArabic: Boolean): String {
+        val res = LocalizedStrings.forLanguage(context, isArabic)
+        if (seconds <= 0) return res.getString(R.string.widget_countdown_now)
         val hours = seconds / 3600
         val minutes = (seconds % 3600) / 60
-        return if (isArabic) {
-            when {
-                hours > 0 -> "خلال $hours س و $minutes د"
-                minutes > 0 -> "خلال $minutes د"
-                else -> "أقل من دقيقة"
-            }
-        } else {
-            when {
-                hours > 0 -> "In ${hours}h ${minutes}m"
-                minutes > 0 -> "In ${minutes}m"
-                else -> "In < 1 min"
-            }
+        return when {
+            hours > 0 -> res.getString(R.string.widget_countdown_hours_minutes, hours, minutes)
+            minutes > 0 -> res.getString(R.string.widget_countdown_minutes_only, minutes)
+            else -> res.getString(R.string.widget_countdown_less_than_min)
         }
     }
 
-    private fun formatSince(seconds: Long, isArabic: Boolean): String {
-        if (seconds <= 60) return if (isArabic) "منذ قليل" else "Just now"
+    private fun formatSince(context: Context, seconds: Long, isArabic: Boolean): String {
+        val res = LocalizedStrings.forLanguage(context, isArabic)
+        if (seconds <= 60) return res.getString(R.string.widget_since_just_now)
         val hours = seconds / 3600
         val minutes = (seconds % 3600) / 60
-        return if (isArabic) {
-            when {
-                hours > 0 -> "منذ $hours س و $minutes د"
-                else -> "منذ $minutes د"
-            }
-        } else {
-            when {
-                hours > 0 -> "${hours}h ${minutes}m ago"
-                else -> "${minutes}m ago"
-            }
+        return when {
+            hours > 0 -> res.getString(R.string.widget_since_hours_minutes, hours, minutes)
+            else -> res.getString(R.string.widget_since_minutes_only, minutes)
         }
     }
 

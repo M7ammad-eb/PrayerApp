@@ -346,4 +346,73 @@
         <item>السبت</item>
         <item>الأحد</item>
     </string-array>
+
+    <!-- ===== Widget Provider (non-Compose RemoteViews) ===== -->
+    <string name="widget_hero_prev_label">الصلاة السابقة</string>
+    <string name="widget_hero_next_label">الصلاة القادمة</string>
+    <string name="widget_status_prayer_time">حان وقت الصلاة</string>
+    <string name="widget_countdown_now">الآن</string>
+    <string name="widget_countdown_hours_minutes">خلال %1$dس و %2$dد</string>
+    <string name="widget_countdown_minutes_only">خلال %1$dد</string>
+    <string name="widget_countdown_less_than_min">أقل من دقيقة</string>
+    <string name="widget_since_just_now">منذ قليل</string>
+    <string name="widget_since_hours_minutes">منذ %1$dس و %2$dد</string>
+    <string name="widget_since_minutes_only">منذ %1$dد</string>
+
+    <!-- ===== Widget Customization Screen ===== -->
+    <string name="widget_settings_intro_banner">خصص شكل وحجم التطبيق المصغر على شاشتك الرئيسية ليتناسب تماماً مع أي عدد من الأعمدة والصفوف (من عمود واحد نحيف إلى الشاشة الكاملة).</string>
+    <string name="widget_settings_applied_notice">✓ تم تحديث جميع الودجات على الشاشة الرئيسية بنجاح!</string>
+    <string name="widget_settings_opacity_transparent">شفاف (0%)</string>
+    <string name="widget_settings_opacity_solid">معتم كامل (100%)</string>
+    <string name="widget_settings_text_color_title">لون النص</string>
+    <string name="widget_settings_hero_timing_title">توقيت البطاقة الرئيسية</string>
+    <string name="widget_settings_toggle_show_location">إظهار الموقع واسم المدينة</string>
+    <string name="widget_settings_toggle_show_hijri">إظهار التاريخ الهجري</string>
+    <string name="widget_settings_toggle_show_countdown">إظهار العداد التنازلي المتبقي</string>
+    <string name="widget_settings_toggle_show_progress">إظهار شريط التقدم للوقت المنقضي</string>
+    <string name="widget_settings_toggle_show_sunrise">إظهار وقت الشروق في القائمة</string>
+    <string name="widget_settings_toggle_show_hero">إظهار بطاقة الصلاة القادمة (Hero Card)</string>
+    <string name="widget_settings_toggle_show_all_prayers">إظهار قائمة كافة الصلوات</string>
+
+    <string name="widget_preview_type_standard_4x2">شريط 4×2</string>
+    <string name="widget_preview_type_expanded_max">موسع كامل (أقصى حجم)</string>
+    <string name="widget_preview_type_vertical_1col">عمود نحيف 1×6</string>
+    <string name="widget_preview_type_slim_bar">شريط أفقي 4×1</string>
+    <string name="widget_preview_type_compact_2x1">مصغر 2×1</string>
+
+    <string name="widget_theme_app_theme">مماثل لمظهر التطبيق</string>
+    <string name="widget_theme_material_you">ألوان النظام التلقائية</string>
+    <string name="widget_theme_dark_elegant">داكن أنيق مع زمرد</string>
+    <string name="widget_theme_light_clean">فاتح ناصع</string>
+    <string name="widget_theme_oled_black">أسود داكن عميق (OLED)</string>
+    <string name="widget_theme_emerald_islamic">الزمرد الإسلامي</string>
+    <string name="widget_theme_golden_hour">الذهب والكهرمان الصحراوي</string>
+    <string name="widget_theme_royal_blue">الياقوت الأزرق الليلي</string>
+    <string name="widget_theme_monochrome">أحادي اللون مبسط</string>
+
+    <string name="widget_bgstyle_translucent">زجاجي شبه شفاف</string>
+    <string name="widget_bgstyle_solid_surface">معتم مصمت</string>
+    <string name="widget_bgstyle_frosted_glass">زجاج ضبابي عميق</string>
+    <string name="widget_bgstyle_minimal_border">إطار خارجي فقط</string>
+    <string name="widget_bgstyle_transparent_clean">شفاف تماماً (عائم)</string>
+
+    <string name="widget_fontsize_compact">مضغوط وصغير</string>
+    <string name="widget_fontsize_standard">متوسط قياسي</string>
+    <string name="widget_fontsize_large">كبير وواضح</string>
+    <string name="widget_fontsize_extra_large">كبير جداً</string>
+
+    <string name="widget_textstyle_auto">تلقائي (حسب السمة)</string>
+    <string name="widget_textstyle_light">نص فاتح دائماً</string>
+    <string name="widget_textstyle_dark">نص داكن دائماً</string>
+
+    <string name="widget_herotime_next">الصلاة القادمة (خلال...)</string>
+    <string name="widget_herotime_previous">الصلاة الحالية (منذ...)</string>
+    <string name="widget_herotime_both">كلاهما (للودجت العريض)</string>
+
+    <!-- Live preview mock text (fixed example values, not real countdowns) -->
+    <string name="widget_preview_mock_hijri_date">• ١٤ صفر ١٤٤٨ هـ</string>
+    <string name="widget_preview_mock_minutes_bare">%1$dد</string>
+    <string name="widget_preview_compact_prev_label">الظهر</string>
+    <string name="widget_preview_compact_next_label">العصر</string>
+    <string name="settings_widget_subtitle_format">%1$s • شفافية %2$d%%</string>
 </resources>
