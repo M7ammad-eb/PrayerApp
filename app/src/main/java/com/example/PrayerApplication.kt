@@ -6,6 +6,8 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 
 class PrayerApplication : Application() {
 
@@ -16,6 +18,10 @@ class PrayerApplication : Application() {
     }
 
     private var lastNightModeBit = 0
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val pendingWidgetRefresh = Runnable {
+        com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(this)
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -36,7 +42,13 @@ class PrayerApplication : Application() {
         val newNightModeBit = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
         if (newNightModeBit != lastNightModeBit) {
             lastNightModeBit = newNightModeBit
-            com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(this)
+            // Delayed, not immediate: querying getAppWidgetOptions() while the launcher is still
+            // mid-animation for the theme switch can catch it reporting transitional (smaller)
+            // widget bounds, so the size bucket picked here would visibly shrink for a moment
+            // until the next real update. Debounced too, in case Android delivers more than one
+            // configuration tick for the same theme change.
+            mainHandler.removeCallbacks(pendingWidgetRefresh)
+            mainHandler.postDelayed(pendingWidgetRefresh, 700)
         }
     }
 
