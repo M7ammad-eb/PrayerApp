@@ -7,9 +7,10 @@ import com.example.data.models.JuristicMethod
 import com.example.data.models.PrayerTimeAdjustments
 import com.example.data.models.PrayerTimeItem
 import com.example.data.models.PrayerType
+import java.time.Duration
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import kotlin.math.abs
 import kotlin.math.acos
@@ -18,6 +19,7 @@ import kotlin.math.atan
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.floor
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.tan
 
@@ -107,6 +109,39 @@ object PrayerTimesCalculator {
         return computeTime(angle, lat, declination, midDay, isMorning = false)
     }
 
+    private data class SunTimes(
+        val sunriseHour: Double,
+        val sunsetHour: Double,
+        val declination: Double,
+        val midDayHour: Double
+    )
+
+    // Computed with timeZone fixed at 0 (UTC frame) rather than baking in a single local offset
+    // for the whole day - see zonedTimeFromUtcDecimalHours for why that matters on DST-transition
+    // dates.
+    private fun computeSunTimes(date: LocalDate, latitude: Double, longitude: Double): SunTimes {
+        val jd = julianDate(date.year, date.monthValue, date.dayOfMonth)
+        val sun = sunPosition(jd)
+        val midDay = computeMidDay(0.0, longitude, sun.equationOfTime)
+        val sunriseHour = computeTime(0.833, latitude, sun.declination, midDay, isMorning = true)
+        val sunsetHour = computeTime(0.833, latitude, sun.declination, midDay, isMorning = false)
+        return SunTimes(sunriseHour, sunsetHour, sun.declination, midDay)
+    }
+
+    private fun decimalHoursToTotalMinutes(decimalHours: Double): Int {
+        val fixed = fixHour(decimalHours)
+        return (fixed * 60.0).roundToInt().mod(24 * 60)
+    }
+
+    // A single UTC-offset frozen for the entire calendar day (the previous approach) produces a
+    // one-hour error for events that fall after a DST transition occurring earlier that same day.
+    // Anchoring each event as a real UTC instant and converting via withZoneSameInstant applies
+    // whatever offset actually holds at that specific instant instead.
+    private fun zonedTimeFromUtcDecimalHours(date: LocalDate, decimalHours: Double, zoneId: ZoneId): ZonedDateTime {
+        val totalMinutes = decimalHoursToTotalMinutes(decimalHours)
+        return date.atStartOfDay(ZoneOffset.UTC).plusMinutes(totalMinutes.toLong()).withZoneSameInstant(zoneId)
+    }
+
     fun calculateDailySchedule(
         date: LocalDate,
         latitude: Double,
@@ -119,42 +154,53 @@ object PrayerTimesCalculator {
         hijriAdjustmentDays: Int = 0,
         now: ZonedDateTime = ZonedDateTime.now(zoneId)
     ): DailyPrayerSchedule {
-        val timeZoneOffsetHours = zoneId.rules.getOffset(date.atStartOfDay()).totalSeconds / 3600.0
-        val jd = julianDate(date.year, date.monthValue, date.dayOfMonth)
-
-        val sun = sunPosition(jd)
-        val midDay = computeMidDay(timeZoneOffsetHours, longitude, sun.equationOfTime)
+        val sunToday = computeSunTimes(date, latitude, longitude)
+        val declination = sunToday.declination
+        val midDay = sunToday.midDayHour
 
         // Standard angles: Sunrise / Sunset standard zenith = 90.833° -> angle = 0.833° below horizon
-        var sunriseHour = computeTime(0.833, latitude, sun.declination, midDay, isMorning = true)
-        var sunsetHour = computeTime(0.833, latitude, sun.declination, midDay, isMorning = false)
+        var sunriseHour = sunToday.sunriseHour
+        var sunsetHour = sunToday.sunsetHour
 
-        var fajrHour = computeTime(method.fajrAngle, latitude, sun.declination, midDay, isMorning = true)
+        var fajrHour = computeTime(method.fajrAngle, latitude, declination, midDay, isMorning = true)
 
-        var ishaHour = if (method.ishaMinutesAfterMaghrib != null) {
-            sunsetHour + (method.ishaMinutesAfterMaghrib / 60.0)
+        val hijriDateObj = HijriDateCalculator.convertToHijri(date, hijriAdjustmentDays)
+        val hijriDateStr = hijriDateObj.formattedEn
+
+        // The Umm al-Qura method's fixed Isha interval extends from 90 to 120 minutes after
+        // Maghrib during Ramadan (to accommodate Tarawih), per the calculation's own convention.
+        val ishaMinutesAfterMaghrib = if (method == CalculationMethod.UMM_AL_QURA && hijriDateObj.month == 9) {
+            120
         } else {
-            computeTime(method.ishaAngle, latitude, sun.declination, midDay, isMorning = false)
+            method.ishaMinutesAfterMaghrib
+        }
+
+        var ishaHour = if (ishaMinutesAfterMaghrib != null) {
+            sunsetHour + (ishaMinutesAfterMaghrib / 60.0)
+        } else {
+            computeTime(method.ishaAngle, latitude, declination, midDay, isMorning = false)
         }
 
         var maghribHour = if (method.maghribAngle != null) {
-            computeTime(method.maghribAngle, latitude, sun.declination, midDay, isMorning = false)
+            computeTime(method.maghribAngle, latitude, declination, midDay, isMorning = false)
         } else {
             sunsetHour
         }
 
-        val asrHour = computeAsr(juristicMethod.shadowFactor, latitude, sun.declination, midDay)
+        val asrHour = computeAsr(juristicMethod.shadowFactor, latitude, declination, midDay)
 
         // High Latitude Adjustments
         val nightDuration = fixHour(24.0 + sunriseHour - sunsetHour)
         if (highLatitudeRule != HighLatitudeRule.NONE && nightDuration in 0.0..24.0) {
             when (highLatitudeRule) {
                 HighLatitudeRule.ANGLE_BASED -> {
-                    val fajrPortion = (method.fajrAngle / 60.0) * (nightDuration / 2.0)
+                    // Night portion is angle/60 of the *full* night, not half of it - halving it
+                    // pulls Fajr/Isha too close to sunrise/sunset at high latitudes.
+                    val fajrPortion = (method.fajrAngle / 60.0) * nightDuration
                     if (sunriseHour - fajrHour > fajrPortion || fajrHour > sunriseHour) {
                         fajrHour = sunriseHour - fajrPortion
                     }
-                    val ishaPortion = ((if (method.ishaAngle > 0) method.ishaAngle else 18.0) / 60.0) * (nightDuration / 2.0)
+                    val ishaPortion = ((if (method.ishaAngle > 0) method.ishaAngle else 18.0) / 60.0) * nightDuration
                     if (ishaHour - sunsetHour > ishaPortion || ishaHour < sunsetHour) {
                         ishaHour = sunsetHour + ishaPortion
                     }
@@ -173,43 +219,49 @@ object PrayerTimesCalculator {
             }
         }
 
-        // Convert to LocalTime and apply manual adjustments
-        val fajrTime = decimalToLocalTime(fajrHour).plusMinutes(adjustments.fajr.toLong())
-        val sunriseTime = decimalToLocalTime(sunriseHour).plusMinutes(adjustments.sunrise.toLong())
-        val dhuhrTime = decimalToLocalTime(midDay).plusMinutes(adjustments.dhuhr.toLong())
-        val asrTime = decimalToLocalTime(asrHour).plusMinutes(adjustments.asr.toLong())
-        val maghribTime = decimalToLocalTime(maghribHour).plusMinutes(adjustments.maghrib.toLong())
-        val ishaTime = decimalToLocalTime(ishaHour).plusMinutes(adjustments.isha.toLong())
+        // Convert each event to its real zoned instant individually (see
+        // zonedTimeFromUtcDecimalHours) and apply manual per-prayer adjustments on top.
+        val fajrZoned = zonedTimeFromUtcDecimalHours(date, fajrHour, zoneId).plusMinutes(adjustments.fajr.toLong())
+        val sunriseZoned = zonedTimeFromUtcDecimalHours(date, sunriseHour, zoneId).plusMinutes(adjustments.sunrise.toLong())
+        val dhuhrZoned = zonedTimeFromUtcDecimalHours(date, midDay, zoneId).plusMinutes(adjustments.dhuhr.toLong())
+        val asrZoned = zonedTimeFromUtcDecimalHours(date, asrHour, zoneId).plusMinutes(adjustments.asr.toLong())
+        val maghribZoned = zonedTimeFromUtcDecimalHours(date, maghribHour, zoneId).plusMinutes(adjustments.maghrib.toLong())
+        val ishaZoned = zonedTimeFromUtcDecimalHours(date, ishaHour, zoneId).plusMinutes(adjustments.isha.toLong())
 
-        // Calculate Islamic Midnight (halfway between sunset and next sunrise)
-        // and Last Third of Night (Qiyam / Tahajjud time)
-        val sunsetMinutes = maghribTime.toSecondOfDay() / 60
-        val sunriseMinutes = sunriseTime.toSecondOfDay() / 60
-        val nightMinutes = (24 * 60 - sunsetMinutes) + sunriseMinutes
-        val midnightMinutes = (sunsetMinutes + nightMinutes / 2) % (24 * 60)
-        val lastThirdMinutes = (sunsetMinutes + (nightMinutes * 2) / 3) % (24 * 60)
+        val fajrTime = fajrZoned.toLocalTime()
+        val sunriseTime = sunriseZoned.toLocalTime()
+        val dhuhrTime = dhuhrZoned.toLocalTime()
+        val asrTime = asrZoned.toLocalTime()
+        val maghribTime = maghribZoned.toLocalTime()
+        val ishaTime = ishaZoned.toLocalTime()
 
-        val midnightTime = LocalTime.ofSecondOfDay((midnightMinutes * 60L).coerceIn(0, 86399))
-        val lastThirdTime = LocalTime.ofSecondOfDay((lastThirdMinutes * 60L).coerceIn(0, 86399))
+        // Islamic Midnight (halfway between sunset and the *next* day's actual sunrise) and Last
+        // Third of Night (Qiyam / Tahajjud), computed from real instants - using tomorrow's actual
+        // sunrise rather than projecting today's forward, and correctly spanning any DST change
+        // that falls overnight.
+        val sunTomorrow = computeSunTimes(date.plusDays(1), latitude, longitude)
+        val tomorrowSunriseZoned = zonedTimeFromUtcDecimalHours(date.plusDays(1), sunTomorrow.sunriseHour, zoneId)
+        val night = Duration.between(maghribZoned, tomorrowSunriseZoned)
+        val midnightZoned = maghribZoned.plus(night.dividedBy(2))
+        val lastThirdZoned = maghribZoned.plus(night.multipliedBy(2).dividedBy(3))
+
+        val midnightTime = midnightZoned.toLocalTime()
+        val lastThirdTime = lastThirdZoned.toLocalTime()
         val dhuhaTime = sunriseTime.plusMinutes(DHUHA_MINUTES_AFTER_SUNRISE)
 
-        val hijriDateObj = HijriDateCalculator.convertToHijri(date, hijriAdjustmentDays)
-        val hijriDateStr = hijriDateObj.formattedEn
-
         // Build prayer items
-        val prayerTypesWithTimes = listOf(
-            PrayerType.FAJR to fajrTime,
-            PrayerType.SUNRISE to sunriseTime,
-            PrayerType.DHUHR to dhuhrTime,
-            PrayerType.ASR to asrTime,
-            PrayerType.MAGHRIB to maghribTime,
-            PrayerType.ISHA to ishaTime
+        val prayerTypesWithZoned = listOf(
+            PrayerType.FAJR to fajrZoned,
+            PrayerType.SUNRISE to sunriseZoned,
+            PrayerType.DHUHR to dhuhrZoned,
+            PrayerType.ASR to asrZoned,
+            PrayerType.MAGHRIB to maghribZoned,
+            PrayerType.ISHA to ishaZoned
         )
 
         // Determine next and passed prayers
         var foundNext = false
-        val items = prayerTypesWithTimes.map { (type, time) ->
-            val prayerZoned = date.atTime(time).atZone(zoneId)
+        val items = prayerTypesWithZoned.map { (type, prayerZoned) ->
             val isPassed = now.isAfter(prayerZoned)
             val isNext = if (!foundNext && !isPassed && date == now.toLocalDate()) {
                 foundNext = true
@@ -218,7 +270,7 @@ object PrayerTimesCalculator {
 
             PrayerTimeItem(
                 type = type,
-                time = time,
+                time = prayerZoned.toLocalTime(),
                 zonedDateTime = prayerZoned,
                 isNext = isNext,
                 isPassed = isPassed
@@ -240,13 +292,5 @@ object PrayerTimesCalculator {
             dhuha = dhuhaTime,
             prayerItems = items
         )
-    }
-
-    private fun decimalToLocalTime(decimalHours: Double): LocalTime {
-        val fixed = fixHour(decimalHours)
-        val hour = fixed.toInt().coerceIn(0, 23)
-        val minutesDecimal = (fixed - hour) * 60.0
-        val minute = (minutesDecimal + 0.5).toInt().coerceIn(0, 59)
-        return LocalTime.of(hour, minute)
     }
 }

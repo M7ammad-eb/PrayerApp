@@ -277,7 +277,10 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                             val cityName = address?.locality ?: address?.subAdminArea
                                 ?: localizedRes.getString(R.string.gps_current_location_fallback)
                             val countryName = address?.countryName ?: ""
-                            val timeZoneId = ZoneId.systemDefault().id
+                            // Derived from the fixed coordinates via the offline nearest-city
+                            // table, not the device's current timezone - those can differ (e.g.
+                            // phone timezone still set to home while GPS reports a trip location).
+                            val timeZoneId = CityDatabase.estimateTimeZone(location.latitude, location.longitude)
 
                             val newLoc = UserLocation(
                                 name = cityName,
@@ -294,7 +297,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                                 country = String.format("%.2f°, %.2f°", location.latitude, location.longitude),
                                 latitude = location.latitude,
                                 longitude = location.longitude,
-                                timeZoneId = ZoneId.systemDefault().id,
+                                timeZoneId = CityDatabase.estimateTimeZone(location.latitude, location.longitude),
                                 isGps = true
                             )
                             prefs.updateLocation(newLoc)

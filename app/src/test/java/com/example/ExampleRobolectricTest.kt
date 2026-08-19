@@ -28,7 +28,7 @@ class ExampleRobolectricTest {
   fun `read app name string from context`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val appName = context.getString(R.string.app_name)
-    assertEquals("Prayer Times", appName)
+    assertEquals("Salati - My Prayer", appName)
   }
 
   @Test
@@ -166,7 +166,10 @@ class ExampleRobolectricTest {
   @Test
   fun `city database contains major cities`() {
     assertTrue("Preset cities list should not be empty", CityDatabase.PRESET_CITIES.size >= 100)
-    val mecca = CityDatabase.PRESET_CITIES.find { it.name.contains("Makkah", ignoreCase = true) }
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val mecca = CityDatabase.PRESET_CITIES.find {
+      context.getString(it.nameRes).contains("Makkah", ignoreCase = true)
+    }
     assertNotNull(mecca)
   }
 
@@ -210,7 +213,8 @@ class ExampleRobolectricTest {
     // Riyadh coordinates roughly 24.71, 46.67
     val nearest = com.example.data.cities.CityDatabase.findNearestCity(24.71, 46.67)
     assertNotNull(nearest)
-    assertEquals("Riyadh", nearest!!.first.name)
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    assertEquals("Riyadh", context.getString(nearest!!.first.nameRes))
     assertTrue("Distance should be within 10 km", nearest.second < 10.0)
 
     // Estimate timezone
