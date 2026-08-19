@@ -11,22 +11,21 @@ import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
 import com.example.data.preferences.AppPrayerSettings
 import com.example.data.preferences.PrayerPreferences
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 object PrayerNotificationScheduler {
 
-    fun rescheduleAll(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val prefs = PrayerPreferences(context)
-            val settings = prefs.settingsFlow.first()
-            scheduleDailyAlarms(context, settings)
-        }
+    // Suspend rather than launching its own detached scope - callers (notably
+    // PrayerAlarmReceiver's boot/time-change handling) need to run this inside their own
+    // goAsync()-backed coroutine so the work is guaranteed to finish before the receiver's
+    // lifetime is up, instead of racing a process kill.
+    suspend fun rescheduleAll(context: Context) {
+        val prefs = PrayerPreferences(context)
+        val settings = prefs.settingsFlow.first()
+        scheduleDailyAlarms(context, settings)
     }
 
     fun scheduleDailyAlarms(context: Context, settings: AppPrayerSettings) {

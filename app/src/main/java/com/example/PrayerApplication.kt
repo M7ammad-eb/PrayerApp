@@ -8,6 +8,9 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class PrayerApplication : Application() {
 
@@ -19,6 +22,11 @@ class PrayerApplication : Application() {
         lateinit var instance: PrayerApplication
             private set
     }
+
+    // Structured, process-lifetime scope for the brief background work BroadcastReceivers kick
+    // off via goAsync() (reboot rescheduling, widget refresh) - one supervised scope instead of a
+    // throwaway CoroutineScope(...) per call site with no lifecycle tied to anything.
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private var lastNightModeBit = 0
     private val mainHandler = Handler(Looper.getMainLooper())

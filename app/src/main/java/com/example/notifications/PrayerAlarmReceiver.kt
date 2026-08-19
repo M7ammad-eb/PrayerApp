@@ -47,8 +47,19 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             action == Intent.ACTION_TIME_CHANGED ||
             action == Intent.ACTION_TIMEZONE_CHANGED ||
             action == Intent.ACTION_DATE_CHANGED) {
-            // System event / reboot / timezone change: reschedule all alarms immediately
-            PrayerNotificationScheduler.rescheduleAll(context)
+            // System event / reboot / timezone change: reschedule all alarms. goAsync() extends
+            // the receiver's lifetime past onReceive() returning - without it, Android is free to
+            // kill the process right after this call returns (very plausible right after a boot),
+            // and rescheduleAll's coroutine could be cut off partway through, leaving only some of
+            // the week's alarms restored.
+            val pendingResult = goAsync()
+            PrayerApplication.instance.applicationScope.launch {
+                try {
+                    PrayerNotificationScheduler.rescheduleAll(context)
+                } finally {
+                    pendingResult.finish()
+                }
+            }
             return
         }
 

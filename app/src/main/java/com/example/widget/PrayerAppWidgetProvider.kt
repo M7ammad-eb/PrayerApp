@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import com.example.MainActivity
+import com.example.PrayerApplication
 import com.example.R
 import com.example.data.calculator.PrayerTimesCalculator
 import com.example.data.models.AppColorPreset
@@ -37,8 +38,6 @@ import com.example.data.models.WidgetThemeMode
 import com.example.data.preferences.AppPrayerSettings
 import com.example.data.preferences.PrayerPreferences
 import com.example.util.LocalizedStrings
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.ZoneId
@@ -313,11 +312,19 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         if (appWidgetIds.isEmpty()) return
 
-        CoroutineScope(Dispatchers.IO).launch {
+        // goAsync() extends this receiver's lifetime past onUpdate() returning - a detached scope
+        // here could get cut off by a process kill mid-update, especially right after boot when
+        // the system tends to reclaim processes aggressively. Null-safe finish(): updateAllWidgets()
+        // below also calls onUpdate() directly on a manually-constructed instance (not dispatched
+        // by the system), where goAsync() has no real pending result to return.
+        val pendingResult = goAsync()
+        PrayerApplication.instance.applicationScope.launch {
             try {
                 updateWidgetsInternal(context, appWidgetManager, appWidgetIds)
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                pendingResult?.finish()
             }
         }
     }
@@ -329,11 +336,14 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         newOptions: android.os.Bundle
     ) {
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
-        CoroutineScope(Dispatchers.IO).launch {
+        val pendingResult = goAsync()
+        PrayerApplication.instance.applicationScope.launch {
             try {
                 updateWidgetsInternal(context, appWidgetManager, intArrayOf(appWidgetId))
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                pendingResult.finish()
             }
         }
     }
