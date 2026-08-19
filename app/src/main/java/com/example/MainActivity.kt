@@ -60,6 +60,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        prayerViewModel.setForeground(true)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        prayerViewModel.setForeground(false)
+    }
+
     fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val notifGranted = ContextCompat.checkSelfPermission(

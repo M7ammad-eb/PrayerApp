@@ -12,15 +12,20 @@ import com.example.audio.AdhanPlaybackState
 import com.example.audio.AthanAudioEngine
 import com.example.data.calculator.PrayerTimesCalculator
 import com.example.data.cities.CityDatabase
+import com.example.data.models.AppColorPreset
 import com.example.data.models.AppLanguage
+import com.example.data.models.AppThemeMode
 import com.example.data.models.CalculationMethod
 import com.example.data.models.DailyPrayerSchedule
 import com.example.data.models.HighLatitudeRule
 import com.example.data.models.JuristicMethod
+import com.example.data.models.NotificationPrayerConfig
 import com.example.data.models.NotificationSoundType
+import com.example.data.models.PrayerTimeAdjustments
 import com.example.data.models.PrayerTimeItem
 import com.example.data.models.PrayerType
 import com.example.data.models.UserLocation
+import com.example.data.models.WidgetCustomizationSettings
 import com.example.data.preferences.AppPrayerSettings
 import com.example.data.preferences.PrayerPreferences
 import com.example.data.qibla.CompassSensorManager
@@ -32,11 +37,15 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -56,6 +65,60 @@ data class NextPrayerInfo(
     val remainingSeconds: Long = 0,
     val progressPercent: Float = 0f,
     val isNextDayFajr: Boolean = false
+)
+
+// Narrow projections of AppPrayerSettings, one per side effect - collecting these instead of the
+// whole settings object (with distinctUntilChanged()) means a cosmetic-only change (theme,
+// language, widget style) can't trigger a full prayer recalculation or rebuild a week of
+// AlarmManager entries, since the projection for those side effects doesn't change.
+private data class CalculationInputs(
+    val location: UserLocation,
+    val calculationMethod: CalculationMethod,
+    val juristicMethod: JuristicMethod,
+    val highLatitudeRule: HighLatitudeRule,
+    val hijriAdjustmentDays: Int,
+    val adjustments: PrayerTimeAdjustments
+)
+
+private data class NotificationInputs(
+    val calc: CalculationInputs,
+    val is24HourFormat: Boolean,
+    val prayerConfigs: Map<PrayerType, NotificationPrayerConfig>,
+    val liveCountdownEnabled: Boolean,
+    val liveCountdownMinutesBefore: Int
+)
+
+private data class WidgetInputs(
+    val calc: CalculationInputs,
+    val is24HourFormat: Boolean,
+    val language: AppLanguage,
+    val themeMode: AppThemeMode,
+    val colorPreset: AppColorPreset,
+    val followSystemColors: Boolean,
+    val widgetSettings: WidgetCustomizationSettings
+)
+
+private fun AppPrayerSettings.calculationInputs() = CalculationInputs(
+    location, calculationMethod, juristicMethod, highLatitudeRule, hijriAdjustmentDays, adjustments
+)
+
+private fun AppPrayerSettings.notificationInputs() = NotificationInputs(
+    calculationInputs(), is24HourFormat, prayerConfigs, liveCountdownEnabled, liveCountdownMinutesBefore
+)
+
+private fun AppPrayerSettings.widgetInputs() = WidgetInputs(
+    calculationInputs(), is24HourFormat, language, themeMode, colorPreset, followSystemColors, widgetSettings
+)
+
+// Cached next-prayer boundary so the 1Hz countdown tick only subtracts a Duration instead of
+// re-running the full astronomical calculation every second - recomputed only when the boundary
+// is actually crossed or the inputs it depends on change.
+private data class NextPrayerBoundary(
+    val nextItem: PrayerTimeItem,
+    val previousZoned: ZonedDateTime?, // null for the "next prayer is tomorrow's Fajr" case
+    val totalSpanSeconds: Long,
+    val isNextDayFajr: Boolean,
+    val computedForSettings: AppPrayerSettings
 )
 
 class PrayerViewModel(application: Application) : AndroidViewModel(application) {
@@ -112,30 +175,57 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _locationErrorMessage = MutableStateFlow<String?>(null)
     val locationErrorMessage: StateFlow<String?> = _locationErrorMessage.asStateFlow()
 
+    // Drives whether the 1Hz countdown loop below actually ticks - the OS-scheduled AlarmManager
+    // alarm is what fires the Athan/notification in the background, this loop only exists to
+    // animate the visible countdown, so there's no reason to keep it running while the app isn't
+    // in the foreground. Defaults true so behavior is unchanged until the Activity calls
+    // setForeground() from onPause/onResume.
+    private val _isForeground = MutableStateFlow(true)
+
+    private var monthlyCalculationJob: Job? = null
+    private var cachedBoundary: NextPrayerBoundary? = null
+
+    fun setForeground(foreground: Boolean) {
+        _isForeground.value = foreground
+    }
+
     init {
         val initialSettings = settings.value
         compassManager.setLocation(initialSettings.location.latitude, initialSettings.location.longitude)
         recalculateSchedules(initialSettings, _selectedDate.value)
         updateNextPrayerCountdown(initialSettings, ZonedDateTime.now(initialSettings.zoneId()))
 
+        // Split by concern (see the *Inputs projections above): a settings emission only triggers
+        // the side effects whose actual inputs changed, instead of every emission rebuilding the
+        // schedule, every AlarmManager entry, and the widget regardless of what changed.
         viewModelScope.launch {
-            settings.collect { currentSettings ->
-                compassManager.setLocation(currentSettings.location.latitude, currentSettings.location.longitude)
-                recalculateSchedules(currentSettings, _selectedDate.value)
-                PrayerNotificationScheduler.scheduleDailyAlarms(getApplication(), currentSettings)
+            settings.map { it.calculationInputs() }.distinctUntilChanged().collect { calc ->
+                compassManager.setLocation(calc.location.latitude, calc.location.longitude)
+                recalculateSchedules(settings.value, _selectedDate.value)
+            }
+        }
+        viewModelScope.launch {
+            settings.map { it.notificationInputs() }.distinctUntilChanged().collect {
+                PrayerNotificationScheduler.scheduleDailyAlarms(getApplication(), settings.value)
+            }
+        }
+        viewModelScope.launch {
+            settings.map { it.widgetInputs() }.distinctUntilChanged().collect {
                 PrayerAppWidgetProvider.updateAllWidgets(getApplication())
             }
         }
 
-        // Live timer for countdown to next prayer
+        // Live timer for countdown to next prayer, paused while backgrounded.
         viewModelScope.launch {
             while (isActive) {
-                val currentSettings = settings.value
-                val currentDate = _selectedDate.value
-                val now = ZonedDateTime.now(currentSettings.zoneId())
-
-                updateNextPrayerCountdown(currentSettings, now)
-                delay(1000)
+                if (_isForeground.value) {
+                    val currentSettings = settings.value
+                    val now = ZonedDateTime.now(currentSettings.zoneId())
+                    updateNextPrayerCountdown(currentSettings, now)
+                    delay(1000)
+                } else {
+                    _isForeground.first { it }
+                }
             }
         }
     }
@@ -164,68 +254,86 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         val schedule = scheduleFor(currentSettings, date, zoneId, now)
         _dailySchedule.value = schedule
 
-        // Also calculate monthly schedule
-        viewModelScope.launch(Dispatchers.Default) {
+        // Cancel any still-running monthly calculation before starting a new one - without this,
+        // rapid successive calls (e.g. quickly changing method then location) could let an older
+        // job finish after a newer one and overwrite its result with stale data.
+        monthlyCalculationJob?.cancel()
+        monthlyCalculationJob = viewModelScope.launch(Dispatchers.Default) {
             val yearMonth = YearMonth.from(date)
             val monthDays = (1..yearMonth.lengthOfMonth()).map { day ->
                 scheduleFor(currentSettings, yearMonth.atDay(day), zoneId, now)
             }
-            _monthlySchedule.value = monthDays
+            if (isActive) {
+                _monthlySchedule.value = monthDays
+            }
         }
     }
 
-    private fun updateNextPrayerCountdown(currentSettings: AppPrayerSettings, now: ZonedDateTime) {
+    private fun computeNextPrayerBoundary(currentSettings: AppPrayerSettings, now: ZonedDateTime): NextPrayerBoundary {
         val zoneId = currentSettings.zoneId()
         val today = now.toLocalDate()
-
         val todaySchedule = scheduleFor(currentSettings, today, zoneId, now)
 
         // Find the first prayer today after now (excluding Sunrise as a prayer)
         val nextItem = todaySchedule.prayerItems.firstOrNull { it.type != PrayerType.SUNRISE && it.zonedDateTime.isAfter(now) }
 
-        if (nextItem != null) {
-            val diffSeconds = Duration.between(now, nextItem.zonedDateTime).seconds
-            val hours = diffSeconds / 3600
-            val minutes = (diffSeconds % 3600) / 60
-            val seconds = diffSeconds % 60
-            val formatted = String.format("%02d:%02d:%02d", hours, minutes, seconds)
-
-            // Progress between previous prayer and next prayer
+        return if (nextItem != null) {
             val previousItem = todaySchedule.prayerItems.filter { it.type != PrayerType.SUNRISE && it.zonedDateTime.isBefore(nextItem.zonedDateTime) }.lastOrNull()
-            val totalSpanSeconds = if (previousItem != null) {
-                Duration.between(previousItem.zonedDateTime, nextItem.zonedDateTime).seconds.coerceAtLeast(1)
-            } else {
-                Duration.between(today.minusDays(1).atTime(todaySchedule.isha).atZone(zoneId), nextItem.zonedDateTime).seconds.coerceAtLeast(1)
-            }
-            val elapsed = totalSpanSeconds - diffSeconds
-            val progress = (elapsed.toFloat() / totalSpanSeconds).coerceIn(0f, 1f)
-
-            _nextPrayerInfo.value = NextPrayerInfo(
-                prayerItem = nextItem,
-                remainingFormatted = formatted,
-                remainingSeconds = diffSeconds,
-                progressPercent = progress,
-                isNextDayFajr = false
+            val previousZoned = previousItem?.zonedDateTime
+                ?: today.minusDays(1).atTime(todaySchedule.isha).atZone(zoneId)
+            val totalSpanSeconds = Duration.between(previousZoned, nextItem.zonedDateTime).seconds.coerceAtLeast(1)
+            NextPrayerBoundary(
+                nextItem = nextItem,
+                previousZoned = previousZoned,
+                totalSpanSeconds = totalSpanSeconds,
+                isNextDayFajr = false,
+                computedForSettings = currentSettings
             )
         } else {
             // Next prayer is tomorrow's Fajr
             val tomorrow = today.plusDays(1)
             val tomorrowSchedule = scheduleFor(currentSettings, tomorrow, zoneId, now)
             val tomorrowFajr = tomorrowSchedule.prayerItems.first { it.type == PrayerType.FAJR }
-            val diffSeconds = Duration.between(now, tomorrowFajr.zonedDateTime).seconds
-            val hours = diffSeconds / 3600
-            val minutes = (diffSeconds % 3600) / 60
-            val seconds = diffSeconds % 60
-            val formatted = String.format("%02d:%02d:%02d", hours, minutes, seconds)
-
-            _nextPrayerInfo.value = NextPrayerInfo(
-                prayerItem = tomorrowFajr,
-                remainingFormatted = formatted,
-                remainingSeconds = diffSeconds,
-                progressPercent = 0.5f,
-                isNextDayFajr = true
+            NextPrayerBoundary(
+                nextItem = tomorrowFajr,
+                previousZoned = null,
+                totalSpanSeconds = 0L,
+                isNextDayFajr = true,
+                computedForSettings = currentSettings
             )
         }
+    }
+
+    private fun updateNextPrayerCountdown(currentSettings: AppPrayerSettings, now: ZonedDateTime) {
+        // Only re-run the astronomical calculation when the boundary was actually crossed or the
+        // inputs it depends on changed - every other tick just subtracts a Duration.
+        val existing = cachedBoundary
+        val boundary = if (existing != null && existing.computedForSettings == currentSettings && now.isBefore(existing.nextItem.zonedDateTime)) {
+            existing
+        } else {
+            computeNextPrayerBoundary(currentSettings, now).also { cachedBoundary = it }
+        }
+
+        val diffSeconds = Duration.between(now, boundary.nextItem.zonedDateTime).seconds.coerceAtLeast(0)
+        val hours = diffSeconds / 3600
+        val minutes = (diffSeconds % 3600) / 60
+        val seconds = diffSeconds % 60
+        val formatted = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+
+        val progress = if (boundary.isNextDayFajr || boundary.previousZoned == null) {
+            0.5f
+        } else {
+            val elapsed = boundary.totalSpanSeconds - diffSeconds
+            (elapsed.toFloat() / boundary.totalSpanSeconds).coerceIn(0f, 1f)
+        }
+
+        _nextPrayerInfo.value = NextPrayerInfo(
+            prayerItem = boundary.nextItem,
+            remainingFormatted = formatted,
+            remainingSeconds = diffSeconds,
+            progressPercent = progress,
+            isNextDayFajr = boundary.isNextDayFajr
+        )
     }
 
     fun selectCity(location: UserLocation) {

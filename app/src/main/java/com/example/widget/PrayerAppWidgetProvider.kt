@@ -67,18 +67,23 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         private const val REQUEST_CODE_REFRESH = 4001
         private const val REQUEST_CODE_ALARM_UPDATE = 4002
 
+        // Previously both broadcast ACTION_APPWIDGET_UPDATE (which the system dispatches back to
+        // onUpdate()) AND called onUpdate() directly on a manually-built instance - one logical
+        // refresh request did the DataStore read, calculation, and RemoteViews work twice. Calling
+        // the actual update work directly, once, on the app's structured scope is the single path
+        // now; private members of the enclosing class are visible here since this is its companion.
         fun updateAllWidgets(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val componentName = ComponentName(context, PrayerAppWidgetProvider::class.java)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
             if (appWidgetIds != null && appWidgetIds.isNotEmpty()) {
-                val intent = Intent(context, PrayerAppWidgetProvider::class.java).apply {
-                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+                PrayerApplication.instance.applicationScope.launch {
+                    try {
+                        PrayerAppWidgetProvider().updateWidgetsInternal(context, appWidgetManager, appWidgetIds)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
-                context.sendBroadcast(intent)
-                val provider = PrayerAppWidgetProvider()
-                provider.onUpdate(context, appWidgetManager, appWidgetIds)
             }
         }
 
@@ -1502,13 +1507,19 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // A real prayer-boundary crossing already refreshes the widget via ACTION_PRAYER_ALARM
+        // (when the user has that prayer's notification enabled) or the settings/date/timezone
+        // change broadcasts - this alarm exists only as a coarse safety net to keep the countdown
+        // text from drifting stale otherwise, so it doesn't need to be nearly as frequent as an
+        // actual prayer boundary. Widened from 15 to 60 minutes; the exact-boundary branch below
+        // still wakes it sooner if a prayer falls within that window regardless.
         val nowMillis = System.currentTimeMillis()
         val prayerMillis = nextPrayerTime.toInstant().toEpochMilli()
-        val fifteenMinMillis = nowMillis + 15 * 60 * 1000L
-        val triggerMillis = if (prayerMillis in (nowMillis + 1000)..fifteenMinMillis) {
+        val coarseFallbackMillis = nowMillis + 60 * 60 * 1000L
+        val triggerMillis = if (prayerMillis in (nowMillis + 1000)..coarseFallbackMillis) {
             prayerMillis
         } else {
-            fifteenMinMillis
+            coarseFallbackMillis
         }
 
         try {
