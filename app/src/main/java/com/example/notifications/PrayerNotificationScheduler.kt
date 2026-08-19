@@ -92,7 +92,7 @@ object PrayerNotificationScheduler {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
 
-                    setExactAlarm(context, alarmManager, prayerEpochMillis, pendingIntent, requestCode)
+                    setAlarmClockAlarm(context, alarmManager, prayerEpochMillis, pendingIntent, requestCode)
                 } else {
                     cancelAlarm(context, alarmManager, requestCode, PrayerAlarmReceiver.ACTION_PRAYER_ALARM)
                 }
@@ -116,7 +116,7 @@ object PrayerNotificationScheduler {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
 
-                    setExactAlarm(context, alarmManager, reminderZonedTime.toInstant().toEpochMilli(), reminderPendingIntent, reminderRequestCode)
+                    setReminderAlarm(alarmManager, reminderZonedTime.toInstant().toEpochMilli(), reminderPendingIntent, reminderRequestCode)
                 } else {
                     cancelAlarm(context, alarmManager, reminderRequestCode, PrayerAlarmReceiver.ACTION_PRAYER_ALARM)
                 }
@@ -138,7 +138,7 @@ object PrayerNotificationScheduler {
                             countdownIntent,
                             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                         )
-                        setExactAlarm(context, alarmManager, countdownStartTime.toInstant().toEpochMilli(), countdownPendingIntent, countdownRequestCode)
+                        setInexactAlarm(alarmManager, countdownStartTime.toInstant().toEpochMilli(), countdownPendingIntent, countdownRequestCode)
                     } else if (dayOffset == 0 && prayerZonedTime.isAfter(now)) {
                         // Already inside the countdown window right now (e.g. the feature was just
                         // turned on, or the app restarted mid-window) - show it immediately instead
@@ -196,7 +196,15 @@ object PrayerNotificationScheduler {
         }
     }
 
-    private fun setExactAlarm(
+    // Three scheduling tiers, matched to how important each event actually is - not every alarm
+    // deserves alarm-clock priority, which Android reserves for genuinely user-critical timing and
+    // which affects Doze/power-management budget system-wide.
+
+    // Tier 1: the real Athan/prayer alarm - the app's core exact-timing functionality, and the one
+    // case that justifies it. AlarmClockInfo is exempt from the Android 12+ exact-alarm permission
+    // restrictions entirely (it's the same mechanism alarm-clock apps use), so no permission check
+    // is needed here - only a narrow fallback for the rare OEM that rejects it outright.
+    private fun setAlarmClockAlarm(
         context: Context,
         alarmManager: AlarmManager,
         triggerAtMillis: Long,
@@ -204,7 +212,6 @@ object PrayerNotificationScheduler {
         requestCode: Int
     ) {
         try {
-            // Gold standard for prayer/alarm notifications: AlarmClockInfo is Doze-exempt on all Android versions
             val showAppIntent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
@@ -217,23 +224,57 @@ object PrayerNotificationScheduler {
             val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, showPendingIntent)
             alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
         } catch (e: Exception) {
+            setReminderAlarm(alarmManager, triggerAtMillis, pendingIntent, requestCode)
+        }
+    }
+
+    // Tier 2: pre-reminders. Worth exact timing if the user has actually granted exact-alarm
+    // access, but not important enough to claim alarm-clock priority for - explicitly checking
+    // canScheduleExactAlarms() up front instead of only discovering the lack of permission via a
+    // caught SecurityException keeps permission state out of exception-driven control flow.
+    private fun setReminderAlarm(
+        alarmManager: AlarmManager,
+        triggerAtMillis: Long,
+        pendingIntent: PendingIntent,
+        requestCode: Int
+    ) {
+        val canScheduleExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            alarmManager.canScheduleExactAlarms()
+        } else {
+            true
+        }
+        if (canScheduleExact) {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
                 } else {
                     alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
                 }
-            } catch (e2: Exception) {
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
-                    } else {
-                        alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
-                    }
-                } catch (e3: Exception) {
-                    android.util.Log.e("PrayerNotifScheduler", "Failed to schedule alarm (requestCode=$requestCode) after exhausting all fallbacks", e3)
-                }
+                return
+            } catch (e: SecurityException) {
+                // Permission revoked between the check and the call (or an OEM quirk) - degrade to
+                // inexact rather than dropping the reminder entirely.
             }
+        }
+        setInexactAlarm(alarmManager, triggerAtMillis, pendingIntent, requestCode)
+    }
+
+    // Tier 3: cosmetic/background triggers (live countdown start). Never worth exact-alarm
+    // permission or alarm-clock priority - a few minutes of slack here is invisible to the user.
+    private fun setInexactAlarm(
+        alarmManager: AlarmManager,
+        triggerAtMillis: Long,
+        pendingIntent: PendingIntent,
+        requestCode: Int
+    ) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+            } else {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("PrayerNotifScheduler", "Failed to schedule alarm (requestCode=$requestCode) after exhausting all fallbacks", e)
         }
     }
 
@@ -278,7 +319,7 @@ object PrayerNotificationScheduler {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        setExactAlarm(context, alarmManager, triggerTime, pendingIntent, 99999)
+        setAlarmClockAlarm(context, alarmManager, triggerTime, pendingIntent, 99999)
     }
 
     fun scheduleSnoozeAlarm(
@@ -305,7 +346,7 @@ object PrayerNotificationScheduler {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        setExactAlarm(context, alarmManager, triggerTime, pendingIntent, 88888)
+        setAlarmClockAlarm(context, alarmManager, triggerTime, pendingIntent, 88888)
     }
 
 }

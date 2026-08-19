@@ -1,5 +1,6 @@
 package com.example.notifications
 
+import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -9,12 +10,15 @@ import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
 import com.example.data.models.UserLocation
 import com.example.data.preferences.AppPrayerSettings
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowAlarmManager
 
 /**
  * Regression tests for the scheduler-state bugs where a setting change (disabling a prayer,
@@ -141,5 +145,75 @@ class PrayerNotificationSchedulerTest {
             "Disabling live countdown should cancel the countdown alarm that was already scheduled",
             existingPendingIntent(countdownRequestCode, PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN)
         )
+    }
+
+    // --- Alarm-priority tiering: not every alarm should claim alarm-clock priority. ---
+
+    private fun scheduledAlarmFor(pendingIntent: PendingIntent?): ShadowAlarmManager.ScheduledAlarm? {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        return shadowOf(alarmManager).scheduledAlarms.find { it.operation == pendingIntent }
+    }
+
+    @Test
+    fun realPrayerAlarmUsesAlarmClockTier() {
+        val settings = withFajrConfig(
+            baseSettings(),
+            NotificationPrayerConfig(enabled = true, soundType = NotificationSoundType.FULL_ATHAN)
+        )
+        PrayerNotificationScheduler.scheduleDailyAlarms(context, settings)
+
+        val scheduled = scheduledAlarmFor(existingPendingIntent(prayerRequestCode, PrayerAlarmReceiver.ACTION_PRAYER_ALARM))
+        assertNotNull("Prayer alarm should be tracked by AlarmManager", scheduled)
+        assertNotNull(
+            "The real Athan alarm should use setAlarmClock - the one case that justifies it",
+            scheduled!!.alarmClockInfo
+        )
+    }
+
+    @Test
+    fun preReminderIsExactButNotAlarmClockWhenPermissionIsGranted() {
+        ShadowAlarmManager.setCanScheduleExactAlarms(true)
+        val settings = withFajrConfig(
+            baseSettings(),
+            NotificationPrayerConfig(enabled = true, soundType = NotificationSoundType.FULL_ATHAN, preReminderMinutes = 10)
+        )
+        PrayerNotificationScheduler.scheduleDailyAlarms(context, settings)
+
+        val scheduled = scheduledAlarmFor(existingPendingIntent(reminderRequestCode, PrayerAlarmReceiver.ACTION_PRAYER_ALARM))
+        assertNotNull(scheduled)
+        assertNull("Reminder should not claim alarm-clock priority", scheduled!!.alarmClockInfo)
+        assertEquals("Reminder should be exact when the user has granted exact-alarm access", 0L, scheduled.windowLengthMs)
+    }
+
+    @Test
+    fun preReminderDegradesToInexactWithoutExactAlarmPermission() {
+        ShadowAlarmManager.setCanScheduleExactAlarms(false)
+        val settings = withFajrConfig(
+            baseSettings(),
+            NotificationPrayerConfig(enabled = true, soundType = NotificationSoundType.FULL_ATHAN, preReminderMinutes = 10)
+        )
+        PrayerNotificationScheduler.scheduleDailyAlarms(context, settings)
+
+        val scheduled = scheduledAlarmFor(existingPendingIntent(reminderRequestCode, PrayerAlarmReceiver.ACTION_PRAYER_ALARM))
+        assertNotNull(
+            "Without exact-alarm permission the reminder should degrade to inexact rather than being dropped",
+            scheduled
+        )
+        assertNull(scheduled!!.alarmClockInfo)
+        assertEquals(-1L, scheduled.windowLengthMs)
+    }
+
+    @Test
+    fun liveCountdownTriggerIsNeverExactOrAlarmClock() {
+        // Exact-alarm permission granted or not shouldn't matter - the countdown trigger is
+        // cosmetic and should never even ask for exact timing.
+        ShadowAlarmManager.setCanScheduleExactAlarms(true)
+        val settings = baseSettings().copy(liveCountdownEnabled = true, liveCountdownMinutesBefore = 15)
+        PrayerNotificationScheduler.scheduleDailyAlarms(context, settings)
+
+        val scheduled = scheduledAlarmFor(existingPendingIntent(countdownRequestCode, PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN))
+        assertNotNull(scheduled)
+        assertNull("Countdown trigger should never claim alarm-clock priority", scheduled!!.alarmClockInfo)
+        assertEquals("Countdown trigger should be inexact, not exact", -1L, scheduled.windowLengthMs)
     }
 }
