@@ -52,6 +52,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
@@ -90,10 +93,23 @@ fun QiblaScreen(
 ) {
     val strings = LocalAppStrings.current
 
-    // Start sensor when screen is visible
-    DisposableEffect(Unit) {
-        compassSensorManager.start()
+    // Tied to ON_RESUME/ON_PAUSE rather than only composition enter/exit: a plain
+    // DisposableEffect(Unit) only stops the sensors when this composable actually leaves
+    // composition (e.g. navigating to a different tab), not when the whole app is backgrounded
+    // (Home button, app switcher) while this screen remains the active composable - that left
+    // the compass sensors running and draining battery the entire time the app was invisible.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(compassSensorManager, lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> compassSensorManager.start()
+                Lifecycle.Event.ON_PAUSE -> compassSensorManager.stop()
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             compassSensorManager.stop()
         }
     }

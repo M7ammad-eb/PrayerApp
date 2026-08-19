@@ -33,6 +33,8 @@ data class AdhanPlaybackState(
 object AthanAudioEngine {
 
     private const val TAG = "AthanAudioEngine"
+    private const val DUCK_VOLUME = 0.25f
+    private const val FULL_VOLUME = 1.0f
 
     private val _playbackState = MutableStateFlow(AdhanPlaybackState())
     val playbackState: StateFlow<AdhanPlaybackState> = _playbackState.asStateFlow()
@@ -74,14 +76,21 @@ object AthanAudioEngine {
         // 1. Direct MediaPlayer with setDataSource & openRawResourceFd (Sets attributes in IDLE state)
         try {
             val player = MediaPlayer()
-            player.setAudioAttributes(audioAttributes)
-            val afd = context.resources.openRawResourceFd(rawResId)
-            if (afd != null) {
-                player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                afd.close()
+            try {
+                player.setAudioAttributes(audioAttributes)
+                // .use{} guarantees the fd is closed even if setDataSource throws, instead of
+                // leaking it on the exceptional path.
+                context.resources.openRawResourceFd(rawResId)?.use { afd ->
+                    player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                }
                 player.prepare()
                 player.setVolume(1.0f, 1.0f)
                 return player
+            } catch (e: Exception) {
+                // Release the partially-constructed player before falling through to Method 2/3 -
+                // otherwise this one leaks silently every time Method 1 fails.
+                player.release()
+                throw e
             }
         } catch (e: Exception) {
             Log.w(TAG, "Method 1 (openRawResourceFd) failed: ${e.message}, trying Method 2")
@@ -304,6 +313,17 @@ object AthanAudioEngine {
             stop()
             onFinished?.invoke()
         }
+    }
+
+    // Called from AthanAudioService's audio-focus listener on AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK /
+    // AUDIOFOCUS_GAIN - previously that branch was a no-op comment ("Continue or duck volume")
+    // that never actually adjusted anything.
+    fun duck() {
+        try { mediaPlayer?.setVolume(DUCK_VOLUME, DUCK_VOLUME) } catch (e: Exception) { /* no active player */ }
+    }
+
+    fun restoreVolume() {
+        try { mediaPlayer?.setVolume(FULL_VOLUME, FULL_VOLUME) } catch (e: Exception) { /* no active player */ }
     }
 
     fun vibrateDevice(context: Context) {

@@ -13,6 +13,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -37,6 +38,7 @@ private fun canUseFullScreenIntent(context: Context): Boolean {
 class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
 
     companion object {
+        private const val TAG = "AthanAudioService"
         const val ACTION_PLAY_ATHAN = "com.example.ACTION_PLAY_ATHAN"
         const val ACTION_STOP_ATHAN = "com.example.ACTION_STOP_ATHAN"
 
@@ -158,20 +160,32 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
             startForeground(NOTIFICATION_ID, initialNotification)
         }
 
-        // 2. Request Audio Focus
-        requestAudioFocus()
+        // 2. Request Audio Focus. Not checked for the ALARM stream - AthanAudioStream.ALARM is
+        // explicitly documented ("sounds aloud even when phone is in Silent or Vibrate mode") as
+        // the reliable option for a prayer alarm, and alarm-category audio is meant to interrupt
+        // regardless. For MEDIA/RINGTONE, a denial is honored: those streams are meant to share
+        // politely, so playing over another app that already holds focus defeats the point of
+        // asking in the first place.
+        val focusGranted = requestAudioFocus()
+        if (!focusGranted) {
+            Log.w(TAG, "Audio focus request denied (stream=$currentAudioStream)")
+        }
 
         // 3. Play sound engine
-        AthanAudioEngine.playSoundType(
-            context = this,
-            soundType = currentSoundType,
-            prayerType = currentPrayerType,
-            audioStream = currentAudioStream,
-            isArabic = isArabic,
-            onFinished = {
-                stopAudioAndService()
-            }
-        )
+        if (focusGranted || currentAudioStream == AthanAudioStream.ALARM) {
+            AthanAudioEngine.playSoundType(
+                context = this,
+                soundType = currentSoundType,
+                prayerType = currentPrayerType,
+                audioStream = currentAudioStream,
+                isArabic = isArabic,
+                onFinished = {
+                    stopAudioAndService()
+                }
+            )
+        } else {
+            stopAudioAndService()
+        }
 
         return START_NOT_STICKY
     }
@@ -282,10 +296,13 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
                 stopAudioAndService()
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                // Continue or duck volume
+                AthanAudioEngine.duck()
             }
             AudioManager.AUDIOFOCUS_GAIN -> {
-                // Regained focus
+                // Only meaningful after a duck (AUDIOFOCUS_LOSS_TRANSIENT already stops playback
+                // outright above), so this always safely restores rather than needing to track
+                // "was I ducked" state separately.
+                AthanAudioEngine.restoreVolume()
             }
         }
     }

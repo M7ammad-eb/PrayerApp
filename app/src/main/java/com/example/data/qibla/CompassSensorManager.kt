@@ -6,6 +6,9 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.hardware.display.DisplayManager
+import android.view.Display
+import android.view.Surface
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,7 +48,10 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
     private var distanceKm: Double = 0.0
     private var declination: Float = 0f
 
+    private val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
+
     private val rotationMatrix = FloatArray(9)
+    private val remappedRotationMatrix = FloatArray(9)
     private val orientationAngles = FloatArray(3)
     private val gravityValues = FloatArray(3)
     private val geomagneticValues = FloatArray(3)
@@ -116,7 +122,8 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
 
         if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-            SensorManager.getOrientation(rotationMatrix, orientationAngles)
+            remapForDisplayRotation(rotationMatrix, remappedRotationMatrix)
+            SensorManager.getOrientation(remappedRotationMatrix, orientationAngles)
             rawAzimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat() + declination
         } else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
             System.arraycopy(event.values, 0, gravityValues, 0, 3)
@@ -134,7 +141,8 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
                 geomagneticValues
             )
             if (success) {
-                SensorManager.getOrientation(rotationMatrix, orientationAngles)
+                remapForDisplayRotation(rotationMatrix, remappedRotationMatrix)
+                SensorManager.getOrientation(remappedRotationMatrix, orientationAngles)
                 rawAzimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat() + declination
                 hasGravity = false
                 hasGeomagnetic = false
@@ -149,6 +157,23 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
         smoothedAzimuth = (smoothedAzimuth + alpha * diff + 360f) % 360f
 
         updateCalculatedState(smoothedAzimuth)
+    }
+
+    // Raw sensor axes are fixed to the device's physical orientation, not the "up" direction the
+    // user is currently holding the screen at - without remapping, rotating the phone to landscape
+    // (this Activity isn't orientation-locked) would report an azimuth 90 degrees off from what's
+    // actually pointing at the top of the visible compass dial. DisplayManager (not
+    // Context.display, which throws on a non-UI context like the Application context this class is
+    // constructed with) works from any context.
+    private fun remapForDisplayRotation(input: FloatArray, output: FloatArray) {
+        val rotation = displayManager?.getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: Surface.ROTATION_0
+        val (newX, newY) = when (rotation) {
+            Surface.ROTATION_90 -> SensorManager.AXIS_Y to SensorManager.AXIS_MINUS_X
+            Surface.ROTATION_180 -> SensorManager.AXIS_MINUS_X to SensorManager.AXIS_MINUS_Y
+            Surface.ROTATION_270 -> SensorManager.AXIS_MINUS_Y to SensorManager.AXIS_X
+            else -> SensorManager.AXIS_X to SensorManager.AXIS_Y
+        }
+        SensorManager.remapCoordinateSystem(input, newX, newY, output)
     }
 
     private fun updateCalculatedState(azimuth: Float) {

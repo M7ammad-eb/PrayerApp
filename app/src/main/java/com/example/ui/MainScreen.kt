@@ -122,25 +122,19 @@ fun MainScreen(
         }
     }
 
-    // Notification Permission launcher for Android 13+
+    // Fallback launcher for the contextual onRequestNotificationPermission call sites below (used
+    // only if MainActivity doesn't supply its own callback, e.g. in a preview). There used to also
+    // be an unconditional LaunchedEffect(Unit) here firing this same POST_NOTIFICATIONS request on
+    // every cold start regardless of context - duplicating, and racing, MainActivity's own
+    // onCreate()-time request through a second independent launcher. Permission requests now only
+    // happen contextually: from the "notifications disabled" banner in PrayerHomeScreen, or when
+    // the user actually enables a prayer notification in SettingsScreen.
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (!isGranted) {
             scope.launch {
                 snackbarHostState.showSnackbar("Notification permission is required for Athan & prayer alerts.")
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val notifGranted = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-            if (!notifGranted) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
