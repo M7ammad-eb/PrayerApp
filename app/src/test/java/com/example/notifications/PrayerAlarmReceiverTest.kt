@@ -2,6 +2,7 @@ package com.example.notifications
 
 import android.app.AlarmManager
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Looper
@@ -50,6 +51,35 @@ class PrayerAlarmReceiverTest {
             if (!scheduled) Thread.sleep(50)
         }
         assertTrue("Boot-completed handling should reschedule at least one alarm", scheduled)
+    }
+
+    @Test
+    fun scheduleMaintenanceRebuildsAlarmsAndRearmsItself() {
+        // ACTION_SCHEDULE_MAINTENANCE isn't a system broadcast - it's the self-armed daily trigger
+        // that replaces ACTION_DATE_CHANGED as the thing keeping the rolling 7-day window alive.
+        // Dispatched as an implicit broadcast (no explicit component) to confirm the manifest
+        // intent-filter actually matches it, the same way a real re-delivery would.
+        context.sendBroadcast(Intent(PrayerAlarmReceiver.ACTION_SCHEDULE_MAINTENANCE))
+        shadowOf(Looper.getMainLooper()).idle()
+
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val deadline = System.currentTimeMillis() + 5000
+        var scheduled = false
+        while (System.currentTimeMillis() < deadline && !scheduled) {
+            scheduled = shadowOf(alarmManager).scheduledAlarms.isNotEmpty()
+            if (!scheduled) Thread.sleep(50)
+        }
+        assertTrue("Maintenance trigger should reschedule the prayer alarms", scheduled)
+
+        val rearmedMaintenance = PendingIntent.getBroadcast(
+            context, 9000,
+            Intent(context, PrayerAlarmReceiver::class.java).apply { action = PrayerAlarmReceiver.ACTION_SCHEDULE_MAINTENANCE },
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        assertNotNull(
+            "Handling the maintenance trigger should re-arm tomorrow's, keeping the chain alive",
+            rearmedMaintenance
+        )
     }
 
     // --- Full-screen alarm UX: wakeScreenOnAlarm gates the notification's full-screen intent. ---

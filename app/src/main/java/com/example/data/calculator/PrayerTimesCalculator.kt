@@ -89,8 +89,13 @@ object PrayerTimesCalculator {
         return SunCoordinates(declination, equationOfTime)
     }
 
+    // Deliberately NOT fixHour()-wrapped: this is a UTC-relative offset that events get computed
+    // from via +/- an hour-angle (see computeTime), and the sign/magnitude of that offset from
+    // *this specific date's* UTC midnight is exactly what tells zonedTimeFromUtcDecimalHours which
+    // UTC calendar day an event actually falls on. Wrapping it here would make that indistinguishable
+    // from a same-day value - see zonedTimeFromUtcDecimalHours for what that broke.
     private fun computeMidDay(timeZone: Double, lon: Double, eqt: Double): Double {
-        return fixHour(12.0 + timeZone - (lon / 15.0) - eqt)
+        return 12.0 + timeZone - (lon / 15.0) - eqt
     }
 
     private fun computeTime(angle: Double, lat: Double, declination: Double, midDay: Double, isMorning: Boolean): Double {
@@ -128,18 +133,22 @@ object PrayerTimesCalculator {
         return SunTimes(sunriseHour, sunsetHour, sun.declination, midDay)
     }
 
-    private fun decimalHoursToTotalMinutes(decimalHours: Double): Int {
-        val fixed = fixHour(decimalHours)
-        return (fixed * 60.0).roundToInt().mod(24 * 60)
-    }
-
     // A single UTC-offset frozen for the entire calendar day (the previous approach) produces a
     // one-hour error for events that fall after a DST transition occurring earlier that same day.
     // Anchoring each event as a real UTC instant and converting via withZoneSameInstant applies
     // whatever offset actually holds at that specific instant instead.
+    //
+    // decimalHours is a SIGNED offset from `date`'s UTC midnight, not a wall-clock hour - it can
+    // legitimately be negative (e.g. -5.2, meaning 18:48 UTC the *previous* UTC day - typical for
+    // Fajr at far-eastern longitudes) or exceed 24 (e.g. 28.7, meaning 04:42 UTC the *next* UTC
+    // day). Rounding it into [0,24) before adding it (as an earlier version of this function did)
+    // silently discarded which UTC day the event actually fell on, shifting the resulting
+    // ZonedDateTime a full day off in either direction while the displayed LocalTime still looked
+    // correct - see PrayerTimesCalculatorGoldenTest's Tokyo/Sydney/Auckland/Honolulu cases.
+    // plusMinutes() on a signed value rolls across the day boundary correctly on its own.
     private fun zonedTimeFromUtcDecimalHours(date: LocalDate, decimalHours: Double, zoneId: ZoneId): ZonedDateTime {
-        val totalMinutes = decimalHoursToTotalMinutes(decimalHours)
-        return date.atStartOfDay(ZoneOffset.UTC).plusMinutes(totalMinutes.toLong()).withZoneSameInstant(zoneId)
+        val signedMinutes = (decimalHours * 60.0).roundToInt()
+        return date.atStartOfDay(ZoneOffset.UTC).plusMinutes(signedMinutes.toLong()).withZoneSameInstant(zoneId)
     }
 
     fun calculateDailySchedule(

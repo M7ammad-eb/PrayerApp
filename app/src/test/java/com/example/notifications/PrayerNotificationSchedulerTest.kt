@@ -13,6 +13,7 @@ import com.example.data.preferences.AppPrayerSettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -215,5 +216,38 @@ class PrayerNotificationSchedulerTest {
         assertNotNull(scheduled)
         assertNull("Countdown trigger should never claim alarm-clock priority", scheduled!!.alarmClockInfo)
         assertEquals("Countdown trigger should be inexact, not exact", -1L, scheduled.windowLengthMs)
+    }
+
+    // --- Daily maintenance: ACTION_DATE_CHANGED isn't guaranteed for manifest receivers on modern
+    // Android, so a self-armed explicit alarm is what actually keeps the rolling 7-day window from
+    // running dry if the app is never reopened. ---
+
+    @Test
+    fun schedulingAlarmsArmsTomorrowsMaintenanceTrigger() {
+        val beforeMillis = System.currentTimeMillis()
+        PrayerNotificationScheduler.scheduleDailyAlarms(context, baseSettings())
+        val afterMillis = System.currentTimeMillis()
+
+        val maintenanceIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
+            action = PrayerAlarmReceiver.ACTION_SCHEDULE_MAINTENANCE
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context, 9000, maintenanceIntent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        assertNotNull("scheduleDailyAlarms should arm a maintenance trigger for the next day", pendingIntent)
+
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val scheduled = shadowOf(alarmManager).scheduledAlarms.find { it.operation == pendingIntent }
+        assertNotNull(scheduled)
+        val oneDayMillis = 24L * 60 * 60 * 1000
+        assertTrue(
+            "Maintenance trigger should fire ~24h out, not immediately or far in the future",
+            scheduled!!.triggerAtMs in (beforeMillis + oneDayMillis)..(afterMillis + oneDayMillis)
+        )
+        assertNull(
+            "Maintenance trigger is cosmetic/non-critical - it must not claim alarm-clock priority",
+            scheduled.alarmClockInfo
+        )
     }
 }

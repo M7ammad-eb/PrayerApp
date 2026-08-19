@@ -65,6 +65,7 @@
                 <action android:name="android.intent.action.DATE_CHANGED" />
                 <action android:name="com.example.ACTION_PRAYER_ALARM" />
                 <action android:name="com.example.ACTION_LIVE_COUNTDOWN" />
+                <action android:name="com.aistudio.prayertimes.mzkqwe.ACTION_SCHEDULE_MAINTENANCE" />
             </intent-filter>
         </receiver>
 

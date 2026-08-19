@@ -28,6 +28,10 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_PRAYER_ALARM = "com.example.ACTION_PRAYER_ALARM"
         const val ACTION_LIVE_COUNTDOWN = "com.example.ACTION_LIVE_COUNTDOWN"
+        // Self-scheduled, explicit-component daily trigger that replenishes the rolling 7-day
+        // alarm window - see PrayerNotificationScheduler.scheduleMaintenanceAlarm() for why this
+        // exists instead of relying solely on ACTION_DATE_CHANGED.
+        const val ACTION_SCHEDULE_MAINTENANCE = "com.aistudio.prayertimes.mzkqwe.ACTION_SCHEDULE_MAINTENANCE"
 
         const val EXTRA_PRAYER_NAME = "extra_prayer_name"
         const val EXTRA_PRAYER_TIME = "extra_prayer_time"
@@ -54,12 +58,19 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             action == Intent.ACTION_MY_PACKAGE_REPLACED ||
             action == Intent.ACTION_TIME_CHANGED ||
             action == Intent.ACTION_TIMEZONE_CHANGED ||
-            action == Intent.ACTION_DATE_CHANGED) {
-            // System event / reboot / timezone change: reschedule all alarms. goAsync() extends
-            // the receiver's lifetime past onReceive() returning - without it, Android is free to
-            // kill the process right after this call returns (very plausible right after a boot),
-            // and rescheduleAll's coroutine could be cut off partway through, leaving only some of
-            // the week's alarms restored.
+            action == Intent.ACTION_DATE_CHANGED ||
+            action == ACTION_SCHEDULE_MAINTENANCE) {
+            // System event / reboot / timezone change / daily maintenance: reschedule all alarms.
+            // ACTION_DATE_CHANGED is NOT on Android's implicit-broadcast exemption list for
+            // manifest receivers (unlike BOOT_COMPLETED/TIME_SET/TIMEZONE_CHANGED), so it can't be
+            // relied on alone to replenish the rolling 7-day window daily - ACTION_SCHEDULE_MAINTENANCE
+            // is a self-armed, explicit-component alarm that doesn't depend on that exemption list at
+            // all. rescheduleAll() -> scheduleDailyAlarms() re-arms tomorrow's maintenance trigger as
+            // part of the same call, so this chain keeps itself alive indefinitely without needing the
+            // app to ever be reopened. goAsync() extends the receiver's lifetime past onReceive()
+            // returning - without it, Android is free to kill the process right after this call
+            // returns (very plausible right after a boot), and rescheduleAll's coroutine could be cut
+            // off partway through, leaving only some of the week's alarms restored.
             val pendingResult = goAsync()
             PrayerApplication.instance.applicationScope.launch {
                 try {

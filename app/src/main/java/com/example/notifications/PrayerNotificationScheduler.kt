@@ -159,6 +159,8 @@ object PrayerNotificationScheduler {
 
             }
         }
+
+        scheduleMaintenanceAlarm(context, alarmManager)
     }
 
     // PendingIntent matching only considers action/component (not extras), so a bare lookup
@@ -178,6 +180,32 @@ object PrayerNotificationScheduler {
             alarmManager.cancel(pendingIntent)
             pendingIntent.cancel()
         }
+    }
+
+    private const val REQUEST_CODE_MAINTENANCE = 9000
+    private const val MAINTENANCE_INTERVAL_MILLIS = 24L * 60 * 60 * 1000
+
+    // ACTION_DATE_CHANGED is not on Android's implicit-broadcast exemption list for manifest
+    // receivers (unlike BOOT_COMPLETED/TIME_SET/TIMEZONE_CHANGED - see
+    // developer.android.com/develop/background-work/background-tasks/broadcasts/broadcast-exceptions),
+    // so it can't be relied on as the sole daily trigger that replenishes the rolling 7-day alarm
+    // window: an app that's never reopened, rebooted, or timezone/clock-changed for 8+ days could
+    // silently run out of scheduled Athan alarms. This self-arms an explicit-component alarm
+    // ~24h out that re-runs the full scheduling pass (which re-arms the next one) - independent of
+    // any implicit-broadcast restriction. It's inexact and non-critical: firing a few hours late is
+    // invisible against the 7-day buffer, so it costs nothing to keep this loose.
+    private fun scheduleMaintenanceAlarm(context: Context, alarmManager: AlarmManager) {
+        val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
+            action = PrayerAlarmReceiver.ACTION_SCHEDULE_MAINTENANCE
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            REQUEST_CODE_MAINTENANCE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val triggerAtMillis = System.currentTimeMillis() + MAINTENANCE_INTERVAL_MILLIS
+        setInexactAlarm(alarmManager, triggerAtMillis, pendingIntent, REQUEST_CODE_MAINTENANCE)
     }
 
     // Earlier app versions scheduled a "Dynamic Island countdown" alarm 15 minutes before each

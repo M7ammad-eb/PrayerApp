@@ -4,12 +4,14 @@ import com.example.data.models.CalculationMethod
 import com.example.data.models.HighLatitudeRule
 import com.example.data.models.JuristicMethod
 import com.example.data.models.PrayerTimeAdjustments
+import com.example.data.models.PrayerType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import kotlin.math.abs
 
 /**
@@ -182,5 +184,75 @@ class PrayerTimesCalculatorGoldenTest {
 
         assertEquals(7L, fajrDiff)
         assertEquals(-5L, ishaDiff)
+    }
+
+    // --- UTC day-rollover regression: a signed UTC-relative hour (e.g. Fajr computed as -5.2,
+    // meaning 18:48 UTC the *previous* UTC day) used to get wrapped into [0,24) before being
+    // anchored to an instant, silently discarding which UTC calendar day the event actually fell
+    // on. The displayed LocalTime still looked correct, which is exactly why plain ordering/
+    // invariant checks didn't catch it - these assert the full ZonedDateTime's calendar date. ---
+
+    private fun assertAllPrayersOnRequestedDate(date: LocalDate, zoneId: ZoneId, latitude: Double, longitude: Double) {
+        val schedule = PrayerTimesCalculator.calculateDailySchedule(
+            date = date, latitude = latitude, longitude = longitude, zoneId = zoneId
+        )
+        schedule.prayerItems.forEach { item ->
+            assertEquals(
+                "${item.type} zonedDateTime landed on ${item.zonedDateTime.toLocalDate()} instead of " +
+                    "the requested $date",
+                date, item.zonedDateTime.toLocalDate()
+            )
+        }
+    }
+
+    @Test
+    fun tokyoPrayersStayOnTheRequestedCalendarDate() {
+        assertAllPrayersOnRequestedDate(
+            date = LocalDate.of(2026, 6, 21), zoneId = ZoneId.of("Asia/Tokyo"),
+            latitude = 35.6762, longitude = 139.6503
+        )
+    }
+
+    @Test
+    fun sydneyPrayersStayOnTheRequestedCalendarDate() {
+        assertAllPrayersOnRequestedDate(
+            date = LocalDate.of(2026, 6, 21), zoneId = ZoneId.of("Australia/Sydney"),
+            latitude = -33.8688, longitude = 151.2093
+        )
+    }
+
+    @Test
+    fun aucklandPrayersStayOnTheRequestedCalendarDate() {
+        assertAllPrayersOnRequestedDate(
+            date = LocalDate.of(2026, 6, 21), zoneId = ZoneId.of("Pacific/Auckland"),
+            latitude = -36.8485, longitude = 174.7633
+        )
+    }
+
+    @Test
+    fun honoluluPrayersStayOnTheRequestedCalendarDate() {
+        assertAllPrayersOnRequestedDate(
+            date = LocalDate.of(2026, 12, 21), zoneId = ZoneId.of("Pacific/Honolulu"),
+            latitude = 21.3069, longitude = -157.8583
+        )
+    }
+
+    @Test
+    fun tokyoFajrUtcInstantFallsOnThePreviousUtcCalendarDay() {
+        // Concrete numeric trace of the bug: Tokyo (UTC+9) is far enough east that MWL's 18-degree
+        // Fajr angle resolves to a negative UTC-frame hour - the instant is actually still on the
+        // *previous* UTC calendar day. This is the exact mechanism the wrap used to break.
+        val date = LocalDate.of(2026, 6, 21)
+        val zoneId = ZoneId.of("Asia/Tokyo")
+        val schedule = PrayerTimesCalculator.calculateDailySchedule(
+            date = date, latitude = 35.6762, longitude = 139.6503, zoneId = zoneId
+        )
+        val fajr = schedule.prayerItems.first { it.type == PrayerType.FAJR }
+
+        assertEquals("Fajr should stay on the requested date in Tokyo local time", date, fajr.zonedDateTime.toLocalDate())
+        assertEquals(
+            "Fajr's underlying UTC instant should fall on the previous UTC calendar day at this longitude",
+            date.minusDays(1), fajr.zonedDateTime.withZoneSameInstant(ZoneOffset.UTC).toLocalDate()
+        )
     }
 }
