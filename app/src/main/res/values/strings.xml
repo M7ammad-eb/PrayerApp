@@ -119,6 +119,16 @@
     <string name="qibla_compass_calib_title">Compass Calibration</string>
     <string name="qibla_compass_calib_text">To calibrate your device\'s magnetic compass, move your phone smoothly in a figure-8 motion several times away from metal objects.</string>
     <string name="qibla_manual_compass_mode">Manual Compass Test Slider</string>
+    <string name="qibla_turn_needed_label">Turn Needed</string>
+    <string name="qibla_aligned_value">Aligned!</string>
+    <string name="qibla_sensor_label">Sensor:</string>
+    <string name="qibla_accuracy_high">High</string>
+    <string name="qibla_accuracy_medium">Medium</string>
+    <string name="qibla_accuracy_low">Low</string>
+    <string name="qibla_accuracy_unreliable">Unreliable</string>
+    <string name="qibla_calibrate_button">Calibrate</string>
+    <string name="qibla_turn_right">Turn right %1$d°</string>
+    <string name="qibla_turn_left">Turn left %1$d°</string>
 
     <!-- ===== Cardinal Directions ===== -->
     <string-array name="cardinal_directions">
@@ -192,6 +202,22 @@
     <string name="settings_notifications_disabled_warning">Prayer alerts &amp; Athan notifications are disabled in system settings. Please enable them to receive timely prayer alarms.</string>
     <string name="settings_enable_notifications_btn">Enable Notifications</string>
     <string name="settings_notifications_status_active">Prayer notifications &amp; exact alarms are active and ready.</string>
+    <string name="settings_notif_count_active">%1$d prayers active</string>
+    <string name="settings_adjustments_custom_active">Custom offsets active</string>
+    <string name="settings_adjustments_standard">Standard (0 min)</string>
+    <string name="settings_about_hub_title">About &amp; Calculation Info</string>
+    <string name="settings_about_hub_subtitle">Offline Astronomical Algorithms • v1.0</string>
+    <string name="settings_rerun_setup_title">Re-run Setup Wizard</string>
+    <string name="settings_rerun_setup_subtitle">Re-configure language, location, athan &amp; style</string>
+    <string name="settings_juristic_standard_desc">Shadow equals object length (Standard)</string>
+    <string name="settings_juristic_hanafi_desc">Shadow equals twice object length (Hanafi)</string>
+    <string name="settings_select_artwork_preview">Select prayer artwork to preview:</string>
+    <string name="settings_hijri_offset_desc">Sync with official local moon sighting declarations</string>
+    <string name="settings_reset_all_adjustments">Reset All Adjustments to 0</string>
+    <string name="settings_about_screen_title">About &amp; Precision Engine</string>
+    <string name="settings_version_engine_label">Version 1.0.0 • 100% Offline Precision Calculation Engine</string>
+    <string name="settings_astro_engine_title">Astronomical Calculation Engine</string>
+    <string name="settings_astro_engine_desc">Calculates exact solar coordinates, solar declination angle, and equation of time using Jean Meeus astronomical algorithms, supporting major world Islamic authorities with zero network dependencies.</string>
 
     <!-- ===== Audio Output Channel & Wake Screen Settings ===== -->
     <string name="settings_audio_stream_section_title">Athan Audio Stream Channel</string>
@@ -271,6 +297,16 @@
     <string name="coords_apply_coordinates">Apply Coordinates</string>
     <string name="coords_near_city_format">Near %1$s, %2$s (approx. %3$d km)</string>
     <string name="coords_near_city_short_format">Near %1$s</string>
+    <string name="coords_default_custom_name">Custom Coordinates</string>
+    <string name="coords_preset_makkah">Makkah</string>
+    <string name="coords_preset_madinah">Madinah</string>
+    <string name="coords_preset_jerusalem">Jerusalem</string>
+    <string name="coords_preset_cairo">Cairo</string>
+    <string name="coords_preset_dubai">Dubai</string>
+    <string name="coords_preset_istanbul">Istanbul</string>
+    <string name="coords_preset_london">London</string>
+    <string name="coords_preset_new_york">New York</string>
+    <string name="coords_device_default">Device Default</string>
 
     <!-- ===== Setup & First-Time Onboarding ===== -->
     <string name="onboarding_welcome_to_app">Welcome to Salati</string>
@@ -299,6 +335,8 @@
     <string name="onboarding_step_indicator_text">Step</string>
     <string name="onboarding_of_step_text">of</string>
     <string name="onboarding_gps_detecting">Detecting GPS location...</string>
+    <string name="onboarding_system_default_title">System Default</string>
+    <string name="onboarding_system_default_subtitle">Follow phone system language</string>
 
     <!-- ===== Widget Customization Strings ===== -->
     <string name="widget_settings_section">Home Screen Widgets</string>

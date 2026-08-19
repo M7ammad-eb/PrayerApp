@@ -345,7 +345,7 @@ private fun SettingsMainHub(
         val enabledNotifsCount = settings.prayerConfigs.values.count { it.enabled }
         SettingsHubCategoryCard(
             title = strings.notifSectionTitle,
-            subtitle = if (strings.isArabic) "$enabledNotifsCount صلوات مفعلة" else "$enabledNotifsCount prayers active",
+            subtitle = strings.notifCountActive(enabledNotifsCount),
             icon = Icons.Default.NotificationsActive,
             badgeColor = MaterialTheme.colorScheme.primaryContainer,
             iconTint = MaterialTheme.colorScheme.primary,
@@ -379,7 +379,7 @@ private fun SettingsMainHub(
         val hasAdjustments = settings.adjustments.let { it.fajr != 0 || it.sunrise != 0 || it.dhuhr != 0 || it.asr != 0 || it.maghrib != 0 || it.isha != 0 }
         SettingsHubCategoryCard(
             title = strings.minuteAdjustmentsTitle,
-            subtitle = if (hasAdjustments) (if (strings.isArabic) "تعديلات مخصصة مفعلة" else "Custom offsets active") else (if (strings.isArabic) "افتراضي (0 دقيقة)" else "Standard (0 min)"),
+            subtitle = if (hasAdjustments) strings.adjustmentsCustomActive else strings.adjustmentsStandard,
             icon = Icons.Default.Tune,
             badgeColor = MaterialTheme.colorScheme.surfaceVariant,
             iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -389,8 +389,8 @@ private fun SettingsMainHub(
 
         // About
         SettingsHubCategoryCard(
-            title = if (strings.isArabic) "حول التطبيق والحسابات الفلكية" else "About & Calculation Info",
-            subtitle = if (strings.isArabic) "حسابات فلكية بدون إنترنت • الإصدار 1.0" else "Offline Astronomical Algorithms • v1.0",
+            title = strings.aboutHubTitle,
+            subtitle = strings.aboutHubSubtitle,
             icon = Icons.Default.Info,
             badgeColor = MaterialTheme.colorScheme.surfaceVariant,
             iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -400,8 +400,8 @@ private fun SettingsMainHub(
 
         // Re-run Setup Wizard
         SettingsHubCategoryCard(
-            title = if (strings.isArabic) "إعادة تشغيل معالج الإعداد الأولي" else "Re-run Setup Wizard",
-            subtitle = if (strings.isArabic) "إعادة تخصيص اللغة والموقع والأذان والتصميم" else "Re-configure language, location, athan & style",
+            title = strings.rerunSetupTitle,
+            subtitle = strings.rerunSetupSubtitle,
             icon = Icons.Default.AutoAwesome,
             badgeColor = MaterialTheme.colorScheme.primaryContainer,
             iconTint = MaterialTheme.colorScheme.primary,
@@ -714,7 +714,7 @@ private fun SettingsThemeSubScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = if (strings.isArabic) preset.arabicTitle else preset.title,
+                                    text = strings.colorPresetName(preset),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -861,7 +861,7 @@ private fun SettingsCalculationSubScreen(
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = if (strings.isArabic) "ظل الشيء مثله (الشافعي، المالكي، الحنبلي)" else "Shadow equals object length (Standard)",
+                                    text = strings.juristicStandardDesc,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -890,7 +890,7 @@ private fun SettingsCalculationSubScreen(
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = if (strings.isArabic) "ظل الشيء مثليه (المذهب الحنفي)" else "Shadow equals twice object length (Hanafi)",
+                                    text = strings.juristicHanafiDesc,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1387,7 +1387,7 @@ private fun SettingsNotificationsSubScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         Text(
-                            text = if (strings.isArabic) "اختر وقتاً لمعاينة لوحته الفنية:" else "Select prayer artwork to preview:",
+                            text = strings.selectArtworkPreview,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -1836,7 +1836,7 @@ private fun SettingsHijriDisplaySubScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = if (strings.isArabic) "مطابقة رؤية الهلال مع الجهة الشرعية المحلية" else "Sync with official local moon sighting declarations",
+                        text = strings.hijriOffsetDesc,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1996,7 +1996,7 @@ private fun SettingsAdjustmentsSubScreen(
                 ) {
                     Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (strings.isArabic) "إعادة ضبط جميع الصلوات (0 دقيقة)" else "Reset All Adjustments to 0")
+                    Text(strings.resetAllAdjustments)
                 }
                 Spacer(modifier = Modifier.height(40.dp))
             }
@@ -2016,7 +2016,7 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
             .testTag("about_subscreen")
     ) {
         SubScreenHeader(
-            title = if (strings.isArabic) "حول التطبيق والحسابات" else "About & Precision Engine",
+            title = strings.aboutScreenTitle,
             onBack = onBack
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -2046,7 +2046,7 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Version 1.0.0 • 100% Offline Precision Calculation Engine",
+                        text = strings.versionEngineLabel,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
@@ -2061,15 +2061,14 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = if (strings.isArabic) "الخوارزميات الفلكية المعتمدة" else "Astronomical Calculation Engine",
+                        text = strings.astroEngineTitle,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = if (strings.isArabic) "يعتمد التطبيق خوارزميات جان ميوس (Jean Meeus) الفلكية لحساب موقع الشمس، زاوية الميل الشمسي، ومعادلة الزمن بدقة متناهية متوافقة مع معايير رابطة العالم الإسلامي وتقويم أم القرى."
-                               else "Calculates exact solar coordinates, solar declination angle, and equation of time using Jean Meeus astronomical algorithms, supporting major world Islamic authorities with zero network dependencies.",
+                        text = strings.astroEngineDesc,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -99,7 +99,7 @@ fun ManualCoordinatesDialog(
         mutableStateOf(
             if (currentLocation.name.isNotEmpty() && currentLocation.name != "Makkah")
                 currentLocation.name
-            else if (strings.isArabic) "إحداثيات مخصصة" else "Custom Coordinates"
+            else strings.defaultCustomCoordinatesName
         )
     }
 
@@ -160,14 +160,14 @@ fun ManualCoordinatesDialog(
 
     val presetCoordinates = remember(strings.isArabic) {
         listOf(
-            PresetCoord(if (strings.isArabic) "مكة المكرمة" else "Makkah", 21.4225, 39.8262, "Asia/Riyadh", "Saudi Arabia"),
-            PresetCoord(if (strings.isArabic) "المدينة المنورة" else "Madinah", 24.4672, 39.6111, "Asia/Riyadh", "Saudi Arabia"),
-            PresetCoord(if (strings.isArabic) "القدس الشريف" else "Jerusalem", 31.7683, 35.2137, "Asia/Jerusalem", "Palestine"),
-            PresetCoord(if (strings.isArabic) "القاهرة" else "Cairo", 30.0444, 31.2357, "Africa/Cairo", "Egypt"),
-            PresetCoord(if (strings.isArabic) "دبي" else "Dubai", 25.2048, 55.2708, "Asia/Dubai", "UAE"),
-            PresetCoord(if (strings.isArabic) "إسطنبول" else "Istanbul", 41.0082, 28.9784, "Europe/Istanbul", "Turkey"),
-            PresetCoord(if (strings.isArabic) "لندن" else "London", 51.5074, -0.1278, "Europe/London", "United Kingdom"),
-            PresetCoord(if (strings.isArabic) "نيويورك" else "New York", 40.7128, -74.0060, "America/New_York", "United States")
+            PresetCoord(strings.presetMakkah, 21.4225, 39.8262, "Asia/Riyadh", "Saudi Arabia"),
+            PresetCoord(strings.presetMadinah, 24.4672, 39.6111, "Asia/Riyadh", "Saudi Arabia"),
+            PresetCoord(strings.presetJerusalem, 31.7683, 35.2137, "Asia/Jerusalem", "Palestine"),
+            PresetCoord(strings.presetCairo, 30.0444, 31.2357, "Africa/Cairo", "Egypt"),
+            PresetCoord(strings.presetDubai, 25.2048, 55.2708, "Asia/Dubai", "UAE"),
+            PresetCoord(strings.presetIstanbul, 41.0082, 28.9784, "Europe/Istanbul", "Turkey"),
+            PresetCoord(strings.presetLondon, 51.5074, -0.1278, "Europe/London", "United Kingdom"),
+            PresetCoord(strings.presetNewYork, 40.7128, -74.0060, "America/New_York", "United States")
         )
     }
 
@@ -417,7 +417,7 @@ fun ManualCoordinatesDialog(
                                     )
                                 }
                                 Text(
-                                    text = if (strings.isArabic) "تغيير" else "Change",
+                                    text = strings.change,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold
@@ -434,7 +434,7 @@ fun ManualCoordinatesDialog(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            text = if (tz == ZoneId.systemDefault().id) "$tz (${if (strings.isArabic) "الافتراضي" else "Device Default"})" else tz,
+                                            text = if (tz == ZoneId.systemDefault().id) "$tz (${strings.deviceDefault})" else tz,
                                             fontWeight = if (tz == selectedTimeZone) FontWeight.Bold else FontWeight.Normal
                                         )
                                     },

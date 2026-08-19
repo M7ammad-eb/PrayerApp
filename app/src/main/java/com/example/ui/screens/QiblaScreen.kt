@@ -232,8 +232,8 @@ fun QiblaScreen(
                 TelemetryItem(label = strings.currentHeadingLabel, value = "${effectiveAzimuth.roundToInt()}°")
                 TelemetryItem(label = strings.qiblaBearingLabel, value = "${qiblaBearing.roundToInt()}°")
                 TelemetryItem(
-                    label = if (strings.isArabic) "التوجيه المطلوب" else "Turn Needed",
-                    value = if (isAligned) (if (strings.isArabic) "مطابق!" else "Aligned!") else "${relAngle.roundToInt()}°"
+                    label = strings.qiblaTurnNeededLabel,
+                    value = if (isAligned) strings.qiblaAlignedValue else "${relAngle.roundToInt()}°"
                 )
             }
         }
@@ -257,11 +257,11 @@ fun QiblaScreen(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "${if (strings.isArabic) "دقة الحساس:" else "Sensor:"} ${when (compassState.accuracy) {
-                        CompassAccuracy.HIGH -> if (strings.isArabic) "عالية" else "High"
-                        CompassAccuracy.MEDIUM -> if (strings.isArabic) "متوسطة" else "Medium"
-                        CompassAccuracy.LOW -> if (strings.isArabic) "منخفضة" else "Low"
-                        CompassAccuracy.UNRELIABLE -> if (strings.isArabic) "غير موثوق" else "Unreliable"
+                    text = "${strings.qiblaSensorLabel} ${when (compassState.accuracy) {
+                        CompassAccuracy.HIGH -> strings.qiblaAccuracyHigh
+                        CompassAccuracy.MEDIUM -> strings.qiblaAccuracyMedium
+                        CompassAccuracy.LOW -> strings.qiblaAccuracyLow
+                        CompassAccuracy.UNRELIABLE -> strings.qiblaAccuracyUnreliable
                     }}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -271,7 +271,7 @@ fun QiblaScreen(
             TextButton(onClick = { showCalibDialog = true }) {
                 Icon(imageVector = Icons.Default.CompassCalibration, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(if (strings.isArabic) "معايرة" else "Calibrate", style = MaterialTheme.typography.bodySmall)
+                Text(strings.qiblaCalibrateButton, style = MaterialTheme.typography.bodySmall)
             }
         }
 
@@ -352,7 +352,7 @@ private fun AlignmentStatusBadge(isAligned: Boolean, relAngle: Float) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = if (isAligned) strings.qiblaAlignedMessage else if (relAngle > 0) (if (strings.isArabic) "اتجه يميناً ${relAngle.roundToInt()}°" else "Turn right ${relAngle.roundToInt()}°") else (if (strings.isArabic) "اتجه يساراً ${-relAngle.roundToInt()}°" else "Turn left ${-relAngle.roundToInt()}°"),
+            text = if (isAligned) strings.qiblaAlignedMessage else if (relAngle > 0) strings.qiblaTurnRight(relAngle.roundToInt()) else strings.qiblaTurnLeft(-relAngle.roundToInt()),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = textColor

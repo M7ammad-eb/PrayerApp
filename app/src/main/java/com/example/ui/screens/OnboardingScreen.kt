@@ -450,8 +450,8 @@ private fun OnboardingLanguageStep(
 
             // System Default Option
             LanguageOptionCard(
-                nativeTitle = if (strings.isArabic) "لغة النظام التلقائية" else "System Default",
-                englishSubtitle = if (strings.isArabic) "اتباع لغة الهاتف" else "Follow phone system language",
+                nativeTitle = strings.systemDefaultLangTitle,
+                englishSubtitle = strings.systemDefaultLangSubtitle,
                 flagEmoji = "🌐",
                 isSelected = currentLanguage == AppLanguage.SYSTEM,
                 onClick = { onSelectLanguage(AppLanguage.SYSTEM) }
@@ -1155,7 +1155,7 @@ private fun OnboardingStyleStep(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = if (strings.isArabic) preset.arabicTitle else preset.title,
+                                text = strings.colorPresetName(preset),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

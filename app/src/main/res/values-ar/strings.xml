@@ -119,6 +119,16 @@
     <string name="qibla_compass_calib_title">معايرة البوصلة</string>
     <string name="qibla_compass_calib_text">لمعايرة بوصلة الهاتف، حرّك جهازك بسلاسة بشكل رقم 8 في الهواء عدة مرات بعيداً عن المعادن والمغناطيس.</string>
     <string name="qibla_manual_compass_mode">وضع البوصلة اليدوي (اختبار)</string>
+    <string name="qibla_turn_needed_label">التوجيه المطلوب</string>
+    <string name="qibla_aligned_value">مطابق!</string>
+    <string name="qibla_sensor_label">دقة الحساس:</string>
+    <string name="qibla_accuracy_high">عالية</string>
+    <string name="qibla_accuracy_medium">متوسطة</string>
+    <string name="qibla_accuracy_low">منخفضة</string>
+    <string name="qibla_accuracy_unreliable">غير موثوق</string>
+    <string name="qibla_calibrate_button">معايرة</string>
+    <string name="qibla_turn_right">اتجه يميناً %1$d°</string>
+    <string name="qibla_turn_left">اتجه يساراً %1$d°</string>
 
     <!-- ===== Cardinal Directions ===== -->
     <string-array name="cardinal_directions">
@@ -192,6 +202,22 @@
     <string name="settings_notifications_disabled_warning">تنبيهات الأذان معطلة في إعدادات النظام. يرجى تفعيل الإشعارات حتى يعمل الأذان في موعده.</string>
     <string name="settings_enable_notifications_btn">تفعيل الإشعارات الآن</string>
     <string name="settings_notifications_status_active">الإشعارات ومنبهات الأذان مفعلة وجاهزة بنجاح.</string>
+    <string name="settings_notif_count_active">%1$d صلوات مفعلة</string>
+    <string name="settings_adjustments_custom_active">تعديلات مخصصة مفعلة</string>
+    <string name="settings_adjustments_standard">افتراضي (0 دقيقة)</string>
+    <string name="settings_about_hub_title">حول التطبيق والحسابات الفلكية</string>
+    <string name="settings_about_hub_subtitle">حسابات فلكية بدون إنترنت • الإصدار 1.0</string>
+    <string name="settings_rerun_setup_title">إعادة تشغيل معالج الإعداد الأولي</string>
+    <string name="settings_rerun_setup_subtitle">إعادة تخصيص اللغة والموقع والأذان والتصميم</string>
+    <string name="settings_juristic_standard_desc">ظل الشيء مثله (الشافعي، المالكي، الحنبلي)</string>
+    <string name="settings_juristic_hanafi_desc">ظل الشيء مثليه (المذهب الحنفي)</string>
+    <string name="settings_select_artwork_preview">اختر وقتاً لمعاينة لوحته الفنية:</string>
+    <string name="settings_hijri_offset_desc">مطابقة رؤية الهلال مع الجهة الشرعية المحلية</string>
+    <string name="settings_reset_all_adjustments">إعادة ضبط جميع الصلوات (0 دقيقة)</string>
+    <string name="settings_about_screen_title">حول التطبيق والحسابات</string>
+    <string name="settings_version_engine_label">الإصدار 1.0.0 • محرك حسابات دقيق بدون إنترنت 100%</string>
+    <string name="settings_astro_engine_title">الخوارزميات الفلكية المعتمدة</string>
+    <string name="settings_astro_engine_desc">يعتمد التطبيق خوارزميات جان ميوس (Jean Meeus) الفلكية لحساب موقع الشمس، زاوية الميل الشمسي، ومعادلة الزمن بدقة متناهية متوافقة مع معايير رابطة العالم الإسلامي وتقويم أم القرى.</string>
 
     <!-- ===== Audio Output Channel & Wake Screen Settings ===== -->
     <string name="settings_audio_stream_section_title">قناة صوت الأذان (Audio Stream)</string>
@@ -271,6 +297,16 @@
     <string name="coords_apply_coordinates">تطبيق الإحداثيات</string>
     <string name="coords_near_city_format">بالقرب من %1$s، %2$s (تقريباً %3$d كم)</string>
     <string name="coords_near_city_short_format">بالقرب من %1$s</string>
+    <string name="coords_default_custom_name">إحداثيات مخصصة</string>
+    <string name="coords_preset_makkah">مكة المكرمة</string>
+    <string name="coords_preset_madinah">المدينة المنورة</string>
+    <string name="coords_preset_jerusalem">القدس الشريف</string>
+    <string name="coords_preset_cairo">القاهرة</string>
+    <string name="coords_preset_dubai">دبي</string>
+    <string name="coords_preset_istanbul">إسطنبول</string>
+    <string name="coords_preset_london">لندن</string>
+    <string name="coords_preset_new_york">نيويورك</string>
+    <string name="coords_device_default">الافتراضي</string>
 
     <!-- ===== Setup & First-Time Onboarding ===== -->
     <string name="onboarding_welcome_to_app">مرحباً بك في صلاتي</string>
@@ -299,6 +335,8 @@
     <string name="onboarding_step_indicator_text">الخطوة</string>
     <string name="onboarding_of_step_text">من</string>
     <string name="onboarding_gps_detecting">جارٍ تحديد الموقع عبر GPS...</string>
+    <string name="onboarding_system_default_title">لغة النظام التلقائية</string>
+    <string name="onboarding_system_default_subtitle">اتباع لغة الهاتف</string>
 
     <!-- ===== Widget Customization Strings ===== -->
     <string name="widget_settings_section">التطبيقات المصغرة (الودجت)</string>
