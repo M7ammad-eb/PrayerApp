@@ -14,7 +14,6 @@ import com.example.PrayerApplication
 import com.example.R
 import com.example.audio.AthanAudioEngine
 import com.example.audio.AthanAudioService
-import com.example.data.models.AthanAudioStream
 import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
 import com.example.data.preferences.PrayerPreferences
@@ -22,7 +21,6 @@ import com.example.ui.alarm.PrayerAlarmActivity
 import com.example.util.LocalizedStrings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 class PrayerAlarmReceiver : BroadcastReceiver() {
@@ -37,6 +35,16 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         const val EXTRA_IS_PRE_REMINDER = "extra_is_pre_reminder"
         const val EXTRA_LOCATION_NAME = "extra_location_name"
         const val EXTRA_TARGET_MILLIS = "extra_target_millis"
+    }
+
+    // Android 14+ can revoke an app's full-screen-intent capability regardless of the manifest
+    // permission (only default dialer/alarm-category apps or ones the user manually re-enabled in
+    // Settings keep it) - checking canUseFullScreenIntent() before calling setFullScreenIntent()
+    // avoids relying on it silently degrading to a heads-up notification on its own.
+    private fun canUseFullScreenIntent(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        return notificationManager.canUseFullScreenIntent()
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -102,7 +110,11 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             NotificationSoundType.FULL_ATHAN
         }
 
-        val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic()
+        // Fast synchronous cache read (same one already used for language elsewhere in this
+        // receiver) rather than awaiting the DataStore flow - lets wakeScreenOnAlarm factor into
+        // the notification built below instead of only being available later inside the coroutine.
+        val settings = PrayerPreferences.getInitialSettings(context)
+        val isArabic = settings.language.resolveIsArabic()
         val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
         val localizedPrayerName = LocalizedStrings.prayerName(localizedRes, prayerType)
 
@@ -182,8 +194,10 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                 .setContentIntent(if (isPreReminder) mainPendingIntent else alarmPendingIntent)
                 .setSound(null)
 
-            // Only attach Full-Screen intent when the screen is locked/off so it doesn't interrupt active phone usage
-            if (!isPreReminder && !isScreenInteractive) {
+            // Only attach the full-screen intent when the screen is locked/off (so it doesn't
+            // interrupt active phone usage), the user hasn't opted out via wakeScreenOnAlarm, and
+            // the OS is actually honoring full-screen intents for this app (Android 14+).
+            if (!isPreReminder && !isScreenInteractive && settings.wakeScreenOnAlarm && canUseFullScreenIntent(context)) {
                 notificationBuilder.setFullScreenIntent(alarmPendingIntent, true)
             }
 
@@ -202,36 +216,17 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         com.example.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
 
         val pendingResult = goAsync()
+        val audioStream = settings.audioStream
+        val wakeScreen = settings.wakeScreenOnAlarm
 
-        // Read audio stream & screen wake preferences and start playback & UI
+        // Start playback & UI. The full-screen alarm Activity is no longer launched directly from
+        // here via startActivity() - modern Android restricts starting activities from a
+        // background context like this, and it raced/duplicated the notification's own
+        // full-screen-intent launch. AthanAudioService's foreground-service notification (below)
+        // is the actual launch path now, using its own canUseFullScreenIntent() check, with the
+        // heads-up notification built above as the fallback if that's not permitted.
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                val prefs = PrayerPreferences(context)
-                val settings = prefs.settingsFlow.firstOrNull()
-                val audioStream = settings?.audioStream ?: AthanAudioStream.ALARM
-                val wakeScreen = settings?.wakeScreenOnAlarm ?: true
-
-                // Wake the screen and show full screen alarm activity ONLY IF screen is OFF (user not actively using phone)
-                if (!isPreReminder && wakeScreen && !isScreenInteractive) {
-                    try {
-                        val wakeLock = pm?.newWakeLock(
-                            PowerManager.FULL_WAKE_LOCK or
-                                    PowerManager.ACQUIRE_CAUSES_WAKEUP or
-                                    PowerManager.ON_AFTER_RELEASE,
-                            "PrayerApp:ScreenWakeAlarm"
-                        )
-                        wakeLock?.acquire(10 * 1000L) // 10 seconds wake lock to illuminate screen
-                    } catch (e: Exception) {
-                        // Ignore wake lock failure if not permitted
-                    }
-
-                    try {
-                        context.startActivity(alarmIntent)
-                    } catch (e: Exception) {
-                        // Fallback to notification intent
-                    }
-                }
-
                 // Audio Playback
                 if (!isPreReminder) {
                     when (soundType) {
@@ -250,7 +245,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                                     locationName = locationName,
                                     audioStream = audioStream,
                                     prayerTime = prayerTime,
-                                    showFullScreenAlarm = !isScreenInteractive
+                                    showFullScreenAlarm = wakeScreen && !isScreenInteractive
                                 )
                             } catch (e: Exception) {
                                 // Fallback to in-process playback if background service is restricted

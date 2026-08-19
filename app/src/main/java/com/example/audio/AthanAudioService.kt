@@ -24,6 +24,16 @@ import com.example.data.models.PrayerType
 import com.example.data.preferences.PrayerPreferences
 import com.example.util.LocalizedStrings
 
+// Android 14+ can revoke an app's full-screen-intent capability regardless of the manifest
+// permission (only default dialer/alarm-category apps or ones the user manually re-enabled in
+// Settings keep it) - checking canUseFullScreenIntent() before calling setFullScreenIntent()
+// avoids relying on it silently degrading to a heads-up notification on its own.
+private fun canUseFullScreenIntent(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
+    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    return notificationManager.canUseFullScreenIntent()
+}
+
 class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
 
     companion object {
@@ -220,7 +230,7 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, localizedRes.getString(R.string.alarm_stop_athan_btn), stopPendingIntent)
             .addAction(android.R.drawable.ic_input_get, localizedRes.getString(R.string.notif_alarm_open_view_action), alarmViewPendingIntent)
 
-        if (showFullScreenAlarm) {
+        if (showFullScreenAlarm && canUseFullScreenIntent(this)) {
             builder.setFullScreenIntent(alarmViewPendingIntent, true)
         }
 
