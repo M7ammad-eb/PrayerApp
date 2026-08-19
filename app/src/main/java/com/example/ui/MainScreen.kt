@@ -358,7 +358,7 @@ fun MainScreen(
                                         context = context,
                                         prayerType = prayer,
                                         prayerTime = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern(if (settings.is24HourFormat) "HH:mm" else "h:mm a")),
-                                        locationName = com.example.data.cities.CityDatabase.localizedName(settings.location, strings.isArabic).ifEmpty { "Current Location" },
+                                        locationName = com.example.data.cities.CityDatabase.localizedName(context.resources, settings.location).ifEmpty { strings.currentLocationFallback },
                                         soundType = settings.prayerConfigs[prayer]?.soundType ?: com.example.data.models.NotificationSoundType.FULL_ATHAN
                                     )
                                     context.startActivity(intent)
@@ -440,8 +440,9 @@ private fun ExpressiveTopHeader(
                             )
                             Text(
                                 text = run {
-                                    val locName = com.example.data.cities.CityDatabase.localizedName(settings.location, strings.isArabic)
-                                    val locCountry = com.example.data.cities.CityDatabase.localizedCountry(settings.location, strings.isArabic)
+                                    val headerRes = androidx.compose.ui.platform.LocalContext.current.resources
+                                    val locName = com.example.data.cities.CityDatabase.localizedName(headerRes, settings.location)
+                                    val locCountry = com.example.data.cities.CityDatabase.localizedCountry(headerRes, settings.location)
                                     "$locName${if (locCountry.isNotEmpty() && !locCountry.contains("°")) ", $locCountry" else ""}"
                                 },
                                 style = MaterialTheme.typography.bodyMedium,

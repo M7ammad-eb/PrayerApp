@@ -86,6 +86,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -520,11 +521,12 @@ private fun OnboardingLocationStep(
     onRequestGps: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
 
     val filteredCities = remember(searchQuery) {
         if (searchQuery.isBlank()) CityDatabase.popularCities
-        else CityDatabase.searchCities(searchQuery)
+        else CityDatabase.searchCities(context, searchQuery)
     }
 
     Column(
@@ -678,9 +680,10 @@ private fun OnboardingLocationStep(
         ) {
             items(filteredCities) { city ->
                 val isSelected = !currentLocation.isGps &&
-                    (currentLocation.name.equals(city.nameEn, ignoreCase = true) || currentLocation.name == city.nameAr)
+                    (currentLocation.name.equals(com.example.util.LocalizedStrings.forLanguage(context, false).getString(city.nameRes), ignoreCase = true) ||
+                        currentLocation.name == com.example.util.LocalizedStrings.forLanguage(context, true).getString(city.nameRes))
                 Card(
-                    onClick = { onSelectCity(city.toUserLocation(strings.isArabic)) },
+                    onClick = { onSelectCity(city.toUserLocation(context.resources)) },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
@@ -697,13 +700,13 @@ private fun OnboardingLocationStep(
                     ) {
                         Column {
                             Text(
-                                text = if (strings.isArabic) city.nameAr else city.nameEn,
+                                text = stringResource(city.nameRes),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${if (strings.isArabic) city.countryAr else city.countryEn} • ${city.timeZoneId}",
+                                text = "${stringResource(city.countryRes)} • ${city.timeZoneId}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

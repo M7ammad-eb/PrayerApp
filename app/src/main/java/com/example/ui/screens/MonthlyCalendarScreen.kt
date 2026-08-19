@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.models.DailyPrayerSchedule
 import com.example.data.models.PrayerType
 import com.example.data.models.UserLocation
+import androidx.compose.ui.platform.LocalContext
 import com.example.ui.locale.LocalAppStrings
 import com.example.ui.theme.GoldAccent
 import java.time.LocalDate
@@ -99,7 +100,7 @@ fun MonthlyCalendarScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = com.example.data.cities.CityDatabase.localizedName(location, strings.isArabic),
+                        text = com.example.data.cities.CityDatabase.localizedName(LocalContext.current.resources, location),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

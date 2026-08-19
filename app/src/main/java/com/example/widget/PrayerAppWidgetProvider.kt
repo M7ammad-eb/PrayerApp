@@ -444,9 +444,10 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         // Location & Hijri display strings. A preset-picked city always shows in the *current*
         // app language (not whichever language was active when it was selected) - only a GPS or
         // manually-entered location, which has no second-language variant, keeps its stored name.
+        val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
         val locationFormatted = formatLocationString(
-            com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic),
-            com.example.data.cities.CityDatabase.localizedCountry(settings.location, isArabic)
+            com.example.data.cities.CityDatabase.localizedName(localizedRes, settings.location),
+            com.example.data.cities.CityDatabase.localizedCountry(localizedRes, settings.location)
         )
         val hijriFormatted = if (isArabic) {
             todaySchedule.hijriDate?.formattedAr ?: todaySchedule.hijriDateString

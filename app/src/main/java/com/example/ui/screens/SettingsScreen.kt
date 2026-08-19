@@ -10,6 +10,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.example.R
 import androidx.compose.foundation.background
@@ -328,9 +329,11 @@ private fun SettingsMainHub(
         )
 
         // Location
+        val locationHubName = com.example.data.cities.CityDatabase.localizedName(LocalContext.current.resources, settings.location)
+        val locationHubCountry = com.example.data.cities.CityDatabase.localizedCountry(LocalContext.current.resources, settings.location)
         SettingsHubCategoryCard(
             title = strings.locationSection,
-            subtitle = "${settings.location.name}${if (settings.location.country.isNotEmpty()) ", " + settings.location.country else ""} ${if (settings.location.isGps) "(GPS)" else ""}",
+            subtitle = "$locationHubName${if (locationHubCountry.isNotEmpty()) ", $locationHubCountry" else ""} ${if (settings.location.isGps) "(GPS)" else ""}",
             icon = Icons.Default.LocationOn,
             badgeColor = MaterialTheme.colorScheme.tertiaryContainer,
             iconTint = MaterialTheme.colorScheme.tertiary,
@@ -968,11 +971,12 @@ private fun SettingsLocationSubScreen(
     onBack: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
 
     val filteredCities = remember(searchQuery) {
         if (searchQuery.isBlank()) CityDatabase.popularCities
-        else CityDatabase.searchCities(searchQuery)
+        else CityDatabase.searchCities(context, searchQuery)
     }
 
     Column(
@@ -1045,10 +1049,10 @@ private fun SettingsLocationSubScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(filteredCities) { city ->
-                val isSelected = settings.location.name.equals(city.nameEn, ignoreCase = true) ||
-                    settings.location.name == city.nameAr
+                val isSelected = settings.location.name.equals(com.example.util.LocalizedStrings.forLanguage(context, false).getString(city.nameRes), ignoreCase = true) ||
+                    settings.location.name == com.example.util.LocalizedStrings.forLanguage(context, true).getString(city.nameRes)
                 Card(
-                    onClick = { onSelectCity(city.toUserLocation(strings.isArabic)) },
+                    onClick = { onSelectCity(city.toUserLocation(context.resources)) },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
@@ -1065,13 +1069,13 @@ private fun SettingsLocationSubScreen(
                     ) {
                         Column {
                             Text(
-                                text = if (strings.isArabic) city.nameAr else city.nameEn,
+                                text = stringResource(city.nameRes),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${if (strings.isArabic) city.countryAr else city.countryEn} • ${city.timeZoneId}",
+                                text = "${stringResource(city.countryRes)} • ${city.timeZoneId}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

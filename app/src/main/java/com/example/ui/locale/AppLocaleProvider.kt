@@ -68,6 +68,7 @@ class AppStrings(
     val now: String = s(R.string.common_now)
     val select: String = s(R.string.common_select)
     val active: String = s(R.string.common_active)
+    val currentLocationFallback: String = s(R.string.common_current_location)
 
     // Next Prayer / Hero
     val nextPrayerLabel: String = s(R.string.hero_next_prayer_label)

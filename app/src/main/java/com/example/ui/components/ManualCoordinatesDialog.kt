@@ -55,7 +55,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.R
 import com.example.data.cities.CityDatabase
 import com.example.data.models.UserLocation
 import com.example.data.qibla.QiblaCalculator
@@ -77,6 +80,7 @@ fun ManualCoordinatesDialog(
     onDismiss: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    val context = LocalContext.current
     var latText by remember {
         mutableStateOf(
             if (currentLocation.isGps || currentLocation.latitude != 0.0)
@@ -477,10 +481,12 @@ fun ManualCoordinatesDialog(
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Text(
-                                        text = "${if (strings.isArabic) "بالقرب من" else "Near"} " +
-                                            "${if (strings.isArabic) nearCity.nameAr else nearCity.nameEn}, " +
-                                            "${if (strings.isArabic) nearCity.countryAr else nearCity.countryEn} " +
-                                            "(approx. ${distKm.toInt()} km)",
+                                        text = stringResource(
+                                            R.string.coords_near_city_format,
+                                            stringResource(nearCity.nameRes),
+                                            stringResource(nearCity.countryRes),
+                                            distKm.toInt()
+                                        ),
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -537,7 +543,7 @@ fun ManualCoordinatesDialog(
                                     "Custom (${String.format(Locale.US, "%.2f, %.2f", latParsed, lonParsed)})"
                                 }
                                 val finalCountry = nearestCityResult?.let {
-                                    "Near ${if (strings.isArabic) it.first.nameAr else it.first.nameEn}"
+                                    context.getString(R.string.coords_near_city_short_format, context.getString(it.first.nameRes))
                                 } ?: "Manual Coordinates"
                                 val newLocation = UserLocation(
                                     name = finalName,

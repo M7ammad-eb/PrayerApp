@@ -72,6 +72,7 @@ import com.example.data.qibla.CompassAccuracy
 import com.example.data.qibla.CompassSensorManager
 import com.example.data.qibla.CompassState
 import com.example.data.qibla.QiblaCalculator
+import androidx.compose.ui.platform.LocalContext
 import com.example.ui.locale.LocalAppStrings
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldAccentLight
@@ -159,7 +160,7 @@ fun QiblaScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = com.example.data.cities.CityDatabase.localizedName(location, strings.isArabic),
+                            text = com.example.data.cities.CityDatabase.localizedName(LocalContext.current.resources, location),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )

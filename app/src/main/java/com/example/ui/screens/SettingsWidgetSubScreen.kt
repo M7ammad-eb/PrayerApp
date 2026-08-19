@@ -972,7 +972,7 @@ private fun PreviewStandard4x2(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic),
+                            text = com.example.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location),
                             fontSize = 11.sp * scale,
                             fontWeight = FontWeight.Bold,
                             color = textPrimary
@@ -1128,7 +1128,7 @@ private fun PreviewExpandedMax(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic),
+                            text = com.example.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location),
                             fontSize = 13.sp * scale,
                             fontWeight = FontWeight.Bold,
                             color = textPrimary
@@ -1268,7 +1268,7 @@ private fun PreviewVertical1Col(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = Icons.Default.Mosque, contentDescription = null, tint = primaryAccent, modifier = Modifier.size(11.dp))
                 Spacer(modifier = Modifier.width(3.dp))
-                Text(text = com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
+                Text(text = com.example.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
             }
         }
 
@@ -1341,7 +1341,7 @@ private fun PreviewSlimBar(
             Spacer(modifier = Modifier.width(8.dp))
             Column {
                 if (wSet.showLocation) {
-                    Text(text = com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
+                    Text(text = com.example.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
@@ -1385,7 +1385,7 @@ private fun PreviewCompact2x1(
         val compactRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
         Column {
             if (wSet.showLocation) {
-                Text(text = com.example.data.cities.CityDatabase.localizedName(settings.location, isArabic), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
+                Text(text = com.example.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
             }
             Text(text = compactRes.getString(if (isPrevious) R.string.widget_preview_compact_prev_label else R.string.widget_preview_compact_next_label), fontSize = 11.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
             Text(text = if (isPrevious) "12:20 PM" else "3:45 PM", fontSize = 18.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)

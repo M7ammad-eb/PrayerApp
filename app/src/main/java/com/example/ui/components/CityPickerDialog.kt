@@ -34,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -47,11 +49,12 @@ fun CityPickerDialog(
     onDismiss: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
 
     val filteredCities = remember(searchQuery) {
         if (searchQuery.isBlank()) CityDatabase.popularCities
-        else CityDatabase.searchCities(searchQuery)
+        else CityDatabase.searchCities(context, searchQuery)
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -107,7 +110,7 @@ fun CityPickerDialog(
                 ) {
                     items(filteredCities) { city ->
                         Card(
-                            onClick = { onSelectCity(city.toUserLocation(strings.isArabic)) },
+                            onClick = { onSelectCity(city.toUserLocation(context.resources)) },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                             modifier = Modifier.fillMaxWidth()
@@ -121,12 +124,12 @@ fun CityPickerDialog(
                             ) {
                                 Column {
                                     Text(
-                                        text = if (strings.isArabic) city.nameAr else city.nameEn,
+                                        text = stringResource(city.nameRes),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = "${if (strings.isArabic) city.countryAr else city.countryEn} • ${city.timeZoneId}",
+                                        text = "${stringResource(city.countryRes)} • ${city.timeZoneId}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
