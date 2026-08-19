@@ -14,7 +14,7 @@ class PrayerApplication : Application() {
     companion object {
         const val CHANNEL_ATHAN_ID = "prayer_athan_channel_v2"
         const val CHANNEL_REMINDER_ID = "prayer_reminder_channel_v2"
-        const val CHANNEL_DYNAMIC_ISLAND_ID = "prayer_dynamic_island_channel_v2"
+        const val CHANNEL_LIVE_COUNTDOWN_ID = "prayer_live_countdown_channel_v1"
 
         lateinit var instance: PrayerApplication
             private set
@@ -64,6 +64,10 @@ class PrayerApplication : Application() {
             try {
                 notificationManager.deleteNotificationChannel("prayer_athan_channel")
                 notificationManager.deleteNotificationChannel("prayer_dynamic_island_channel")
+                // The Dynamic Island feature actually shipped its channel under the "_v2" id below -
+                // the un-suffixed one above was already dead. Delete the real one so it stops
+                // showing in system notification settings now that the feature is removed.
+                notificationManager.deleteNotificationChannel("prayer_dynamic_island_channel_v2")
             } catch (e: Exception) {
                 // Ignore
             }
@@ -90,21 +94,20 @@ class PrayerApplication : Application() {
                 setShowBadge(true)
             }
 
-            val islandChannel = NotificationChannel(
-                CHANNEL_DYNAMIC_ISLAND_ID,
-                "Dynamic Island & Live Prayer Countdown",
+            val liveCountdownChannel = NotificationChannel(
+                CHANNEL_LIVE_COUNTDOWN_ID,
+                "Live Athan Countdown",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Ongoing countdown shown in the Dynamic Island and status bar before prayer"
+                description = "Ambient live countdown shown before Athan time"
                 enableVibration(false)
                 setSound(null, null)
                 setShowBadge(false)
-                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
 
             notificationManager.createNotificationChannel(athanChannel)
             notificationManager.createNotificationChannel(reminderChannel)
-            notificationManager.createNotificationChannel(islandChannel)
+            notificationManager.createNotificationChannel(liveCountdownChannel)
         }
     }
 }

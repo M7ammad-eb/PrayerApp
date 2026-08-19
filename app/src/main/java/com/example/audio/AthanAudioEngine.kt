@@ -120,12 +120,17 @@ object AthanAudioEngine {
         prayerType: PrayerType = PrayerType.DHUHR,
         soundType: NotificationSoundType = NotificationSoundType.FULL_ATHAN,
         audioStream: AthanAudioStream = AthanAudioStream.ALARM,
+        isArabic: Boolean = false,
         onFinished: (() -> Unit)? = null
     ) {
         stop()
 
         val rawResId = getRawResourceForSoundType(soundType)
-        val styleTitle = "${soundType.displayName} • ${prayerType.title}"
+        val localizedPrayerName = com.example.util.LocalizedStrings.prayerName(
+            com.example.util.LocalizedStrings.forLanguage(context, isArabic),
+            prayerType
+        )
+        val styleTitle = "${soundType.localizedDisplayName(isArabic)} • $localizedPrayerName"
 
         try {
             val player = createPreparedPlayer(context, rawResId, audioStream)
@@ -190,11 +195,12 @@ object AthanAudioEngine {
         soundType: NotificationSoundType,
         prayerType: PrayerType = PrayerType.DHUHR,
         audioStream: AthanAudioStream = AthanAudioStream.ALARM,
+        isArabic: Boolean = false,
         onFinished: (() -> Unit)? = null
     ) {
         stop()
         if (soundType.isFullAthan) {
-            playAthan(context, prayerType, soundType, audioStream, onFinished)
+            playAthan(context, prayerType, soundType, audioStream, isArabic, onFinished)
             return
         }
 
@@ -213,7 +219,7 @@ object AthanAudioEngine {
                 onFinished?.invoke()
             }
             else -> {
-                playAthan(context, prayerType, soundType, audioStream, onFinished)
+                playAthan(context, prayerType, soundType, audioStream, isArabic, onFinished)
             }
         }
     }

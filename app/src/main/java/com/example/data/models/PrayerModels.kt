@@ -56,103 +56,28 @@ data class DailyPrayerSchedule(
     val prayerItems: List<PrayerTimeItem>
 )
 
+// Display name/description are resolved via AppLocaleProvider.calcMethodName(method), not stored
+// here, so the same catalog works for every language without a second set of literal fields.
 enum class CalculationMethod(
-    val displayName: String,
-    val description: String,
     val fajrAngle: Double,
     val ishaAngle: Double,
     val ishaMinutesAfterMaghrib: Int? = null,
     val maghribAngle: Double? = null
 ) {
-    MUSLIM_WORLD_LEAGUE(
-        "Muslim World League (MWL)",
-        "Standard method used across Europe, Far East, and parts of the Americas (Fajr 18°, Isha 17°)",
-        18.0,
-        17.0
-    ),
-    ISNA(
-        "ISNA (North America)",
-        "Islamic Society of North America (Fajr 15°, Isha 15°)",
-        15.0,
-        15.0
-    ),
-    EGYPTIAN(
-        "Egyptian General Authority of Survey",
-        "Common in Egypt, Africa, Syria, Iraq, Lebanon (Fajr 19.5°, Isha 17.5°)",
-        19.5,
-        17.5
-    ),
-    UMM_AL_QURA(
-        "Umm Al-Qura University, Makkah",
-        "Standard in Saudi Arabia and the Arabian Peninsula (Fajr 18.5°, Isha 90 min after Maghrib)",
-        18.5,
-        0.0,
-        ishaMinutesAfterMaghrib = 90
-    ),
-    KARACHI(
-        "University of Islamic Sciences, Karachi",
-        "Standard in Pakistan, India, Bangladesh, Afghanistan (Fajr 18°, Isha 18°)",
-        18.0,
-        18.0
-    ),
-    TEHRAN(
-        "Institute of Geophysics, Univ. of Tehran",
-        "Fajr 17.7°, Maghrib 4.5°, Isha 14°",
-        17.7,
-        14.0,
-        maghribAngle = 4.5
-    ),
-    SHIA_ITHNA_ASHARI(
-        "Shia Ithna Ashari (Leva Institute)",
-        "Fajr 16°, Maghrib 4°, Isha 14°",
-        16.0,
-        14.0,
-        maghribAngle = 4.0
-    ),
-    GULF(
-        "Gulf Region (UAE & Dubai)",
-        "Fajr 19.5°, Isha 90 min after Maghrib",
-        19.5,
-        0.0,
-        ishaMinutesAfterMaghrib = 90
-    ),
-    KUWAIT(
-        "Kuwait",
-        "Fajr 18°, Isha 17.5°",
-        18.0,
-        17.5
-    ),
-    QATAR(
-        "Qatar",
-        "Fajr 18°, Isha 90 min after Maghrib",
-        18.0,
-        0.0,
-        ishaMinutesAfterMaghrib = 90
-    ),
-    SINGAPORE(
-        "MUIS (Singapore)",
-        "Majlis Ugama Islam Singapura (Fajr 20°, Isha 18°)",
-        20.0,
-        18.0
-    ),
-    TURKEY(
-        "Diyanet İşleri Başkanlığı (Turkey)",
-        "Presidency of Religious Affairs Turkey (Fajr 18°, Isha 17°)",
-        18.0,
-        17.0
-    ),
-    FRANCE_UOIF(
-        "France (UOIF)",
-        "Union des Organisations Islamiques de France (Fajr 12°, Isha 12°)",
-        12.0,
-        12.0
-    ),
-    RUSSIA(
-        "SAMR (Russia)",
-        "Spiritual Administration of Muslims of Russia (Fajr 16°, Isha 15°)",
-        16.0,
-        15.0
-    )
+    MUSLIM_WORLD_LEAGUE(18.0, 17.0),
+    ISNA(15.0, 15.0),
+    EGYPTIAN(19.5, 17.5),
+    UMM_AL_QURA(18.5, 0.0, ishaMinutesAfterMaghrib = 90),
+    KARACHI(18.0, 18.0),
+    TEHRAN(17.7, 14.0, maghribAngle = 4.5),
+    SHIA_ITHNA_ASHARI(16.0, 14.0, maghribAngle = 4.0),
+    GULF(19.5, 0.0, ishaMinutesAfterMaghrib = 90),
+    KUWAIT(18.0, 17.5),
+    QATAR(18.0, 0.0, ishaMinutesAfterMaghrib = 90),
+    SINGAPORE(20.0, 18.0),
+    TURKEY(18.0, 17.0),
+    FRANCE_UOIF(12.0, 12.0),
+    RUSSIA(16.0, 15.0)
 }
 
 enum class JuristicMethod(val displayName: String, val shadowFactor: Double) {
@@ -189,6 +114,9 @@ enum class NotificationSoundType(
     MELODIC_TONE("Gentle Chime", "Soft chime notification", "نغمة هادئة", false),
     VIBRATE_ONLY("Vibrate Only", "Haptic vibration without audio", "اهتزاز فقط", false),
     SILENT("Silent", "Visual notification only", "صامت", false);
+
+    fun localizedDisplayName(isArabic: Boolean): String =
+        if (isArabic && displayNameAr.isNotBlank()) displayNameAr else displayName
 
     companion object {
         // Fallback backward-compatibility mappings

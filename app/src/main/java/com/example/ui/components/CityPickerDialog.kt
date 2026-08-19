@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material.icons.filled.Search
@@ -45,6 +46,7 @@ import com.example.ui.locale.LocalAppStrings
 
 @Composable
 fun CityPickerDialog(
+    currentLocation: UserLocation,
     onSelectCity: (UserLocation) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -93,7 +95,7 @@ fun CityPickerDialog(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text(strings.search + " (Cairo, London, Dubai...)") },
+                    placeholder = { Text(strings.search + " (" + strings.presetLondon + ", " + strings.presetCairo + ", " + strings.presetDubai + "...)") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
@@ -109,10 +111,14 @@ fun CityPickerDialog(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(filteredCities) { city ->
+                        val isSelected = CityDatabase.isSelectedPreset(currentLocation, city)
                         Card(
                             onClick = { onSelectCity(city.toUserLocation(context.resources)) },
                             shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ),
+                            border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
@@ -133,6 +139,9 @@ fun CityPickerDialog(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                }
+                                if (isSelected) {
+                                    Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         }

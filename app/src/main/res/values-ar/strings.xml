@@ -25,6 +25,8 @@
     <string name="common_got_it">حسناً</string>
     <string name="common_close">إغلاق</string>
     <string name="common_search">بحث</string>
+    <string name="common_back">رجوع</string>
+    <string name="common_clear">مسح</string>
     <string name="common_change">تغيير</string>
     <string name="common_remaining">متبقي</string>
     <string name="common_time_for_prayer">حان الآن وقت الصلاة</string>
@@ -32,6 +34,41 @@
     <string name="common_select">اختيار</string>
     <string name="common_active">مفعّل</string>
     <string name="common_current_location">الموقع الحالي</string>
+
+    <!-- ===== Full-Screen Prayer Alarm ===== -->
+    <string name="alarm_badge_prayer">صلاة %1$s</string>
+    <string name="alarm_time_for_prayer">حان الآن وقت صلاة %1$s</string>
+    <string name="alarm_stop_athan_btn">إيقاف الأذان</string>
+    <string name="alarm_snooze_5m_btn">تأجيل (5 د)</string>
+    <string name="alarm_dua_btn">الدعاء</string>
+    <string name="alarm_open_app_btn">فتح مواقيت الصلاة والقبلة</string>
+    <string name="alarm_dua_sheet_title">دعاء بعد الأذان</string>
+    <string name="notif_alarm_approaching_title">اقتراب موعد صلاة %1$s</string>
+    <string name="notif_alarm_time_title">حان الآن وقت صلاة %1$s</string>
+    <string name="notif_alarm_approaching_body">استعد لصلاة %1$s القادمة في %2$s بـ %3$s.</string>
+    <string name="notif_alarm_time_body">حان الآن وقت صلاة %1$s في %2$s (%3$s).</string>
+    <string name="notif_alarm_open_view_action">فتح شاشة التنبيه</string>
+    <string name="notif_athan_playing_title">أذان صلاة %1$s</string>
+    <string name="gps_current_location_fallback">موقع GPS الحالي</string>
+    <string name="gps_coordinates_fallback">إحداثيات GPS</string>
+    <string name="gps_fix_failed_error">تعذر تحديد موقع GPS الحالي. يرجى التأكد من تفعيل خدمات الموقع.</string>
+    <string name="gps_request_failed_error">فشل طلب تحديد الموقع: %1$s</string>
+    <string name="gps_current_prefix">الحالي: %1$s</string>
+    <string name="gps_tap_to_detect">اضغط للكشف التلقائي</string>
+    <string name="gps_button_label">GPS</string>
+    <string name="qibla_toggle_manual_desc">تبديل الإدخال اليدوي</string>
+    <string name="widget_settings_appearance_section_title">المظهر</string>
+    <string name="widget_settings_appearance_section_subtitle">النمط والخلفية والنص</string>
+    <string name="widget_settings_behavior_section_title">السلوك</string>
+    <string name="widget_settings_behavior_section_subtitle">كيفية عرض بطاقة العد التنازلي</string>
+    <string name="widget_settings_content_section_subtitle">اختر ما يظهر في الودجت</string>
+    <string name="widget_settings_toggle_show_hero_desc">بطاقة كبيرة للصلاة القادمة (أو الماضية)</string>
+    <string name="widget_settings_toggle_show_countdown_desc">الوقت المتبقي، يظهر في البطاقة الرئيسية</string>
+    <string name="widget_settings_toggle_show_progress_desc">شريط بين الصلاة السابقة والقادمة</string>
+    <string name="widget_settings_toggle_show_all_prayers_desc">صف يضم كل أوقات الصلاة الستة</string>
+    <string name="widget_settings_toggle_show_sunrise_desc">تضمين الشروق في صف الصلوات</string>
+    <string name="widget_settings_toggle_show_location_desc">اسم المدينة في أعلى الودجت</string>
+    <string name="widget_settings_toggle_show_hijri_desc">التاريخ الهجري في أعلى الودجت</string>
 
     <!-- ===== Next Prayer / Hero ===== -->
     <string name="hero_next_prayer_label">الصلاة القادمة</string>
@@ -233,14 +270,15 @@
     <string name="settings_wake_screen_desc">إضاءة الشاشة تلقائياً وعرض اللوحة الفنية الكاملة فقط إذا كانت الشاشة مغلقة. أثناء استخدام الهاتف، يظهر إشعار علوي أنيق دون مقاطعتك.</string>
     <string name="settings_preview_full_screen_alarm_btn">🖼️ معاينة شاشة منبه الأذان الفنية الكاملة</string>
 
+    <!-- ===== Live Athan Countdown (standard Android Live Update notification) ===== -->
+    <string name="live_countdown_section_title">عداد الأذان المباشر</string>
+    <string name="live_countdown_section_desc">إظهار إشعار عد تنازلي مباشر ومتحرك قبل حلول وقت الأذان.</string>
+    <string name="live_countdown_lead_time_label">ابدأ العد التنازلي قبل الأذان بـ:</string>
+    <string name="live_countdown_minutes_chip">%dد</string>
+    <string name="live_countdown_notif_title">عداد أذان %1$s</string>
+    <string name="live_countdown_test_btn">جرّب العد التنازلي الآن</string>
+
     <!-- ===== Dynamic Island / Live Countdown Feature ===== -->
-    <string name="settings_dynamic_island_section_title">الجزيرة التفاعلية والعد التنازلي المباشر (Live Activity)</string>
-    <string name="settings_dynamic_island_desc">عرض كبسولة تفاعلية وعد تنازلي مباشر في أعلى الشاشة وشريط الإشعارات قبل حلول وقت الصلاة (مثل Keeta و Live Activities).</string>
-    <string name="settings_dynamic_island_enable_title">تفعيل كبسولة الجزيرة التفاعلية</string>
-    <string name="settings_dynamic_island_lead_time_title">بدء العد التنازلي قبل الصلاة بـ:</string>
-    <string name="settings_dynamic_island_vivo_tip">💡 لأجهزة Vivo / iQOO / OriginOS: لتفعيل كبسولة الجزيرة (Atomic Island)، يرجى التأكد من تشغيل \'الأنشطة الحية / Live Alerts\' لتطبيق مواقيت الصلاة من إعدادات الهاتف &gt; الإشعارات.</string>
-    <string name="settings_preview_dynamic_island_btn">✨ معاينة كبسولة الجزيرة التفاعلية الآن</string>
-    <string name="settings_dismiss_dynamic_island_btn">إخفاء الجزيرة التفاعلية</string>
 
     <!-- ===== Calculation Method translations ===== -->
     <string name="calc_method_umm_al_qura">جامعة أم القرى (مكة المكرمة)</string>

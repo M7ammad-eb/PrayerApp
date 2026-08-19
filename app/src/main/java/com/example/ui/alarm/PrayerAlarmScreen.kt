@@ -83,6 +83,7 @@ import androidx.compose.ui.unit.sp
 import com.example.audio.AdhanPlaybackState
 import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
+import com.example.ui.locale.LocalAppStrings
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -100,6 +101,8 @@ fun PrayerAlarmScreen(
     onOpenApp: () -> Unit,
     onTogglePlayPause: (() -> Unit)? = null
 ) {
+    val strings = LocalAppStrings.current
+    val localizedPrayerName = strings.prayerName(prayerType)
     var showDuaSheet by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -157,7 +160,7 @@ fun PrayerAlarmScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "${prayerType.title.uppercase()} PRAYER • صلاة ${prayerType.arabicName}",
+                            text = strings.alarmBadge(localizedPrayerName.uppercase()),
                             color = Color.White,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -167,7 +170,7 @@ fun PrayerAlarmScreen(
                 }
 
                 Text(
-                    text = prayerType.arabicName,
+                    text = localizedPrayerName,
                     color = Color(0xFFFFE082),
                     fontSize = 44.sp,
                     fontWeight = FontWeight.Bold,
@@ -175,7 +178,7 @@ fun PrayerAlarmScreen(
                 )
 
                 Text(
-                    text = "Time for ${prayerType.title} Prayer",
+                    text = strings.alarmTimeForPrayer(localizedPrayerName),
                     color = Color.White,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -229,7 +232,7 @@ fun PrayerAlarmScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = soundType.displayName,
+                            text = soundType.localizedDisplayName(strings.isArabic),
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -289,7 +292,7 @@ fun PrayerAlarmScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Stop Athan • إيقاف الأذان",
+                        text = strings.alarmStopAthanBtn,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -320,7 +323,7 @@ fun PrayerAlarmScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Snooze (5m)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Text(text = strings.alarmSnooze5mBtn, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
 
                     FilledTonalButton(
@@ -342,7 +345,7 @@ fun PrayerAlarmScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Dua • الدعاء", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Text(text = strings.alarmDuaBtn, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
@@ -358,7 +361,7 @@ fun PrayerAlarmScreen(
                         .height(48.dp)
                         .testTag("open_app_from_alarm_button")
                 ) {
-                    Text(text = "Open Prayer Times & Qibla", fontSize = 14.sp)
+                    Text(text = strings.alarmOpenAppBtn, fontSize = 14.sp)
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
@@ -395,7 +398,7 @@ fun PrayerAlarmScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Dua After the Athan • دعاء بعد الأذان",
+                        text = strings.alarmDuaSheetTitle,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -446,7 +449,7 @@ fun PrayerAlarmScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Close")
+                    Text(strings.close)
                 }
             }
         }

@@ -297,7 +297,7 @@ fun QiblaScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Toggle Manual",
+                            contentDescription = strings.qiblaToggleManualDesc,
                             tint = if (isManualMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                         )
                     }

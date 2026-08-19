@@ -193,6 +193,7 @@ fun MainScreen(
         } else {
             if (showCityPickerFromHeader) {
                 CityPickerDialog(
+                    currentLocation = settings.location,
                     onSelectCity = {
                         viewModel.selectCity(it)
                         showCityPickerFromHeader = false
@@ -338,20 +339,17 @@ fun MainScreen(
                                 onPreviewSound = { sound, prayer ->
                                     viewModel.previewNotificationSound(sound, prayer)
                                 },
-                                onUpdateDynamicIslandSettings = { enabled, minutes ->
-                                    viewModel.updateDynamicIslandSettings(enabled, minutes)
-                                },
-                                onPreviewDynamicIsland = {
-                                    viewModel.previewDynamicIsland()
-                                },
-                                onDismissDynamicIsland = {
-                                    viewModel.dismissDynamicIsland()
-                                },
                                 onUpdateAudioStream = { stream ->
                                     viewModel.updateAudioStream(stream)
                                 },
                                 onUpdateWakeScreen = { wake ->
                                     viewModel.updateWakeScreenOnAlarm(wake)
+                                },
+                                onUpdateLiveCountdownSettings = { enabled, minutes ->
+                                    viewModel.updateLiveCountdownSettings(enabled, minutes)
+                                },
+                                onTestLiveCountdown = {
+                                    viewModel.testLiveCountdown()
                                 },
                                 onPreviewFullScreenAlarm = { prayer ->
                                     val intent = com.example.ui.alarm.PrayerAlarmActivity.createIntent(

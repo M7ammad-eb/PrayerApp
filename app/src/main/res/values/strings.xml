@@ -25,6 +25,8 @@
     <string name="common_got_it">Got It</string>
     <string name="common_close">Close</string>
     <string name="common_search">Search</string>
+    <string name="common_back">Back</string>
+    <string name="common_clear">Clear</string>
     <string name="common_change">Change</string>
     <string name="common_remaining">Remaining</string>
     <string name="common_time_for_prayer">Time for Prayer!</string>
@@ -32,6 +34,41 @@
     <string name="common_select">Select</string>
     <string name="common_active">Active</string>
     <string name="common_current_location">Current Location</string>
+
+    <!-- ===== Full-Screen Prayer Alarm ===== -->
+    <string name="alarm_badge_prayer">%1$s PRAYER</string>
+    <string name="alarm_time_for_prayer">Time for %1$s Prayer</string>
+    <string name="alarm_stop_athan_btn">Stop Athan</string>
+    <string name="alarm_snooze_5m_btn">Snooze (5m)</string>
+    <string name="alarm_dua_btn">Dua</string>
+    <string name="alarm_open_app_btn">Open Prayer Times &amp; Qibla</string>
+    <string name="alarm_dua_sheet_title">Dua After the Athan</string>
+    <string name="notif_alarm_approaching_title">Approaching: %1$s Prayer</string>
+    <string name="notif_alarm_time_title">Time for %1$s Prayer</string>
+    <string name="notif_alarm_approaching_body">Prepare for %1$s prayer coming up at %2$s in %3$s.</string>
+    <string name="notif_alarm_time_body">It is now time for %1$s prayer in %2$s (%3$s).</string>
+    <string name="notif_alarm_open_view_action">Open Alarm View</string>
+    <string name="notif_athan_playing_title">Athan: %1$s Prayer</string>
+    <string name="gps_current_location_fallback">Current GPS Location</string>
+    <string name="gps_coordinates_fallback">GPS Coordinates</string>
+    <string name="gps_fix_failed_error">Unable to get current GPS fix. Please ensure location services are enabled.</string>
+    <string name="gps_request_failed_error">GPS request failed: %1$s</string>
+    <string name="gps_current_prefix">Current: %1$s</string>
+    <string name="gps_tap_to_detect">Tap to detect automatically</string>
+    <string name="gps_button_label">GPS</string>
+    <string name="qibla_toggle_manual_desc">Toggle Manual</string>
+    <string name="widget_settings_appearance_section_title">Appearance</string>
+    <string name="widget_settings_appearance_section_subtitle">Theme, background, and text</string>
+    <string name="widget_settings_behavior_section_title">Behavior</string>
+    <string name="widget_settings_behavior_section_subtitle">How the hero countdown behaves</string>
+    <string name="widget_settings_content_section_subtitle">Choose what shows on the widget</string>
+    <string name="widget_settings_toggle_show_hero_desc">Big card with the next (or last) prayer</string>
+    <string name="widget_settings_toggle_show_countdown_desc">Time remaining, shown on the hero card</string>
+    <string name="widget_settings_toggle_show_progress_desc">Bar between the previous and next prayer</string>
+    <string name="widget_settings_toggle_show_all_prayers_desc">Row of all six prayer times</string>
+    <string name="widget_settings_toggle_show_sunrise_desc">Include Sunrise in the prayer row</string>
+    <string name="widget_settings_toggle_show_location_desc">City name in the widget header</string>
+    <string name="widget_settings_toggle_show_hijri_desc">Islamic calendar date in the header</string>
 
     <!-- ===== Next Prayer / Hero ===== -->
     <string name="hero_next_prayer_label">NEXT PRAYER</string>
@@ -233,14 +270,15 @@
     <string name="settings_wake_screen_desc">Turn on the display and show full-screen prayer artwork only if the phone is locked/idle. When actively using your phone, a heads-up notification appears.</string>
     <string name="settings_preview_full_screen_alarm_btn">🖼️ Preview Full-Screen Alarm Artwork</string>
 
+    <!-- ===== Live Athan Countdown (standard Android Live Update notification) ===== -->
+    <string name="live_countdown_section_title">Live Athan Countdown</string>
+    <string name="live_countdown_section_desc">Show a live, ticking countdown notification before Athan time.</string>
+    <string name="live_countdown_lead_time_label">Start countdown before Athan:</string>
+    <string name="live_countdown_minutes_chip">%dm</string>
+    <string name="live_countdown_notif_title">%1$s Athan Countdown</string>
+    <string name="live_countdown_test_btn">Test Live Countdown Now</string>
+
     <!-- ===== Dynamic Island / Live Countdown Feature ===== -->
-    <string name="settings_dynamic_island_section_title">Dynamic Island &amp; Live Activity Countdown</string>
-    <string name="settings_dynamic_island_desc">Display a live interactive countdown capsule at the top of your screen and notification bar before prayer time (similar to Keeta Live Activities).</string>
-    <string name="settings_dynamic_island_enable_title">Enable Dynamic Island Capsule</string>
-    <string name="settings_dynamic_island_lead_time_title">Start Countdown Before Prayer:</string>
-    <string name="settings_dynamic_island_vivo_tip">💡 For Vivo / iQOO / OriginOS users: Ensure \'Live Alerts / Atomic Island\' is turned ON for Prayer Times in Phone Settings &gt; Notifications.</string>
-    <string name="settings_preview_dynamic_island_btn">✨ Preview Dynamic Island Countdown</string>
-    <string name="settings_dismiss_dynamic_island_btn">Dismiss Island Preview</string>
 
     <!-- ===== Calculation Method translations ===== -->
     <string name="calc_method_umm_al_qura">Umm Al-Qura University, Makkah</string>

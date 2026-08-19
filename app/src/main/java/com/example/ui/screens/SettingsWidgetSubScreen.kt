@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,13 +24,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.Opacity
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.StayCurrentPortrait
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -54,16 +65,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.models.WidgetBackgroundStyle
@@ -116,7 +130,7 @@ fun SettingsWidgetSubScreen(
                 IconButton(onClick = onBack, modifier = Modifier.testTag("widget_back_button")) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = strings.back,
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -255,50 +269,34 @@ fun SettingsWidgetSubScreen(
                 )
             }
 
-            HorizontalDivider()
-
-            // 1. Theme Mode & Palette Selection
-            Text(
-                text = strings.widgetThemeModeTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            WidgetThemeSelector(
-                currentTheme = wSet.themeMode,
-                onSelectTheme = {
-                    onUpdateWidgetSettings(wSet.copy(themeMode = it))
-                    onRefreshAllWidgets()
-                }
-            )
-
-            HorizontalDivider()
-
-            // 2. Background Style & Transparency
-            Text(
-                text = strings.widgetBgStyleTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            WidgetBackgroundStyleSelector(
-                currentStyle = wSet.bgStyle,
-                onSelectStyle = {
-                    onUpdateWidgetSettings(wSet.copy(bgStyle = it))
-                    onRefreshAllWidgets()
-                }
-            )
-
-            // Opacity Slider
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            // ===== Appearance: theme, background, opacity, font size, text color =====
+            WidgetSettingsSectionCard(
+                icon = Icons.Default.Palette,
+                title = strings.widgetAppearanceSectionTitle,
+                subtitle = strings.widgetAppearanceSectionSubtitle
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                WidgetSettingsSubLabel(strings.widgetThemeModeTitle)
+                WidgetThemeSelector(
+                    currentTheme = wSet.themeMode,
+                    onSelectTheme = {
+                        onUpdateWidgetSettings(wSet.copy(themeMode = it))
+                        onRefreshAllWidgets()
+                    }
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+
+                WidgetSettingsSubLabel(strings.widgetBgStyleTitle)
+                WidgetBackgroundStyleSelector(
+                    currentStyle = wSet.bgStyle,
+                    onSelectStyle = {
+                        onUpdateWidgetSettings(wSet.copy(bgStyle = it))
+                        onRefreshAllWidgets()
+                    }
+                )
+
+                // Opacity Slider
+                Column {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -309,7 +307,7 @@ fun SettingsWidgetSubScreen(
                                 imageVector = Icons.Default.Opacity,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
@@ -332,8 +330,6 @@ fun SettingsWidgetSubScreen(
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
 
                     Slider(
                         value = wSet.opacityPercent.toFloat(),
@@ -367,160 +363,146 @@ fun SettingsWidgetSubScreen(
                         )
                     }
                 }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+
+                WidgetSettingsSubLabel(strings.widgetFontSizeTitle)
+                WidgetFontSizeSelector(
+                    currentSize = wSet.fontSize,
+                    onSelectSize = {
+                        onUpdateWidgetSettings(wSet.copy(fontSize = it))
+                        onRefreshAllWidgets()
+                    }
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+
+                // Text Color Style - a manual escape hatch for when the theme's own text colors
+                // can't be trusted for contrast, since a transparent/near-transparent widget has no
+                // way to know what's actually behind it (see PrayerAppWidgetProvider.resolveWidgetColors).
+                WidgetSettingsSubLabel(stringResource(R.string.widget_settings_text_color_title))
+                WidgetTextStyleSelector(
+                    currentStyle = wSet.textStyle,
+                    onSelectStyle = {
+                        onUpdateWidgetSettings(wSet.copy(textStyle = it))
+                        onRefreshAllWidgets()
+                    }
+                )
             }
 
-            HorizontalDivider()
-
-            // 3. Font Size Selection
-            Text(
-                text = strings.widgetFontSizeTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            WidgetFontSizeSelector(
-                currentSize = wSet.fontSize,
-                onSelectSize = {
-                    onUpdateWidgetSettings(wSet.copy(fontSize = it))
-                    onRefreshAllWidgets()
-                }
-            )
-
-            HorizontalDivider()
-
-            // Text Color Style - a manual escape hatch for when the theme's own text colors
-            // can't be trusted for contrast, since a transparent/near-transparent widget has no
-            // way to know what's actually behind it (see PrayerAppWidgetProvider.resolveWidgetColors).
-            Text(
-                text = stringResource(R.string.widget_settings_text_color_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            WidgetTextStyleSelector(
-                currentStyle = wSet.textStyle,
-                onSelectStyle = {
-                    onUpdateWidgetSettings(wSet.copy(textStyle = it))
-                    onRefreshAllWidgets()
-                }
-            )
-
-            HorizontalDivider()
-
-            // Hero Card Time Mode - "In 2h 41m" (next prayer) vs "Since 2h 10m" (current/last
-            // prayer). Only one at a time, per user preference.
-            Text(
-                text = stringResource(R.string.widget_settings_hero_timing_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            WidgetHeroTimeModeSelector(
-                currentMode = wSet.heroTimeMode,
-                onSelectMode = {
-                    onUpdateWidgetSettings(wSet.copy(heroTimeMode = it))
-                    onRefreshAllWidgets()
-                }
-            )
-
-            HorizontalDivider()
-
-            // 4. Content & Toggles
-            Text(
-                text = strings.widgetContentTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            // ===== Behavior: hero card timing mode =====
+            WidgetSettingsSectionCard(
+                icon = Icons.Default.Schedule,
+                title = strings.widgetBehaviorSectionTitle,
+                subtitle = strings.widgetBehaviorSectionSubtitle
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
+                // "In 2h 41m" (next prayer) vs "Since 2h 10m" (current/last prayer). Only one at
+                // a time, per user preference.
+                WidgetHeroTimeModeSelector(
+                    currentMode = wSet.heroTimeMode,
+                    onSelectMode = {
+                        onUpdateWidgetSettings(wSet.copy(heroTimeMode = it))
+                        onRefreshAllWidgets()
+                    }
+                )
+            }
+
+            // ===== Content: what shows on the widget, with dependent toggles dimmed when their
+            // parent is off (e.g. Countdown/Progress do nothing while the Hero Card is hidden) =====
+            WidgetSettingsSectionCard(
+                icon = Icons.Default.Tune,
+                title = strings.widgetContentTitle,
+                subtitle = strings.widgetContentSectionSubtitle
+            ) {
+                WidgetToggleRow(
+                    icon = Icons.Default.Layers,
+                    title = stringResource(R.string.widget_settings_toggle_show_hero),
+                    subtitle = strings.widgetToggleShowHeroDesc,
+                    checked = wSet.showHeroCard,
+                    onCheckedChange = {
+                        onUpdateWidgetSettings(wSet.copy(showHeroCard = it))
+                        onRefreshAllWidgets()
+                    }
+                )
+
+                Box(modifier = Modifier.padding(start = 28.dp)) {
                     WidgetToggleRow(
-                        title = stringResource(R.string.widget_settings_toggle_show_location),
-                        checked = wSet.showLocation,
-                        onCheckedChange = {
-                            onUpdateWidgetSettings(wSet.copy(showLocation = it))
-                            onRefreshAllWidgets()
-                        }
-                    )
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
-                    WidgetToggleRow(
-                        title = stringResource(R.string.widget_settings_toggle_show_hijri),
-                        checked = wSet.showHijriDate,
-                        onCheckedChange = {
-                            onUpdateWidgetSettings(wSet.copy(showHijriDate = it))
-                            onRefreshAllWidgets()
-                        }
-                    )
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
-                    WidgetToggleRow(
+                        icon = Icons.Default.Timer,
                         title = stringResource(R.string.widget_settings_toggle_show_countdown),
+                        subtitle = strings.widgetToggleShowCountdownDesc,
                         checked = wSet.showCountdown,
+                        enabled = wSet.showHeroCard,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showCountdown = it))
                             onRefreshAllWidgets()
                         }
                     )
+                }
 
-                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
+                Box(modifier = Modifier.padding(start = 28.dp)) {
                     WidgetToggleRow(
+                        icon = Icons.Default.ShowChart,
                         title = stringResource(R.string.widget_settings_toggle_show_progress),
+                        subtitle = strings.widgetToggleShowProgressDesc,
                         checked = wSet.showProgressBar,
+                        enabled = wSet.showHeroCard,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showProgressBar = it))
                             onRefreshAllWidgets()
                         }
                     )
+                }
 
-                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
+                WidgetToggleRow(
+                    icon = Icons.Default.FormatListBulleted,
+                    title = stringResource(R.string.widget_settings_toggle_show_all_prayers),
+                    subtitle = strings.widgetToggleShowAllPrayersDesc,
+                    checked = wSet.showAllPrayersList,
+                    onCheckedChange = {
+                        onUpdateWidgetSettings(wSet.copy(showAllPrayersList = it))
+                        onRefreshAllWidgets()
+                    }
+                )
+
+                Box(modifier = Modifier.padding(start = 28.dp)) {
                     WidgetToggleRow(
+                        icon = Icons.Default.WbSunny,
                         title = stringResource(R.string.widget_settings_toggle_show_sunrise),
+                        subtitle = strings.widgetToggleShowSunriseDesc,
                         checked = wSet.showSunrise,
+                        enabled = wSet.showAllPrayersList,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showSunrise = it))
                             onRefreshAllWidgets()
                         }
                     )
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
-                    WidgetToggleRow(
-                        title = stringResource(R.string.widget_settings_toggle_show_hero),
-                        checked = wSet.showHeroCard,
-                        onCheckedChange = {
-                            onUpdateWidgetSettings(wSet.copy(showHeroCard = it))
-                            onRefreshAllWidgets()
-                        }
-                    )
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
-                    WidgetToggleRow(
-                        title = stringResource(R.string.widget_settings_toggle_show_all_prayers),
-                        checked = wSet.showAllPrayersList,
-                        onCheckedChange = {
-                            onUpdateWidgetSettings(wSet.copy(showAllPrayersList = it))
-                            onRefreshAllWidgets()
-                        }
-                    )
                 }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+
+                WidgetToggleRow(
+                    icon = Icons.Default.LocationOn,
+                    title = stringResource(R.string.widget_settings_toggle_show_location),
+                    subtitle = strings.widgetToggleShowLocationDesc,
+                    checked = wSet.showLocation,
+                    onCheckedChange = {
+                        onUpdateWidgetSettings(wSet.copy(showLocation = it))
+                        onRefreshAllWidgets()
+                    }
+                )
+
+                WidgetToggleRow(
+                    icon = Icons.Default.CalendarMonth,
+                    title = stringResource(R.string.widget_settings_toggle_show_hijri),
+                    subtitle = strings.widgetToggleShowHijriDesc,
+                    checked = wSet.showHijriDate,
+                    onCheckedChange = {
+                        onUpdateWidgetSettings(wSet.copy(showHijriDate = it))
+                        onRefreshAllWidgets()
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(60.dp))
@@ -670,22 +652,30 @@ private fun WidgetBackgroundStyleSelector(
 }
 
 // ---------------------------------------------------------------------------
-// FONT SIZE SELECTOR
+// OPTION CHIP ROW - shared by Font Size / Text Color / Hero Time Mode. Labels here can run
+// longer than a single line comfortably fits at equal 1/3-1/4 width (e.g. "Both (Wide Widgets)",
+// "Extra Large"), so this wraps to two lines with an ellipsis fallback instead of the raw
+// mid-word clipping a hard maxLines=1 produces.
 // ---------------------------------------------------------------------------
 @Composable
-private fun WidgetFontSizeSelector(
-    currentSize: WidgetFontSize,
-    onSelectSize: (WidgetFontSize) -> Unit
+private fun <T> WidgetOptionChipRow(
+    options: Array<T>,
+    selected: T,
+    label: (T) -> Int,
+    onSelect: (T) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        WidgetFontSize.values().forEach { size ->
-            val isSelected = currentSize == size
+        options.forEach { option ->
+            val isSelected = selected == option
             FilledTonalButton(
-                onClick = { onSelectSize(size) },
-                modifier = Modifier.weight(1f),
+                onClick = { onSelect(option) },
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 52.dp),
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
@@ -693,14 +683,33 @@ private fun WidgetFontSizeSelector(
                 )
             ) {
                 Text(
-                    text = stringResource(size.titleRes),
+                    text = stringResource(label(option)),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    maxLines = 1
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 12.sp
                 )
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// FONT SIZE SELECTOR
+// ---------------------------------------------------------------------------
+@Composable
+private fun WidgetFontSizeSelector(
+    currentSize: WidgetFontSize,
+    onSelectSize: (WidgetFontSize) -> Unit
+) {
+    WidgetOptionChipRow(
+        options = WidgetFontSize.values(),
+        selected = currentSize,
+        label = { it.titleRes },
+        onSelect = onSelectSize
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -711,30 +720,12 @@ private fun WidgetTextStyleSelector(
     currentStyle: WidgetTextStyle,
     onSelectStyle: (WidgetTextStyle) -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        WidgetTextStyle.values().forEach { style ->
-            val isSelected = currentStyle == style
-            FilledTonalButton(
-                onClick = { onSelectStyle(style) },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                Text(
-                    text = stringResource(style.titleRes),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-            }
-        }
-    }
+    WidgetOptionChipRow(
+        options = WidgetTextStyle.values(),
+        selected = currentStyle,
+        label = { it.titleRes },
+        onSelect = onSelectStyle
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -745,30 +736,12 @@ private fun WidgetHeroTimeModeSelector(
     currentMode: WidgetHeroTimeMode,
     onSelectMode: (WidgetHeroTimeMode) -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        WidgetHeroTimeMode.values().forEach { mode ->
-            val isSelected = currentMode == mode
-            FilledTonalButton(
-                onClick = { onSelectMode(mode) },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                Text(
-                    text = stringResource(mode.titleRes),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-            }
-        }
-    }
+    WidgetOptionChipRow(
+        options = WidgetHeroTimeMode.values(),
+        selected = currentMode,
+        label = { it.titleRes },
+        onSelect = onSelectMode
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -778,25 +751,117 @@ private fun WidgetHeroTimeModeSelector(
 private fun WidgetToggleRow(
     title: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    icon: ImageVector? = null,
+    subtitle: String? = null,
+    enabled: Boolean = true
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (enabled) 1f else 0.4f),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f)
-        )
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = onCheckedChange,
+            enabled = enabled
         )
     }
+}
+
+// ---------------------------------------------------------------------------
+// SECTION CARD - groups related widget settings under one titled, icon-headed card
+// ---------------------------------------------------------------------------
+@Composable
+private fun WidgetSettingsSectionCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(6.dp)
+                            .size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun WidgetSettingsSubLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface
+    )
 }
 
 // ---------------------------------------------------------------------------

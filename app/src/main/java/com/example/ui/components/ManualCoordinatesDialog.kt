@@ -95,9 +95,12 @@ fun ManualCoordinatesDialog(
             else ""
         )
     }
+    val isUntouchedDefaultLocation = !currentLocation.isGps &&
+        currentLocation.latitude == CityDatabase.DEFAULT_PRESET.latitude &&
+        currentLocation.longitude == CityDatabase.DEFAULT_PRESET.longitude
     var locationNameText by remember {
         mutableStateOf(
-            if (currentLocation.name.isNotEmpty() && currentLocation.name != "Makkah")
+            if (currentLocation.name.isNotEmpty() && !isUntouchedDefaultLocation)
                 currentLocation.name
             else strings.defaultCustomCoordinatesName
         )

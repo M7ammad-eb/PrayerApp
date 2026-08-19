@@ -362,11 +362,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         val settings = PrayerPreferences.getInitialSettings(context)
-        val isArabic = when (settings.language) {
-            AppLanguage.ARABIC -> true
-            AppLanguage.ENGLISH -> false
-            AppLanguage.SYSTEM -> Locale.getDefault().language.equals("ar", ignoreCase = true)
-        }
+        val isArabic = settings.language.resolveIsArabic()
         val layoutDirection = if (isArabic) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
         val zoneId = try {
             ZoneId.of(settings.location.timeZoneId)

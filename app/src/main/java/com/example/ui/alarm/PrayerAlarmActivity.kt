@@ -167,7 +167,8 @@ class PrayerAlarmActivity : ComponentActivity() {
                         context = this@PrayerAlarmActivity,
                         soundType = soundType,
                         prayerType = prayerType,
-                        audioStream = audioStream
+                        audioStream = audioStream,
+                        isArabic = (settings?.language ?: com.example.data.models.AppLanguage.SYSTEM).resolveIsArabic()
                     )
                 }
             }

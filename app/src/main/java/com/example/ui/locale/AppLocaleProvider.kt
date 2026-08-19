@@ -61,6 +61,8 @@ class AppStrings(
     val done: String = s(R.string.common_done)
     val gotIt: String = s(R.string.common_got_it)
     val close: String = s(R.string.common_close)
+    val back: String = s(R.string.common_back)
+    val clear: String = s(R.string.common_clear)
     val search: String = s(R.string.common_search)
     val change: String = s(R.string.common_change)
     val remaining: String = s(R.string.common_remaining)
@@ -104,6 +106,15 @@ class AppStrings(
         PrayerType.ISHA to R.string.prayer_name_isha
     )
     fun prayerName(type: PrayerType): String = s(prayerNameRes.getValue(type))
+
+    // Full-Screen Prayer Alarm
+    fun alarmBadge(prayerName: String): String = res.getString(R.string.alarm_badge_prayer, prayerName)
+    fun alarmTimeForPrayer(prayerName: String): String = res.getString(R.string.alarm_time_for_prayer, prayerName)
+    val alarmStopAthanBtn: String = s(R.string.alarm_stop_athan_btn)
+    val alarmSnooze5mBtn: String = s(R.string.alarm_snooze_5m_btn)
+    val alarmDuaBtn: String = s(R.string.alarm_dua_btn)
+    val alarmOpenAppBtn: String = s(R.string.alarm_open_app_btn)
+    val alarmDuaSheetTitle: String = s(R.string.alarm_dua_sheet_title)
 
     // Additional / Sunnah Times Card
     val additionalTimesTitle: String = s(R.string.additional_times_title)
@@ -174,6 +185,7 @@ class AppStrings(
     val qiblaCalibrateButton: String = s(R.string.qibla_calibrate_button)
     fun qiblaTurnRight(degrees: Int): String = res.getString(R.string.qibla_turn_right, degrees)
     fun qiblaTurnLeft(degrees: Int): String = res.getString(R.string.qibla_turn_left, degrees)
+    val qiblaToggleManualDesc: String = s(R.string.qibla_toggle_manual_desc)
 
     // Cardinal directions
     private val cardinalDirections: List<String> = res.getStringArray(R.array.cardinal_directions).toList()
@@ -236,6 +248,9 @@ class AppStrings(
     val selectLanguageSubtitle: String = s(R.string.settings_select_language_subtitle)
     val locationSection: String = s(R.string.settings_location_section)
     val useGps: String = s(R.string.settings_use_gps)
+    fun gpsCurrentPrefix(name: String): String = res.getString(R.string.gps_current_prefix, name)
+    val gpsTapToDetect: String = s(R.string.gps_tap_to_detect)
+    val gpsButtonLabel: String = s(R.string.gps_button_label)
     val chooseCity: String = s(R.string.settings_choose_city)
     val manualCoordinates: String = s(R.string.settings_manual_coordinates)
     val calcMethodSection: String = s(R.string.settings_calc_method_section)
@@ -289,14 +304,6 @@ class AppStrings(
     val wakeScreenDesc: String = s(R.string.settings_wake_screen_desc)
     val previewFullScreenAlarmBtn: String = s(R.string.settings_preview_full_screen_alarm_btn)
 
-    // Dynamic Island / Live Countdown Feature
-    val dynamicIslandSectionTitle: String = s(R.string.settings_dynamic_island_section_title)
-    val dynamicIslandDesc: String = s(R.string.settings_dynamic_island_desc)
-    val dynamicIslandEnableTitle: String = s(R.string.settings_dynamic_island_enable_title)
-    val dynamicIslandLeadTimeTitle: String = s(R.string.settings_dynamic_island_lead_time_title)
-    val dynamicIslandVivoTip: String = s(R.string.settings_dynamic_island_vivo_tip)
-    val previewDynamicIslandBtn: String = s(R.string.settings_preview_dynamic_island_btn)
-    val dismissDynamicIslandBtn: String = s(R.string.settings_dismiss_dynamic_island_btn)
 
     // Calculation Method translations
     private val calcMethodNameRes: Map<CalculationMethod, Int> = mapOf(
@@ -409,6 +416,18 @@ class AppStrings(
     val widgetPreviewTitle: String = s(R.string.widget_settings_preview_title)
     val widgetRefreshAll: String = s(R.string.widget_settings_refresh_all)
     val widgetResetDefaults: String = s(R.string.widget_settings_reset_defaults)
+    val widgetAppearanceSectionTitle: String = s(R.string.widget_settings_appearance_section_title)
+    val widgetAppearanceSectionSubtitle: String = s(R.string.widget_settings_appearance_section_subtitle)
+    val widgetBehaviorSectionTitle: String = s(R.string.widget_settings_behavior_section_title)
+    val widgetBehaviorSectionSubtitle: String = s(R.string.widget_settings_behavior_section_subtitle)
+    val widgetContentSectionSubtitle: String = s(R.string.widget_settings_content_section_subtitle)
+    val widgetToggleShowHeroDesc: String = s(R.string.widget_settings_toggle_show_hero_desc)
+    val widgetToggleShowCountdownDesc: String = s(R.string.widget_settings_toggle_show_countdown_desc)
+    val widgetToggleShowProgressDesc: String = s(R.string.widget_settings_toggle_show_progress_desc)
+    val widgetToggleShowAllPrayersDesc: String = s(R.string.widget_settings_toggle_show_all_prayers_desc)
+    val widgetToggleShowSunriseDesc: String = s(R.string.widget_settings_toggle_show_sunrise_desc)
+    val widgetToggleShowLocationDesc: String = s(R.string.widget_settings_toggle_show_location_desc)
+    val widgetToggleShowHijriDesc: String = s(R.string.widget_settings_toggle_show_hijri_desc)
 
     // Number & Time formatters that STRICTLY use 123 (Western Arabic Digits)
     fun formatNumber(number: Number): String {

@@ -662,7 +662,7 @@ private fun OnboardingLocationStep(
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { searchQuery = "" }) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                        Icon(Icons.Default.Close, contentDescription = strings.clear)
                     }
                 }
             },
@@ -679,9 +679,7 @@ private fun OnboardingLocationStep(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             items(filteredCities) { city ->
-                val isSelected = !currentLocation.isGps &&
-                    (currentLocation.name.equals(com.example.util.LocalizedStrings.forLanguage(context, false).getString(city.nameRes), ignoreCase = true) ||
-                        currentLocation.name == com.example.util.LocalizedStrings.forLanguage(context, true).getString(city.nameRes))
+                val isSelected = CityDatabase.isSelectedPreset(currentLocation, city)
                 Card(
                     onClick = { onSelectCity(city.toUserLocation(context.resources)) },
                     shape = RoundedCornerShape(14.dp),

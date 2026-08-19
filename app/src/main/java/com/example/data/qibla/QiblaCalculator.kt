@@ -1,16 +1,15 @@
 package com.example.data.qibla
 
+import com.example.util.GeoUtils
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.sqrt
 
 object QiblaCalculator {
 
     // Kaaba Coordinates in Makkah al-Mukarramah
     const val KAABA_LATITUDE = 21.422487
     const val KAABA_LONGITUDE = 39.826206
-    private const val EARTH_RADIUS_KM = 6371.0
 
     private const val DEG_TO_RAD = Math.PI / 180.0
     private const val RAD_TO_DEG = 180.0 / Math.PI
@@ -37,22 +36,8 @@ object QiblaCalculator {
     /**
      * Calculates distance to Kaaba in kilometers
      */
-    fun calculateDistanceToKaabaKm(latitude: Double, longitude: Double): Double {
-        val lat1 = latitude * DEG_TO_RAD
-        val lon1 = longitude * DEG_TO_RAD
-        val lat2 = KAABA_LATITUDE * DEG_TO_RAD
-        val lon2 = KAABA_LONGITUDE * DEG_TO_RAD
-
-        val dLat = lat2 - lat1
-        val dLon = lon2 - lon1
-
-        val a = sin(dLat / 2) * sin(dLat / 2) +
-                cos(lat1) * cos(lat2) *
-                sin(dLon / 2) * sin(dLon / 2)
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-
-        return EARTH_RADIUS_KM * c
-    }
+    fun calculateDistanceToKaabaKm(latitude: Double, longitude: Double): Double =
+        GeoUtils.haversineDistanceKm(latitude, longitude, KAABA_LATITUDE, KAABA_LONGITUDE)
 
     fun getDirectionCardinal(degrees: Double): String {
         val normalized = (degrees + 360.0) % 360.0

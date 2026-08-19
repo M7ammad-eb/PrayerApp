@@ -149,11 +149,10 @@ fun SettingsScreen(
     onRescheduleAlarms: () -> Unit = {},
     onRequestNotificationPermission: () -> Unit = {},
     onPreviewSound: (NotificationSoundType, PrayerType) -> Unit,
-    onUpdateDynamicIslandSettings: (Boolean, Int) -> Unit = { _, _ -> },
-    onPreviewDynamicIsland: () -> Unit = {},
-    onDismissDynamicIsland: () -> Unit = {},
     onUpdateAudioStream: (AthanAudioStream) -> Unit = {},
     onUpdateWakeScreen: (Boolean) -> Unit = {},
+    onUpdateLiveCountdownSettings: (Boolean, Int) -> Unit = { _, _ -> },
+    onTestLiveCountdown: () -> Unit = {},
     onPreviewFullScreenAlarm: (PrayerType) -> Unit = {},
     onResetOnboarding: () -> Unit = {}
 ) {
@@ -232,11 +231,10 @@ fun SettingsScreen(
                     onRescheduleAlarms = onRescheduleAlarms,
                     onRequestNotificationPermission = onRequestNotificationPermission,
                     onPreviewSound = onPreviewSound,
-                    onUpdateDynamicIslandSettings = onUpdateDynamicIslandSettings,
-                    onPreviewDynamicIsland = onPreviewDynamicIsland,
-                    onDismissDynamicIsland = onDismissDynamicIsland,
                     onUpdateAudioStream = onUpdateAudioStream,
                     onUpdateWakeScreen = onUpdateWakeScreen,
+                    onUpdateLiveCountdownSettings = onUpdateLiveCountdownSettings,
+                    onTestLiveCountdown = onTestLiveCountdown,
                     onPreviewFullScreenAlarm = onPreviewFullScreenAlarm,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
@@ -494,6 +492,7 @@ private fun SubScreenHeader(
     title: String,
     onBack: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -503,7 +502,7 @@ private fun SubScreenHeader(
         IconButton(onClick = onBack, modifier = Modifier.testTag("subscreen_back_button")) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = strings.back,
                 tint = MaterialTheme.colorScheme.primary
             )
         }
@@ -943,7 +942,7 @@ private fun SettingsCalculationSubScreen(
                             Spacer(modifier = Modifier.height(2.dp))
                             val ishaDesc = if ((method.ishaMinutesAfterMaghrib ?: 0) > 0) "${method.ishaMinutesAfterMaghrib}m" else "${method.ishaAngle}°"
                             Text(
-                                text = "Fajr: ${method.fajrAngle}° • Isha: $ishaDesc",
+                                text = "${strings.prayerName(PrayerType.FAJR)}: ${method.fajrAngle}° • ${strings.prayerName(PrayerType.ISHA)}: $ishaDesc",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1008,7 +1007,7 @@ private fun SettingsLocationSubScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = if (settings.location.isGps) "Current: ${settings.location.name}" else "Tap to detect automatically",
+                        text = if (settings.location.isGps) strings.gpsCurrentPrefix(settings.location.name) else strings.gpsTapToDetect,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1024,7 +1023,7 @@ private fun SettingsLocationSubScreen(
                     } else {
                         Icon(imageVector = Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = "GPS")
+                        Text(text = strings.gpsButtonLabel)
                     }
                 }
             }
@@ -1035,7 +1034,7 @@ private fun SettingsLocationSubScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text(strings.search + " (London, Cairo, Makkah...)") },
+            placeholder = { Text(strings.search + " (" + strings.presetLondon + ", " + strings.presetCairo + ", " + strings.presetMakkah + "...)") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
@@ -1049,8 +1048,7 @@ private fun SettingsLocationSubScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(filteredCities) { city ->
-                val isSelected = settings.location.name.equals(com.example.util.LocalizedStrings.forLanguage(context, false).getString(city.nameRes), ignoreCase = true) ||
-                    settings.location.name == com.example.util.LocalizedStrings.forLanguage(context, true).getString(city.nameRes)
+                val isSelected = CityDatabase.isSelectedPreset(settings.location, city)
                 Card(
                     onClick = { onSelectCity(city.toUserLocation(context.resources)) },
                     shape = RoundedCornerShape(14.dp),
@@ -1102,11 +1100,10 @@ private fun SettingsNotificationsSubScreen(
     onRescheduleAlarms: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
     onPreviewSound: (NotificationSoundType, PrayerType) -> Unit,
-    onUpdateDynamicIslandSettings: (Boolean, Int) -> Unit,
-    onPreviewDynamicIsland: () -> Unit,
-    onDismissDynamicIsland: () -> Unit,
     onUpdateAudioStream: (AthanAudioStream) -> Unit,
     onUpdateWakeScreen: (Boolean) -> Unit,
+    onUpdateLiveCountdownSettings: (Boolean, Int) -> Unit,
+    onTestLiveCountdown: () -> Unit,
     onPreviewFullScreenAlarm: (PrayerType) -> Unit,
     onBack: () -> Unit
 ) {
@@ -1449,16 +1446,11 @@ private fun SettingsNotificationsSubScreen(
                 }
             }
 
-            // Dynamic Island / Live Activity Feature Card
+            // Live Athan Countdown Card (standard Android Live Update notification)
             item {
                 Card(
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                    ),
-                    border = CardDefaults.outlinedCardBorder().copy(
-                        brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                    ),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1467,35 +1459,46 @@ private fun SettingsNotificationsSubScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "🏝️ " + strings.dynamicIslandSectionTitle,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Timer,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
-                                Text(
-                                    text = strings.dynamicIslandDesc,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Column {
+                                    Text(
+                                        text = stringResource(R.string.live_countdown_section_title),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.live_countdown_section_desc),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Switch(
-                                checked = settings.dynamicIslandEnabled,
+                                checked = settings.liveCountdownEnabled,
                                 onCheckedChange = { isChecked ->
-                                    onUpdateDynamicIslandSettings(isChecked, settings.dynamicIslandMinutesBefore)
+                                    onUpdateLiveCountdownSettings(isChecked, settings.liveCountdownMinutesBefore)
                                 }
                             )
                         }
 
-                        if (settings.dynamicIslandEnabled) {
+                        if (settings.liveCountdownEnabled) {
                             Spacer(modifier = Modifier.height(12.dp))
-                            HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = strings.dynamicIslandLeadTimeTitle,
+                                text = stringResource(R.string.live_countdown_lead_time_label),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -1503,79 +1506,40 @@ private fun SettingsNotificationsSubScreen(
                             Spacer(modifier = Modifier.height(6.dp))
 
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                listOf(5, 10, 15, 30).forEach { mins ->
-                                    val isSelected = settings.dynamicIslandMinutesBefore == mins
+                                listOf(5, 10, 15, 20, 25, 30).forEach { mins ->
+                                    val isSelected = settings.liveCountdownMinutesBefore == mins
                                     FilledTonalButton(
-                                        onClick = { onUpdateDynamicIslandSettings(true, mins) },
-                                        shape = RoundedCornerShape(12.dp),
+                                        onClick = { onUpdateLiveCountdownSettings(true, mins) },
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
                                         colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                                            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+                                            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                                         ),
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Text(
-                                            text = "$mins m",
-                                            style = MaterialTheme.typography.labelMedium,
+                                            text = stringResource(R.string.live_countdown_minutes_chip, mins),
+                                            style = MaterialTheme.typography.labelSmall,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
                             }
+                        }
 
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            // OEM / Vivo tip banner
-                            Card(
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = strings.dynamicIslandVivoTip,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Button(
-                                    onClick = onPreviewDynamicIsland,
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = strings.previewDynamicIslandBtn,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-
-                                OutlinedButton(
-                                    onClick = onDismissDynamicIsland,
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Text(
-                                        text = strings.dismissDynamicIslandBtn,
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                }
-                            }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedButton(
+                            onClick = onTestLiveCountdown,
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(imageVector = Icons.Default.Timer, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.live_countdown_test_btn), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -2183,7 +2147,7 @@ fun SoundPickerDialog(
                                 }
 
                                 if (sound != NotificationSoundType.SILENT && sound != NotificationSoundType.VIBRATE_ONLY) {
-                                    val isThisPlaying = playbackState.isPlaying && playbackState.title.contains(sound.displayName, ignoreCase = true)
+                                    val isThisPlaying = playbackState.isPlaying && playbackState.title.contains(sound.localizedDisplayName(strings.isArabic), ignoreCase = true)
                                     IconButton(
                                         onClick = {
                                             if (playbackState.isPlaying) {

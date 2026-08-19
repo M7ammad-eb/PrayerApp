@@ -3,6 +3,8 @@ package com.example.util
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import com.example.R
+import com.example.data.models.PrayerType
 import java.util.Locale
 
 /**
@@ -17,4 +19,15 @@ object LocalizedStrings {
         val config = Configuration(context.resources.configuration).apply { setLocale(locale) }
         return context.createConfigurationContext(config).resources
     }
+
+    private val prayerNameRes: Map<PrayerType, Int> = mapOf(
+        PrayerType.FAJR to R.string.prayer_name_fajr,
+        PrayerType.SUNRISE to R.string.prayer_name_sunrise,
+        PrayerType.DHUHR to R.string.prayer_name_dhuhr,
+        PrayerType.ASR to R.string.prayer_name_asr,
+        PrayerType.MAGHRIB to R.string.prayer_name_maghrib,
+        PrayerType.ISHA to R.string.prayer_name_isha
+    )
+
+    fun prayerName(res: Resources, type: PrayerType): String = res.getString(prayerNameRes.getValue(type))
 }

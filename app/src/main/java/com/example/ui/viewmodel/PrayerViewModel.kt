@@ -7,6 +7,7 @@ import android.location.Geocoder
 import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.R
 import com.example.audio.AdhanPlaybackState
 import com.example.audio.AthanAudioEngine
 import com.example.data.calculator.PrayerTimesCalculator
@@ -86,6 +87,25 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _monthlySchedule = MutableStateFlow<List<DailyPrayerSchedule>>(emptyList())
     val monthlySchedule: StateFlow<List<DailyPrayerSchedule>> = _monthlySchedule.asStateFlow()
 
+    // The stored IANA zone id can be invalid or missing for a hand-entered/legacy location, so every
+    // schedule calculation falls back to the device zone rather than crashing.
+    private fun AppPrayerSettings.zoneId(): ZoneId =
+        try { ZoneId.of(location.timeZoneId) } catch (e: Exception) { ZoneId.systemDefault() }
+
+    private fun scheduleFor(currentSettings: AppPrayerSettings, date: LocalDate, zoneId: ZoneId, now: ZonedDateTime): DailyPrayerSchedule =
+        PrayerTimesCalculator.calculateDailySchedule(
+            date = date,
+            latitude = currentSettings.location.latitude,
+            longitude = currentSettings.location.longitude,
+            zoneId = zoneId,
+            method = currentSettings.calculationMethod,
+            juristicMethod = currentSettings.juristicMethod,
+            highLatitudeRule = currentSettings.highLatitudeRule,
+            adjustments = currentSettings.adjustments,
+            hijriAdjustmentDays = currentSettings.hijriAdjustmentDays,
+            now = now
+        )
+
     private val _isGpsLoading = MutableStateFlow(false)
     val isGpsLoading: StateFlow<Boolean> = _isGpsLoading.asStateFlow()
 
@@ -96,8 +116,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         val initialSettings = settings.value
         compassManager.setLocation(initialSettings.location.latitude, initialSettings.location.longitude)
         recalculateSchedules(initialSettings, _selectedDate.value)
-        val initialZoneId = try { ZoneId.of(initialSettings.location.timeZoneId) } catch (e: Exception) { ZoneId.systemDefault() }
-        updateNextPrayerCountdown(initialSettings, ZonedDateTime.now(initialZoneId))
+        updateNextPrayerCountdown(initialSettings, ZonedDateTime.now(initialSettings.zoneId()))
 
         viewModelScope.launch {
             settings.collect { currentSettings ->
@@ -113,8 +132,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             while (isActive) {
                 val currentSettings = settings.value
                 val currentDate = _selectedDate.value
-                val zoneId = try { ZoneId.of(currentSettings.location.timeZoneId) } catch (e: Exception) { ZoneId.systemDefault() }
-                val now = ZonedDateTime.now(zoneId)
+                val now = ZonedDateTime.now(currentSettings.zoneId())
 
                 updateNextPrayerCountdown(currentSettings, now)
                 delay(1000)
@@ -140,61 +158,27 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun recalculateSchedules(currentSettings: AppPrayerSettings, date: LocalDate) {
-        val zoneId = try { ZoneId.of(currentSettings.location.timeZoneId) } catch (e: Exception) { ZoneId.systemDefault() }
+        val zoneId = currentSettings.zoneId()
         val now = ZonedDateTime.now(zoneId)
 
-        val schedule = PrayerTimesCalculator.calculateDailySchedule(
-            date = date,
-            latitude = currentSettings.location.latitude,
-            longitude = currentSettings.location.longitude,
-            zoneId = zoneId,
-            method = currentSettings.calculationMethod,
-            juristicMethod = currentSettings.juristicMethod,
-            highLatitudeRule = currentSettings.highLatitudeRule,
-            adjustments = currentSettings.adjustments,
-            hijriAdjustmentDays = currentSettings.hijriAdjustmentDays,
-            now = now
-        )
+        val schedule = scheduleFor(currentSettings, date, zoneId, now)
         _dailySchedule.value = schedule
 
         // Also calculate monthly schedule
         viewModelScope.launch(Dispatchers.Default) {
             val yearMonth = YearMonth.from(date)
             val monthDays = (1..yearMonth.lengthOfMonth()).map { day ->
-                val dayDate = yearMonth.atDay(day)
-                PrayerTimesCalculator.calculateDailySchedule(
-                    date = dayDate,
-                    latitude = currentSettings.location.latitude,
-                    longitude = currentSettings.location.longitude,
-                    zoneId = zoneId,
-                    method = currentSettings.calculationMethod,
-                    juristicMethod = currentSettings.juristicMethod,
-                    highLatitudeRule = currentSettings.highLatitudeRule,
-                    adjustments = currentSettings.adjustments,
-                    hijriAdjustmentDays = currentSettings.hijriAdjustmentDays,
-                    now = now
-                )
+                scheduleFor(currentSettings, yearMonth.atDay(day), zoneId, now)
             }
             _monthlySchedule.value = monthDays
         }
     }
 
     private fun updateNextPrayerCountdown(currentSettings: AppPrayerSettings, now: ZonedDateTime) {
-        val zoneId = try { ZoneId.of(currentSettings.location.timeZoneId) } catch (e: Exception) { ZoneId.systemDefault() }
+        val zoneId = currentSettings.zoneId()
         val today = now.toLocalDate()
 
-        val todaySchedule = PrayerTimesCalculator.calculateDailySchedule(
-            date = today,
-            latitude = currentSettings.location.latitude,
-            longitude = currentSettings.location.longitude,
-            zoneId = zoneId,
-            method = currentSettings.calculationMethod,
-            juristicMethod = currentSettings.juristicMethod,
-            highLatitudeRule = currentSettings.highLatitudeRule,
-            adjustments = currentSettings.adjustments,
-            hijriAdjustmentDays = currentSettings.hijriAdjustmentDays,
-            now = now
-        )
+        val todaySchedule = scheduleFor(currentSettings, today, zoneId, now)
 
         // Find the first prayer today after now (excluding Sunrise as a prayer)
         val nextItem = todaySchedule.prayerItems.firstOrNull { it.type != PrayerType.SUNRISE && it.zonedDateTime.isAfter(now) }
@@ -226,18 +210,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         } else {
             // Next prayer is tomorrow's Fajr
             val tomorrow = today.plusDays(1)
-            val tomorrowSchedule = PrayerTimesCalculator.calculateDailySchedule(
-                date = tomorrow,
-                latitude = currentSettings.location.latitude,
-                longitude = currentSettings.location.longitude,
-                zoneId = zoneId,
-                method = currentSettings.calculationMethod,
-                juristicMethod = currentSettings.juristicMethod,
-                highLatitudeRule = currentSettings.highLatitudeRule,
-                adjustments = currentSettings.adjustments,
-                hijriAdjustmentDays = currentSettings.hijriAdjustmentDays,
-                now = now
-            )
+            val tomorrowSchedule = scheduleFor(currentSettings, tomorrow, zoneId, now)
             val tomorrowFajr = tomorrowSchedule.prayerItems.first { it.type == PrayerType.FAJR }
             val diffSeconds = Duration.between(now, tomorrowFajr.zonedDateTime).seconds
             val hours = diffSeconds / 3600
@@ -265,6 +238,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     fun requestGpsLocation(context: Context) {
         _isGpsLoading.value = true
         _locationErrorMessage.value = null
+        val localizedRes = com.example.util.LocalizedStrings.forLanguage(context, settings.value.language.resolveIsArabic())
 
         fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
             .addOnSuccessListener { location: Location? ->
@@ -300,7 +274,8 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                                 Locale.setDefault(previousDefaultLocale)
                             }
                             val address = addresses?.firstOrNull()
-                            val cityName = address?.locality ?: address?.subAdminArea ?: "Current GPS Location"
+                            val cityName = address?.locality ?: address?.subAdminArea
+                                ?: localizedRes.getString(R.string.gps_current_location_fallback)
                             val countryName = address?.countryName ?: ""
                             val timeZoneId = ZoneId.systemDefault().id
 
@@ -315,7 +290,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                             prefs.updateLocation(newLoc)
                         } catch (e: Exception) {
                             val newLoc = UserLocation(
-                                name = "GPS Coordinates",
+                                name = localizedRes.getString(R.string.gps_coordinates_fallback),
                                 country = String.format("%.2f°, %.2f°", location.latitude, location.longitude),
                                 latitude = location.latitude,
                                 longitude = location.longitude,
@@ -329,12 +304,12 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                     }
                 } else {
                     _isGpsLoading.value = false
-                    _locationErrorMessage.value = "Unable to get current GPS fix. Please ensure location services are enabled."
+                    _locationErrorMessage.value = localizedRes.getString(R.string.gps_fix_failed_error)
                 }
             }
             .addOnFailureListener {
                 _isGpsLoading.value = false
-                _locationErrorMessage.value = "GPS request failed: ${it.localizedMessage}"
+                _locationErrorMessage.value = localizedRes.getString(R.string.gps_request_failed_error, it.localizedMessage)
             }
     }
 
@@ -420,6 +395,15 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun updateLiveCountdownSettings(enabled: Boolean, minutesBefore: Int) {
+        viewModelScope.launch {
+            prefs.updateLiveCountdownSettings(enabled, minutesBefore)
+            if (!enabled) {
+                com.example.notifications.PrayerLiveCountdownManager.dismiss(getApplication())
+            }
+        }
+    }
+
     fun updateWidgetSettings(settings: com.example.data.models.WidgetCustomizationSettings) {
         viewModelScope.launch {
             prefs.updateWidgetSettings(settings)
@@ -430,19 +414,13 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         PrayerAppWidgetProvider.updateAllWidgets(getApplication())
     }
 
-    fun updateDynamicIslandSettings(enabled: Boolean, minutesBefore: Int) {
-        viewModelScope.launch {
-            prefs.updateDynamicIslandSettings(enabled, minutesBefore)
-            PrayerNotificationScheduler.rescheduleAll(getApplication())
-        }
-    }
-
     fun playAthanPreview(prayerType: PrayerType = PrayerType.DHUHR, soundType: NotificationSoundType = NotificationSoundType.FULL_ATHAN) {
         AthanAudioEngine.playAthan(
             context = getApplication(),
             prayerType = prayerType,
             soundType = soundType,
-            audioStream = settings.value.audioStream
+            audioStream = settings.value.audioStream,
+            isArabic = settings.value.language.resolveIsArabic()
         )
     }
 
@@ -451,16 +429,9 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             context = getApplication(),
             soundType = soundType,
             prayerType = prayerType,
-            audioStream = settings.value.audioStream
+            audioStream = settings.value.audioStream,
+            isArabic = settings.value.language.resolveIsArabic()
         )
-    }
-
-    fun previewDynamicIsland(prayerType: PrayerType = PrayerType.ASR, minutesInFuture: Int = 15) {
-        PrayerNotificationScheduler.triggerTestDynamicIsland(getApplication(), prayerType, minutesInFuture)
-    }
-
-    fun dismissDynamicIsland() {
-        PrayerNotificationScheduler.dismissDynamicIsland(getApplication())
     }
 
     fun stopAudio() {
@@ -474,6 +445,10 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun testAlarmInSeconds(prayerType: PrayerType = PrayerType.DHUHR, soundType: NotificationSoundType = NotificationSoundType.FULL_ATHAN, seconds: Int = 5) {
         PrayerNotificationScheduler.triggerTestAlarmInSeconds(getApplication(), prayerType, soundType, seconds)
+    }
+
+    fun testLiveCountdown() {
+        PrayerNotificationScheduler.triggerTestLiveCountdown(getApplication())
     }
 
     fun rescheduleAllAlarms() {

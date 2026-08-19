@@ -26,6 +26,15 @@ object PrayerTimesCalculator {
     private const val DEG_TO_RAD = Math.PI / 180.0
     private const val RAD_TO_DEG = 180.0 / Math.PI
 
+    // Above the polar circles the sun angle equation has no solution (cosT out of [-1, 1] range)
+    // for part of the year - falling back to a fixed offset either side of solar noon keeps the
+    // schedule usable there instead of returning NaN.
+    private const val EXTREME_LATITUDE_FALLBACK_HOURS = 3.0
+
+    // Dhuha begins once the sun has fully cleared the horizon glare, conventionally ~20 minutes
+    // after sunrise rather than a second angle-based calculation.
+    private const val DHUHA_MINUTES_AFTER_SUNRISE = 20L
+
     private fun dSin(d: Double): Double = sin(d * DEG_TO_RAD)
     private fun dCos(d: Double): Double = cos(d * DEG_TO_RAD)
     private fun dTan(d: Double): Double = tan(d * DEG_TO_RAD)
@@ -86,7 +95,7 @@ object PrayerTimesCalculator {
         val cosT = (-dSin(angle) - dSin(lat) * dSin(declination)) / (dCos(lat) * dCos(declination))
         if (cosT < -1.0 || cosT > 1.0) {
             // Extreme latitude edge case
-            return if (isMorning) midDay - 3.0 else midDay + 3.0
+            return if (isMorning) midDay - EXTREME_LATITUDE_FALLBACK_HOURS else midDay + EXTREME_LATITUDE_FALLBACK_HOURS
         }
         val t = dAcos(cosT) / 15.0
         return if (isMorning) midDay - t else midDay + t
@@ -182,7 +191,7 @@ object PrayerTimesCalculator {
 
         val midnightTime = LocalTime.ofSecondOfDay((midnightMinutes * 60L).coerceIn(0, 86399))
         val lastThirdTime = LocalTime.ofSecondOfDay((lastThirdMinutes * 60L).coerceIn(0, 86399))
-        val dhuhaTime = sunriseTime.plusMinutes(20)
+        val dhuhaTime = sunriseTime.plusMinutes(DHUHA_MINUTES_AFTER_SUNRISE)
 
         val hijriDateObj = HijriDateCalculator.convertToHijri(date, hijriAdjustmentDays)
         val hijriDateStr = hijriDateObj.formattedEn

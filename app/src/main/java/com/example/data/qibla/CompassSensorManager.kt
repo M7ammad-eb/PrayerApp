@@ -19,13 +19,17 @@ data class CompassState(
     val azimuth: Float = 0f, // Device azimuth from True North (0..360)
     val qiblaBearing: Float = 0f, // Qibla bearing from True North (0..360)
     val relativeQiblaAngle: Float = 0f, // Angle to turn towards Kaaba (-180..180)
-    val isAligned: Boolean = false, // Within ±3° of Qibla
+    val isAligned: Boolean = false, // Within ALIGNMENT_THRESHOLD_DEGREES of Qibla
     val accuracy: CompassAccuracy = CompassAccuracy.HIGH,
     val isSensorAvailable: Boolean = true,
     val distanceKm: Double = 0.0
 )
 
 class CompassSensorManager(private val context: Context) : SensorEventListener {
+
+    companion object {
+        private const val ALIGNMENT_THRESHOLD_DEGREES = 3.5f
+    }
 
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
@@ -151,7 +155,7 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
         val qibla = qiblaBearing.toFloat()
         // Relative angle: How many degrees clockwise to turn towards Qibla
         var relAngle = (qibla - azimuth + 540f) % 360f - 180f
-        val isAligned = abs(relAngle) <= 3.5f
+        val isAligned = abs(relAngle) <= ALIGNMENT_THRESHOLD_DEGREES
 
         _compassState.value = _compassState.value.copy(
             azimuth = azimuth,

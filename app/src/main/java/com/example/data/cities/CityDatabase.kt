@@ -5,6 +5,7 @@ import android.content.res.Resources
 import androidx.annotation.StringRes
 import com.example.R
 import com.example.data.models.UserLocation
+import com.example.util.GeoUtils
 import com.example.util.LocalizedStrings
 
 /**
@@ -30,15 +31,6 @@ data class CityPreset(
 }
 
 object CityDatabase {
-
-    val DEFAULT_LOCATION = UserLocation(
-        name = "Makkah",
-        country = "Saudi Arabia",
-        latitude = 21.422487,
-        longitude = 39.826206,
-        timeZoneId = "Asia/Riyadh",
-        isGps = false
-    )
 
     val PRESET_CITIES: List<CityPreset> = listOf(
         // Saudi Arabia
@@ -216,6 +208,12 @@ object CityDatabase {
 
     val popularCities: List<CityPreset> get() = PRESET_CITIES
 
+    // Makkah is always the first preset (see PRESET_CITIES above); reused as the default location
+    // so a fresh install localizes correctly instead of hardcoding "Makkah"/"Saudi Arabia" literals.
+    val DEFAULT_PRESET: CityPreset get() = PRESET_CITIES.first()
+
+    fun defaultLocation(res: Resources): UserLocation = DEFAULT_PRESET.toUserLocation(res)
+
     /**
      * Preset cities are stored with fixed, exact lat/lon literals, so an exact match here safely
      * identifies "this location came from picking a preset" without accidentally matching a
@@ -223,6 +221,14 @@ object CityDatabase {
      */
     private fun findPresetByCoordinates(lat: Double, lon: Double): CityPreset? =
         PRESET_CITIES.firstOrNull { it.latitude == lat && it.longitude == lon }
+
+    /**
+     * Whether [location] is this exact preset, currently selected. Compares by coordinates (and
+     * excludes GPS fixes) rather than by display name, so it stays correct across a language
+     * switch and can't mis-highlight a preset city that merely shares a name with a GPS fix.
+     */
+    fun isSelectedPreset(location: UserLocation, preset: CityPreset): Boolean =
+        !location.isGps && location.latitude == preset.latitude && location.longitude == preset.longitude
 
     /**
      * A location selected from the preset list should always display in the *current* app
@@ -259,16 +265,8 @@ object CityDatabase {
         }
     }
 
-    fun calculateDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val r = 6371.0 // Earth radius in km
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2)
-        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-        return r * c
-    }
+    fun calculateDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double =
+        GeoUtils.haversineDistanceKm(lat1, lon1, lat2, lon2)
 
     fun findNearestCity(lat: Double, lon: Double): Pair<CityPreset, Double>? {
         if (PRESET_CITIES.isEmpty()) return null

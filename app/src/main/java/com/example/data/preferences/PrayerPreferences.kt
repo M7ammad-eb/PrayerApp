@@ -35,8 +35,14 @@ import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "prayer_settings")
 
+// Shared by both the fast-cache (SharedPreferences) and DataStore read paths below, which each
+// parse ~15 enum settings with the same "stored name string -> enum, or default if missing/stale"
+// fallback - a plain generic helper here avoids that try/catch being duplicated at every call site.
+private inline fun <reified T : Enum<T>> parseEnumOrDefault(value: String?, default: T): T =
+    value?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: default
+
 data class AppPrayerSettings(
-    val location: UserLocation = CityDatabase.DEFAULT_LOCATION,
+    val location: UserLocation,
     val calculationMethod: CalculationMethod = CalculationMethod.MUSLIM_WORLD_LEAGUE,
     val juristicMethod: JuristicMethod = JuristicMethod.STANDARD,
     val highLatitudeRule: HighLatitudeRule = HighLatitudeRule.ANGLE_BASED,
@@ -47,10 +53,10 @@ data class AppPrayerSettings(
     val colorPreset: AppColorPreset = AppColorPreset.SYSTEM_DYNAMIC,
     val followSystemColors: Boolean = true,
     val widgetSettings: WidgetCustomizationSettings = WidgetCustomizationSettings(),
-    val dynamicIslandEnabled: Boolean = true,
-    val dynamicIslandMinutesBefore: Int = 15,
     val audioStream: AthanAudioStream = AthanAudioStream.ALARM,
     val wakeScreenOnAlarm: Boolean = true,
+    val liveCountdownEnabled: Boolean = false,
+    val liveCountdownMinutesBefore: Int = 15,
     val onboardingCompleted: Boolean = false,
     val prayerConfigs: Map<PrayerType, NotificationPrayerConfig> = PrayerType.values().associateWith {
         NotificationPrayerConfig(
@@ -109,11 +115,11 @@ class PrayerPreferences(private val context: Context) {
         private const val KEY_ADJ_MAGHRIB = "cached_adj_maghrib"
         private const val KEY_ADJ_ISHA = "cached_adj_isha"
 
-        private const val KEY_DYNAMIC_ISLAND_ENABLED = "cached_dyn_island_enabled"
-        private const val KEY_DYNAMIC_ISLAND_MINUTES = "cached_dyn_island_minutes"
         private const val KEY_AUDIO_STREAM = "cached_audio_stream"
         private const val KEY_WAKE_SCREEN = "cached_wake_screen"
         private const val KEY_ONBOARDING_COMPLETED = "cached_onboarding_completed"
+        private const val KEY_LIVE_COUNTDOWN_ENABLED = "cached_live_countdown_enabled"
+        private const val KEY_LIVE_COUNTDOWN_MINUTES = "cached_live_countdown_minutes"
 
         fun getInitialSettings(context: Context): AppPrayerSettings {
             val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
@@ -122,39 +128,28 @@ class PrayerPreferences(private val context: Context) {
             val locName = fastPrefs.getString(KEY_LOC_NAME, null)
             val locCountry = fastPrefs.getString(KEY_LOC_COUNTRY, null)
             val locLat = if (fastPrefs.contains(KEY_LOC_LAT)) {
-                java.lang.Double.longBitsToDouble(fastPrefs.getLong(KEY_LOC_LAT, java.lang.Double.doubleToRawLongBits(CityDatabase.DEFAULT_LOCATION.latitude)))
+                java.lang.Double.longBitsToDouble(fastPrefs.getLong(KEY_LOC_LAT, java.lang.Double.doubleToRawLongBits(CityDatabase.DEFAULT_PRESET.latitude)))
             } else {
-                CityDatabase.DEFAULT_LOCATION.latitude
+                CityDatabase.DEFAULT_PRESET.latitude
             }
             val locLon = if (fastPrefs.contains(KEY_LOC_LON)) {
-                java.lang.Double.longBitsToDouble(fastPrefs.getLong(KEY_LOC_LON, java.lang.Double.doubleToRawLongBits(CityDatabase.DEFAULT_LOCATION.longitude)))
+                java.lang.Double.longBitsToDouble(fastPrefs.getLong(KEY_LOC_LON, java.lang.Double.doubleToRawLongBits(CityDatabase.DEFAULT_PRESET.longitude)))
             } else {
-                CityDatabase.DEFAULT_LOCATION.longitude
+                CityDatabase.DEFAULT_PRESET.longitude
             }
-            val locTz = fastPrefs.getString(KEY_LOC_TZ, CityDatabase.DEFAULT_LOCATION.timeZoneId) ?: CityDatabase.DEFAULT_LOCATION.timeZoneId
+            val locTz = fastPrefs.getString(KEY_LOC_TZ, CityDatabase.DEFAULT_PRESET.timeZoneId) ?: CityDatabase.DEFAULT_PRESET.timeZoneId
             val locIsGps = fastPrefs.getBoolean(KEY_LOC_IS_GPS, false)
 
             val location = if (locName != null && locCountry != null) {
                 UserLocation(locName, locCountry, locLat, locLon, locTz, locIsGps)
             } else {
-                CityDatabase.DEFAULT_LOCATION
+                CityDatabase.defaultLocation(context.resources)
             }
 
             // 2. Calculation Methods
-            val calcMethodStr = fastPrefs.getString(KEY_CALC_METHOD, null)
-            val calcMethod = calcMethodStr?.let {
-                try { CalculationMethod.valueOf(it) } catch (e: Exception) { CalculationMethod.MUSLIM_WORLD_LEAGUE }
-            } ?: CalculationMethod.MUSLIM_WORLD_LEAGUE
-
-            val juristicStr = fastPrefs.getString(KEY_JURISTIC_METHOD, null)
-            val juristic = juristicStr?.let {
-                try { JuristicMethod.valueOf(it) } catch (e: Exception) { JuristicMethod.STANDARD }
-            } ?: JuristicMethod.STANDARD
-
-            val highLatStr = fastPrefs.getString(KEY_HIGH_LAT_RULE, null)
-            val highLat = highLatStr?.let {
-                try { HighLatitudeRule.valueOf(it) } catch (e: Exception) { HighLatitudeRule.ANGLE_BASED }
-            } ?: HighLatitudeRule.ANGLE_BASED
+            val calcMethod = parseEnumOrDefault(fastPrefs.getString(KEY_CALC_METHOD, null), CalculationMethod.MUSLIM_WORLD_LEAGUE)
+            val juristic = parseEnumOrDefault(fastPrefs.getString(KEY_JURISTIC_METHOD, null), JuristicMethod.STANDARD)
+            val highLat = parseEnumOrDefault(fastPrefs.getString(KEY_HIGH_LAT_RULE, null), HighLatitudeRule.ANGLE_BASED)
 
             val hijriOffset = fastPrefs.getInt(KEY_HIJRI_OFFSET, 0)
 
@@ -169,52 +164,27 @@ class PrayerPreferences(private val context: Context) {
             )
 
             // 4. Language & UI Theme
-            val langStr = fastPrefs.getString(KEY_LANG, null)
-            val lang = langStr?.let {
-                try { AppLanguage.valueOf(it) } catch (e: Exception) { AppLanguage.SYSTEM }
-            } ?: AppLanguage.SYSTEM
-
-            val themeStr = fastPrefs.getString(KEY_THEME, null)
-            val theme = themeStr?.let {
-                try { AppThemeMode.valueOf(it) } catch (e: Exception) { AppThemeMode.SYSTEM }
-            } ?: AppThemeMode.SYSTEM
-
-            val colorStr = fastPrefs.getString(KEY_COLOR_PRESET, null)
-            val color = colorStr?.let {
-                try { AppColorPreset.valueOf(it) } catch (e: Exception) { AppColorPreset.SYSTEM_DYNAMIC }
-            } ?: AppColorPreset.SYSTEM_DYNAMIC
+            val lang = parseEnumOrDefault(fastPrefs.getString(KEY_LANG, null), AppLanguage.SYSTEM)
+            val theme = parseEnumOrDefault(fastPrefs.getString(KEY_THEME, null), AppThemeMode.SYSTEM)
+            val color = parseEnumOrDefault(fastPrefs.getString(KEY_COLOR_PRESET, null), AppColorPreset.SYSTEM_DYNAMIC)
 
             val followSys = fastPrefs.getBoolean(KEY_FOLLOW_SYSTEM_COLORS, true)
             val is24h = fastPrefs.getBoolean(KEY_24H, false)
 
-            val dynIsland = fastPrefs.getBoolean(KEY_DYNAMIC_ISLAND_ENABLED, true)
-            val dynMinutes = fastPrefs.getInt(KEY_DYNAMIC_ISLAND_MINUTES, 15)
-
-            val audioStreamStr = fastPrefs.getString(KEY_AUDIO_STREAM, null)
-            val audioStream = audioStreamStr?.let {
-                try { AthanAudioStream.valueOf(it) } catch (e: Exception) { AthanAudioStream.ALARM }
-            } ?: AthanAudioStream.ALARM
+            val audioStream = parseEnumOrDefault(fastPrefs.getString(KEY_AUDIO_STREAM, null), AthanAudioStream.ALARM)
 
             val wakeScreen = fastPrefs.getBoolean(KEY_WAKE_SCREEN, true)
             val onboardingCompleted = fastPrefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+            val liveCountdownEnabled = fastPrefs.getBoolean(KEY_LIVE_COUNTDOWN_ENABLED, false)
+            val liveCountdownMinutes = fastPrefs.getInt(KEY_LIVE_COUNTDOWN_MINUTES, 15)
 
             // Widget Customization
-            val wThemeStr = fastPrefs.getString(KEY_WIDGET_THEME, null)
-            val wTheme = wThemeStr?.let { try { WidgetThemeMode.valueOf(it) } catch (e: Exception) { WidgetThemeMode.APP_THEME } } ?: WidgetThemeMode.APP_THEME
-
-            val wBgStr = fastPrefs.getString(KEY_WIDGET_BG, null)
-            val wBg = wBgStr?.let { try { WidgetBackgroundStyle.valueOf(it) } catch (e: Exception) { WidgetBackgroundStyle.TRANSLUCENT } } ?: WidgetBackgroundStyle.TRANSLUCENT
-
+            val wTheme = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_THEME, null), WidgetThemeMode.APP_THEME)
+            val wBg = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_BG, null), WidgetBackgroundStyle.TRANSLUCENT)
             val wOpacity = fastPrefs.getInt(KEY_WIDGET_OPACITY, 85)
-
-            val wFontStr = fastPrefs.getString(KEY_WIDGET_FONT, null)
-            val wFont = wFontStr?.let { try { WidgetFontSize.valueOf(it) } catch (e: Exception) { WidgetFontSize.STANDARD } } ?: WidgetFontSize.STANDARD
-
-            val wTextStyleStr = fastPrefs.getString(KEY_WIDGET_TEXT_STYLE, null)
-            val wTextStyle = wTextStyleStr?.let { try { WidgetTextStyle.valueOf(it) } catch (e: Exception) { WidgetTextStyle.AUTO } } ?: WidgetTextStyle.AUTO
-
-            val wHeroTimeModeStr = fastPrefs.getString(KEY_WIDGET_HERO_TIME_MODE, null)
-            val wHeroTimeMode = wHeroTimeModeStr?.let { try { WidgetHeroTimeMode.valueOf(it) } catch (e: Exception) { WidgetHeroTimeMode.NEXT } } ?: WidgetHeroTimeMode.NEXT
+            val wFont = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_FONT, null), WidgetFontSize.STANDARD)
+            val wTextStyle = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_TEXT_STYLE, null), WidgetTextStyle.AUTO)
+            val wHeroTimeMode = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_HERO_TIME_MODE, null), WidgetHeroTimeMode.NEXT)
 
             val wShowLoc = fastPrefs.getBoolean(KEY_WIDGET_SHOW_LOC, true)
             val wShowHijri = fastPrefs.getBoolean(KEY_WIDGET_SHOW_HIJRI, true)
@@ -252,11 +222,11 @@ class PrayerPreferences(private val context: Context) {
                 colorPreset = color,
                 followSystemColors = followSys,
                 widgetSettings = widgetSettings,
-                dynamicIslandEnabled = dynIsland,
-                dynamicIslandMinutesBefore = dynMinutes,
                 audioStream = audioStream,
                 wakeScreenOnAlarm = wakeScreen,
                 onboardingCompleted = onboardingCompleted,
+                liveCountdownEnabled = liveCountdownEnabled,
+                liveCountdownMinutesBefore = liveCountdownMinutes,
                 adjustments = adjustments
             )
         }
@@ -279,11 +249,11 @@ class PrayerPreferences(private val context: Context) {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val COLOR_PRESET = stringPreferencesKey("color_preset")
         val FOLLOW_SYSTEM_COLORS = booleanPreferencesKey("follow_system_colors")
-        val DYNAMIC_ISLAND_ENABLED = booleanPreferencesKey("dynamic_island_enabled")
-        val DYNAMIC_ISLAND_MINUTES = intPreferencesKey("dynamic_island_minutes")
         val AUDIO_STREAM = stringPreferencesKey("audio_stream")
         val WAKE_SCREEN_ON_ALARM = booleanPreferencesKey("wake_screen_on_alarm")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val LIVE_COUNTDOWN_ENABLED = booleanPreferencesKey("live_countdown_enabled")
+        val LIVE_COUNTDOWN_MINUTES = intPreferencesKey("live_countdown_minutes")
 
         // Widget Settings
         val WIDGET_THEME_MODE = stringPreferencesKey("widget_theme_mode")
@@ -315,63 +285,35 @@ class PrayerPreferences(private val context: Context) {
     }
 
     val settingsFlow: Flow<AppPrayerSettings> = context.dataStore.data.map { prefs ->
-        val locName = prefs[Keys.LOC_NAME] ?: CityDatabase.DEFAULT_LOCATION.name
-        val locCountry = prefs[Keys.LOC_COUNTRY] ?: CityDatabase.DEFAULT_LOCATION.country
-        val locLat = prefs[Keys.LOC_LAT] ?: CityDatabase.DEFAULT_LOCATION.latitude
-        val locLon = prefs[Keys.LOC_LON] ?: CityDatabase.DEFAULT_LOCATION.longitude
-        val locTz = prefs[Keys.LOC_TZ] ?: CityDatabase.DEFAULT_LOCATION.timeZoneId
+        val defaultLocation = CityDatabase.defaultLocation(context.resources)
+        val locName = prefs[Keys.LOC_NAME] ?: defaultLocation.name
+        val locCountry = prefs[Keys.LOC_COUNTRY] ?: defaultLocation.country
+        val locLat = prefs[Keys.LOC_LAT] ?: defaultLocation.latitude
+        val locLon = prefs[Keys.LOC_LON] ?: defaultLocation.longitude
+        val locTz = prefs[Keys.LOC_TZ] ?: defaultLocation.timeZoneId
         val locIsGps = prefs[Keys.LOC_IS_GPS] ?: false
 
         val location = UserLocation(locName, locCountry, locLat, locLon, locTz, locIsGps)
 
-        val calcMethod = prefs[Keys.CALC_METHOD]?.let {
-            try { CalculationMethod.valueOf(it) } catch (e: Exception) { CalculationMethod.MUSLIM_WORLD_LEAGUE }
-        } ?: CalculationMethod.MUSLIM_WORLD_LEAGUE
-
-        val juristic = prefs[Keys.JURISTIC_METHOD]?.let {
-            try { JuristicMethod.valueOf(it) } catch (e: Exception) { JuristicMethod.STANDARD }
-        } ?: JuristicMethod.STANDARD
-
-        val highLat = prefs[Keys.HIGH_LAT_RULE]?.let {
-            try { HighLatitudeRule.valueOf(it) } catch (e: Exception) { HighLatitudeRule.ANGLE_BASED }
-        } ?: HighLatitudeRule.ANGLE_BASED
+        val calcMethod = parseEnumOrDefault(prefs[Keys.CALC_METHOD], CalculationMethod.MUSLIM_WORLD_LEAGUE)
+        val juristic = parseEnumOrDefault(prefs[Keys.JURISTIC_METHOD], JuristicMethod.STANDARD)
+        val highLat = parseEnumOrDefault(prefs[Keys.HIGH_LAT_RULE], HighLatitudeRule.ANGLE_BASED)
 
         val hijriOffset = prefs[Keys.HIJRI_OFFSET] ?: 0
         val is24Hour = prefs[Keys.IS_24_HOUR] ?: false
-        val languageStr = prefs[Keys.APP_LANGUAGE]
-        val language = languageStr?.let {
-            try { AppLanguage.valueOf(it) } catch (e: Exception) { AppLanguage.SYSTEM }
-        } ?: AppLanguage.SYSTEM
-
-        val themeStr = prefs[Keys.THEME_MODE]
-        val themeMode = themeStr?.let {
-            try { AppThemeMode.valueOf(it) } catch (e: Exception) { AppThemeMode.SYSTEM }
-        } ?: AppThemeMode.SYSTEM
-
-        val colorPresetStr = prefs[Keys.COLOR_PRESET]
-        val colorPreset = colorPresetStr?.let {
-            try { AppColorPreset.valueOf(it) } catch (e: Exception) { AppColorPreset.SYSTEM_DYNAMIC }
-        } ?: AppColorPreset.SYSTEM_DYNAMIC
+        val language = parseEnumOrDefault(prefs[Keys.APP_LANGUAGE], AppLanguage.SYSTEM)
+        val themeMode = parseEnumOrDefault(prefs[Keys.THEME_MODE], AppThemeMode.SYSTEM)
+        val colorPreset = parseEnumOrDefault(prefs[Keys.COLOR_PRESET], AppColorPreset.SYSTEM_DYNAMIC)
 
         val followSystemColors = prefs[Keys.FOLLOW_SYSTEM_COLORS] ?: (colorPreset == AppColorPreset.SYSTEM_DYNAMIC)
 
         // Widget settings
-        val wThemeStr = prefs[Keys.WIDGET_THEME_MODE]
-        val wTheme = wThemeStr?.let { try { WidgetThemeMode.valueOf(it) } catch (e: Exception) { WidgetThemeMode.APP_THEME } } ?: WidgetThemeMode.APP_THEME
-
-        val wBgStr = prefs[Keys.WIDGET_BG_STYLE]
-        val wBg = wBgStr?.let { try { WidgetBackgroundStyle.valueOf(it) } catch (e: Exception) { WidgetBackgroundStyle.TRANSLUCENT } } ?: WidgetBackgroundStyle.TRANSLUCENT
-
+        val wTheme = parseEnumOrDefault(prefs[Keys.WIDGET_THEME_MODE], WidgetThemeMode.APP_THEME)
+        val wBg = parseEnumOrDefault(prefs[Keys.WIDGET_BG_STYLE], WidgetBackgroundStyle.TRANSLUCENT)
         val wOpacity = prefs[Keys.WIDGET_OPACITY] ?: 85
-
-        val wFontStr = prefs[Keys.WIDGET_FONT_SIZE]
-        val wFont = wFontStr?.let { try { WidgetFontSize.valueOf(it) } catch (e: Exception) { WidgetFontSize.STANDARD } } ?: WidgetFontSize.STANDARD
-
-        val wTextStyleStr = prefs[Keys.WIDGET_TEXT_STYLE]
-        val wTextStyle = wTextStyleStr?.let { try { WidgetTextStyle.valueOf(it) } catch (e: Exception) { WidgetTextStyle.AUTO } } ?: WidgetTextStyle.AUTO
-
-        val wHeroTimeModeStr = prefs[Keys.WIDGET_HERO_TIME_MODE]
-        val wHeroTimeMode = wHeroTimeModeStr?.let { try { WidgetHeroTimeMode.valueOf(it) } catch (e: Exception) { WidgetHeroTimeMode.NEXT } } ?: WidgetHeroTimeMode.NEXT
+        val wFont = parseEnumOrDefault(prefs[Keys.WIDGET_FONT_SIZE], WidgetFontSize.STANDARD)
+        val wTextStyle = parseEnumOrDefault(prefs[Keys.WIDGET_TEXT_STYLE], WidgetTextStyle.AUTO)
+        val wHeroTimeMode = parseEnumOrDefault(prefs[Keys.WIDGET_HERO_TIME_MODE], WidgetHeroTimeMode.NEXT)
 
         val wShowLoc = prefs[Keys.WIDGET_SHOW_LOC] ?: true
         val wShowHijri = prefs[Keys.WIDGET_SHOW_HIJRI] ?: true
@@ -397,13 +339,12 @@ class PrayerPreferences(private val context: Context) {
             showHeroCard = wShowHero
         )
 
-        val audioStreamStr = prefs[Keys.AUDIO_STREAM]
-        val audioStream = audioStreamStr?.let {
-            try { AthanAudioStream.valueOf(it) } catch (e: Exception) { AthanAudioStream.ALARM }
-        } ?: AthanAudioStream.ALARM
+        val audioStream = parseEnumOrDefault(prefs[Keys.AUDIO_STREAM], AthanAudioStream.ALARM)
 
         val wakeScreenOnAlarm = prefs[Keys.WAKE_SCREEN_ON_ALARM] ?: true
         val onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: false
+        val liveCountdownEnabled = prefs[Keys.LIVE_COUNTDOWN_ENABLED] ?: false
+        val liveCountdownMinutes = prefs[Keys.LIVE_COUNTDOWN_MINUTES] ?: 15
 
         val adjustments = PrayerTimeAdjustments(
             fajr = prefs[Keys.ADJ_FAJR] ?: 0,
@@ -423,17 +364,11 @@ class PrayerPreferences(private val context: Context) {
             }
 
             val enabled = prefs[Keys.notifEnabled(prayer)] ?: defaultEnabled
-            val soundStr = prefs[Keys.notifSound(prayer)]
-            val soundType = soundStr?.let {
-                try { NotificationSoundType.valueOf(it) } catch (e: Exception) { defaultSound }
-            } ?: defaultSound
+            val soundType = parseEnumOrDefault(prefs[Keys.notifSound(prayer)], defaultSound)
             val preMinutes = prefs[Keys.notifPreReminder(prayer)] ?: 0
 
             NotificationPrayerConfig(enabled, soundType, preMinutes)
         }
-
-        val dynamicIslandEnabled = prefs[Keys.DYNAMIC_ISLAND_ENABLED] ?: true
-        val dynamicIslandMinutes = prefs[Keys.DYNAMIC_ISLAND_MINUTES] ?: 15
 
         // Update fast cache for zero-latency instant startup
         val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
@@ -472,11 +407,11 @@ class PrayerPreferences(private val context: Context) {
             .putInt(KEY_ADJ_ASR, adjustments.asr)
             .putInt(KEY_ADJ_MAGHRIB, adjustments.maghrib)
             .putInt(KEY_ADJ_ISHA, adjustments.isha)
-            .putBoolean(KEY_DYNAMIC_ISLAND_ENABLED, dynamicIslandEnabled)
-            .putInt(KEY_DYNAMIC_ISLAND_MINUTES, dynamicIslandMinutes)
             .putString(KEY_AUDIO_STREAM, audioStream.name)
             .putBoolean(KEY_WAKE_SCREEN, wakeScreenOnAlarm)
             .putBoolean(KEY_ONBOARDING_COMPLETED, onboardingCompleted)
+            .putBoolean(KEY_LIVE_COUNTDOWN_ENABLED, liveCountdownEnabled)
+            .putInt(KEY_LIVE_COUNTDOWN_MINUTES, liveCountdownMinutes)
             .apply()
 
         AppPrayerSettings(
@@ -491,11 +426,11 @@ class PrayerPreferences(private val context: Context) {
             colorPreset = colorPreset,
             followSystemColors = followSystemColors,
             widgetSettings = widgetSettings,
-            dynamicIslandEnabled = dynamicIslandEnabled,
-            dynamicIslandMinutesBefore = dynamicIslandMinutes,
             audioStream = audioStream,
             wakeScreenOnAlarm = wakeScreenOnAlarm,
             onboardingCompleted = onboardingCompleted,
+            liveCountdownEnabled = liveCountdownEnabled,
+            liveCountdownMinutesBefore = liveCountdownMinutes,
             prayerConfigs = prayerConfigs,
             adjustments = adjustments
         )
@@ -552,17 +487,18 @@ class PrayerPreferences(private val context: Context) {
         }
     }
 
-    suspend fun updateDynamicIslandSettings(enabled: Boolean, minutesBefore: Int) {
+    suspend fun updateLiveCountdownSettings(enabled: Boolean, minutesBefore: Int) {
         val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
         fastPrefs.edit()
-            .putBoolean(KEY_DYNAMIC_ISLAND_ENABLED, enabled)
-            .putInt(KEY_DYNAMIC_ISLAND_MINUTES, minutesBefore)
+            .putBoolean(KEY_LIVE_COUNTDOWN_ENABLED, enabled)
+            .putInt(KEY_LIVE_COUNTDOWN_MINUTES, minutesBefore)
             .apply()
         context.dataStore.edit { prefs ->
-            prefs[Keys.DYNAMIC_ISLAND_ENABLED] = enabled
-            prefs[Keys.DYNAMIC_ISLAND_MINUTES] = minutesBefore
+            prefs[Keys.LIVE_COUNTDOWN_ENABLED] = enabled
+            prefs[Keys.LIVE_COUNTDOWN_MINUTES] = minutesBefore
         }
     }
+
 
     suspend fun updateLocation(location: UserLocation) {
         val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)

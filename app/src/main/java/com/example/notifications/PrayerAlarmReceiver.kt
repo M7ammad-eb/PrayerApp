@@ -19,6 +19,7 @@ import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
 import com.example.data.preferences.PrayerPreferences
 import com.example.ui.alarm.PrayerAlarmActivity
+import com.example.util.LocalizedStrings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
@@ -28,8 +29,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_PRAYER_ALARM = "com.example.ACTION_PRAYER_ALARM"
-        const val ACTION_DYNAMIC_ISLAND_COUNTDOWN = "com.example.ACTION_DYNAMIC_ISLAND_COUNTDOWN"
-        const val ACTION_DISMISS_ISLAND = "com.example.ACTION_DISMISS_ISLAND"
+        const val ACTION_LIVE_COUNTDOWN = "com.example.ACTION_LIVE_COUNTDOWN"
 
         const val EXTRA_PRAYER_NAME = "extra_prayer_name"
         const val EXTRA_PRAYER_TIME = "extra_prayer_time"
@@ -52,8 +52,24 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             return
         }
 
-        if (action == ACTION_DISMISS_ISLAND) {
-            PrayerDynamicIslandManager.dismissCountdownIsland(context)
+        if (action == ACTION_LIVE_COUNTDOWN) {
+            val prayerName = intent.getStringExtra(EXTRA_PRAYER_NAME) ?: "Prayer"
+            val prayerType = try {
+                PrayerType.valueOf(prayerName.uppercase())
+            } catch (e: Exception) {
+                PrayerType.FAJR
+            }
+            val targetMillis = intent.getLongExtra(EXTRA_TARGET_MILLIS, System.currentTimeMillis())
+            val locationName = intent.getStringExtra(EXTRA_LOCATION_NAME) ?: ""
+            val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic()
+            PrayerLiveCountdownManager.show(context, prayerType, targetMillis, locationName, isArabic)
+            return
+        }
+
+        if (action != ACTION_PRAYER_ALARM) {
+            // Unrecognized action (e.g. a stale alarm scheduled by a since-removed feature under
+            // its own action string) - ignore it rather than falling through and treating it as
+            // a real prayer alarm.
             return
         }
 
@@ -66,22 +82,6 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         val prayerTime = intent.getStringExtra(EXTRA_PRAYER_TIME) ?: ""
         val locationName = intent.getStringExtra(EXTRA_LOCATION_NAME) ?: "your location"
 
-        // Handle Dynamic Island Countdown Alarm
-        if (action == ACTION_DYNAMIC_ISLAND_COUNTDOWN) {
-            val targetEpochMillis = intent.getLongExtra(EXTRA_TARGET_MILLIS, System.currentTimeMillis() + 15 * 60 * 1000L)
-            PrayerDynamicIslandManager.showCountdownIsland(
-                context = context,
-                prayerType = prayerType,
-                targetEpochMillis = targetEpochMillis,
-                prayerTimeFormatted = prayerTime,
-                locationName = locationName
-            )
-            return
-        }
-
-        // When exact prayer time arrives, clear the dynamic island countdown
-        PrayerDynamicIslandManager.dismissCountdownIsland(context)
-
         val soundTypeStr = intent.getStringExtra(EXTRA_SOUND_TYPE) ?: NotificationSoundType.FULL_ATHAN.name
         val isPreReminder = intent.getBooleanExtra(EXTRA_IS_PRE_REMINDER, false)
 
@@ -91,16 +91,25 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             NotificationSoundType.FULL_ATHAN
         }
 
+        val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic()
+        val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
+        val localizedPrayerName = LocalizedStrings.prayerName(localizedRes, prayerType)
+
+        if (!isPreReminder) {
+            // Prayer time has arrived - the live countdown (if one was showing) is no longer relevant.
+            PrayerLiveCountdownManager.dismiss(context)
+        }
+
         val title = if (isPreReminder) {
-            "Approaching: ${prayerType.title} Prayer"
+            localizedRes.getString(R.string.notif_alarm_approaching_title, localizedPrayerName)
         } else {
-            "Time for ${prayerType.title} Prayer (${prayerType.arabicName})"
+            localizedRes.getString(R.string.notif_alarm_time_title, localizedPrayerName)
         }
 
         val content = if (isPreReminder) {
-            "Prepare for ${prayerType.title} prayer coming up at $prayerTime in $locationName."
+            localizedRes.getString(R.string.notif_alarm_approaching_body, localizedPrayerName, prayerTime, locationName)
         } else {
-            "It is now time for ${prayerType.title} prayer in $locationName ($prayerTime)."
+            localizedRes.getString(R.string.notif_alarm_time_body, localizedPrayerName, locationName, prayerTime)
         }
 
         // PendingIntent to launch Full-Screen Prayer Alarm UI or Main App
@@ -130,16 +139,6 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
 
         val channelId = if (isPreReminder) PrayerApplication.CHANNEL_REMINDER_ID else PrayerApplication.CHANNEL_ATHAN_ID
 
-        val stopIntent = Intent(context, AthanAudioService::class.java).apply {
-            this.action = AthanAudioService.ACTION_STOP_ATHAN
-        }
-        val stopPendingIntent = PendingIntent.getService(
-            context,
-            prayerType.ordinal + 500,
-            stopIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
         val iconRes = try {
             R.drawable.ic_stat_prayer_countdown
         } catch (e: Exception) {
@@ -149,38 +148,43 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
         val isScreenInteractive = pm?.isInteractive ?: false
 
-        val notificationBuilder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(iconRes)
-            .setContentTitle(title)
-            .setContentText(content)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setAutoCancel(true)
-            .setOnlyAlertOnce(true)
-            .setSilent(true)
-            .setContentIntent(if (isPreReminder) mainPendingIntent else alarmPendingIntent)
-            .setSound(null)
+        // When real athan audio is about to play, AthanAudioService posts its own ongoing
+        // notification with the Stop Athan action. Posting a second one here would duplicate it -
+        // and since only the service's notification actually controls playback, users could swipe
+        // this one away thinking it stopped the sound when it didn't.
+        val willPlayViaService = !isPreReminder &&
+            soundType != NotificationSoundType.SILENT &&
+            soundType != NotificationSoundType.VIBRATE_ONLY
 
-        // Only attach Full-Screen intent when the screen is locked/off so it doesn't interrupt active phone usage
-        if (!isPreReminder && !isScreenInteractive) {
-            notificationBuilder.setFullScreenIntent(alarmPendingIntent, true)
-        }
+        if (!willPlayViaService) {
+            val notificationBuilder = NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(iconRes)
+                .setContentTitle(title)
+                .setContentText(content)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(content))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(true)
+                .setSilent(true)
+                .setContentIntent(if (isPreReminder) mainPendingIntent else alarmPendingIntent)
+                .setSound(null)
 
-        if (!isPreReminder && soundType != NotificationSoundType.SILENT && soundType != NotificationSoundType.VIBRATE_ONLY) {
-            notificationBuilder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop Athan", stopPendingIntent)
-            notificationBuilder.addAction(android.R.drawable.ic_input_get, "Open Alarm View", alarmPendingIntent)
-        }
+            // Only attach Full-Screen intent when the screen is locked/off so it doesn't interrupt active phone usage
+            if (!isPreReminder && !isScreenInteractive) {
+                notificationBuilder.setFullScreenIntent(alarmPendingIntent, true)
+            }
 
-        try {
-            val notificationManager = NotificationManagerCompat.from(context)
-            notificationManager.notify(prayerType.ordinal + if (isPreReminder) 100 else 0, notificationBuilder.build())
-        } catch (e: SecurityException) {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(prayerType.ordinal + if (isPreReminder) 100 else 0, notificationBuilder.build())
-        } catch (e: Exception) {
-            // Log or ignore
+            try {
+                val notificationManager = NotificationManagerCompat.from(context)
+                notificationManager.notify(prayerType.ordinal + if (isPreReminder) 100 else 0, notificationBuilder.build())
+            } catch (e: SecurityException) {
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                notificationManager.notify(prayerType.ordinal + if (isPreReminder) 100 else 0, notificationBuilder.build())
+            } catch (e: Exception) {
+                // Log or ignore
+            }
         }
 
         // Update widget status
@@ -233,7 +237,9 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                                     prayerType = prayerType,
                                     soundType = soundType,
                                     locationName = locationName,
-                                    audioStream = audioStream
+                                    audioStream = audioStream,
+                                    prayerTime = prayerTime,
+                                    showFullScreenAlarm = !isScreenInteractive
                                 )
                             } catch (e: Exception) {
                                 // Fallback to in-process playback if background service is restricted
@@ -241,7 +247,8 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                                     context = context,
                                     soundType = soundType,
                                     prayerType = prayerType,
-                                    audioStream = audioStream
+                                    audioStream = audioStream,
+                                    isArabic = isArabic
                                 )
                             }
                         }

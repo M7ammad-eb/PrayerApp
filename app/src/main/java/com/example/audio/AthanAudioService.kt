@@ -16,11 +16,13 @@ import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
-import com.example.MainActivity
 import com.example.PrayerApplication
+import com.example.R
 import com.example.data.models.AthanAudioStream
 import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
+import com.example.data.preferences.PrayerPreferences
+import com.example.util.LocalizedStrings
 
 class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
 
@@ -33,6 +35,8 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
         const val EXTRA_LOCATION_NAME = "extra_location_name"
         const val EXTRA_AUDIO_STREAM = "extra_audio_stream"
         const val EXTRA_VOLUME_PERCENT = "extra_volume_percent"
+        const val EXTRA_PRAYER_TIME = "extra_prayer_time"
+        const val EXTRA_SHOW_FULL_SCREEN = "extra_show_full_screen"
 
         const val NOTIFICATION_ID = 9999
 
@@ -41,7 +45,9 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
             prayerType: PrayerType,
             soundType: NotificationSoundType,
             locationName: String = "",
-            audioStream: AthanAudioStream = AthanAudioStream.ALARM
+            audioStream: AthanAudioStream = AthanAudioStream.ALARM,
+            prayerTime: String = "",
+            showFullScreenAlarm: Boolean = false
         ) {
             val intent = Intent(context, AthanAudioService::class.java).apply {
                 action = ACTION_PLAY_ATHAN
@@ -49,6 +55,8 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
                 putExtra(EXTRA_SOUND_TYPE, soundType.name)
                 putExtra(EXTRA_LOCATION_NAME, locationName)
                 putExtra(EXTRA_AUDIO_STREAM, audioStream.name)
+                putExtra(EXTRA_PRAYER_TIME, prayerTime)
+                putExtra(EXTRA_SHOW_FULL_SCREEN, showFullScreenAlarm)
             }
             ContextCompat.startForegroundService(context, intent)
         }
@@ -86,6 +94,8 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
         val prayerTypeName = intent?.getStringExtra(EXTRA_PRAYER_TYPE) ?: PrayerType.DHUHR.name
         val soundTypeName = intent?.getStringExtra(EXTRA_SOUND_TYPE) ?: NotificationSoundType.FULL_ATHAN.name
         val audioStreamName = intent?.getStringExtra(EXTRA_AUDIO_STREAM) ?: AthanAudioStream.ALARM.name
+        val prayerTimeStr = intent?.getStringExtra(EXTRA_PRAYER_TIME) ?: ""
+        val showFullScreenAlarm = intent?.getBooleanExtra(EXTRA_SHOW_FULL_SCREEN, false) ?: false
         locationName = intent?.getStringExtra(EXTRA_LOCATION_NAME) ?: ""
 
         currentPrayerType = try {
@@ -107,9 +117,16 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
         }
 
         // 1. Start as foreground immediately with initial notification to satisfy Android OS requirements
+        val isArabic = PrayerPreferences.getInitialSettings(this).language.resolveIsArabic()
+        val localizedRes = LocalizedStrings.forLanguage(this, isArabic)
+        val localizedPrayerName = LocalizedStrings.prayerName(localizedRes, currentPrayerType)
         val initialNotification = buildNotification(
-            title = "Athan: ${currentPrayerType.title} Prayer (${currentPrayerType.arabicName})",
-            verseText = "${currentSoundType.displayName}${if (locationName.isNotBlank()) " • $locationName" else ""}"
+            title = localizedRes.getString(R.string.notif_athan_playing_title, localizedPrayerName),
+            verseText = "${currentSoundType.localizedDisplayName(isArabic)}${if (locationName.isNotBlank()) " • $locationName" else ""}",
+            subText = currentSoundType.localizedDisplayName(isArabic),
+            localizedRes = localizedRes,
+            prayerTime = prayerTimeStr,
+            showFullScreenAlarm = showFullScreenAlarm
         )
 
         try {
@@ -140,6 +157,7 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
             soundType = currentSoundType,
             prayerType = currentPrayerType,
             audioStream = currentAudioStream,
+            isArabic = isArabic,
             onFinished = {
                 stopAudioAndService()
             }
@@ -148,14 +166,27 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
         return START_NOT_STICKY
     }
 
-    private fun buildNotification(title: String, verseText: String, subText: String? = null): Notification {
-        val openAppIntent = Intent(this, MainActivity::class.java).apply {
-            this.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val openAppPendingIntent = PendingIntent.getActivity(
+    private fun buildNotification(
+        title: String,
+        verseText: String,
+        subText: String? = null,
+        localizedRes: android.content.res.Resources = resources,
+        prayerTime: String = "",
+        showFullScreenAlarm: Boolean = false
+    ): Notification {
+        // Tapping (or the full-screen intent) opens the actual full-screen alarm UI rather than
+        // just the main app, matching what the (now-suppressed) receiver-level notification used to do.
+        val alarmViewIntent = com.example.ui.alarm.PrayerAlarmActivity.createIntent(
+            context = this,
+            prayerType = currentPrayerType,
+            prayerTime = prayerTime,
+            locationName = locationName,
+            soundType = currentSoundType
+        )
+        val alarmViewPendingIntent = PendingIntent.getActivity(
             this,
-            0,
-            openAppIntent,
+            2,
+            alarmViewIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -173,18 +204,25 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(verseText)
-            .setSubText(subText ?: currentSoundType.displayName)
+            .setSubText(subText ?: currentSoundType.localizedDisplayName(isArabic = false))
             .setStyle(NotificationCompat.BigTextStyle().bigText(verseText))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setOngoing(true)
-            .setAutoCancel(false)
+            // Not ongoing, so swiping the notification away is possible - paired with the delete
+            // intent below so a swipe actually stops the athan instead of just hiding the
+            // notification while it keeps playing.
+            .setAutoCancel(true)
             .setOnlyAlertOnce(true)
-            .setSilent(true)
             .setSound(null)
             .setVibrate(null)
-            .setContentIntent(openAppPendingIntent)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop Athan", stopPendingIntent)
+            .setContentIntent(alarmViewPendingIntent)
+            .setDeleteIntent(stopPendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, localizedRes.getString(R.string.alarm_stop_athan_btn), stopPendingIntent)
+            .addAction(android.R.drawable.ic_input_get, localizedRes.getString(R.string.notif_alarm_open_view_action), alarmViewPendingIntent)
+
+        if (showFullScreenAlarm) {
+            builder.setFullScreenIntent(alarmViewPendingIntent, true)
+        }
 
         return builder.build()
     }
