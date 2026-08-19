@@ -89,7 +89,9 @@ class PrayerApplication : Application() {
                 enableVibration(false)
                 setSound(null, null)
                 setShowBadge(true)
-                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                // Prayer alarm notifications include the user's location name in the body -
+                // PRIVATE keeps that off the lock screen for anyone glancing at the phone.
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PRIVATE
             }
 
             val reminderChannel = NotificationChannel(

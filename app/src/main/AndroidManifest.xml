@@ -74,7 +74,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.widget.ACTION_REFRESH_WIDGET" />
+                <action android:name="com.aistudio.prayertimes.mzkqwe.widget.ACTION_REFRESH_WIDGET" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />

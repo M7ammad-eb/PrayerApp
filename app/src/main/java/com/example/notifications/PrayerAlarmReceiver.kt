@@ -187,7 +187,8 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                 .setStyle(NotificationCompat.BigTextStyle().bigText(content))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                // Body includes the user's location name - keep it off the lock screen.
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
                 .setSilent(true)
