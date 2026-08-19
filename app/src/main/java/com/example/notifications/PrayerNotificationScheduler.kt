@@ -58,16 +58,24 @@ object PrayerNotificationScheduler {
 
             for (item in schedule.prayerItems) {
                 val prayerType = item.type
-                val config = settings.prayerConfigs[prayerType] ?: continue
-                if (!config.enabled || config.soundType == NotificationSoundType.SILENT) continue
+                val config = settings.prayerConfigs[prayerType]
 
                 val prayerZonedTime = item.zonedDateTime
                 val prayerFormatted = item.time.format(timeFormatter)
                 val prayerEpochMillis = prayerZonedTime.toInstant().toEpochMilli()
 
-                // 1. Exact Prayer Time Alarm (Athan)
-                if (prayerZonedTime.isAfter(now)) {
-                    val requestCode = dayOffset * 100 + prayerType.ordinal
+                val requestCode = dayOffset * 100 + prayerType.ordinal
+                val reminderRequestCode = 1000 + dayOffset * 100 + prayerType.ordinal
+                val countdownRequestCode = 4000 + dayOffset * 100 + prayerType.ordinal
+
+                // 1. Exact Prayer Time Alarm (Athan). Every branch here is declarative - cancel
+                // whatever shouldn't exist rather than just skipping creation - so that disabling a
+                // prayer (or a setting change that makes it newly ineligible) reliably removes an
+                // alarm that was already scheduled from before, instead of leaving it armed.
+                // SILENT is deliberately still scheduled: it only means "no audio when this fires"
+                // (see PrayerAlarmReceiver), not "don't schedule at all" - the visual notification
+                // still needs to show up.
+                if (config != null && config.enabled && prayerZonedTime.isAfter(now)) {
                     val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
                         action = PrayerAlarmReceiver.ACTION_PRAYER_ALARM
                         putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
@@ -85,36 +93,35 @@ object PrayerNotificationScheduler {
                     )
 
                     setExactAlarm(context, alarmManager, prayerEpochMillis, pendingIntent, requestCode)
+                } else {
+                    cancelAlarm(context, alarmManager, requestCode, PrayerAlarmReceiver.ACTION_PRAYER_ALARM)
                 }
 
                 // 2. Pre-prayer reminder alarm if configured
-                if (config.preReminderMinutes > 0) {
-                    val reminderZonedTime = prayerZonedTime.minusMinutes(config.preReminderMinutes.toLong())
-                    if (reminderZonedTime.isAfter(now)) {
-                        val reminderRequestCode = 1000 + dayOffset * 100 + prayerType.ordinal
-                        val reminderIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
-                            action = PrayerAlarmReceiver.ACTION_PRAYER_ALARM
-                            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
-                            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_TIME, prayerFormatted)
-                            putExtra(PrayerAlarmReceiver.EXTRA_SOUND_TYPE, NotificationSoundType.MELODIC_TONE.name)
-                            putExtra(PrayerAlarmReceiver.EXTRA_IS_PRE_REMINDER, true)
-                            putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, settings.location.name)
-                        }
-
-                        val reminderPendingIntent = PendingIntent.getBroadcast(
-                            context,
-                            reminderRequestCode,
-                            reminderIntent,
-                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                        )
-
-                        val triggerAtMillis = reminderZonedTime.toInstant().toEpochMilli()
-                        setExactAlarm(context, alarmManager, triggerAtMillis, reminderPendingIntent, reminderRequestCode)
+                val reminderZonedTime = prayerZonedTime.minusMinutes((config?.preReminderMinutes ?: 0).toLong())
+                if (config != null && config.enabled && config.preReminderMinutes > 0 && reminderZonedTime.isAfter(now)) {
+                    val reminderIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
+                        action = PrayerAlarmReceiver.ACTION_PRAYER_ALARM
+                        putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
+                        putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_TIME, prayerFormatted)
+                        putExtra(PrayerAlarmReceiver.EXTRA_SOUND_TYPE, NotificationSoundType.MELODIC_TONE.name)
+                        putExtra(PrayerAlarmReceiver.EXTRA_IS_PRE_REMINDER, true)
+                        putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, settings.location.name)
                     }
+
+                    val reminderPendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        reminderRequestCode,
+                        reminderIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+
+                    setExactAlarm(context, alarmManager, reminderZonedTime.toInstant().toEpochMilli(), reminderPendingIntent, reminderRequestCode)
+                } else {
+                    cancelAlarm(context, alarmManager, reminderRequestCode, PrayerAlarmReceiver.ACTION_PRAYER_ALARM)
                 }
 
                 // 3. Live Athan countdown trigger (standard Android Live Update notification)
-                val countdownRequestCode = 4000 + dayOffset * 100 + prayerType.ordinal
                 if (settings.liveCountdownEnabled && prayerType != PrayerType.SUNRISE) {
                     val leadMinutes = settings.liveCountdownMinutesBefore.coerceIn(1, 180)
                     val countdownStartTime = prayerZonedTime.minusMinutes(leadMinutes.toLong())
@@ -143,21 +150,24 @@ object PrayerNotificationScheduler {
                             locationName = settings.location.name,
                             isArabic = settings.language.resolveIsArabic()
                         )
-                        cancelLiveCountdownAlarm(context, alarmManager, countdownRequestCode)
+                        cancelAlarm(context, alarmManager, countdownRequestCode, PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN)
                     } else {
-                        cancelLiveCountdownAlarm(context, alarmManager, countdownRequestCode)
+                        cancelAlarm(context, alarmManager, countdownRequestCode, PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN)
                     }
                 } else {
-                    cancelLiveCountdownAlarm(context, alarmManager, countdownRequestCode)
+                    cancelAlarm(context, alarmManager, countdownRequestCode, PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN)
                 }
 
             }
         }
     }
 
-    private fun cancelLiveCountdownAlarm(context: Context, alarmManager: AlarmManager, requestCode: Int) {
+    // PendingIntent matching only considers action/component (not extras), so a bare lookup
+    // intent sharing the requestCode and action used at schedule time is enough to find and cancel
+    // whatever was armed there - whether it's a prayer alarm, a pre-reminder, or a countdown.
+    private fun cancelAlarm(context: Context, alarmManager: AlarmManager, requestCode: Int, action: String) {
         val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
-            action = PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN
+            this.action = action
         }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
@@ -181,19 +191,7 @@ object PrayerNotificationScheduler {
         for (dayOffset in 0..6) {
             for (prayerOrdinal in 0..5) {
                 val requestCode = 2000 + dayOffset * 100 + prayerOrdinal
-                val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
-                    action = "com.example.ACTION_DYNAMIC_ISLAND_COUNTDOWN"
-                }
-                val pendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    requestCode,
-                    intent,
-                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-                )
-                if (pendingIntent != null) {
-                    alarmManager.cancel(pendingIntent)
-                    pendingIntent.cancel()
-                }
+                cancelAlarm(context, alarmManager, requestCode, "com.example.ACTION_DYNAMIC_ISLAND_COUNTDOWN")
             }
         }
     }
