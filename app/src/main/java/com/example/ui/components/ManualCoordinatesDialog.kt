@@ -49,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -122,11 +123,14 @@ fun ManualCoordinatesDialog(
     val isLonValid = lonParsed != null && lonParsed >= -180.0 && lonParsed <= 180.0
     val isValid = isLatValid && isLonValid
 
-    val nearestCityResult by remember(latParsed, lonParsed) {
-        derivedStateOf {
-            if (latParsed != null && lonParsed != null && isLatValid && isLonValid) {
-                CityDatabase.findNearestCity(latParsed, lonParsed)
-            } else null
+    val nearestPlaceResult by produceState<com.example.data.places.NearestPlaceResult?>(
+        initialValue = null,
+        latParsed, lonParsed, isLatValid, isLonValid
+    ) {
+        value = if (latParsed != null && lonParsed != null && isLatValid && isLonValid) {
+            com.example.data.places.PlaceRepository.nearestPlace(context, latParsed, lonParsed)
+        } else {
+            null
         }
     }
 
@@ -459,7 +463,7 @@ fun ManualCoordinatesDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // Nearest Reference City / Calculated Bearing Feedback Card
-                if (nearestCityResult != null || qiblaBearing != null) {
+                if (nearestPlaceResult != null || qiblaBearing != null) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -471,8 +475,11 @@ fun ManualCoordinatesDialog(
                                 .padding(12.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            if (nearestCityResult != null) {
-                                val (nearCity, distKm) = nearestCityResult!!
+                            if (nearestPlaceResult != null) {
+                                val result = nearestPlaceResult!!
+                                val placeName = if (strings.isArabic) result.place.nameAr ?: result.place.nameEn else result.place.nameEn
+                                val countryName = Locale("", result.place.countryCode)
+                                    .getDisplayCountry(if (strings.isArabic) Locale("ar") else Locale.ENGLISH)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -486,9 +493,9 @@ fun ManualCoordinatesDialog(
                                     Text(
                                         text = stringResource(
                                             R.string.coords_near_city_format,
-                                            stringResource(nearCity.nameRes),
-                                            stringResource(nearCity.countryRes),
-                                            distKm.toInt()
+                                            placeName,
+                                            countryName,
+                                            result.distanceKm.toInt()
                                         ),
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.SemiBold,
@@ -545,8 +552,9 @@ fun ManualCoordinatesDialog(
                                 val finalName = locationNameText.trim().ifEmpty {
                                     "Custom (${String.format(Locale.US, "%.2f, %.2f", latParsed, lonParsed)})"
                                 }
-                                val finalCountry = nearestCityResult?.let {
-                                    context.getString(R.string.coords_near_city_short_format, context.getString(it.first.nameRes))
+                                val finalCountry = nearestPlaceResult?.let { result ->
+                                    val placeName = if (strings.isArabic) result.place.nameAr ?: result.place.nameEn else result.place.nameEn
+                                    context.getString(R.string.coords_near_city_short_format, placeName)
                                 } ?: "Manual Coordinates"
                                 val newLocation = UserLocation(
                                     name = finalName,

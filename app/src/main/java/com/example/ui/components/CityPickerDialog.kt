@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,18 +17,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationCity
-import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,13 +36,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.example.data.cities.CityDatabase
 import com.example.data.models.UserLocation
+import com.example.data.places.PlaceEntity
+import com.example.data.places.PlaceRepository
 import com.example.ui.locale.LocalAppStrings
+import kotlinx.coroutines.delay
+import java.util.Locale
 
 @Composable
 fun CityPickerDialog(
@@ -53,10 +55,15 @@ fun CityPickerDialog(
     val strings = LocalAppStrings.current
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
+    var searchResults by remember { mutableStateOf<List<PlaceEntity>>(emptyList()) }
 
-    val filteredCities = remember(searchQuery) {
-        if (searchQuery.isBlank()) CityDatabase.popularCities
-        else CityDatabase.searchCities(context, searchQuery)
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isBlank()) {
+            searchResults = emptyList()
+        } else {
+            delay(200)
+            searchResults = PlaceRepository.search(context, searchQuery)
+        }
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -95,7 +102,7 @@ fun CityPickerDialog(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text(strings.search + " (" + strings.presetLondon + ", " + strings.presetCairo + ", " + strings.presetDubai + "...)") },
+                    placeholder = { Text(strings.locationSearchHint) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
@@ -104,45 +111,28 @@ fun CityPickerDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(280.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    items(filteredCities) { city ->
-                        val isSelected = CityDatabase.isSelectedPreset(currentLocation, city)
-                        Card(
-                            onClick = { onSelectCity(city.toUserLocation(context.resources)) },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                            ),
-                            border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
-                            modifier = Modifier.fillMaxWidth()
+                Box(modifier = Modifier.fillMaxWidth().height(280.dp)) {
+                    if (searchQuery.isBlank()) {
+                        Text(
+                            text = strings.locationSearchHint,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 24.dp)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column {
-                                    Text(
-                                        text = stringResource(city.nameRes),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "${stringResource(city.countryRes)} • ${city.timeZoneId}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                if (isSelected) {
-                                    Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
+                            items(searchResults, key = { it.geonameId }) { place ->
+                                PlaceRow(
+                                    place = place,
+                                    isSelected = !currentLocation.isGps &&
+                                        currentLocation.latitude == place.latitude &&
+                                        currentLocation.longitude == place.longitude,
+                                    isArabic = strings.isArabic,
+                                    onClick = { onSelectCity(place.toUserLocation(strings.isArabic)) }
+                                )
                             }
                         }
                     }
@@ -161,4 +151,56 @@ fun CityPickerDialog(
             }
         }
     }
+}
+
+@Composable
+private fun PlaceRow(place: PlaceEntity, isSelected: Boolean, isArabic: Boolean, onClick: () -> Unit) {
+    val placeName = if (isArabic) place.nameAr ?: place.nameEn else place.nameEn
+    val countryName = Locale("", place.countryCode).getDisplayCountry(if (isArabic) Locale("ar") else Locale.ENGLISH)
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = placeName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "$countryName • ${place.timeZoneId}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (isSelected) {
+                Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+}
+
+private fun PlaceEntity.toUserLocation(isArabic: Boolean): UserLocation {
+    val placeName = if (isArabic) nameAr ?: nameEn else nameEn
+    val countryName = Locale("", countryCode).getDisplayCountry(if (isArabic) Locale("ar") else Locale.ENGLISH)
+    return UserLocation(
+        name = placeName,
+        country = countryName,
+        latitude = latitude,
+        longitude = longitude,
+        timeZoneId = timeZoneId,
+        isGps = false
+    )
 }

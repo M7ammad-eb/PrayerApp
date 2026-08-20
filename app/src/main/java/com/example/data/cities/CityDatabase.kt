@@ -1,12 +1,9 @@
 package com.example.data.cities
 
-import android.content.Context
 import android.content.res.Resources
 import androidx.annotation.StringRes
 import com.example.R
 import com.example.data.models.UserLocation
-import com.example.util.GeoUtils
-import com.example.util.LocalizedStrings
 
 /**
  * A location preset whose display name/country are Android string resources, so the searchable
@@ -206,8 +203,6 @@ object CityDatabase {
         CityPreset(R.string.city_mexico_city, R.string.country_mexico, 19.4326, -99.1332, "America/Mexico_City")
     )
 
-    val popularCities: List<CityPreset> get() = PRESET_CITIES
-
     // Makkah is always the first preset (see PRESET_CITIES above); reused as the default location
     // so a fresh install localizes correctly instead of hardcoding "Makkah"/"Saudi Arabia" literals.
     val DEFAULT_PRESET: CityPreset get() = PRESET_CITIES.first()
@@ -247,36 +242,4 @@ object CityDatabase {
         return preset?.let { res.getString(it.countryRes) } ?: location.country
     }
 
-    /**
-     * Matches against both English and Arabic resource strings regardless of the app's current
-     * display language, so a user can type "Cairo" or "القاهرة" and find the same city either way.
-     */
-    fun searchCities(context: Context, query: String): List<CityPreset> {
-        val q = query.trim()
-        val qLower = q.lowercase()
-        if (q.isEmpty()) return PRESET_CITIES
-        val resEn = LocalizedStrings.forLanguage(context, isArabic = false)
-        val resAr = LocalizedStrings.forLanguage(context, isArabic = true)
-        return PRESET_CITIES.filter { city ->
-            resEn.getString(city.nameRes).lowercase().contains(qLower) ||
-                resEn.getString(city.countryRes).lowercase().contains(qLower) ||
-                resAr.getString(city.nameRes).contains(q) ||
-                resAr.getString(city.countryRes).contains(q)
-        }
-    }
-
-    fun calculateDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double =
-        GeoUtils.haversineDistanceKm(lat1, lon1, lat2, lon2)
-
-    fun findNearestCity(lat: Double, lon: Double): Pair<CityPreset, Double>? {
-        if (PRESET_CITIES.isEmpty()) return null
-        return PRESET_CITIES.map { city ->
-            city to calculateDistanceKm(lat, lon, city.latitude, city.longitude)
-        }.minByOrNull { it.second }
-    }
-
-    fun estimateTimeZone(lat: Double, lon: Double): String {
-        val nearest = findNearestCity(lat, lon)
-        return nearest?.first?.timeZoneId ?: java.time.ZoneId.systemDefault().id
-    }
 }

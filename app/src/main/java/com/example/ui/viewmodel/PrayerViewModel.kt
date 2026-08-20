@@ -3,7 +3,6 @@ package com.example.ui.viewmodel
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
-import android.location.Geocoder
 import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,7 +10,6 @@ import com.example.R
 import com.example.audio.AdhanPlaybackState
 import com.example.audio.AthanAudioEngine
 import com.example.data.calculator.PrayerTimesCalculator
-import com.example.data.cities.CityDatabase
 import com.example.data.models.AppColorPreset
 import com.example.data.models.AppLanguage
 import com.example.data.models.AppThemeMode
@@ -26,6 +24,8 @@ import com.example.data.models.PrayerTimeItem
 import com.example.data.models.PrayerType
 import com.example.data.models.UserLocation
 import com.example.data.models.WidgetCustomizationSettings
+import com.example.data.places.PlaceRelation
+import com.example.data.places.PlaceRepository
 import com.example.data.preferences.AppPrayerSettings
 import com.example.data.preferences.PrayerPreferences
 import com.example.data.qibla.CompassSensorManager
@@ -168,12 +168,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             hijriAdjustmentDays = currentSettings.hijriAdjustmentDays,
             now = now
         )
-
-    // Guards the Locale.setDefault() mutate/restore window in requestGpsLocation() below - that
-    // mutation is process-wide global state (not thread-local), so without this, two concurrent
-    // reverse-geocode calls (e.g. rapid double-tap on "refresh location") could interleave and
-    // leave the wrong locale restored, or have one call's restore step race the other's mutate step.
-    private val localeMutationLock = Any()
 
     private val _isGpsLoading = MutableStateFlow(false)
     val isGpsLoading: StateFlow<Boolean> = _isGpsLoading.asStateFlow()
@@ -409,57 +403,53 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         try {
             // Resolve from the app's own language setting rather than
             // Locale.getDefault() - on API < 33 that reflects the device's
-            // system-wide language, not the in-app override, so a user who set
-            // the app to English but has an Arabic-language phone would still
-            // get Arabic-script city/country names back from the geocoder.
-            val geocoderLocale = when (settings.value.language) {
-                AppLanguage.ARABIC -> Locale("ar")
-                AppLanguage.ENGLISH -> Locale.ENGLISH
-                AppLanguage.SYSTEM -> Locale.getDefault()
+            // system-wide language, not the in-app override.
+            val isArabic = when (settings.value.language) {
+                AppLanguage.ARABIC -> true
+                AppLanguage.ENGLISH -> false
+                AppLanguage.SYSTEM -> Locale.getDefault().language == "ar"
             }
-            // The Locale passed to the Geocoder constructor above isn't reliably
-            // honored by the underlying backend on real devices - many OEM/Play
-            // services geocoder implementations format the returned Address using
-            // the JVM default locale regardless, so an Arabic-system-language
-            // device kept returning Arabic city/country names even with English
-            // explicitly requested. Temporarily overriding the JVM default for
-            // just this blocking call (and restoring it right after) is the
-            // documented workaround for this specific, well-known quirk.
-            val addresses: List<android.location.Address>? = synchronized(localeMutationLock) {
-                val previousDefaultLocale = Locale.getDefault()
-                try {
-                    Locale.setDefault(geocoderLocale)
-                    val geocoder = Geocoder(context, geocoderLocale)
-                    geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                } finally {
-                    Locale.setDefault(previousDefaultLocale)
-                }
-            }
-            val address = addresses?.firstOrNull()
-            val cityName = address?.locality ?: address?.subAdminArea
-                ?: localizedRes.getString(R.string.gps_current_location_fallback)
-            val countryName = address?.countryName ?: ""
-            // Derived from the fixed coordinates via the offline nearest-city
-            // table, not the device's current timezone - those can differ (e.g.
-            // phone timezone still set to home while GPS reports a trip location).
-            val timeZoneId = CityDatabase.estimateTimeZone(location.latitude, location.longitude)
+            val displayLocale = if (isArabic) Locale("ar") else Locale.ENGLISH
 
-            val newLoc = UserLocation(
-                name = cityName,
-                country = countryName,
-                latitude = location.latitude,
-                longitude = location.longitude,
-                timeZoneId = timeZoneId,
-                isGps = true
-            )
+            val nearest = PlaceRepository.nearestPlace(context, location.latitude, location.longitude)
+            val newLoc = if (nearest != null) {
+                val placeName = if (isArabic) nearest.place.nameAr ?: nearest.place.nameEn else nearest.place.nameEn
+                val countryName = Locale("", nearest.place.countryCode).getDisplayCountry(displayLocale)
+                // Transparently flags how approximate the match is, per the offline
+                // dataset's distance to the actual GPS fix, rather than silently
+                // presenting a possibly-distant "nearest" place as if it were exact.
+                val displayName = when (nearest.relation) {
+                    PlaceRelation.SAME_CITY -> placeName
+                    PlaceRelation.NEAR_CITY -> localizedRes.getString(R.string.gps_relation_near_city, placeName)
+                    PlaceRelation.NEAREST_CITY -> localizedRes.getString(R.string.gps_relation_nearest_city, placeName)
+                }
+                UserLocation(
+                    name = displayName,
+                    country = countryName,
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    timeZoneId = nearest.place.timeZoneId,
+                    isGps = true,
+                    nearestPlaceDistanceKm = nearest.distanceKm
+                )
+            } else {
+                UserLocation(
+                    name = localizedRes.getString(R.string.gps_coordinates_fallback),
+                    country = String.format(Locale.US, "%.4f°, %.4f°", location.latitude, location.longitude),
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    timeZoneId = ZoneId.systemDefault().id,
+                    isGps = true
+                )
+            }
             prefs.updateLocation(newLoc)
         } catch (e: Exception) {
             val newLoc = UserLocation(
                 name = localizedRes.getString(R.string.gps_coordinates_fallback),
-                country = String.format("%.2f°, %.2f°", location.latitude, location.longitude),
+                country = String.format(Locale.US, "%.4f°, %.4f°", location.latitude, location.longitude),
                 latitude = location.latitude,
                 longitude = location.longitude,
-                timeZoneId = CityDatabase.estimateTimeZone(location.latitude, location.longitude),
+                timeZoneId = ZoneId.systemDefault().id,
                 isGps = true
             )
             prefs.updateLocation(newLoc)

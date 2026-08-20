@@ -95,7 +95,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.example.audio.AthanAudioEngine
-import com.example.data.cities.CityDatabase
 import com.example.data.models.AppColorPreset
 import com.example.data.models.AppLanguage
 import com.example.data.models.AppThemeMode
@@ -103,9 +102,13 @@ import com.example.data.models.NotificationPrayerConfig
 import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
 import com.example.data.models.UserLocation
+import com.example.data.places.PlaceEntity
+import com.example.data.places.PlaceRepository
 import com.example.data.preferences.AppPrayerSettings
 import com.example.ui.locale.LocalAppStrings
 import com.example.ui.locale.ProvideAppLocale
+import kotlinx.coroutines.delay
+import java.util.Locale
 
 enum class OnboardingStep(val stepNumber: Int) {
     LANGUAGE(1),
@@ -523,10 +526,15 @@ private fun OnboardingLocationStep(
     val strings = LocalAppStrings.current
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
+    var searchResults by remember { mutableStateOf<List<PlaceEntity>>(emptyList()) }
 
-    val filteredCities = remember(searchQuery) {
-        if (searchQuery.isBlank()) CityDatabase.popularCities
-        else CityDatabase.searchCities(context, searchQuery)
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isBlank()) {
+            searchResults = emptyList()
+        } else {
+            delay(200)
+            searchResults = PlaceRepository.search(context, searchQuery)
+        }
     }
 
     Column(
@@ -674,48 +682,73 @@ private fun OnboardingLocationStep(
         Spacer(modifier = Modifier.height(10.dp))
 
         // Cities List
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            items(filteredCities) { city ->
-                val isSelected = CityDatabase.isSelectedPreset(currentLocation, city)
-                Card(
-                    onClick = { onSelectCity(city.toUserLocation(context.resources)) },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
-                    ),
-                    border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+        if (searchQuery.isBlank()) {
+            Text(
+                text = strings.locationSearchHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 24.dp)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(searchResults, key = { it.geonameId }) { place ->
+                    val isSelected = !currentLocation.isGps &&
+                        currentLocation.latitude == place.latitude &&
+                        currentLocation.longitude == place.longitude
+                    val placeName = if (strings.isArabic) place.nameAr ?: place.nameEn else place.nameEn
+                    val countryName = Locale("", place.countryCode)
+                        .getDisplayCountry(if (strings.isArabic) Locale("ar") else Locale.ENGLISH)
+                    Card(
+                        onClick = {
+                            onSelectCity(
+                                UserLocation(
+                                    name = placeName,
+                                    country = countryName,
+                                    latitude = place.latitude,
+                                    longitude = place.longitude,
+                                    timeZoneId = place.timeZoneId,
+                                    isGps = false
+                                )
+                            )
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
+                        ),
+                        border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column {
-                            Text(
-                                text = stringResource(city.nameRes),
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "${stringResource(city.countryRes)} • ${city.timeZoneId}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = placeName,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "$countryName • ${place.timeZoneId}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
 
-                        if (isSelected) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }

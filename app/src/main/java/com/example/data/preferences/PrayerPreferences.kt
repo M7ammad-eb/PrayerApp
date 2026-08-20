@@ -102,6 +102,7 @@ class PrayerPreferences(private val context: Context) {
         private const val KEY_LOC_LON = "cached_loc_lon"
         private const val KEY_LOC_TZ = "cached_loc_tz"
         private const val KEY_LOC_IS_GPS = "cached_loc_is_gps"
+        private const val KEY_LOC_DISTANCE_KM = "cached_loc_distance_km"
 
         private const val KEY_CALC_METHOD = "cached_calc_method"
         private const val KEY_JURISTIC_METHOD = "cached_juristic_method"
@@ -139,9 +140,14 @@ class PrayerPreferences(private val context: Context) {
             }
             val locTz = fastPrefs.getString(KEY_LOC_TZ, CityDatabase.DEFAULT_PRESET.timeZoneId) ?: CityDatabase.DEFAULT_PRESET.timeZoneId
             val locIsGps = fastPrefs.getBoolean(KEY_LOC_IS_GPS, false)
+            val locDistanceKm = if (fastPrefs.contains(KEY_LOC_DISTANCE_KM)) {
+                java.lang.Double.longBitsToDouble(fastPrefs.getLong(KEY_LOC_DISTANCE_KM, 0L))
+            } else {
+                null
+            }
 
             val location = if (locName != null && locCountry != null) {
-                UserLocation(locName, locCountry, locLat, locLon, locTz, locIsGps)
+                UserLocation(locName, locCountry, locLat, locLon, locTz, locIsGps, locDistanceKm)
             } else {
                 CityDatabase.defaultLocation(context.resources)
             }
@@ -239,6 +245,7 @@ class PrayerPreferences(private val context: Context) {
         val LOC_LON = doublePreferencesKey("loc_lon")
         val LOC_TZ = stringPreferencesKey("loc_tz")
         val LOC_IS_GPS = booleanPreferencesKey("loc_is_gps")
+        val LOC_DISTANCE_KM = doublePreferencesKey("loc_distance_km")
 
         val CALC_METHOD = stringPreferencesKey("calc_method")
         val JURISTIC_METHOD = stringPreferencesKey("juristic_method")
@@ -292,8 +299,9 @@ class PrayerPreferences(private val context: Context) {
         val locLon = prefs[Keys.LOC_LON] ?: defaultLocation.longitude
         val locTz = prefs[Keys.LOC_TZ] ?: defaultLocation.timeZoneId
         val locIsGps = prefs[Keys.LOC_IS_GPS] ?: false
+        val locDistanceKm = prefs[Keys.LOC_DISTANCE_KM]
 
-        val location = UserLocation(locName, locCountry, locLat, locLon, locTz, locIsGps)
+        val location = UserLocation(locName, locCountry, locLat, locLon, locTz, locIsGps, locDistanceKm)
 
         val calcMethod = parseEnumOrDefault(prefs[Keys.CALC_METHOD], CalculationMethod.MUSLIM_WORLD_LEAGUE)
         val juristic = parseEnumOrDefault(prefs[Keys.JURISTIC_METHOD], JuristicMethod.STANDARD)
@@ -397,6 +405,13 @@ class PrayerPreferences(private val context: Context) {
             .putLong(KEY_LOC_LON, java.lang.Double.doubleToRawLongBits(location.longitude))
             .putString(KEY_LOC_TZ, location.timeZoneId)
             .putBoolean(KEY_LOC_IS_GPS, location.isGps)
+            .let { editor ->
+                if (location.nearestPlaceDistanceKm != null) {
+                    editor.putLong(KEY_LOC_DISTANCE_KM, java.lang.Double.doubleToRawLongBits(location.nearestPlaceDistanceKm))
+                } else {
+                    editor.remove(KEY_LOC_DISTANCE_KM)
+                }
+            }
             .putString(KEY_CALC_METHOD, calcMethod.name)
             .putString(KEY_JURISTIC_METHOD, juristic.name)
             .putString(KEY_HIGH_LAT_RULE, highLat.name)
@@ -509,6 +524,13 @@ class PrayerPreferences(private val context: Context) {
             .putLong(KEY_LOC_LON, java.lang.Double.doubleToRawLongBits(location.longitude))
             .putString(KEY_LOC_TZ, location.timeZoneId)
             .putBoolean(KEY_LOC_IS_GPS, location.isGps)
+            .let { editor ->
+                if (location.nearestPlaceDistanceKm != null) {
+                    editor.putLong(KEY_LOC_DISTANCE_KM, java.lang.Double.doubleToRawLongBits(location.nearestPlaceDistanceKm))
+                } else {
+                    editor.remove(KEY_LOC_DISTANCE_KM)
+                }
+            }
             .apply()
         context.dataStore.edit { prefs ->
             prefs[Keys.LOC_NAME] = location.name
@@ -517,6 +539,11 @@ class PrayerPreferences(private val context: Context) {
             prefs[Keys.LOC_LON] = location.longitude
             prefs[Keys.LOC_TZ] = location.timeZoneId
             prefs[Keys.LOC_IS_GPS] = location.isGps
+            if (location.nearestPlaceDistanceKm != null) {
+                prefs[Keys.LOC_DISTANCE_KM] = location.nearestPlaceDistanceKm
+            } else {
+                prefs.remove(Keys.LOC_DISTANCE_KM)
+            }
         }
     }
 

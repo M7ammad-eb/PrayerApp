@@ -83,6 +83,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -108,9 +109,13 @@ import com.example.data.models.NotificationPrayerConfig
 import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
 import com.example.data.models.UserLocation
+import com.example.data.places.PlaceEntity
+import com.example.data.places.PlaceRepository
 import com.example.data.preferences.AppPrayerSettings
 import com.example.ui.components.ManualCoordinatesDialog
 import com.example.ui.locale.LocalAppStrings
+import kotlinx.coroutines.delay
+import java.util.Locale
 
 enum class SettingsSubScreen {
     MAIN,
@@ -972,10 +977,15 @@ private fun SettingsLocationSubScreen(
     val strings = LocalAppStrings.current
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
+    var searchResults by remember { mutableStateOf<List<PlaceEntity>>(emptyList()) }
 
-    val filteredCities = remember(searchQuery) {
-        if (searchQuery.isBlank()) CityDatabase.popularCities
-        else CityDatabase.searchCities(context, searchQuery)
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isBlank()) {
+            searchResults = emptyList()
+        } else {
+            delay(200)
+            searchResults = PlaceRepository.search(context, searchQuery)
+        }
     }
 
     Column(
@@ -1011,6 +1021,20 @@ private fun SettingsLocationSubScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (settings.location.isGps) {
+                        Text(
+                            text = String.format(Locale.US, "%.4f°, %.4f°", settings.location.latitude, settings.location.longitude),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (settings.location.nearestPlaceDistanceKm != null) {
+                            Text(
+                                text = strings.gpsLocationDisclaimer,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
 
                 Button(
@@ -1034,7 +1058,7 @@ private fun SettingsLocationSubScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text(strings.search + " (" + strings.presetLondon + ", " + strings.presetCairo + ", " + strings.presetMakkah + "...)") },
+            placeholder = { Text(strings.locationSearchHint) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
@@ -1043,49 +1067,74 @@ private fun SettingsLocationSubScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(filteredCities) { city ->
-                val isSelected = CityDatabase.isSelectedPreset(settings.location, city)
-                Card(
-                    onClick = { onSelectCity(city.toUserLocation(context.resources)) },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-                    ),
-                    border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+        if (searchQuery.isBlank()) {
+            Text(
+                text = strings.locationSearchHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 24.dp)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(searchResults, key = { it.geonameId }) { place ->
+                    val isSelected = !settings.location.isGps &&
+                        settings.location.latitude == place.latitude &&
+                        settings.location.longitude == place.longitude
+                    val placeName = if (strings.isArabic) place.nameAr ?: place.nameEn else place.nameEn
+                    val countryName = Locale("", place.countryCode)
+                        .getDisplayCountry(if (strings.isArabic) Locale("ar") else Locale.ENGLISH)
+                    Card(
+                        onClick = {
+                            onSelectCity(
+                                UserLocation(
+                                    name = placeName,
+                                    country = countryName,
+                                    latitude = place.latitude,
+                                    longitude = place.longitude,
+                                    timeZoneId = place.timeZoneId,
+                                    isGps = false
+                                )
+                            )
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                        ),
+                        border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column {
-                            Text(
-                                text = stringResource(city.nameRes),
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "${stringResource(city.countryRes)} • ${city.timeZoneId}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = placeName,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "$countryName • ${place.timeZoneId}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
 
-                        if (isSelected) {
-                            Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            if (isSelected) {
+                                Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            }
                         }
                     }
                 }
+                item { Spacer(modifier = Modifier.height(40.dp)) }
             }
-            item { Spacer(modifier = Modifier.height(40.dp)) }
         }
     }
 }
@@ -2054,6 +2103,27 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = strings.compassCalibText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = strings.aboutDataAttributionTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = strings.aboutDataAttributionBody,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

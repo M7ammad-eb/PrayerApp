@@ -183,5 +183,8 @@ data class UserLocation(
     val latitude: Double,
     val longitude: Double,
     val timeZoneId: String,
-    val isGps: Boolean = false
+    val isGps: Boolean = false,
+    // Distance in km from the GPS fix to the nearest offline-database place that produced [name] -
+    // null for manually-picked/preset locations, which are exact rather than approximated.
+    val nearestPlaceDistanceKm: Double? = null
 )

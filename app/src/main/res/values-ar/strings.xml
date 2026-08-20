@@ -56,6 +56,10 @@
     <string name="gps_current_prefix">الحالي: %1$s</string>
     <string name="gps_tap_to_detect">اضغط للكشف التلقائي</string>
     <string name="gps_button_label">GPS</string>
+    <string name="gps_relation_near_city">بالقرب من %1$s</string>
+    <string name="gps_relation_nearest_city">أقرب مدينة: %1$s</string>
+    <string name="gps_location_disclaimer">المدينة المعروضة هي أقرب مكان في قاعدة بيانات التطبيق غير المتصلة بالإنترنت. يتم حساب أوقات الصلاة باستخدام إحداثيات GPS الدقيقة الخاصة بك.</string>
+    <string name="location_search_hint">اكتب للبحث عن المدن…</string>
     <string name="qibla_toggle_manual_desc">تبديل الإدخال اليدوي</string>
     <string name="widget_settings_appearance_section_title">المظهر</string>
     <string name="widget_settings_appearance_section_subtitle">النمط والخلفية والنص</string>
@@ -244,6 +248,8 @@
     <string name="settings_adjustments_standard">افتراضي (0 دقيقة)</string>
     <string name="settings_about_hub_title">حول التطبيق والحسابات الفلكية</string>
     <string name="settings_about_hub_subtitle">حسابات فلكية بدون إنترنت • الإصدار 1.0</string>
+    <string name="about_data_attribution_title">بيانات الأماكن</string>
+    <string name="about_data_attribution_body">أسماء المدن والأماكن مقدَّمة من GeoNames.org، مرخّصة بموجب رخصة المشاع الإبداعي - النسب 4.0 (CC BY 4.0).</string>
     <string name="settings_rerun_setup_title">إعادة تشغيل معالج الإعداد الأولي</string>
     <string name="settings_rerun_setup_subtitle">إعادة تخصيص اللغة والموقع والأذان والتصميم</string>
     <string name="settings_juristic_standard_desc">ظل الشيء مثله (الشافعي، المالكي، الحنبلي)</string>

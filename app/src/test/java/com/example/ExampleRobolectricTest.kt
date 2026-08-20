@@ -209,17 +209,14 @@ class ExampleRobolectricTest {
   }
 
   @Test
-  fun `find nearest city and calculate distance for manual coordinates`() {
+  fun `find nearest place and calculate distance for manual coordinates`() = kotlinx.coroutines.runBlocking {
     // Riyadh coordinates roughly 24.71, 46.67
-    val nearest = com.example.data.cities.CityDatabase.findNearestCity(24.71, 46.67)
-    assertNotNull(nearest)
     val context = ApplicationProvider.getApplicationContext<Context>()
-    assertEquals("Riyadh", context.getString(nearest!!.first.nameRes))
-    assertTrue("Distance should be within 10 km", nearest.second < 10.0)
-
-    // Estimate timezone
-    val tz = com.example.data.cities.CityDatabase.estimateTimeZone(24.71, 46.67)
-    assertEquals("Asia/Riyadh", tz)
+    val nearest = com.example.data.places.PlaceRepository.nearestPlace(context, 24.71, 46.67)
+    assertNotNull(nearest)
+    assertEquals("Riyadh", nearest!!.place.nameEn)
+    assertTrue("Distance should be within 10 km", nearest.distanceKm < 10.0)
+    assertEquals("Asia/Riyadh", nearest.place.timeZoneId)
   }
 
   @Test
