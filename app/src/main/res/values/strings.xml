@@ -368,7 +368,6 @@
     <string name="onboarding_privacy_notice_title">Your Privacy is 100% Protected</string>
     <string name="onboarding_privacy_notice_desc">Your location data is never collected, tracked, or uploaded to any server. All astronomical prayer and Qibla calculations run entirely offline on your device.</string>
     <string name="onboarding_use_gps_button">Detect Location (GPS)</string>
-    <string name="onboarding_search_city_placeholder">Or search your city (Makkah, Cairo, London...)</string>
     <string name="onboarding_selected_location_label">Selected Location:</string>
     <string name="onboarding_step_notifications_title">Athan Alerts &amp; Notifications</string>
     <string name="onboarding_step_notifications_desc">Enable notifications and exact alarm permissions so the Athan sounds on time, even when your phone is locked or screen is off.</string>

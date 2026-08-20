@@ -36,13 +36,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import com.example.audio.AthanAudioEngine
@@ -462,7 +462,7 @@ private fun SettingsHubCategoryCard(
             }
 
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.size(22.dp)
@@ -1615,6 +1615,50 @@ private fun SettingsNotificationsSubScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.live_countdown_test_btn), fontWeight = FontWeight.Bold)
                         }
+                    }
+                }
+            }
+
+            // Pre-Prayer Reminder - a single blanket toggle across all real prayers (Sunrise
+            // excluded, same as its other prayer-only defaults) rather than a per-prayer setting,
+            // since preReminderMinutes>0 is itself what gates whether the reminder fires.
+            item {
+                val reminderPrayers = remember { PrayerType.values().filter { it != PrayerType.SUNRISE } }
+                val reminderEnabled = reminderPrayers.all { (settings.prayerConfigs[it]?.preReminderMinutes ?: 0) > 0 }
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = strings.preReminder,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "15 ${strings.minutesBefore}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = reminderEnabled,
+                            onCheckedChange = { isChecked ->
+                                val minutes = if (isChecked) 15 else 0
+                                reminderPrayers.forEach { prayer ->
+                                    val cfg = settings.prayerConfigs[prayer] ?: NotificationPrayerConfig()
+                                    onUpdateNotificationConfig(prayer, cfg.enabled, cfg.soundType, minutes)
+                                }
+                            }
+                        )
                     }
                 }
             }

@@ -368,7 +368,6 @@
     <string name="onboarding_privacy_notice_title">خصوصيتك محمية بالكامل</string>
     <string name="onboarding_privacy_notice_desc">بيانات موقعك لا تُجمع، ولا تُخزن على أي خوادم خارجية، ولا يتم تتبعك إطلاقاً. تُستخدم الإحداثيات محلياً على جهازك فقط لحساب المواقيت والقبلة.</string>
     <string name="onboarding_use_gps_button">تحديد الموقع التلقائي (GPS)</string>
-    <string name="onboarding_search_city_placeholder">أو ابحث عن مدينتك (مكة، القاهرة، لندن...)</string>
     <string name="onboarding_selected_location_label">الموقع المحدد:</string>
     <string name="onboarding_step_notifications_title">تنبيهات الأذان والإشعارات</string>
     <string name="onboarding_step_notifications_desc">تفعيل إذن الإشعارات والمنبه الدقيق لضمان انطلاق صوت الأذان والتنبيهات في وقت الصلاة تماماً حتى عند قفل الهاتف.</string>

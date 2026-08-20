@@ -148,11 +148,17 @@ fun OnboardingScreen(
 
     // Re-suggest a calculation method whenever the location actually changes during this
     // onboarding session (GPS resolves asynchronously, so this can't just be a callback wrapped
-    // around onSelectCity) - but never on first composition, so re-running the wizard from
-    // Settings on an already-configured location doesn't silently override a deliberate choice.
-    val initialTimeZoneId = remember { settings.location.timeZoneId }
+    // around onSelectCity) - but never on the very first composition, so re-running the wizard
+    // from Settings on an already-configured location doesn't silently override a deliberate
+    // choice. Comparing against a single frozen "initial" zone id (rather than tracking whether
+    // this is the first firing) would wrongly skip a later selection that happens to share a
+    // timezone with that initial snapshot - e.g. Makkah's default zone matching a subsequently
+    // picked Madinah.
+    var isFirstLocationComposition by remember { mutableStateOf(true) }
     LaunchedEffect(settings.location.timeZoneId) {
-        if (settings.location.timeZoneId != initialTimeZoneId) {
+        if (isFirstLocationComposition) {
+            isFirstLocationComposition = false
+        } else {
             onUpdateCalculationMethod(suggestCalculationMethod(settings.location.timeZoneId))
         }
     }
@@ -675,6 +681,20 @@ private fun OnboardingLocationStep(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
+                        if (currentLocation.isGps) {
+                            Text(
+                                text = String.format(Locale.US, "%.4f°, %.4f°", currentLocation.latitude, currentLocation.longitude),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (currentLocation.nearestPlaceDistanceKm != null) {
+                                Text(
+                                    text = strings.gpsLocationDisclaimer,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -706,7 +726,7 @@ private fun OnboardingLocationStep(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text(strings.searchCityPlaceholder) },
+            placeholder = { Text(strings.locationSearchHint) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
@@ -723,14 +743,7 @@ private fun OnboardingLocationStep(
         Spacer(modifier = Modifier.height(10.dp))
 
         // Cities List
-        if (searchQuery.isBlank()) {
-            Text(
-                text = strings.locationSearchHint,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 24.dp)
-            )
-        } else {
+        if (searchQuery.isNotBlank()) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(6.dp)

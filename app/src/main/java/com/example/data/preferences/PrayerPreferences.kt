@@ -66,7 +66,7 @@ data class AppPrayerSettings(
                 PrayerType.SUNRISE -> NotificationSoundType.MELODIC_TONE
                 else -> NotificationSoundType.FULL_ATHAN
             },
-            preReminderMinutes = 0
+            preReminderMinutes = if (it != PrayerType.SUNRISE) 15 else 0
         )
     },
     val adjustments: PrayerTimeAdjustments = PrayerTimeAdjustments()
@@ -371,9 +371,11 @@ class PrayerPreferences(private val context: Context) {
                 else -> NotificationSoundType.FULL_ATHAN
             }
 
+            val defaultPreReminder = if (prayer != PrayerType.SUNRISE) 15 else 0
+
             val enabled = prefs[Keys.notifEnabled(prayer)] ?: defaultEnabled
             val soundType = parseEnumOrDefault(prefs[Keys.notifSound(prayer)], defaultSound)
-            val preMinutes = prefs[Keys.notifPreReminder(prayer)] ?: 0
+            val preMinutes = prefs[Keys.notifPreReminder(prayer)] ?: defaultPreReminder
 
             NotificationPrayerConfig(enabled, soundType, preMinutes)
         }

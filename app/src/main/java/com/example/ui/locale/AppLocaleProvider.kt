@@ -395,7 +395,6 @@ class AppStrings(
     val privacyNoticeTitle: String = s(R.string.onboarding_privacy_notice_title)
     val privacyNoticeDesc: String = s(R.string.onboarding_privacy_notice_desc)
     val useGpsButton: String = s(R.string.onboarding_use_gps_button)
-    val searchCityPlaceholder: String = s(R.string.onboarding_search_city_placeholder)
     val selectedLocationLabel: String = s(R.string.onboarding_selected_location_label)
     val stepNotificationsTitle: String = s(R.string.onboarding_step_notifications_title)
     val stepNotificationsDesc: String = s(R.string.onboarding_step_notifications_desc)
