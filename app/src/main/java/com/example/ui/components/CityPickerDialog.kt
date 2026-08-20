@@ -112,14 +112,7 @@ fun CityPickerDialog(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Box(modifier = Modifier.fillMaxWidth().height(280.dp)) {
-                    if (searchQuery.isBlank()) {
-                        Text(
-                            text = strings.locationSearchHint,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 24.dp)
-                        )
-                    } else {
+                    if (searchQuery.isNotBlank()) {
                         LazyColumn(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(6.dp)

@@ -293,15 +293,13 @@ private fun SettingsMainHub(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .testTag("settings_screen"),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         // Theme
         SettingsHubCategoryCard(
             title = strings.themeSection,
             subtitle = strings.themeModeName(settings.themeMode),
             icon = Icons.Default.Palette,
-            badgeColor = MaterialTheme.colorScheme.primaryContainer,
-            iconTint = MaterialTheme.colorScheme.primary,
             testTag = "settings_cat_theme",
             onClick = { onNavigateTo(SettingsSubScreen.THEME) }
         )
@@ -315,8 +313,6 @@ private fun SettingsMainHub(
                 settings.widgetSettings.opacityPercent
             ),
             icon = Icons.Default.StayCurrentPortrait,
-            badgeColor = MaterialTheme.colorScheme.secondaryContainer,
-            iconTint = MaterialTheme.colorScheme.secondary,
             testTag = "settings_cat_widgets",
             onClick = { onNavigateTo(SettingsSubScreen.WIDGETS) }
         )
@@ -326,8 +322,6 @@ private fun SettingsMainHub(
             title = strings.calcMethodSection,
             subtitle = "${strings.calcMethodName(settings.calculationMethod)} • ${if (settings.juristicMethod == JuristicMethod.STANDARD) strings.standardJuristic else strings.hanafiJuristic}",
             icon = Icons.Default.Calculate,
-            badgeColor = MaterialTheme.colorScheme.secondaryContainer,
-            iconTint = MaterialTheme.colorScheme.secondary,
             testTag = "settings_cat_calc",
             onClick = { onNavigateTo(SettingsSubScreen.CALCULATION) }
         )
@@ -339,8 +333,6 @@ private fun SettingsMainHub(
             title = strings.locationSection,
             subtitle = "$locationHubName${if (locationHubCountry.isNotEmpty()) ", $locationHubCountry" else ""} ${if (settings.location.isGps) "(GPS)" else ""}",
             icon = Icons.Default.LocationOn,
-            badgeColor = MaterialTheme.colorScheme.tertiaryContainer,
-            iconTint = MaterialTheme.colorScheme.tertiary,
             testTag = "settings_cat_location",
             onClick = { onNavigateTo(SettingsSubScreen.LOCATION) }
         )
@@ -351,8 +343,6 @@ private fun SettingsMainHub(
             title = strings.notifSectionTitle,
             subtitle = strings.notifCountActive(enabledNotifsCount),
             icon = Icons.Default.NotificationsActive,
-            badgeColor = MaterialTheme.colorScheme.primaryContainer,
-            iconTint = MaterialTheme.colorScheme.primary,
             testTag = "settings_cat_notifications",
             onClick = { onNavigateTo(SettingsSubScreen.NOTIFICATIONS) }
         )
@@ -362,8 +352,6 @@ private fun SettingsMainHub(
             title = strings.languageSection,
             subtitle = settings.language.getDisplayName(strings.isArabic),
             icon = Icons.Default.Language,
-            badgeColor = MaterialTheme.colorScheme.secondaryContainer,
-            iconTint = MaterialTheme.colorScheme.secondary,
             testTag = "settings_cat_language",
             onClick = { onNavigateTo(SettingsSubScreen.LANGUAGE) }
         )
@@ -373,8 +361,6 @@ private fun SettingsMainHub(
             title = strings.displayHijriSection,
             subtitle = "${if (settings.is24HourFormat) "24-Hour" else "12-Hour"} • ${if (settings.hijriAdjustmentDays == 0) "0 " + strings.days else (if (settings.hijriAdjustmentDays > 0) "+" else "") + settings.hijriAdjustmentDays + " " + strings.days}",
             icon = Icons.Default.CalendarMonth,
-            badgeColor = MaterialTheme.colorScheme.tertiaryContainer,
-            iconTint = MaterialTheme.colorScheme.tertiary,
             testTag = "settings_cat_hijri",
             onClick = { onNavigateTo(SettingsSubScreen.HIJRI_DISPLAY) }
         )
@@ -385,8 +371,6 @@ private fun SettingsMainHub(
             title = strings.minuteAdjustmentsTitle,
             subtitle = if (hasAdjustments) strings.adjustmentsCustomActive else strings.adjustmentsStandard,
             icon = Icons.Default.Tune,
-            badgeColor = MaterialTheme.colorScheme.surfaceVariant,
-            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
             testTag = "settings_cat_adjustments",
             onClick = { onNavigateTo(SettingsSubScreen.ADJUSTMENTS) }
         )
@@ -396,8 +380,6 @@ private fun SettingsMainHub(
             title = strings.aboutHubTitle,
             subtitle = strings.aboutHubSubtitle,
             icon = Icons.Default.Info,
-            badgeColor = MaterialTheme.colorScheme.surfaceVariant,
-            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
             testTag = "settings_cat_about",
             onClick = { onNavigateTo(SettingsSubScreen.ABOUT) }
         )
@@ -407,13 +389,11 @@ private fun SettingsMainHub(
             title = strings.rerunSetupTitle,
             subtitle = strings.rerunSetupSubtitle,
             icon = Icons.Default.AutoAwesome,
-            badgeColor = MaterialTheme.colorScheme.primaryContainer,
-            iconTint = MaterialTheme.colorScheme.primary,
             testTag = "settings_cat_rerun_setup",
             onClick = onResetOnboarding
         )
 
-        Spacer(modifier = Modifier.height(70.dp))
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }
 
@@ -422,8 +402,6 @@ private fun SettingsHubCategoryCard(
     title: String,
     subtitle: String,
     icon: ImageVector,
-    badgeColor: Color,
-    iconTint: Color,
     testTag: String,
     onClick: () -> Unit
 ) {
@@ -441,7 +419,7 @@ private fun SettingsHubCategoryCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -451,16 +429,16 @@ private fun SettingsHubCategoryCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(badgeColor),
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(22.dp)
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -1121,14 +1099,7 @@ private fun SettingsLocationSubScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (searchQuery.isBlank()) {
-            Text(
-                text = strings.locationSearchHint,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 24.dp)
-            )
-        } else {
+        if (searchQuery.isNotBlank()) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)

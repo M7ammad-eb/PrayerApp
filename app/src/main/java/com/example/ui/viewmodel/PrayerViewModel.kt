@@ -7,7 +7,6 @@ import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.R
-import com.example.audio.AdhanPlaybackState
 import com.example.audio.AthanAudioEngine
 import com.example.data.calculator.PrayerTimesCalculator
 import com.example.data.models.AppColorPreset
@@ -144,8 +143,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     val nextPrayerInfo: StateFlow<NextPrayerInfo> = _nextPrayerInfo.asStateFlow()
 
     val compassState: StateFlow<CompassState> = compassManager.compassState
-
-    val audioPlaybackState: StateFlow<AdhanPlaybackState> = AthanAudioEngine.playbackState
 
     private val _monthlySchedule = MutableStateFlow<List<DailyPrayerSchedule>>(emptyList())
     val monthlySchedule: StateFlow<List<DailyPrayerSchedule>> = _monthlySchedule.asStateFlow()
@@ -559,16 +556,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         PrayerAppWidgetProvider.updateAllWidgets(getApplication())
     }
 
-    fun playAthanPreview(prayerType: PrayerType = PrayerType.DHUHR, soundType: NotificationSoundType = NotificationSoundType.FULL_ATHAN) {
-        AthanAudioEngine.playAthan(
-            context = getApplication(),
-            prayerType = prayerType,
-            soundType = soundType,
-            audioStream = settings.value.audioStream,
-            isArabic = settings.value.language.resolveIsArabic()
-        )
-    }
-
     fun previewNotificationSound(soundType: NotificationSoundType, prayerType: PrayerType = PrayerType.DHUHR) {
         AthanAudioEngine.playSoundType(
             context = getApplication(),
@@ -577,11 +564,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             audioStream = settings.value.audioStream,
             isArabic = settings.value.language.resolveIsArabic()
         )
-    }
-
-    fun stopAudio() {
-        AthanAudioEngine.stop()
-        com.example.audio.AthanAudioService.stopAthan(getApplication())
     }
 
     fun testNotification(prayerType: PrayerType, soundType: NotificationSoundType) {

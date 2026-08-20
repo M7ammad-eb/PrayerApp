@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.app.DatePickerDialog
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -60,7 +61,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.audio.AdhanPlaybackState
 import com.example.data.calculator.HijriDateCalculator
 import com.example.data.models.DailyPrayerSchedule
 import com.example.data.models.HijriDate
@@ -69,13 +69,14 @@ import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerTimeItem
 import com.example.data.models.PrayerType
 import com.example.data.preferences.AppPrayerSettings
-import com.example.ui.components.AthanPlayerDialog
 import com.example.ui.locale.LocalAppStrings
 import com.example.ui.theme.BentoBorder
 import com.example.ui.theme.BentoRose
 import com.example.ui.theme.BentoRoseDark
 import com.example.ui.viewmodel.NextPrayerInfo
+import java.time.Duration
 import java.time.LocalDate
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -84,18 +85,16 @@ fun PrayerHomeScreen(
     nextPrayerInfo: NextPrayerInfo,
     settings: AppPrayerSettings,
     selectedDate: LocalDate,
-    audioPlaybackState: AdhanPlaybackState,
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
     onSelectToday: () -> Unit,
     onDatePicked: (LocalDate) -> Unit,
-    onPlayPrayerAthan: (PrayerType) -> Unit,
-    onStopAudio: () -> Unit,
+    onPreviewSound: (NotificationSoundType, PrayerType) -> Unit,
     onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit,
     onRequestNotificationPermission: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    var showAthanDialog by remember { mutableStateOf(false) }
+    var soundPickerPrayerType by remember { mutableStateOf<PrayerType?>(null) }
     var showExtraTimes by remember { mutableStateOf(false) }
 
     val notificationsEnabled = remember {
@@ -113,12 +112,22 @@ fun PrayerHomeScreen(
         if (settings.is24HourFormat) DateTimeFormatter.ofPattern("HH:mm") else DateTimeFormatter.ofPattern("h:mm a")
     }
 
-    if (showAthanDialog) {
-        AthanPlayerDialog(
-            playbackState = audioPlaybackState,
-            onPlayPrayer = onPlayPrayerAthan,
-            onStop = onStopAudio,
-            onDismiss = { showAthanDialog = false }
+    soundPickerPrayerType?.let { pickerType ->
+        val currentConfig = settings.prayerConfigs[pickerType] ?: NotificationPrayerConfig()
+        SoundPickerDialog(
+            prayerType = pickerType,
+            currentSound = currentConfig.soundType,
+            onSelectSound = { sound ->
+                onUpdateNotificationConfig(
+                    pickerType,
+                    sound != NotificationSoundType.SILENT,
+                    sound,
+                    currentConfig.preReminderMinutes
+                )
+                soundPickerPrayerType = null
+            },
+            onPreviewSound = { sound -> onPreviewSound(sound, pickerType) },
+            onDismiss = { soundPickerPrayerType = null }
         )
     }
 
@@ -184,17 +193,15 @@ fun PrayerHomeScreen(
             }
         }
 
-        // 1. Next Prayer Hero Card
+        // 1. Next Prayer Hero Card - always relative to the actual current time, so it stays
+        // visible regardless of which day is being browsed below via the date navigator.
         item {
-            if (isToday && nextPrayerInfo.prayerItem != null) {
+            if (nextPrayerInfo.prayerItem != null) {
                 Spacer(modifier = Modifier.height(2.dp))
                 BentoNextPrayerHeroCard(
                     nextPrayerInfo = nextPrayerInfo,
                     timeFormatter = timeFormatter,
-                    onListenAthan = {
-                        showAthanDialog = true
-                        onPlayPrayerAthan(nextPrayerInfo.prayerItem.type)
-                    }
+                    onClick = { soundPickerPrayerType = nextPrayerInfo.prayerItem.type }
                 )
             }
         }
@@ -265,7 +272,7 @@ fun PrayerHomeScreen(
 private fun BentoNextPrayerHeroCard(
     nextPrayerInfo: NextPrayerInfo,
     timeFormatter: DateTimeFormatter,
-    onListenAthan: () -> Unit
+    onClick: () -> Unit
 ) {
     val prayerItem = nextPrayerInfo.prayerItem ?: return
     val prayerType = prayerItem.type
@@ -282,7 +289,7 @@ private fun BentoNextPrayerHeroCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(26.dp))
-            .clickable { onListenAthan() }
+            .clickable { onClick() }
             .testTag("next_prayer_hero_card"),
         shape = RoundedCornerShape(26.dp),
         colors = CardDefaults.cardColors(containerColor = cardBg)
@@ -413,7 +420,7 @@ private fun BentoDateSelector(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = if (isToday) "${strings.today} (${strings.formatDateShort(selectedDate)})"
-                    else "${selectedDate.dayOfMonth} ${strings.formatDateShort(selectedDate)} ${selectedDate.year}",
+                    else "${strings.formatDateShort(selectedDate)} ${selectedDate.year}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -514,6 +521,7 @@ private fun BentoPrayerRow(
     onToggleNotification: (PrayerType, NotificationPrayerConfig) -> Unit
 ) {
     val strings = LocalAppStrings.current
+    val context = LocalContext.current
     val isNext = item.isNext && isToday
     var showMenu by remember { mutableStateOf(false) }
 
@@ -525,6 +533,12 @@ private fun BentoPrayerRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(rowBg, RoundedCornerShape(14.dp))
+            .clickable {
+                val now = ZonedDateTime.now(item.zonedDateTime.zone)
+                val diffSeconds = Duration.between(now, item.zonedDateTime).seconds
+                val statusText = if (diffSeconds > 0) strings.formatCountdown(diffSeconds) else strings.formatSince(-diffSeconds)
+                Toast.makeText(context, "${strings.prayerName(item.type)}: $statusText", Toast.LENGTH_SHORT).show()
+            }
             .padding(horizontal = 12.dp, vertical = 10.dp)
             .testTag("prayer_card_${item.type.name.lowercase()}"),
         horizontalArrangement = Arrangement.SpaceBetween,

@@ -454,6 +454,14 @@ class AppStrings(
         }
     }
 
+    fun formatSince(seconds: Long): String {
+        if (seconds <= 60) return s(R.string.widget_since_just_now)
+        val hours = seconds / 3600
+        val minutes = (seconds % 3600) / 60
+        return if (hours > 0) res.getString(R.string.widget_since_hours_minutes, hours, minutes)
+        else res.getString(R.string.widget_since_minutes_only, minutes)
+    }
+
     private val monthNames: List<String> = res.getStringArray(R.array.month_names).toList()
     fun monthName(month: Int): String = monthNames[month - 1]
 

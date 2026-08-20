@@ -102,7 +102,6 @@ fun MainScreen(
     val dailySchedule by viewModel.dailySchedule.collectAsState()
     val nextPrayerInfo by viewModel.nextPrayerInfo.collectAsState()
     val compassState by viewModel.compassState.collectAsState()
-    val audioPlaybackState by viewModel.audioPlaybackState.collectAsState()
     val monthlySchedule by viewModel.monthlySchedule.collectAsState()
     val isGpsLoading by viewModel.isGpsLoading.collectAsState()
     val locationErrorMessage by viewModel.locationErrorMessage.collectAsState()
@@ -238,13 +237,11 @@ fun MainScreen(
                                 nextPrayerInfo = nextPrayerInfo,
                                 settings = settings,
                                 selectedDate = selectedDate,
-                                audioPlaybackState = audioPlaybackState,
                                 onPreviousDay = { viewModel.previousDay() },
                                 onNextDay = { viewModel.nextDay() },
                                 onSelectToday = { viewModel.selectToday() },
                                 onDatePicked = { viewModel.setSelectedDate(it) },
-                                onPlayPrayerAthan = { viewModel.playAthanPreview(it) },
-                                onStopAudio = { viewModel.stopAudio() },
+                                onPreviewSound = { sound, prayer -> viewModel.previewNotificationSound(sound, prayer) },
                                 onUpdateNotificationConfig = { prayer, enabled, sound, reminder ->
                                     viewModel.updatePrayerNotification(prayer, enabled, sound, reminder)
                                 },
@@ -391,7 +388,8 @@ private fun ExpressiveTopHeader(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             if (currentTab == AppNavTab.PRAYER_TIMES) {
-                // Expressive Interactive Location Pill
+                // Expressive Interactive Location Pill - location only, the brand name is a
+                // separate sibling below so SpaceBetween places it on the opposite side.
                 Surface(
                     onClick = onLocationClick,
                     shape = RoundedCornerShape(24.dp),
@@ -423,27 +421,26 @@ private fun ExpressiveTopHeader(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        Column {
-                            Text(
-                                text = strings.appBrandName,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = run {
-                                    val headerRes = androidx.compose.ui.platform.LocalContext.current.resources
-                                    val locName = com.example.data.cities.CityDatabase.localizedName(headerRes, settings.location)
-                                    val locCountry = com.example.data.cities.CityDatabase.localizedCountry(headerRes, settings.location)
-                                    "$locName${if (locCountry.isNotEmpty() && !locCountry.contains("°")) ", $locCountry" else ""}"
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                        Text(
+                            text = run {
+                                val headerRes = androidx.compose.ui.platform.LocalContext.current.resources
+                                val locName = com.example.data.cities.CityDatabase.localizedName(headerRes, settings.location)
+                                val locCountry = com.example.data.cities.CityDatabase.localizedCountry(headerRes, settings.location)
+                                "$locName${if (locCountry.isNotEmpty() && !locCountry.contains("°")) ", $locCountry" else ""}"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
+
+                Text(
+                    text = strings.appBrandName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
             } else {
                 Text(
                     text = when (currentTab) {
