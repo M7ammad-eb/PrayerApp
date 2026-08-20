@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
@@ -997,6 +998,73 @@ private fun SettingsLocationSubScreen(
         SubScreenHeader(title = strings.locationSection, onBack = onBack)
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Current Location - always reflects settings.location (persisted state), so it stays
+        // visible regardless of the search field's transient state, unlike relying on a search
+        // result row happening to be on screen with a checkmark.
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
+            modifier = Modifier.fillMaxWidth().testTag("current_location_card")
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(
+                    imageVector = if (settings.location.isGps) Icons.Default.MyLocation else Icons.Default.LocationCity,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = strings.currentLocationLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = settings.location.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    if (settings.location.country.isNotEmpty()) {
+                        Text(
+                            text = settings.location.country,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (settings.location.isGps) strings.locationSourceGps else strings.locationSourceManual,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    if (settings.location.isGps) {
+                        Text(
+                            text = String.format(Locale.US, "%.4f°, %.4f°", settings.location.latitude, settings.location.longitude),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (settings.location.nearestPlaceDistanceKm != null) {
+                            Text(
+                                text = strings.gpsLocationDisclaimer,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
         // GPS Action Button
         Card(
             shape = RoundedCornerShape(18.dp),
@@ -1017,24 +1085,10 @@ private fun SettingsLocationSubScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = if (settings.location.isGps) strings.gpsCurrentPrefix(settings.location.name) else strings.gpsTapToDetect,
+                        text = strings.gpsTapToDetect,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (settings.location.isGps) {
-                        Text(
-                            text = String.format(Locale.US, "%.4f°, %.4f°", settings.location.latitude, settings.location.longitude),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (settings.location.nearestPlaceDistanceKm != null) {
-                            Text(
-                                text = strings.gpsLocationDisclaimer,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
                 }
 
                 Button(

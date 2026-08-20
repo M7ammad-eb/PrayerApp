@@ -53,13 +53,15 @@
     <string name="gps_coordinates_fallback">GPS Coordinates</string>
     <string name="gps_fix_failed_error">Unable to get current GPS fix. Please ensure location services are enabled.</string>
     <string name="gps_request_failed_error">GPS request failed: %1$s</string>
-    <string name="gps_current_prefix">Current: %1$s</string>
     <string name="gps_tap_to_detect">Tap to detect automatically</string>
     <string name="gps_button_label">GPS</string>
     <string name="gps_relation_near_city">Near %1$s</string>
     <string name="gps_relation_nearest_city">Nearest city: %1$s</string>
     <string name="gps_location_disclaimer">The displayed city is based on the nearest place in the app\'s offline database. Prayer times are calculated using your exact GPS coordinates.</string>
     <string name="location_search_hint">Type to search cities…</string>
+    <string name="location_current_label">Current Location</string>
+    <string name="location_source_gps">Detected via GPS</string>
+    <string name="location_source_manual">Selected from list</string>
     <string name="qibla_toggle_manual_desc">Toggle Manual</string>
     <string name="widget_settings_appearance_section_title">Appearance</string>
     <string name="widget_settings_appearance_section_subtitle">Theme, background, and text</string>

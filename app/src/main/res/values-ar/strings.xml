@@ -53,13 +53,15 @@
     <string name="gps_coordinates_fallback">إحداثيات GPS</string>
     <string name="gps_fix_failed_error">تعذر تحديد موقع GPS الحالي. يرجى التأكد من تفعيل خدمات الموقع.</string>
     <string name="gps_request_failed_error">فشل طلب تحديد الموقع: %1$s</string>
-    <string name="gps_current_prefix">الحالي: %1$s</string>
     <string name="gps_tap_to_detect">اضغط للكشف التلقائي</string>
     <string name="gps_button_label">GPS</string>
     <string name="gps_relation_near_city">بالقرب من %1$s</string>
     <string name="gps_relation_nearest_city">أقرب مدينة: %1$s</string>
     <string name="gps_location_disclaimer">المدينة المعروضة هي أقرب مكان في قاعدة بيانات التطبيق غير المتصلة بالإنترنت. يتم حساب أوقات الصلاة باستخدام إحداثيات GPS الدقيقة الخاصة بك.</string>
     <string name="location_search_hint">اكتب للبحث عن المدن…</string>
+    <string name="location_current_label">الموقع الحالي</string>
+    <string name="location_source_gps">تم الكشف عبر GPS</string>
+    <string name="location_source_manual">تم اختياره من القائمة</string>
     <string name="qibla_toggle_manual_desc">تبديل الإدخال اليدوي</string>
     <string name="widget_settings_appearance_section_title">المظهر</string>
     <string name="widget_settings_appearance_section_subtitle">النمط والخلفية والنص</string>
