@@ -361,6 +361,10 @@
     <string name="onboarding_step_language_desc">يمكنك التبديل بين العربية والإنجليزية في أي وقت من الإعدادات.</string>
     <string name="onboarding_step_location_title">حدد موقعك الجغرافي</string>
     <string name="onboarding_step_location_desc">نحتاج إلى موقعك لحساب أوقات الصلاة واتجاه القبلة بدقة شرعية عالية.</string>
+    <string name="onboarding_step_calc_method_title">طريقة الحساب</string>
+    <string name="onboarding_step_calc_method_desc">تستخدم المناطق والهيئات الإسلامية المختلفة زوايا مختلفة قليلاً لحساب وقتي الفجر والعشاء.</string>
+    <string name="onboarding_calc_method_suggested_banner">لقد اخترنا مسبقًا \"%1$s\" بناءً على موقعك. غير متأكد أيها تختار؟ هذا غالبًا هو الخيار الصحيح - يمكنك تغييره لاحقًا من الإعدادات في أي وقت.</string>
+    <string name="onboarding_skip_btn">تخطي</string>
     <string name="onboarding_privacy_notice_title">خصوصيتك محمية بالكامل</string>
     <string name="onboarding_privacy_notice_desc">بيانات موقعك لا تُجمع، ولا تُخزن على أي خوادم خارجية، ولا يتم تتبعك إطلاقاً. تُستخدم الإحداثيات محلياً على جهازك فقط لحساب المواقيت والقبلة.</string>
     <string name="onboarding_use_gps_button">تحديد الموقع التلقائي (GPS)</string>

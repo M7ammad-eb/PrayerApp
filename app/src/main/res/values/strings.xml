@@ -361,6 +361,10 @@
     <string name="onboarding_step_language_desc">You can switch between Arabic and English anytime in settings.</string>
     <string name="onboarding_step_location_title">Set Your Location</string>
     <string name="onboarding_step_location_desc">Required to calculate exact prayer times and Qibla direction for your location.</string>
+    <string name="onboarding_step_calc_method_title">Calculation Method</string>
+    <string name="onboarding_step_calc_method_desc">Different regions and Islamic authorities use slightly different angles to calculate Fajr and Isha times.</string>
+    <string name="onboarding_calc_method_suggested_banner">We\'ve pre-selected \"%1$s\" based on your location. Not sure which to pick? This is usually the right one - you can always change it later in Settings.</string>
+    <string name="onboarding_skip_btn">Skip</string>
     <string name="onboarding_privacy_notice_title">Your Privacy is 100% Protected</string>
     <string name="onboarding_privacy_notice_desc">Your location data is never collected, tracked, or uploaded to any server. All astronomical prayer and Qibla calculations run entirely offline on your device.</string>
     <string name="onboarding_use_gps_button">Detect Location (GPS)</string>

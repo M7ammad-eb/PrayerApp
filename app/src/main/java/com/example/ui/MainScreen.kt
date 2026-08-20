@@ -95,6 +95,9 @@ fun MainScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     var selectedTab by remember { mutableIntStateOf(AppNavTab.PRAYER_TIMES.ordinal) }
+    // Distinguishes "Re-run Setup Wizard" tapped from Settings (skippable, in case of a mis-tap)
+    // from true first-run onboarding (not skippable - initial setup should be completed).
+    var onboardingReopenedFromSettings by remember { mutableStateOf(false) }
     var showCityPickerFromHeader by remember { mutableStateOf(false) }
 
     val settings by viewModel.settings.collectAsState()
@@ -169,6 +172,7 @@ fun MainScreen(
                         }
                     }
                 },
+                onUpdateCalculationMethod = { viewModel.updateCalculationMethod(it) },
                 onUpdateNotificationConfig = { prayer, enabled, sound, reminder ->
                     viewModel.updatePrayerNotification(prayer, enabled, sound, reminder)
                 },
@@ -181,7 +185,15 @@ fun MainScreen(
                 onCompleteOnboarding = {
                     viewModel.completeOnboarding()
                     viewModel.rescheduleAllAlarms()
-                }
+                    onboardingReopenedFromSettings = false
+                },
+                onSkip = if (onboardingReopenedFromSettings) {
+                    {
+                        viewModel.completeOnboarding()
+                        viewModel.rescheduleAllAlarms()
+                        onboardingReopenedFromSettings = false
+                    }
+                } else null
             )
         } else {
             if (showCityPickerFromHeader) {
@@ -353,6 +365,7 @@ fun MainScreen(
                                     context.startActivity(intent)
                                 },
                                 onResetOnboarding = {
+                                    onboardingReopenedFromSettings = true
                                     viewModel.setOnboardingCompleted(false)
                                 }
                             )

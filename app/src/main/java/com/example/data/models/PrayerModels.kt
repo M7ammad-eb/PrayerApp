@@ -80,6 +80,30 @@ enum class CalculationMethod(
     RUSSIA(16.0, 15.0)
 }
 
+/**
+ * A reasonable starting-point calculation method for a location, based on its IANA timezone -
+ * available for every location source (GPS, manual entry, or a preset) without needing a country
+ * code. Only meant as an onboarding default; the user can always pick a different method.
+ */
+fun suggestCalculationMethod(timeZoneId: String): CalculationMethod = when {
+    timeZoneId == "Asia/Riyadh" -> CalculationMethod.UMM_AL_QURA
+    timeZoneId == "Asia/Qatar" -> CalculationMethod.QATAR
+    timeZoneId == "Asia/Kuwait" -> CalculationMethod.KUWAIT
+    timeZoneId in setOf("Asia/Dubai", "Asia/Bahrain", "Asia/Muscat") -> CalculationMethod.GULF
+    timeZoneId == "Africa/Cairo" -> CalculationMethod.EGYPTIAN
+    timeZoneId == "Asia/Karachi" -> CalculationMethod.KARACHI
+    timeZoneId == "Asia/Tehran" -> CalculationMethod.TEHRAN
+    timeZoneId == "Asia/Singapore" || timeZoneId == "Asia/Kuala_Lumpur" -> CalculationMethod.SINGAPORE
+    timeZoneId == "Europe/Istanbul" -> CalculationMethod.TURKEY
+    timeZoneId == "Europe/Paris" -> CalculationMethod.FRANCE_UOIF
+    timeZoneId.startsWith("Europe/Moscow") || timeZoneId.startsWith("Europe/Kaliningrad") ||
+        timeZoneId.startsWith("Asia/Yekaterinburg") || timeZoneId.startsWith("Asia/Novosibirsk") ||
+        timeZoneId.startsWith("Asia/Krasnoyarsk") || timeZoneId.startsWith("Asia/Irkutsk") ||
+        timeZoneId.startsWith("Asia/Vladivostok") -> CalculationMethod.RUSSIA
+    timeZoneId.startsWith("America/") -> CalculationMethod.ISNA
+    else -> CalculationMethod.MUSLIM_WORLD_LEAGUE
+}
+
 enum class JuristicMethod(val displayName: String, val shadowFactor: Double) {
     STANDARD("Standard (Shafi, Maliki, Hanbali)", 1.0),
     HANAFI("Hanafi", 2.0)

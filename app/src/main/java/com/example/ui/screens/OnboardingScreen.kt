@@ -3,6 +3,7 @@ package com.example.ui.screens
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -98,10 +99,12 @@ import com.example.audio.AthanAudioEngine
 import com.example.data.models.AppColorPreset
 import com.example.data.models.AppLanguage
 import com.example.data.models.AppThemeMode
+import com.example.data.models.CalculationMethod
 import com.example.data.models.NotificationPrayerConfig
 import com.example.data.models.NotificationSoundType
 import com.example.data.models.PrayerType
 import com.example.data.models.UserLocation
+import com.example.data.models.suggestCalculationMethod
 import com.example.data.places.PlaceEntity
 import com.example.data.places.PlaceRepository
 import com.example.data.preferences.AppPrayerSettings
@@ -113,9 +116,10 @@ import java.util.Locale
 enum class OnboardingStep(val stepNumber: Int) {
     LANGUAGE(1),
     LOCATION(2),
-    NOTIFICATIONS(3),
-    ATHAN_SOUNDS(4),
-    STYLE(5)
+    CALCULATION_METHOD(3),
+    NOTIFICATIONS(4),
+    ATHAN_SOUNDS(5),
+    STYLE(6)
 }
 
 @Composable
@@ -125,16 +129,33 @@ fun OnboardingScreen(
     onUpdateLanguage: (AppLanguage) -> Unit,
     onSelectCity: (UserLocation) -> Unit,
     onRequestGps: () -> Unit,
+    onUpdateCalculationMethod: (CalculationMethod) -> Unit,
     onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit,
     onPreviewSound: (NotificationSoundType, PrayerType) -> Unit,
     onUpdateThemeMode: (AppThemeMode) -> Unit,
     onUpdateColorPreset: (AppColorPreset) -> Unit,
     onUpdateFollowSystemColors: (Boolean) -> Unit,
-    onCompleteOnboarding: () -> Unit
+    onCompleteOnboarding: () -> Unit,
+    onSkip: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     var currentStep by remember { mutableStateOf(OnboardingStep.LANGUAGE) }
     val strings = LocalAppStrings.current
+
+    if (onSkip != null) {
+        BackHandler { onSkip() }
+    }
+
+    // Re-suggest a calculation method whenever the location actually changes during this
+    // onboarding session (GPS resolves asynchronously, so this can't just be a callback wrapped
+    // around onSelectCity) - but never on first composition, so re-running the wizard from
+    // Settings on an already-configured location doesn't silently override a deliberate choice.
+    val initialTimeZoneId = remember { settings.location.timeZoneId }
+    LaunchedEffect(settings.location.timeZoneId) {
+        if (settings.location.timeZoneId != initialTimeZoneId) {
+            onUpdateCalculationMethod(suggestCalculationMethod(settings.location.timeZoneId))
+        }
+    }
 
     // Check OS notification permission status
     var hasNotifPermission by remember {
@@ -200,7 +221,7 @@ fun OnboardingScreen(
                             modifier = Modifier.testTag("onboarding_prev_button")
                         ) {
                             Icon(
-                                imageVector = if (strings.isArabic) Icons.AutoMirrored.Filled.ArrowForward else Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -249,7 +270,7 @@ fun OnboardingScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Icon(
-                                imageVector = if (strings.isArabic) Icons.AutoMirrored.Filled.ArrowBack else Icons.AutoMirrored.Filled.ArrowForward,
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -267,28 +288,41 @@ fun OnboardingScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Step Progress Indicator
+            // Step Progress Indicator (+ an escape hatch when this wizard was reopened from
+            // Settings, in case "Re-run Setup Wizard" was tapped by mistake)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OnboardingStep.values().forEach { step ->
-                    val isPast = step.ordinal < currentStep.ordinal
-                    val isCurrent = step == currentStep
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(6.dp)
-                            .clip(CircleShape)
-                            .background(
-                                when {
-                                    isCurrent -> MaterialTheme.colorScheme.primary
-                                    isPast -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                                    else -> MaterialTheme.colorScheme.surfaceVariant
-                                }
-                            )
-                    )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OnboardingStep.values().forEach { step ->
+                        val isPast = step.ordinal < currentStep.ordinal
+                        val isCurrent = step == currentStep
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(6.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    when {
+                                        isCurrent -> MaterialTheme.colorScheme.primary
+                                        isPast -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                        else -> MaterialTheme.colorScheme.surfaceVariant
+                                    }
+                                )
+                        )
+                    }
+                }
+
+                if (onSkip != null) {
+                    TextButton(onClick = onSkip, modifier = Modifier.testTag("onboarding_skip_button")) {
+                        Text(text = strings.skipBtn, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
 
@@ -344,6 +378,13 @@ fun OnboardingScreen(
                                     )
                                 }
                             }
+                        )
+                    }
+                    OnboardingStep.CALCULATION_METHOD -> {
+                        OnboardingCalculationMethodStep(
+                            selectedMethod = settings.calculationMethod,
+                            suggestedMethod = suggestCalculationMethod(settings.location.timeZoneId),
+                            onSelectMethod = onUpdateCalculationMethod
                         )
                     }
                     OnboardingStep.NOTIFICATIONS -> {
@@ -750,6 +791,110 @@ private fun OnboardingLocationStep(
                                 )
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// STEP 2b: CALCULATION METHOD (pre-selected from the chosen location)
+// -------------------------------------------------------------
+@Composable
+private fun OnboardingCalculationMethodStep(
+    selectedMethod: CalculationMethod,
+    suggestedMethod: CalculationMethod,
+    onSelectMethod: (CalculationMethod) -> Unit
+) {
+    val strings = LocalAppStrings.current
+
+    Column(modifier = Modifier.fillMaxSize().testTag("onboarding_step_calc_method")) {
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = strings.stepCalcMethodTitle,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = strings.stepCalcMethodDesc,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Suggestion banner - not everyone knows which method applies to them, so this makes the
+        // pre-selected choice (already applied to selectedMethod) visible and explained.
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = strings.calcMethodSuggestedBanner(strings.calcMethodName(suggestedMethod)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(CalculationMethod.values()) { method ->
+                val isSelected = selectedMethod == method
+                Card(
+                    onClick = { onSelectMethod(method) },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                    ),
+                    border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = strings.calcMethodName(method),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            val ishaDesc = if ((method.ishaMinutesAfterMaghrib ?: 0) > 0) "${method.ishaMinutesAfterMaghrib}m" else "${method.ishaAngle}°"
+                            Text(
+                                text = "${strings.prayerName(PrayerType.FAJR)}: ${method.fajrAngle}° • ${strings.prayerName(PrayerType.ISHA)}: $ishaDesc",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        RadioButton(selected = isSelected, onClick = { onSelectMethod(method) })
                     }
                 }
             }
