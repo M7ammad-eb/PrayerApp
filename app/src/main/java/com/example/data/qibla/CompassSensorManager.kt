@@ -20,6 +20,10 @@ enum class CompassAccuracy {
 
 data class CompassState(
     val azimuth: Float = 0f, // Device azimuth from True North (0..360)
+    // Same value as azimuth (mod 360 == azimuth) but never wraps back to 0 - accumulates
+    // continuously as the device turns, so UI code animating dial rotation can use it directly
+    // without needing to reconstruct a shortest-path delta from an already-wrapped value.
+    val azimuthUnwrapped: Float = 0f,
     val qiblaBearing: Float = 0f, // Qibla bearing from True North (0..360)
     val relativeQiblaAngle: Float = 0f, // Angle to turn towards Kaaba (-180..180)
     val isAligned: Boolean = false, // Within ALIGNMENT_THRESHOLD_DEGREES of Qibla
@@ -59,6 +63,7 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
     private var hasGeomagnetic = false
 
     private var smoothedAzimuth = 0f
+    private var unwrappedAzimuth = 0f // Tracks smoothedAzimuth (mod 360) without ever wrapping
     private val alpha = 0.12f // Low pass filter factor - lower = smoother but slower to react
 
     // Whether orientation is being driven by the rotation vector sensor - if so, the raw
@@ -162,9 +167,14 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
         // Normalize rawAzimuth to 0..360
         rawAzimuth = (rawAzimuth + 360f) % 360f
 
-        // Smooth angle transition across 0/360 boundary
+        // Smooth angle transition across 0/360 boundary. Both operands here are always kept in
+        // 0..360, so this shortest-path delta is reliable - apply that same delta to the
+        // unwrapped accumulator so it stays continuous instead of re-deriving it later from
+        // values that have already wrapped (which is fragile once the accumulator itself is
+        // allowed to leave 0..360).
         val diff = (rawAzimuth - smoothedAzimuth + 540f) % 360f - 180f
         smoothedAzimuth = (smoothedAzimuth + alpha * diff + 360f) % 360f
+        unwrappedAzimuth += alpha * diff
 
         updateCalculatedState(smoothedAzimuth)
     }
@@ -194,6 +204,7 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
 
         _compassState.value = _compassState.value.copy(
             azimuth = azimuth,
+            azimuthUnwrapped = unwrappedAzimuth,
             qiblaBearing = qibla,
             relativeQiblaAngle = relAngle,
             isAligned = isAligned,

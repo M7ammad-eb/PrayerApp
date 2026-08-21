@@ -42,7 +42,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -116,22 +115,6 @@ fun QiblaScreen(
     val qiblaBearing = compassState.qiblaBearing
     val relAngle = ((qiblaBearing - effectiveAzimuth + 540f) % 360f) - 180f
     val isAligned = kotlin.math.abs(relAngle) <= 3.5f
-
-    // The dial's rotation animates from its previous target to its new one in a straight line,
-    // so animating raw 0..360 azimuth values directly makes the dial snap backward and spin the
-    // long way around every time the heading crosses the 0/360 boundary (e.g. 359 -> 1). Tracking
-    // an unwrapped angle that only ever moves by the shortest signed delta lets the dial keep
-    // spinning smoothly through north instead of jumping. Kotlin's `%` keeps the sign of its
-    // left operand, so once unwrappedAzimuth drifts outside 0..360 (which is the whole point -
-    // it accumulates past a full turn) a naive "(a - b + 540) % 360 - 180" silently breaks; the
-    // fix is to always re-wrap the accumulator into 0..360 before diffing against it.
-    var unwrappedAzimuth by remember { mutableFloatStateOf(effectiveAzimuth) }
-    val wrappedCurrent = ((unwrappedAzimuth % 360f) + 360f) % 360f
-    var azimuthDelta = effectiveAzimuth - wrappedCurrent
-    if (azimuthDelta > 180f) azimuthDelta -= 360f else if (azimuthDelta < -180f) azimuthDelta += 360f
-    if (azimuthDelta != 0f) {
-        unwrappedAzimuth += azimuthDelta
-    }
 
     if (showCalibDialog) {
         AlertDialog(
@@ -236,7 +219,7 @@ fun QiblaScreen(
             contentAlignment = Alignment.Center
         ) {
             val animatedDialRotation by animateFloatAsState(
-                targetValue = -unwrappedAzimuth,
+                targetValue = -compassState.azimuthUnwrapped,
                 animationSpec = tween(durationMillis = 250),
                 label = "dial_rotation"
             )
