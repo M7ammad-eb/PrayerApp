@@ -59,7 +59,7 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
     private var hasGeomagnetic = false
 
     private var smoothedAzimuth = 0f
-    private val alpha = 0.2f // Low pass filter factor
+    private val alpha = 0.12f // Low pass filter factor - lower = smoother but slower to react
 
     // Whether orientation is being driven by the rotation vector sensor - if so, the raw
     // accelerometer/magnetometer readings below are used only for their onAccuracyChanged
@@ -203,6 +203,11 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        // The rotation vector sensor also delivers this callback with its own (often looser)
+        // accuracy heuristic; reacting to both made the badge flap between the two sensors'
+        // disagreeing reports. The magnetometer's reading is the meaningful "needs calibration"
+        // signal, so it's the only one allowed to update the displayed accuracy.
+        if (sensor?.type != Sensor.TYPE_MAGNETIC_FIELD) return
         val accEnum = when (accuracy) {
             SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> CompassAccuracy.HIGH
             SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> CompassAccuracy.MEDIUM

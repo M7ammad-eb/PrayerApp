@@ -8,6 +8,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,7 +41,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -121,11 +121,16 @@ fun QiblaScreen(
     // so animating raw 0..360 azimuth values directly makes the dial snap backward and spin the
     // long way around every time the heading crosses the 0/360 boundary (e.g. 359 -> 1). Tracking
     // an unwrapped angle that only ever moves by the shortest signed delta lets the dial keep
-    // spinning smoothly through north instead of jumping.
+    // spinning smoothly through north instead of jumping. Kotlin's `%` keeps the sign of its
+    // left operand, so once unwrappedAzimuth drifts outside 0..360 (which is the whole point -
+    // it accumulates past a full turn) a naive "(a - b + 540) % 360 - 180" silently breaks; the
+    // fix is to always re-wrap the accumulator into 0..360 before diffing against it.
     var unwrappedAzimuth by remember { mutableFloatStateOf(effectiveAzimuth) }
-    LaunchedEffect(effectiveAzimuth) {
-        val delta = ((effectiveAzimuth - unwrappedAzimuth + 540f) % 360f) - 180f
-        unwrappedAzimuth += delta
+    val wrappedCurrent = ((unwrappedAzimuth % 360f) + 360f) % 360f
+    var azimuthDelta = effectiveAzimuth - wrappedCurrent
+    if (azimuthDelta > 180f) azimuthDelta -= 360f else if (azimuthDelta < -180f) azimuthDelta += 360f
+    if (azimuthDelta != 0f) {
+        unwrappedAzimuth += azimuthDelta
     }
 
     if (showCalibDialog) {
@@ -151,10 +156,10 @@ fun QiblaScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(20.dp)
             .testTag("qibla_screen"),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         // Location & Qibla Header Banner
         Card(
@@ -166,7 +171,7 @@ fun QiblaScreen(
         ) {
             Row(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(20.dp)
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -221,10 +226,12 @@ fun QiblaScreen(
         // Qibla Alignment Status Badge
         AlignmentStatusBadge(isAligned = isAligned, relAngle = relAngle)
 
-        // Main Animated Compass Canvas
+        // Main Animated Compass Canvas - the primary focus of this screen, so it scales with
+        // screen width rather than a small fixed size that leaves the rest of the page empty.
         Box(
             modifier = Modifier
-                .size(280.dp)
+                .fillMaxWidth(0.88f)
+                .aspectRatio(1f)
                 .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -249,11 +256,11 @@ fun QiblaScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
         ) {
             Row(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(horizontal = 20.dp, vertical = 18.dp)
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
