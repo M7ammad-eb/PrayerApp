@@ -71,6 +71,8 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
     // callback (compass calibration status), not fused into the orientation calculation.
     private var usingRotationVector = false
 
+    private var isRunning = false
+
     fun setLocation(latitude: Double, longitude: Double) {
         userLat = latitude
         userLon = longitude
@@ -93,6 +95,9 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
     }
 
     fun start() {
+        if (isRunning) return
+        isRunning = true
+
         val hasRotation = rotationSensor != null && sensorManager.registerListener(
             this,
             rotationSensor,
@@ -127,6 +132,8 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
     }
 
     fun stop() {
+        if (!isRunning) return
+        isRunning = false
         sensorManager.unregisterListener(this)
     }
 
@@ -134,12 +141,20 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
         if (event == null) return
 
         var rawAzimuth = 0f
+        // Only TYPE_ROTATION_VECTOR events (or a freshly-completed accel+mag pair in the
+        // fallback path) actually produce a new heading. Magnetometer events registered purely
+        // for their accuracy callback - and lone accelerometer/magnetometer events before their
+        // pair completes - must NOT fall through to the smoothing below: doing so previously
+        // smoothed the heading toward rawAzimuth's 0f default (i.e. dragged it toward north) on
+        // every such event.
+        var azimuthProduced = false
 
         if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
             remapForDisplayRotation(rotationMatrix, remappedRotationMatrix)
             SensorManager.getOrientation(remappedRotationMatrix, orientationAngles)
             rawAzimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat() + declination
+            azimuthProduced = true
         } else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER && !usingRotationVector) {
             System.arraycopy(event.values, 0, gravityValues, 0, 3)
             hasGravity = true
@@ -148,7 +163,7 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
             hasGeomagnetic = true
         }
 
-        if (hasGravity && hasGeomagnetic) {
+        if (!usingRotationVector && hasGravity && hasGeomagnetic) {
             val success = SensorManager.getRotationMatrix(
                 rotationMatrix,
                 null,
@@ -161,8 +176,11 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
                 rawAzimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat() + declination
                 hasGravity = false
                 hasGeomagnetic = false
+                azimuthProduced = true
             }
         }
+
+        if (!azimuthProduced) return
 
         // Normalize rawAzimuth to 0..360
         rawAzimuth = (rawAzimuth + 360f) % 360f

@@ -95,6 +95,13 @@ fun QiblaScreen(
     // the compass sensors running and draining battery the entire time the app was invisible.
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(compassSensorManager, lifecycleOwner) {
+        // Switching to this tab (rather than resuming the whole app) enters composition while
+        // the Activity is already RESUMED, so waiting for an ON_RESUME event here would leave
+        // the compass never starting until the app is backgrounded and reopened. start() is
+        // idempotent, so it's safe to also call it eagerly for that case.
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            compassSensorManager.start()
+        }
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_RESUME -> compassSensorManager.start()
