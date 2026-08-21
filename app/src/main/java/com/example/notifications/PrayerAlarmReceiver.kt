@@ -31,7 +31,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         // Self-scheduled, explicit-component daily trigger that replenishes the rolling 7-day
         // alarm window - see PrayerNotificationScheduler.scheduleMaintenanceAlarm() for why this
         // exists instead of relying solely on ACTION_DATE_CHANGED.
-        const val ACTION_SCHEDULE_MAINTENANCE = "com.aistudio.prayertimes.mzkqwe.ACTION_SCHEDULE_MAINTENANCE"
+        const val ACTION_SCHEDULE_MAINTENANCE = "com.salati.prayertimes.ACTION_SCHEDULE_MAINTENANCE"
 
         const val EXTRA_PRAYER_NAME = "extra_prayer_name"
         const val EXTRA_PRAYER_TIME = "extra_prayer_time"

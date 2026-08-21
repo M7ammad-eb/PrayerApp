@@ -67,7 +67,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         // this project started from - a widely-reused placeholder namespace risks colliding with
         // another app built from the same template that also broadcasts/listens on it, since this
         // receiver is necessarily exported (required for the OS to deliver widget updates).
-        const val ACTION_REFRESH_WIDGET = "com.aistudio.prayertimes.mzkqwe.widget.ACTION_REFRESH_WIDGET"
+        const val ACTION_REFRESH_WIDGET = "com.salati.prayertimes.widget.ACTION_REFRESH_WIDGET"
         private const val REQUEST_CODE_REFRESH = 4001
         private const val REQUEST_CODE_ALARM_UPDATE = 4002
 
