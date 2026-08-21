@@ -180,6 +180,7 @@ class AppStrings(
     val qiblaAccuracyLow: String = s(R.string.qibla_accuracy_low)
     val qiblaAccuracyUnreliable: String = s(R.string.qibla_accuracy_unreliable)
     val qiblaCalibrateButton: String = s(R.string.qibla_calibrate_button)
+    val qiblaSensorUnavailable: String = s(R.string.qibla_sensor_unavailable)
     fun qiblaTurnRight(degrees: Int): String = res.getString(R.string.qibla_turn_right, degrees)
     fun qiblaTurnLeft(degrees: Int): String = res.getString(R.string.qibla_turn_left, degrees)
 

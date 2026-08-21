@@ -150,7 +150,7 @@
     <string name="sound_subtitle_silent">Visual notification only</string>
 
     <!-- ===== Qibla Screen ===== -->
-    <string name="qibla_title">Qibla Direction Compass</string>
+    <string name="qibla_title">Qibla</string>
     <string name="qibla_aligned_message">You are facing the Kaaba precisely!</string>
     <string name="qibla_rotate_prompt">Rotate your device to align with the Golden Kaaba marker</string>
     <string name="qibla_bearing_label">Qibla Bearing:</string>
@@ -166,6 +166,7 @@
     <string name="qibla_accuracy_low">Low</string>
     <string name="qibla_accuracy_unreliable">Unreliable</string>
     <string name="qibla_calibrate_button">Calibrate</string>
+    <string name="qibla_sensor_unavailable">This device does not have the sensors required to show a live compass.</string>
     <string name="qibla_turn_right">Turn right %1$d°</string>
     <string name="qibla_turn_left">Turn left %1$d°</string>
 

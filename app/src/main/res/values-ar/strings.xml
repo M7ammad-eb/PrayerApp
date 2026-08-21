@@ -150,7 +150,7 @@
     <string name="sound_subtitle_silent">إشعار بصري فقط</string>
 
     <!-- ===== Qibla Screen ===== -->
-    <string name="qibla_title">بوصلة القبلة الدقيقة</string>
+    <string name="qibla_title">القبلة</string>
     <string name="qibla_aligned_message">أنت الآن باتجاه الكعبة المشرفة بدقة!</string>
     <string name="qibla_rotate_prompt">قم بتدوير الهاتف حتى يتطابق المؤشر الذهبي مع الأعلى</string>
     <string name="qibla_bearing_label">زاوية القبلة:</string>
@@ -166,6 +166,7 @@
     <string name="qibla_accuracy_low">منخفضة</string>
     <string name="qibla_accuracy_unreliable">غير موثوق</string>
     <string name="qibla_calibrate_button">معايرة</string>
+    <string name="qibla_sensor_unavailable">لا يحتوي هذا الجهاز على الحساسات المطلوبة لعرض البوصلة المباشرة.</string>
     <string name="qibla_turn_right">اتجه يميناً %1$d°</string>
     <string name="qibla_turn_left">اتجه يساراً %1$d°</string>
 
