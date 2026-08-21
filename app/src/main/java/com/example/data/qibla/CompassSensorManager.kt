@@ -61,6 +61,11 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
     private var smoothedAzimuth = 0f
     private val alpha = 0.2f // Low pass filter factor
 
+    // Whether orientation is being driven by the rotation vector sensor - if so, the raw
+    // accelerometer/magnetometer readings below are used only for their onAccuracyChanged
+    // callback (compass calibration status), not fused into the orientation calculation.
+    private var usingRotationVector = false
+
     fun setLocation(latitude: Double, longitude: Double) {
         userLat = latitude
         userLon = longitude
@@ -88,16 +93,21 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
             rotationSensor,
             SensorManager.SENSOR_DELAY_UI
         )
+        usingRotationVector = hasRotation
+
+        // The rotation vector sensor rarely fires onAccuracyChanged on its own, which left the
+        // accuracy badge stuck at its HIGH default forever. Registering the magnetometer here
+        // (even when it isn't used for orientation) gives a real, live calibration signal.
+        val hasMag = magnetSensor != null && sensorManager.registerListener(
+            this,
+            magnetSensor,
+            SensorManager.SENSOR_DELAY_UI
+        )
 
         if (!hasRotation) {
             val hasAccel = accelSensor != null && sensorManager.registerListener(
                 this,
                 accelSensor,
-                SensorManager.SENSOR_DELAY_UI
-            )
-            val hasMag = magnetSensor != null && sensorManager.registerListener(
-                this,
-                magnetSensor,
                 SensorManager.SENSOR_DELAY_UI
             )
 
@@ -125,10 +135,10 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
             remapForDisplayRotation(rotationMatrix, remappedRotationMatrix)
             SensorManager.getOrientation(remappedRotationMatrix, orientationAngles)
             rawAzimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat() + declination
-        } else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+        } else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER && !usingRotationVector) {
             System.arraycopy(event.values, 0, gravityValues, 0, 3)
             hasGravity = true
-        } else if (event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
+        } else if (event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD && !usingRotationVector) {
             System.arraycopy(event.values, 0, geomagneticValues, 0, 3)
             hasGeomagnetic = true
         }

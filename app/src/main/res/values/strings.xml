@@ -62,7 +62,6 @@
     <string name="location_current_label">Current Location</string>
     <string name="location_source_gps">Detected via GPS</string>
     <string name="location_source_manual">Selected from list</string>
-    <string name="qibla_toggle_manual_desc">Toggle Manual</string>
     <string name="widget_settings_appearance_section_title">Appearance</string>
     <string name="widget_settings_appearance_section_subtitle">Theme, background, and text</string>
     <string name="widget_settings_behavior_section_title">Behavior</string>
@@ -161,9 +160,6 @@
     <string name="qibla_deg_unit">°</string>
     <string name="qibla_compass_calib_title">Compass Calibration</string>
     <string name="qibla_compass_calib_text">To calibrate your device\'s magnetic compass, move your phone smoothly in a figure-8 motion several times away from metal objects.</string>
-    <string name="qibla_manual_compass_mode">Manual Compass Test Slider</string>
-    <string name="qibla_turn_needed_label">Turn Needed</string>
-    <string name="qibla_aligned_value">Aligned!</string>
     <string name="qibla_sensor_label">Sensor:</string>
     <string name="qibla_accuracy_high">High</string>
     <string name="qibla_accuracy_medium">Medium</string>

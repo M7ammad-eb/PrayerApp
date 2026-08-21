@@ -174,9 +174,6 @@ class AppStrings(
     val degUnit: String = s(R.string.qibla_deg_unit)
     val compassCalibTitle: String = s(R.string.qibla_compass_calib_title)
     val compassCalibText: String = s(R.string.qibla_compass_calib_text)
-    val manualCompassMode: String = s(R.string.qibla_manual_compass_mode)
-    val qiblaTurnNeededLabel: String = s(R.string.qibla_turn_needed_label)
-    val qiblaAlignedValue: String = s(R.string.qibla_aligned_value)
     val qiblaSensorLabel: String = s(R.string.qibla_sensor_label)
     val qiblaAccuracyHigh: String = s(R.string.qibla_accuracy_high)
     val qiblaAccuracyMedium: String = s(R.string.qibla_accuracy_medium)
@@ -185,7 +182,6 @@ class AppStrings(
     val qiblaCalibrateButton: String = s(R.string.qibla_calibrate_button)
     fun qiblaTurnRight(degrees: Int): String = res.getString(R.string.qibla_turn_right, degrees)
     fun qiblaTurnLeft(degrees: Int): String = res.getString(R.string.qibla_turn_left, degrees)
-    val qiblaToggleManualDesc: String = s(R.string.qibla_toggle_manual_desc)
 
     // Cardinal directions
     private val cardinalDirections: List<String> = res.getStringArray(R.array.cardinal_directions).toList()

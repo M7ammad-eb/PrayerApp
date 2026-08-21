@@ -29,22 +29,18 @@ import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Navigation
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -115,13 +111,22 @@ fun QiblaScreen(
     }
 
     var showCalibDialog by remember { mutableStateOf(false) }
-    var manualHeading by remember { mutableFloatStateOf(0f) }
-    var isManualMode by remember { mutableStateOf(false) }
 
-    val effectiveAzimuth = if (isManualMode || !compassState.isSensorAvailable) manualHeading else compassState.azimuth
+    val effectiveAzimuth = compassState.azimuth
     val qiblaBearing = compassState.qiblaBearing
     val relAngle = ((qiblaBearing - effectiveAzimuth + 540f) % 360f) - 180f
     val isAligned = kotlin.math.abs(relAngle) <= 3.5f
+
+    // The dial's rotation animates from its previous target to its new one in a straight line,
+    // so animating raw 0..360 azimuth values directly makes the dial snap backward and spin the
+    // long way around every time the heading crosses the 0/360 boundary (e.g. 359 -> 1). Tracking
+    // an unwrapped angle that only ever moves by the shortest signed delta lets the dial keep
+    // spinning smoothly through north instead of jumping.
+    var unwrappedAzimuth by remember { mutableFloatStateOf(effectiveAzimuth) }
+    LaunchedEffect(effectiveAzimuth) {
+        val delta = ((effectiveAzimuth - unwrappedAzimuth + 540f) % 360f) - 180f
+        unwrappedAzimuth += delta
+    }
 
     if (showCalibDialog) {
         AlertDialog(
@@ -166,7 +171,7 @@ fun QiblaScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.LocationOn,
@@ -176,7 +181,12 @@ fun QiblaScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = com.example.data.cities.CityDatabase.localizedName(LocalContext.current.resources, location),
+                            text = run {
+                                val res = LocalContext.current.resources
+                                val name = com.example.data.cities.CityDatabase.localizedName(res, location)
+                                val country = com.example.data.cities.CityDatabase.localizedCountry(res, location)
+                                if (country.isNotEmpty() && !country.contains("°")) "$name, $country" else name
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -190,17 +200,19 @@ fun QiblaScreen(
                     )
                 }
 
+                Spacer(modifier = Modifier.width(12.dp))
+
                 Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = strings.distanceToKaabaLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Text(
                         text = "${strings.formatNumber(compassState.distanceKm.roundToInt())} ${strings.kmUnit}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = strings.distanceToKaabaLabel,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -217,7 +229,7 @@ fun QiblaScreen(
             contentAlignment = Alignment.Center
         ) {
             val animatedDialRotation by animateFloatAsState(
-                targetValue = -effectiveAzimuth,
+                targetValue = -unwrappedAzimuth,
                 animationSpec = tween(durationMillis = 250),
                 label = "dial_rotation"
             )
@@ -233,7 +245,7 @@ fun QiblaScreen(
             KaabaCenterIndicator(isAligned = isAligned)
         }
 
-        // Telemetry Details Card
+        // Current Heading + Sensor Accuracy/Calibration Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -243,95 +255,46 @@ fun QiblaScreen(
                 modifier = Modifier
                     .padding(16.dp)
                     .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 TelemetryItem(label = strings.currentHeadingLabel, value = "${effectiveAzimuth.roundToInt()}°")
-                TelemetryItem(label = strings.qiblaBearingLabel, value = "${qiblaBearing.roundToInt()}°")
-                TelemetryItem(
-                    label = strings.qiblaTurnNeededLabel,
-                    value = if (isAligned) strings.qiblaAlignedValue else "${relAngle.roundToInt()}°"
-                )
-            }
-        }
 
-        // Accuracy & Sensor Calibration Bar
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val accColor = when (compassState.accuracy) {
-                    CompassAccuracy.HIGH -> MaterialTheme.colorScheme.primary
-                    CompassAccuracy.MEDIUM -> GoldAccent
-                    else -> MaterialTheme.colorScheme.error
-                }
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .background(accColor, CircleShape)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "${strings.qiblaSensorLabel} ${when (compassState.accuracy) {
-                        CompassAccuracy.HIGH -> strings.qiblaAccuracyHigh
-                        CompassAccuracy.MEDIUM -> strings.qiblaAccuracyMedium
-                        CompassAccuracy.LOW -> strings.qiblaAccuracyLow
-                        CompassAccuracy.UNRELIABLE -> strings.qiblaAccuracyUnreliable
-                    }}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            TextButton(onClick = { showCalibDialog = true }) {
-                Icon(imageVector = Icons.Default.CompassCalibration, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(strings.qiblaCalibrateButton, style = MaterialTheme.typography.bodySmall)
-            }
-        }
-
-        // Manual orientation test slider (for devices/testing without physical compass)
-        OutlinedCard(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(modifier = Modifier.padding(14.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = strings.manualCompassMode,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    IconButton(
-                        onClick = { isManualMode = !isManualMode },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = strings.qiblaToggleManualDesc,
-                            tint = if (isManualMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                Column(horizontalAlignment = Alignment.End) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val accColor = when (compassState.accuracy) {
+                            CompassAccuracy.HIGH -> MaterialTheme.colorScheme.primary
+                            CompassAccuracy.MEDIUM -> GoldAccent
+                            else -> MaterialTheme.colorScheme.error
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .background(accColor, CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "${strings.qiblaSensorLabel} ${when (compassState.accuracy) {
+                                CompassAccuracy.HIGH -> strings.qiblaAccuracyHigh
+                                CompassAccuracy.MEDIUM -> strings.qiblaAccuracyMedium
+                                CompassAccuracy.LOW -> strings.qiblaAccuracyLow
+                                CompassAccuracy.UNRELIABLE -> strings.qiblaAccuracyUnreliable
+                            }}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
 
-                Slider(
-                    value = manualHeading,
-                    onValueChange = {
-                        manualHeading = it
-                        isManualMode = true
-                    },
-                    valueRange = 0f..360f,
-                    modifier = Modifier.testTag("compass_manual_slider")
-                )
+                    TextButton(onClick = { showCalibDialog = true }, modifier = Modifier.height(32.dp)) {
+                        Icon(imageVector = Icons.Default.CompassCalibration, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(strings.qiblaCalibrateButton, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
