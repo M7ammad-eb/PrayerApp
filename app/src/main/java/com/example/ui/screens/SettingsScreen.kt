@@ -133,6 +133,7 @@ enum class SettingsSubScreen {
 
 @Composable
 fun SettingsScreen(
+    resetKey: Any = Unit,
     settings: AppPrayerSettings,
     isGpsLoading: Boolean,
     onSelectCity: (UserLocation) -> Unit,
@@ -163,7 +164,7 @@ fun SettingsScreen(
     onResetOnboarding: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
-    var currentSubScreen by remember { mutableStateOf(SettingsSubScreen.MAIN) }
+    var currentSubScreen by remember(resetKey) { mutableStateOf(SettingsSubScreen.MAIN) }
 
     // Hardware back button support
     BackHandler(enabled = currentSubScreen != SettingsSubScreen.MAIN) {
@@ -1615,50 +1616,6 @@ private fun SettingsNotificationsSubScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.live_countdown_test_btn), fontWeight = FontWeight.Bold)
                         }
-                    }
-                }
-            }
-
-            // Pre-Prayer Reminder - a single blanket toggle across all real prayers (Sunrise
-            // excluded, same as its other prayer-only defaults) rather than a per-prayer setting,
-            // since preReminderMinutes>0 is itself what gates whether the reminder fires.
-            item {
-                val reminderPrayers = remember { PrayerType.values().filter { it != PrayerType.SUNRISE } }
-                val reminderEnabled = reminderPrayers.all { (settings.prayerConfigs[it]?.preReminderMinutes ?: 0) > 0 }
-                Card(
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = strings.preReminder,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "15 ${strings.minutesBefore}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = reminderEnabled,
-                            onCheckedChange = { isChecked ->
-                                val minutes = if (isChecked) 15 else 0
-                                reminderPrayers.forEach { prayer ->
-                                    val cfg = settings.prayerConfigs[prayer] ?: NotificationPrayerConfig()
-                                    onUpdateNotificationConfig(prayer, cfg.enabled, cfg.soundType, minutes)
-                                }
-                            }
-                        )
                     }
                 }
             }

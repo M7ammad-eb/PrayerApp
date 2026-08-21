@@ -55,7 +55,7 @@ data class AppPrayerSettings(
     val widgetSettings: WidgetCustomizationSettings = WidgetCustomizationSettings(),
     val audioStream: AthanAudioStream = AthanAudioStream.ALARM,
     val wakeScreenOnAlarm: Boolean = true,
-    val liveCountdownEnabled: Boolean = false,
+    val liveCountdownEnabled: Boolean = true,
     val liveCountdownMinutesBefore: Int = 15,
     val onboardingCompleted: Boolean = false,
     val prayerConfigs: Map<PrayerType, NotificationPrayerConfig> = PrayerType.values().associateWith {
@@ -66,7 +66,7 @@ data class AppPrayerSettings(
                 PrayerType.SUNRISE -> NotificationSoundType.MELODIC_TONE
                 else -> NotificationSoundType.FULL_ATHAN
             },
-            preReminderMinutes = if (it != PrayerType.SUNRISE) 15 else 0
+            preReminderMinutes = 0
         )
     },
     val adjustments: PrayerTimeAdjustments = PrayerTimeAdjustments()
@@ -181,7 +181,7 @@ class PrayerPreferences(private val context: Context) {
 
             val wakeScreen = fastPrefs.getBoolean(KEY_WAKE_SCREEN, true)
             val onboardingCompleted = fastPrefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
-            val liveCountdownEnabled = fastPrefs.getBoolean(KEY_LIVE_COUNTDOWN_ENABLED, false)
+            val liveCountdownEnabled = fastPrefs.getBoolean(KEY_LIVE_COUNTDOWN_ENABLED, true)
             val liveCountdownMinutes = fastPrefs.getInt(KEY_LIVE_COUNTDOWN_MINUTES, 15)
 
             // Widget Customization
@@ -351,7 +351,7 @@ class PrayerPreferences(private val context: Context) {
 
         val wakeScreenOnAlarm = prefs[Keys.WAKE_SCREEN_ON_ALARM] ?: true
         val onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: false
-        val liveCountdownEnabled = prefs[Keys.LIVE_COUNTDOWN_ENABLED] ?: false
+        val liveCountdownEnabled = prefs[Keys.LIVE_COUNTDOWN_ENABLED] ?: true
         val liveCountdownMinutes = prefs[Keys.LIVE_COUNTDOWN_MINUTES] ?: 15
 
         val adjustments = PrayerTimeAdjustments(
@@ -371,11 +371,9 @@ class PrayerPreferences(private val context: Context) {
                 else -> NotificationSoundType.FULL_ATHAN
             }
 
-            val defaultPreReminder = if (prayer != PrayerType.SUNRISE) 15 else 0
-
             val enabled = prefs[Keys.notifEnabled(prayer)] ?: defaultEnabled
             val soundType = parseEnumOrDefault(prefs[Keys.notifSound(prayer)], defaultSound)
-            val preMinutes = prefs[Keys.notifPreReminder(prayer)] ?: defaultPreReminder
+            val preMinutes = prefs[Keys.notifPreReminder(prayer)] ?: 0
 
             NotificationPrayerConfig(enabled, soundType, preMinutes)
         }

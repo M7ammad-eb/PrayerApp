@@ -95,6 +95,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
+import com.example.R
 import com.example.audio.AthanAudioEngine
 import com.example.data.models.AppColorPreset
 import com.example.data.models.AppLanguage
@@ -132,6 +133,7 @@ fun OnboardingScreen(
     onUpdateCalculationMethod: (CalculationMethod) -> Unit,
     onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit,
     onPreviewSound: (NotificationSoundType, PrayerType) -> Unit,
+    onUpdateLiveCountdownSettings: (Boolean, Int) -> Unit,
     onUpdateThemeMode: (AppThemeMode) -> Unit,
     onUpdateColorPreset: (AppColorPreset) -> Unit,
     onUpdateFollowSystemColors: (Boolean) -> Unit,
@@ -409,7 +411,8 @@ fun OnboardingScreen(
                         OnboardingAthanStep(
                             settings = settings,
                             onUpdateNotificationConfig = onUpdateNotificationConfig,
-                            onPreviewSound = onPreviewSound
+                            onPreviewSound = onPreviewSound,
+                            onUpdateLiveCountdownSettings = onUpdateLiveCountdownSettings
                         )
                     }
                     OnboardingStep.STYLE -> {
@@ -1032,7 +1035,8 @@ private fun OnboardingNotificationStep(
 private fun OnboardingAthanStep(
     settings: AppPrayerSettings,
     onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit,
-    onPreviewSound: (NotificationSoundType, PrayerType) -> Unit
+    onPreviewSound: (NotificationSoundType, PrayerType) -> Unit,
+    onUpdateLiveCountdownSettings: (Boolean, Int) -> Unit
 ) {
     val strings = LocalAppStrings.current
     var selectedPrayerForDialog by remember { mutableStateOf<PrayerType?>(null) }
@@ -1077,7 +1081,46 @@ private fun OnboardingAthanStep(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Live Prayer Countdown - the same feature as Settings > Notifications' "Live Athan
+        // Countdown" card, surfaced here too since most people don't know it exists until they
+        // stumble into Settings; fixed at 15 minutes here, adjustable later in Settings.
+        Card(
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = CardDefaults.outlinedCardBorder(),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.live_countdown_section_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(R.string.live_countdown_section_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = settings.liveCountdownEnabled,
+                    onCheckedChange = { isChecked ->
+                        onUpdateLiveCountdownSettings(isChecked, settings.liveCountdownMinutesBefore)
+                    }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

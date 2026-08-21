@@ -95,6 +95,10 @@ fun MainScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     var selectedTab by remember { mutableIntStateOf(AppNavTab.PRAYER_TIMES.ordinal) }
+    // SettingsScreen keeps its own sub-screen navigation state internally, so simply re-selecting
+    // an already-active Settings tab doesn't recompose it back to the main hub on its own -
+    // bumping this on every tap of the Settings tab forces that reset.
+    var settingsResetKey by remember { mutableIntStateOf(0) }
     // Distinguishes "Re-run Setup Wizard" tapped from Settings (skippable, in case of a mis-tap)
     // from true first-run onboarding (not skippable - initial setup should be completed).
     var onboardingReopenedFromSettings by remember { mutableStateOf(false) }
@@ -179,6 +183,9 @@ fun MainScreen(
                 onPreviewSound = { sound, prayer ->
                     viewModel.previewNotificationSound(sound, prayer)
                 },
+                onUpdateLiveCountdownSettings = { enabled, minutes ->
+                    viewModel.updateLiveCountdownSettings(enabled, minutes)
+                },
                 onUpdateThemeMode = { viewModel.updateThemeMode(it) },
                 onUpdateColorPreset = { viewModel.updateColorPreset(it) },
                 onUpdateFollowSystemColors = { viewModel.updateFollowSystemColors(it) },
@@ -232,7 +239,10 @@ fun MainScreen(
                     // Expressive Floating Bottom Navigation Bar
                     ExpressiveFloatingBottomBar(
                         selectedTab = selectedTab,
-                        onSelectTab = { selectedTab = it },
+                        onSelectTab = { tab ->
+                            if (tab == AppNavTab.SETTINGS.ordinal) settingsResetKey++
+                            selectedTab = tab
+                        },
                         tabTitle = { tabTitle(it) }
                     )
                 }
@@ -285,6 +295,7 @@ fun MainScreen(
                         }
                         AppNavTab.SETTINGS -> {
                             SettingsScreen(
+                                resetKey = settingsResetKey,
                                 settings = settings,
                                 isGpsLoading = isGpsLoading,
                                 onSelectCity = { viewModel.selectCity(it) },
