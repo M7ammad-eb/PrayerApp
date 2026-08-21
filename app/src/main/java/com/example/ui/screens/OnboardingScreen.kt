@@ -1,8 +1,12 @@
 package com.example.ui.screens
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -94,6 +98,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.R
 import com.example.audio.AthanAudioEngine
@@ -150,16 +155,22 @@ fun OnboardingScreen(
 
     // Re-suggest a calculation method whenever the location actually changes during this
     // onboarding session (GPS resolves asynchronously, so this can't just be a callback wrapped
-    // around onSelectCity) - but never on the very first composition, so re-running the wizard
-    // from Settings on an already-configured location doesn't silently override a deliberate
-    // choice. Comparing against a single frozen "initial" zone id (rather than tracking whether
-    // this is the first firing) would wrongly skip a later selection that happens to share a
-    // timezone with that initial snapshot - e.g. Makkah's default zone matching a subsequently
-    // picked Madinah.
+    // around onSelectCity). Keyed on the actual coordinates rather than timeZoneId: many distinct
+    // locations share a timezone (e.g. Makkah and Madinah are both Asia/Riyadh), so keying on the
+    // zone id alone would silently miss a real location change and leave a stale suggestion
+    // selected on the Calculation Method step. On a true first-run (onSkip == null - see MainScreen,
+    // which only supplies onSkip when the wizard was reopened from Settings) the suggestion is also
+    // applied for the initial default location, so the very first location shown and the
+    // Calculation Method step's pre-selected radio agree. When the wizard was reopened from an
+    // already-configured location instead, the first firing is skipped so a deliberate prior choice
+    // isn't silently overridden.
     var isFirstLocationComposition by remember { mutableStateOf(true) }
-    LaunchedEffect(settings.location.timeZoneId) {
+    LaunchedEffect(settings.location.latitude, settings.location.longitude) {
         if (isFirstLocationComposition) {
             isFirstLocationComposition = false
+            if (onSkip == null) {
+                onUpdateCalculationMethod(suggestCalculationMethod(settings.location.timeZoneId))
+            }
         } else {
             onUpdateCalculationMethod(suggestCalculationMethod(settings.location.timeZoneId))
         }
@@ -179,11 +190,24 @@ fun OnboardingScreen(
         )
     }
 
+    // Once the OS has permanently suppressed the permission dialog (after a prior denial outside
+    // this screen, or a second denial within it), calling launch() again silently no-ops - no
+    // dialog, no callback the user can see. shouldShowRequestPermissionRationale() reliably tells
+    // us this only once we've already asked at least once, which is exactly the case right after
+    // our own callback reports a denial, so the "Grant Permission" button can then switch to
+    // opening the app's system settings page instead of retrying a request that will never show.
+    var canRequestNotifDirectly by remember { mutableStateOf(true) }
+
     // Permission launcher for notifications
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasNotifPermission = isGranted
+        if (!isGranted) {
+            val activity = context as? Activity
+            canRequestNotifDirectly = activity == null ||
+                ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     // Permission launcher for location
@@ -398,12 +422,19 @@ fun OnboardingScreen(
                     OnboardingStep.NOTIFICATIONS -> {
                         OnboardingNotificationStep(
                             hasPermission = hasNotifPermission,
+                            canRequestDirectly = canRequestNotifDirectly,
                             onRequestPermission = {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                 } else {
                                     hasNotifPermission = true
                                 }
+                            },
+                            onOpenAppSettings = {
+                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                }
+                                context.startActivity(intent)
                             }
                         )
                     }
@@ -924,7 +955,9 @@ private fun OnboardingCalculationMethodStep(
 @Composable
 private fun OnboardingNotificationStep(
     hasPermission: Boolean,
-    onRequestPermission: () -> Unit
+    canRequestDirectly: Boolean,
+    onRequestPermission: () -> Unit,
+    onOpenAppSettings: () -> Unit
 ) {
     val strings = LocalAppStrings.current
 
@@ -994,14 +1027,34 @@ private fun OnboardingNotificationStep(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 if (!hasPermission) {
-                    Button(
-                        onClick = onRequestPermission,
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = strings.grantNotificationPermissionBtn, fontWeight = FontWeight.Bold)
+                    if (canRequestDirectly) {
+                        Button(
+                            onClick = onRequestPermission,
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = strings.grantNotificationPermissionBtn, fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        // The OS will no longer show the permission dialog for this app (denied
+                        // once already) - the only way forward is the system settings page.
+                        Text(
+                            text = strings.permissionDeniedOpenSettingsDesc,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 10.dp)
+                        )
+                        OutlinedButton(
+                            onClick = onOpenAppSettings,
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = strings.openAppSettingsBtn, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }

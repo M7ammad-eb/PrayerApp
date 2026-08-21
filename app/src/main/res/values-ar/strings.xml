@@ -370,6 +370,8 @@
     <string name="onboarding_step_notifications_desc">تفعيل إذن الإشعارات والمنبه الدقيق لضمان انطلاق صوت الأذان والتنبيهات في وقت الصلاة تماماً حتى عند قفل الهاتف.</string>
     <string name="onboarding_step_notifications_explanation">لماذا نحتاج هذا الإذن؟\n• إطلاق صوت الأذان الشريف مع دخول وقت الصلاة.\n• عرض كبسولة العد التنازلي التفاعلية (Dynamic Island).\n• تذكيرك بالسنن والأيام البيض.</string>
     <string name="onboarding_grant_notification_permission_btn">منح إذن الإشعارات</string>
+    <string name="onboarding_open_app_settings_btn">فتح إعدادات التطبيق</string>
+    <string name="onboarding_permission_denied_open_settings_desc">تم رفض إذن الإشعارات. يمكنك تفعيله من إعدادات التطبيق في النظام.</string>
     <string name="onboarding_permission_granted_status">تم تفعيل الإشعارات بنجاح ✓</string>
     <string name="onboarding_step_athan_sounds_title">أصوات الأذان والتنبيهات</string>
     <string name="onboarding_step_athan_sounds_desc">اختر صوت الأذان المفضل لكل صلاة. يمكنك تغييرها وتخصيصها لاحقاً.</string>

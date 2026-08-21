@@ -397,6 +397,8 @@ class AppStrings(
     val stepNotificationsDesc: String = s(R.string.onboarding_step_notifications_desc)
     val stepNotificationsExplanation: String = s(R.string.onboarding_step_notifications_explanation)
     val grantNotificationPermissionBtn: String = s(R.string.onboarding_grant_notification_permission_btn)
+    val openAppSettingsBtn: String = s(R.string.onboarding_open_app_settings_btn)
+    val permissionDeniedOpenSettingsDesc: String = s(R.string.onboarding_permission_denied_open_settings_desc)
     val permissionGrantedStatus: String = s(R.string.onboarding_permission_granted_status)
     val stepAthanSoundsTitle: String = s(R.string.onboarding_step_athan_sounds_title)
     val stepAthanSoundsDesc: String = s(R.string.onboarding_step_athan_sounds_desc)

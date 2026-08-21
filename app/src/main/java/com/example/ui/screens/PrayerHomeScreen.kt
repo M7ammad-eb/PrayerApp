@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.app.DatePickerDialog
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Nightlight
@@ -47,6 +49,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +64,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.data.calculator.HijriDateCalculator
 import com.example.data.models.DailyPrayerSchedule
 import com.example.data.models.HijriDate
@@ -97,8 +103,34 @@ fun PrayerHomeScreen(
     var soundPickerPrayerType by remember { mutableStateOf<PrayerType?>(null) }
     var showExtraTimes by remember { mutableStateOf(false) }
 
-    val notificationsEnabled = remember {
-        androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+    val bannerPrefs = remember { context.getSharedPreferences("notification_banner_prefs", Context.MODE_PRIVATE) }
+    var notificationsEnabled by remember {
+        mutableStateOf(androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled())
+    }
+    var isWarningDismissed by remember {
+        mutableStateOf(bannerPrefs.getBoolean("dismissed", false))
+    }
+
+    // areNotificationsEnabled() is a live OS query, not something Compose observes on its own - a
+    // plain remember{} here would freeze the very first read forever, so the banner would never
+    // clear after the user grants the permission from system settings and returns (short of fully
+    // restarting the app). Re-checking on every resume catches that return trip. A dismissal is
+    // also only "sticky" until permissions actually change, so silently re-disabling notifications
+    // later brings the banner back instead of hiding it forever from one old dismiss tap.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val nowEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+                notificationsEnabled = nowEnabled
+                if (nowEnabled && isWarningDismissed) {
+                    isWarningDismissed = false
+                    bannerPrefs.edit().putBoolean("dismissed", false).apply()
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     val strings = LocalAppStrings.current
 
@@ -139,7 +171,7 @@ fun PrayerHomeScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // Warning Banner if OS Notifications are disabled
-        if (!notificationsEnabled) {
+        if (!notificationsEnabled && !isWarningDismissed) {
             item {
                 Card(
                     shape = RoundedCornerShape(16.dp),
@@ -163,6 +195,19 @@ fun PrayerHomeScreen(
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.weight(1f)
                             )
+                            IconButton(
+                                onClick = {
+                                    isWarningDismissed = true
+                                    bannerPrefs.edit().putBoolean("dismissed", true).apply()
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = strings.close,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         androidx.compose.material3.Button(

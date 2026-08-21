@@ -370,6 +370,8 @@
     <string name="onboarding_step_notifications_desc">Enable notifications and exact alarm permissions so the Athan sounds on time, even when your phone is locked or screen is off.</string>
     <string name="onboarding_step_notifications_explanation">Why are permissions needed?\n• Play the holy Athan recitation at exact prayer times.\n• Show interactive countdown activities before prayer.\n• Remind you of Sunnah fasting and White Days.</string>
     <string name="onboarding_grant_notification_permission_btn">Grant Notification Permission</string>
+    <string name="onboarding_open_app_settings_btn">Open App Settings</string>
+    <string name="onboarding_permission_denied_open_settings_desc">Notifications were denied. You can still turn them on from the app\'s system settings.</string>
     <string name="onboarding_permission_granted_status">Notifications Enabled ✓</string>
     <string name="onboarding_step_athan_sounds_title">Athan Sounds &amp; Alerts</string>
     <string name="onboarding_step_athan_sounds_desc">Choose your preferred Athan recitation for each prayer. You can customize them anytime.</string>

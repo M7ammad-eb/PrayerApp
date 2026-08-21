@@ -12,6 +12,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
+import com.example.data.preferences.PrayerPreferences
 import com.example.ui.MainScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.PrayerViewModel
@@ -105,8 +106,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestAppPermissionsIfNeeded() {
-        // Request notification permission on Android 13+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        // Request notification permission on Android 13+, but only for a returning user who has
+        // already been through onboarding - a fresh install must not be prompted before reaching
+        // the dedicated notifications step (page 4) of the setup wizard, which owns this request
+        // for first-run users. Read via the synchronous fast-cache path since the ViewModel's
+        // DataStore-backed settings flow hasn't necessarily emitted yet at this point in onCreate().
+        val onboardingCompleted = PrayerPreferences.getInitialSettings(this).onboardingCompleted
+        if (onboardingCompleted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val notifGranted = ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.POST_NOTIFICATIONS
