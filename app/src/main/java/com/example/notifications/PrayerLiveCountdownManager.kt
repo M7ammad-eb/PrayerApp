@@ -37,7 +37,7 @@ object PrayerLiveCountdownManager {
         )
 
         val builder = NotificationCompat.Builder(context, PrayerApplication.CHANNEL_LIVE_COUNTDOWN_ID)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setSmallIcon(R.drawable.ic_stat_salati)
             .setContentTitle(title)
             .setContentText(locationName)
             .setCategory(NotificationCompat.CATEGORY_STATUS)

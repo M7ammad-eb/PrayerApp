@@ -225,7 +225,7 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
         )
 
         val builder = NotificationCompat.Builder(this, PrayerApplication.CHANNEL_ATHAN_ID)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setSmallIcon(R.drawable.ic_stat_salati)
             .setContentTitle(title)
             .setContentText(verseText)
             .setSubText(subText ?: currentSoundType.localizedDisplayName(isArabic = false))

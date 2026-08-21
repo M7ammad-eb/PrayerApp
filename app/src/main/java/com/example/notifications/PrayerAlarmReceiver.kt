@@ -173,12 +173,6 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
 
         val channelId = if (isPreReminder) PrayerApplication.CHANNEL_REMINDER_ID else PrayerApplication.CHANNEL_ATHAN_ID
 
-        val iconRes = try {
-            R.drawable.ic_stat_prayer_countdown
-        } catch (e: Exception) {
-            android.R.drawable.ic_lock_idle_alarm
-        }
-
         val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
         val isScreenInteractive = pm?.isInteractive ?: false
 
@@ -192,7 +186,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
 
         if (!willPlayViaService) {
             val notificationBuilder = NotificationCompat.Builder(context, channelId)
-                .setSmallIcon(iconRes)
+                .setSmallIcon(R.drawable.ic_stat_salati)
                 .setContentTitle(title)
                 .setContentText(content)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(content))
