@@ -57,6 +57,12 @@ android {
     includeInApk = false
     includeInBundle = true
   }
+  lint {
+    // Known false positive on pure-Compose/ComponentActivity apps: this app never uses
+    // Fragment, but some transitive dependency resolves an old Fragment version, which trips
+    // this heuristic anyway. lintVitalRelease otherwise blocks every release build on it.
+    disable += "InvalidFragmentVersionForActivityResult"
+  }
 }
 
 // Some unused dependencies are commented out below instead of being removed.
