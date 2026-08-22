@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Salati</string>
     <string name="widget_description">Displays the next prayer time and countdown on your home screen.</string>
+    <string name="widget_description_glance_test">Salati prayer times (Glance test widget, not for regular use).</string>
 
     <!-- ===== App Branding ===== -->
     <string name="app_brand_name">Salati</string>

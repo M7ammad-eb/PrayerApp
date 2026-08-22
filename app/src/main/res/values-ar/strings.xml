@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">صلاتي</string>
     <string name="widget_description">يعرض وقت الصلاة القادمة والعد التنازلي على شاشتك الرئيسية.</string>
+    <string name="widget_description_glance_test">أوقات صلاة سلاتي (ودجت اختبار Glance، ليس للاستخدام العادي).</string>
 
     <!-- ===== App Branding ===== -->
     <string name="app_brand_name">صلاتي</string>
