@@ -33,6 +33,7 @@ import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
@@ -63,34 +64,82 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private enum class Tier { MICRO, SLIM, VERTICAL, SMALL, MEDIUM, LARGE, EXPANDED }
-
-// Exact mode exposes the host's real dimensions through LocalSize. Responsive mode deliberately
-// substitutes one of its fixed candidate sizes, which made Vivo Launcher group 2x2 through 3x3
-// into one 110x100 layout and 4x2 through 5x3 into one 250x180 layout. The RemoteViews then sat at
-// the top of the larger host box, leaving the empty area seen on-device.
-private fun tierForSize(widthDp: Float, heightDp: Float): Tier = when {
-    // Vivo reports a one-row allocation closer to 80-100dp after host padding, not the
-    // theoretical 40-70dp cell height. Keep 2-3 columns slim, while 4-5 columns share the
-    // medium split layout. A width-only LARGE check here previously made 1x5 select a two-row
-    // composition and clip most of it, so 1x4 visibly contained more information than 1x5.
-    heightDp < 120f && widthDp < 270f -> Tier.SLIM
-    heightDp < 120f -> Tier.MEDIUM
-    widthDp < 100f -> Tier.VERTICAL
-
-    // Three launcher rows: a narrow 2-column schedule and a full schedule at 3+ columns.
-    heightDp >= 190f && widthDp < 200f -> Tier.VERTICAL
-    heightDp >= 190f -> Tier.EXPANDED
-
-    // Two launcher rows: hero-only, split hero, then the wide ribbon presentation.
-    widthDp >= 285f -> Tier.LARGE
-    widthDp >= 200f -> Tier.MEDIUM
-    else -> Tier.SMALL
+private enum class LayoutFamily {
+    MINIMAL, HORIZONTAL, COMPACT, TWO_COLUMN, LARGE_RIBBON, VERTICAL_SCHEDULE, SCHEDULE
 }
 
 /**
- * Full Glance port of the seven RemoteViews size tiers in PrayerAppWidgetProvider. Exact sizing
- * lets one composable adapt to the real launcher allocation instead of a fixed candidate canvas.
+ * A launcher-independent description derived only from the exact dp rectangle supplied by the
+ * widget host. The families represent genuinely different information structures; measurements
+ * inside each family remain fluid, and increasing width within a height band only adds content.
+ */
+private data class AdaptiveLayout(
+    val family: LayoutFamily,
+    val paddingDp: Float,
+    val gapDp: Float,
+    val fontScale: Float,
+    val widthDp: Float,
+    val heightDp: Float,
+    val denseRows: Boolean,
+    val sideBySideSchedule: Boolean,
+    val supportsDualHero: Boolean,
+    val stackHeader: Boolean,
+    val showBarCountdown: Boolean,
+    val showBarMetadata: Boolean,
+    val showBarPrayerRibbon: Boolean
+)
+
+private fun layoutForSize(widthDp: Float, heightDp: Float): AdaptiveLayout {
+    val width = widthDp.coerceAtLeast(1f)
+    val height = heightDp.coerceAtLeast(1f)
+    val shortestSide = minOf(width, height)
+    val aspectRatio = width / height
+    val padding = (shortestSide * 0.07f).coerceIn(5f, 11f)
+    val gap = (shortestSide * 0.045f).coerceIn(3f, 8f)
+
+    val family = when {
+        width < 80f || height < 48f -> LayoutFamily.MINIMAL
+        height < 120f -> LayoutFamily.HORIZONTAL
+        height >= 270f && aspectRatio < 0.85f -> LayoutFamily.VERTICAL_SCHEDULE
+        height >= 270f -> LayoutFamily.SCHEDULE
+        width >= 240f -> LayoutFamily.LARGE_RIBBON
+        height >= 220f && aspectRatio < 0.85f -> LayoutFamily.VERTICAL_SCHEDULE
+        height >= 220f -> LayoutFamily.SCHEDULE
+        aspectRatio < 1.35f -> LayoutFamily.COMPACT
+        else -> LayoutFamily.TWO_COLUMN
+    }
+
+    val fontScale = when (family) {
+        LayoutFamily.MINIMAL -> (0.82f + (shortestSide - 40f) / 160f).coerceIn(0.82f, 0.95f)
+        LayoutFamily.HORIZONTAL -> (0.88f + (height - 48f) / 400f).coerceIn(0.88f, 1.05f)
+        LayoutFamily.COMPACT, LayoutFamily.TWO_COLUMN ->
+            (0.94f + (shortestSide - 100f) / 420f).coerceIn(0.94f, 1.18f)
+        LayoutFamily.LARGE_RIBBON ->
+            (1.05f + (shortestSide - 140f) / 320f).coerceIn(1.05f, 1.30f)
+        LayoutFamily.VERTICAL_SCHEDULE, LayoutFamily.SCHEDULE ->
+            (1.05f + (shortestSide - 160f) / 400f).coerceIn(1.05f, 1.35f)
+    }
+
+    return AdaptiveLayout(
+        family = family,
+        paddingDp = padding,
+        gapDp = gap,
+        fontScale = fontScale,
+        widthDp = width,
+        heightDp = height,
+        denseRows = height < 360f,
+        sideBySideSchedule = family == LayoutFamily.SCHEDULE && width >= 340f && aspectRatio >= 1.45f,
+        supportsDualHero = width >= 220f,
+        stackHeader = width < 300f,
+        showBarCountdown = family == LayoutFamily.HORIZONTAL && width >= 200f,
+        showBarMetadata = family == LayoutFamily.HORIZONTAL && width >= 280f,
+        showBarPrayerRibbon = family == LayoutFamily.HORIZONTAL && width >= 430f
+    )
+}
+
+/**
+ * Glance port of the RemoteViews widget. Exact sizing lets one composable adapt to the real
+ * launcher allocation instead of relying on grid-cell names or a fixed candidate canvas.
  */
 class PrayerGlanceWidget : GlanceAppWidget() {
 
@@ -281,7 +330,8 @@ private fun scaledSp(baseSp: Float, data: GlanceWidgetData): TextUnit = (baseSp 
 @Composable
 internal fun WidgetContent(data: GlanceWidgetData) {
     val size = LocalSize.current
-    val tier = tierForSize(size.width.value, size.height.value)
+    val layout = layoutForSize(size.width.value, size.height.value)
+    val fittedData = data.copy(fontScale = layout.fontScale)
     val context = LocalContext.current
     // Glance doesn't mirror Row child order for RTL locales the way native RemoteViews/View
     // layoutDirection does (confirmed on-device: Arabic text shapes correctly within each Text,
@@ -289,15 +339,15 @@ internal fun WidgetContent(data: GlanceWidgetData) {
     // below, the same fix PrayerAppWidgetProvider already applies via setLayoutDirection().
     val isRtl = context.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
 
-    CardSurface(data.rootBg, data.rootBorder) {
-        when (tier) {
-            Tier.MICRO -> MicroContent(data)
-            Tier.SLIM -> SlimContent(data, isRtl)
-            Tier.VERTICAL -> VerticalContent(data, isRtl)
-            Tier.SMALL -> SmallContent(data, isRtl)
-            Tier.MEDIUM -> MediumContent(data, isRtl)
-            Tier.LARGE -> LargeContent(data, isRtl, expanded = false)
-            Tier.EXPANDED -> LargeContent(data, isRtl, expanded = true)
+    CardSurface(fittedData.rootBg, fittedData.rootBorder) {
+        when (layout.family) {
+            LayoutFamily.MINIMAL -> MicroContent(fittedData)
+            LayoutFamily.HORIZONTAL -> SlimContent(fittedData, isRtl, layout)
+            LayoutFamily.VERTICAL_SCHEDULE -> VerticalContent(fittedData, isRtl, layout)
+            LayoutFamily.COMPACT -> SmallContent(fittedData, isRtl, layout)
+            LayoutFamily.TWO_COLUMN -> MediumContent(fittedData, isRtl, layout)
+            LayoutFamily.LARGE_RIBBON -> LargeRibbonContent(fittedData, isRtl, layout)
+            LayoutFamily.SCHEDULE -> LargeContent(fittedData, isRtl, layout)
         }
     }
 }
@@ -341,9 +391,9 @@ private fun MicroContent(data: GlanceWidgetData) {
 }
 
 @Composable
-private fun SlimContent(data: GlanceWidgetData, isRtl: Boolean) {
+private fun SlimContent(data: GlanceWidgetData, isRtl: Boolean, layout: AdaptiveLayout) {
     Row(
-        modifier = GlanceModifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 5.dp),
+        modifier = GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val heroText = @Composable {
@@ -360,77 +410,26 @@ private fun SlimContent(data: GlanceWidgetData, isRtl: Boolean) {
             )
         }
         if (isRtl) {
-            if (data.widgetSettings.showCountdown) CountdownPill(data.countdown, data)
-            Spacer(GlanceModifier.width(6.dp))
+            if (data.widgetSettings.showCountdown && layout.showBarCountdown) CountdownPill(data.countdown, data)
+            Spacer(GlanceModifier.width(layout.gapDp.dp))
             heroText()
         } else {
             heroText()
-            Spacer(GlanceModifier.width(6.dp))
-            if (data.widgetSettings.showCountdown) CountdownPill(data.countdown, data)
+            Spacer(GlanceModifier.width(layout.gapDp.dp))
+            if (data.widgetSettings.showCountdown && layout.showBarCountdown) CountdownPill(data.countdown, data)
         }
-        RefreshButton(data)
-    }
-}
-
-@Composable
-private fun VerticalContent(data: GlanceWidgetData, isRtl: Boolean) {
-    Column(GlanceModifier.fillMaxSize().padding(7.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        VerticalHeader(data, isRtl)
-        if (data.widgetSettings.showHeroCard) {
-            Spacer(GlanceModifier.height(3.dp))
-            HeroCard(data, compact = true, isRtl = isRtl)
-        }
-        if (data.widgetSettings.showAllPrayersList) {
-            Spacer(GlanceModifier.height(3.dp))
-            // Nested Column for the same RemoteViews 10-direct-children reason as LargeContent's
-            // expanded branch - cheap insurance even though 6 slots is under the limit today.
-            Column { data.allSlots.forEach { PrayerListRow(it, data, dense = true, isRtl = isRtl) } }
-        }
-    }
-}
-
-@Composable
-private fun VerticalHeader(data: GlanceWidgetData, isRtl: Boolean) {
-    Column(GlanceModifier.fillMaxWidth()) {
-        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            val location = @Composable {
-                Text(
-                    if (data.widgetSettings.showLocation) data.locationText else "",
-                    modifier = GlanceModifier.defaultWeight(),
-                    style = TextStyle(
-                        color = ColorProvider(data.textSecondary),
-                        fontSize = scaledSp(10f, data),
-                        textAlign = if (isRtl) TextAlign.End else TextAlign.Start
-                    ),
-                    maxLines = 1
-                )
+        if (layout.showBarMetadata && (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate)) {
+            Spacer(GlanceModifier.width(layout.gapDp.dp))
+            val metadata = buildString {
+                if (data.widgetSettings.showLocation) append(data.locationText)
+                if (data.widgetSettings.showHijriDate) {
+                    if (isNotEmpty()) append(" • ")
+                    append(data.hijriText)
+                }
             }
-            val icon = @Composable {
-                Image(
-                    provider = ImageProvider(R.drawable.ic_widget_mosque),
-                    contentDescription = null,
-                    modifier = GlanceModifier.size(13.dp),
-                    colorFilter = ColorFilter.tint(ColorProvider(data.accent))
-                )
-            }
-            if (isRtl) {
-                RefreshButton(data)
-                Spacer(GlanceModifier.width(3.dp))
-                location()
-                Spacer(GlanceModifier.width(4.dp))
-                icon()
-            } else {
-                icon()
-                Spacer(GlanceModifier.width(4.dp))
-                location()
-                Spacer(GlanceModifier.width(3.dp))
-                RefreshButton(data)
-            }
-        }
-        if (data.widgetSettings.showHijriDate) {
             Text(
-                data.hijriText,
-                modifier = GlanceModifier.fillMaxWidth(),
+                metadata,
+                modifier = GlanceModifier.defaultWeight(),
                 style = TextStyle(
                     color = ColorProvider(data.textSecondary),
                     fontSize = scaledSp(9f, data),
@@ -439,31 +438,116 @@ private fun VerticalHeader(data: GlanceWidgetData, isRtl: Boolean) {
                 maxLines = 1
             )
         }
+        if (layout.showBarPrayerRibbon && data.widgetSettings.showAllPrayersList) {
+            Spacer(GlanceModifier.width(layout.gapDp.dp))
+            Box(GlanceModifier.defaultWeight()) {
+                PrayerRibbon(data.mediumSlots, data, isRtl, chipGapDp = 1f)
+            }
+        }
+        RefreshButton(data)
     }
 }
 
+private fun fittedScheduleSlots(data: GlanceWidgetData, layout: AdaptiveLayout): List<MiniSlot> {
+    val slots = data.allSlots
+    if (slots.size <= 3) return slots
+
+    val hasHeader = data.widgetSettings.showLocation || data.widgetSettings.showHijriDate
+    val stackedHeader = layout.stackHeader &&
+        data.widgetSettings.showLocation && data.widgetSettings.showHijriDate
+    val headerHeight = when {
+        !hasHeader -> 0f
+        stackedHeader -> 40f
+        else -> 40f
+    }
+    val heroHeight = when {
+        !data.widgetSettings.showHeroCard -> 0f
+        // Reserve the largest hero that this rectangle supports. Row count must remain stable
+        // when the user switches NEXT/PREVIOUS/BOTH without resizing the widget itself.
+        layout.supportsDualHero -> 105f
+        else -> 74f
+    }
+    val sectionGapCount = (if (data.widgetSettings.showHeroCard) 1 else 0) +
+        (if (data.widgetSettings.showAllPrayersList) 1 else 0)
+    val availableForRows = layout.heightDp -
+        (layout.paddingDp * 2f) - headerHeight - heroHeight - (layout.gapDp * sectionGapCount)
+    val rowHeight = availableForRows / slots.size
+    val minimumReadableRowHeight = (18f + 6f * layout.fontScale).coerceIn(24f, 27f)
+    if (rowHeight >= minimumReadableRowHeight) return slots
+
+    val firstUpcoming = slots.indexOfFirst { it.isActive }.takeIf { it >= 0 } ?: 0
+    val visibleCount = (availableForRows / minimumReadableRowHeight)
+        .toInt()
+        .coerceIn(2, slots.size)
+    return List(visibleCount) { offset -> slots[(firstUpcoming + offset) % slots.size] }
+}
+
 @Composable
-private fun SmallContent(data: GlanceWidgetData, isRtl: Boolean) {
-    Column(GlanceModifier.fillMaxSize().padding(9.dp)) {
-        if (data.widgetSettings.showLocation) LocationHeader(data, isRtl)
+private fun VerticalContent(data: GlanceWidgetData, isRtl: Boolean, layout: AdaptiveLayout) {
+    Column(GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate) {
+            LocationHeader(data, isRtl, showHijri = true, stacked = layout.stackHeader)
+        }
         if (data.widgetSettings.showHeroCard) {
-            Spacer(GlanceModifier.height(5.dp))
-            HeroCard(data, compact = true, isRtl = isRtl)
+            Spacer(GlanceModifier.height(layout.gapDp.dp))
+            if (data.widgetSettings.heroTimeMode == WidgetHeroTimeMode.BOTH && layout.supportsDualHero) {
+                DualHeroCard(data, isRtl)
+            } else {
+                HeroCard(data, compact = true, isRtl = isRtl)
+            }
+        }
+        if (data.widgetSettings.showAllPrayersList) {
+            Spacer(GlanceModifier.height(layout.gapDp.dp))
+            val slots = fittedScheduleSlots(data, layout)
+            // Nested Column for the same RemoteViews 10-direct-children reason as LargeContent's
+            // expanded branch - cheap insurance even though 6 slots is under the limit today.
+            Column(GlanceModifier.defaultWeight()) {
+                slots.forEach {
+                    Box(GlanceModifier.defaultWeight()) {
+                        PrayerListRow(
+                            it,
+                            data,
+                            dense = layout.denseRows && slots.size > 3,
+                            isRtl = isRtl,
+                            fillAvailable = true
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun MediumContent(data: GlanceWidgetData, isRtl: Boolean) {
-    Row(GlanceModifier.fillMaxSize().padding(9.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (data.widgetSettings.showHeroCard) {
-            Box(GlanceModifier.defaultWeight()) { HeroCard(data, compact = true, isRtl = isRtl) }
+private fun SmallContent(data: GlanceWidgetData, isRtl: Boolean, layout: AdaptiveLayout) {
+    Column(GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp)) {
+        if (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate) {
+            LocationHeader(data, isRtl, showHijri = true, stacked = layout.stackHeader)
         }
-        Spacer(GlanceModifier.width(8.dp))
+        if (data.widgetSettings.showHeroCard) {
+            Spacer(GlanceModifier.height(layout.gapDp.dp))
+            Box(GlanceModifier.defaultWeight()) {
+                HeroCard(data, compact = true, isRtl = isRtl, fillAvailable = true)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediumContent(data: GlanceWidgetData, isRtl: Boolean, layout: AdaptiveLayout) {
+    Row(GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (data.widgetSettings.showHeroCard) {
+            Box(GlanceModifier.defaultWeight()) {
+                HeroCard(data, compact = true, isRtl = isRtl, fillAvailable = true)
+            }
+        }
+        Spacer(GlanceModifier.width(layout.gapDp.dp))
         Column(GlanceModifier.defaultWeight()) {
-            if (data.widgetSettings.showLocation) LocationHeader(data, isRtl)
+            if (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate) {
+                LocationHeader(data, isRtl, showHijri = true, stacked = layout.stackHeader)
+            }
             if (data.widgetSettings.showAllPrayersList) {
-                Spacer(GlanceModifier.height(5.dp))
+                Spacer(GlanceModifier.height(layout.gapDp.dp))
                 PrayerRibbon(data.mediumSlots, data, isRtl)
             }
         }
@@ -471,42 +555,142 @@ private fun MediumContent(data: GlanceWidgetData, isRtl: Boolean) {
 }
 
 @Composable
-private fun LargeContent(data: GlanceWidgetData, isRtl: Boolean, expanded: Boolean) {
-    Column(GlanceModifier.fillMaxSize().padding(11.dp)) {
+private fun LargeRibbonContent(data: GlanceWidgetData, isRtl: Boolean, layout: AdaptiveLayout) {
+    Column(GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp)) {
         if (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate) {
-            LocationHeader(data, isRtl, showHijri = true)
+            LocationHeader(data, isRtl, showHijri = true, stacked = layout.stackHeader)
         }
         val showDualHero = data.widgetSettings.heroTimeMode == WidgetHeroTimeMode.BOTH
         if (data.widgetSettings.showHeroCard) {
-            Spacer(GlanceModifier.height(7.dp))
-            if (showDualHero) DualHeroCard(data, isRtl) else HeroCard(data, compact = false, isRtl = isRtl)
+            Spacer(GlanceModifier.height(layout.gapDp.dp))
+            if (showDualHero) {
+                DualHeroCard(data, isRtl, compact = true)
+            } else {
+                HeroCard(data, compact = false, isRtl = isRtl)
+            }
         }
         if (data.widgetSettings.showProgressBar && data.widgetSettings.showHeroCard && !showDualHero) {
-            Spacer(GlanceModifier.height(6.dp))
-            LinearProgressIndicator(
+            Spacer(GlanceModifier.height(layout.gapDp.dp))
+            AdaptiveProgressBar(
                 progress = data.progress,
-                modifier = GlanceModifier.fillMaxWidth().height(4.dp).cornerRadius(2.dp),
-                color = ColorProvider(data.accent),
-                backgroundColor = ColorProvider(data.inactivePrayerBg)
+                data = data,
+                isRtl = isRtl,
+                availableWidthDp = layout.widthDp - layout.paddingDp * 2f
             )
         }
         if (data.widgetSettings.showAllPrayersList) {
-            Spacer(GlanceModifier.height(8.dp))
-            if (expanded) {
-                // RemoteViews hard-caps a container at 10 direct children - header + hero +
-                // progress bar already use several slots in the outer Column, so all 6 prayer
-                // rows are nested in their own Column (one child of the outer Column) instead of
-                // being emitted as 6 separate top-level children, which crashed past that limit.
-                Column { data.allSlots.forEach { PrayerListRow(it, data, dense = false, isRtl = isRtl) } }
-            } else {
-                PrayerRibbon(data.allSlots, data, isRtl)
+            Spacer(GlanceModifier.height(layout.gapDp.dp))
+            Box(GlanceModifier.defaultWeight()) {
+                PrayerRibbon(data.allSlots, data, isRtl, fillAvailable = true)
             }
         }
     }
 }
 
 @Composable
-private fun LocationHeader(data: GlanceWidgetData, isRtl: Boolean, showHijri: Boolean = false) {
+private fun AdaptiveProgressBar(
+    progress: Float,
+    data: GlanceWidgetData,
+    isRtl: Boolean,
+    availableWidthDp: Float
+) {
+    val totalWidth = availableWidthDp.coerceAtLeast(1f)
+    val filledWidth = (totalWidth * progress.coerceIn(0f, 1f)).coerceAtLeast(0.1f)
+    val emptyWidth = (totalWidth - filledWidth).coerceAtLeast(0.1f)
+    val filled = @Composable {
+        Box(
+            GlanceModifier.width(filledWidth.dp).height(4.dp)
+                .background(ColorProvider(data.accent)).cornerRadius(2.dp)
+        ) {}
+    }
+    val empty = @Composable {
+        Box(
+            GlanceModifier.width(emptyWidth.dp).height(4.dp)
+                .background(ColorProvider(data.inactivePrayerBg)).cornerRadius(2.dp)
+        ) {}
+    }
+    Row(GlanceModifier.fillMaxWidth().height(4.dp)) {
+        if (isRtl) {
+            empty(); filled()
+        } else {
+            filled(); empty()
+        }
+    }
+}
+
+@Composable
+private fun LargeContent(data: GlanceWidgetData, isRtl: Boolean, layout: AdaptiveLayout) {
+    Column(GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp)) {
+        if (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate) {
+            LocationHeader(data, isRtl, showHijri = true, stacked = layout.stackHeader)
+        }
+        val showDualHero = data.widgetSettings.heroTimeMode == WidgetHeroTimeMode.BOTH
+        val heroSection = @Composable {
+            if (data.widgetSettings.showHeroCard) {
+                if (showDualHero) DualHeroCard(data, isRtl) else HeroCard(data, compact = false, isRtl = isRtl)
+                if (data.widgetSettings.showProgressBar && !showDualHero) {
+                    Spacer(GlanceModifier.height(layout.gapDp.dp))
+                    LinearProgressIndicator(
+                        progress = data.progress,
+                        modifier = GlanceModifier.fillMaxWidth().height(4.dp).cornerRadius(2.dp),
+                        color = ColorProvider(data.accent),
+                        backgroundColor = ColorProvider(data.inactivePrayerBg)
+                    )
+                }
+            }
+        }
+        val schedule = @Composable {
+            if (data.widgetSettings.showAllPrayersList) {
+                val slots = fittedScheduleSlots(data, layout)
+                // Keep prayer rows in one nested container: RemoteViews limits a container to ten
+                // direct children, and settings may enable all six rows plus the other sections.
+                Column(GlanceModifier.fillMaxSize()) {
+                    slots.forEach {
+                        Box(GlanceModifier.defaultWeight()) {
+                            PrayerListRow(
+                                it,
+                                data,
+                                dense = layout.denseRows && slots.size > 3,
+                                isRtl = isRtl,
+                                fillAvailable = true
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (data.widgetSettings.showHeroCard || data.widgetSettings.showAllPrayersList) {
+            Spacer(GlanceModifier.height(layout.gapDp.dp))
+        }
+        if (layout.sideBySideSchedule && data.widgetSettings.showHeroCard && data.widgetSettings.showAllPrayersList) {
+            Row(
+                GlanceModifier.fillMaxWidth().defaultWeight(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(GlanceModifier.defaultWeight(), contentAlignment = Alignment.Center) { heroSection() }
+                Spacer(GlanceModifier.width(layout.gapDp.dp))
+                Box(GlanceModifier.defaultWeight()) { schedule() }
+            }
+        } else {
+            heroSection()
+            if (data.widgetSettings.showHeroCard && data.widgetSettings.showAllPrayersList) {
+                Spacer(GlanceModifier.height(layout.gapDp.dp))
+            }
+            if (data.widgetSettings.showAllPrayersList) {
+                Box(GlanceModifier.defaultWeight()) { schedule() }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocationHeader(
+    data: GlanceWidgetData,
+    isRtl: Boolean,
+    showHijri: Boolean = false,
+    stacked: Boolean = false
+) {
     val label = buildString {
         if (data.widgetSettings.showLocation) append(data.locationText)
         if (showHijri && data.widgetSettings.showHijriDate) {
@@ -514,41 +698,66 @@ private fun LocationHeader(data: GlanceWidgetData, isRtl: Boolean, showHijri: Bo
             append(data.hijriText)
         }
     }
-    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        val labelText = @Composable {
-            Text(
-                label,
-                modifier = GlanceModifier.defaultWeight(),
-                style = TextStyle(
-                    color = ColorProvider(data.textSecondary),
-                    fontSize = scaledSp(10f, data),
-                    textAlign = if (isRtl) TextAlign.End else TextAlign.Start
-                ),
-                maxLines = 1
-            )
+    val labelText = @Composable { text: String, modifier: GlanceModifier ->
+        Text(
+            text,
+            modifier = modifier,
+            style = TextStyle(
+                color = ColorProvider(data.textSecondary),
+                fontSize = scaledSp(10f, data),
+                textAlign = if (isRtl) TextAlign.End else TextAlign.Start
+            ),
+            maxLines = 1
+        )
+    }
+
+    if (stacked && data.widgetSettings.showLocation && showHijri && data.widgetSettings.showHijriDate) {
+        val stackedLabels = @Composable { modifier: GlanceModifier ->
+            Column(modifier) {
+                Text(
+                    data.locationText,
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    style = TextStyle(
+                        color = ColorProvider(data.textSecondary),
+                        fontSize = scaledSp(10f, data),
+                        textAlign = if (isRtl) TextAlign.End else TextAlign.Start
+                    ),
+                    maxLines = 1
+                )
+                Text(
+                    data.hijriText,
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    style = TextStyle(
+                        color = ColorProvider(data.textSecondary),
+                        fontSize = scaledSp(9f, data),
+                        textAlign = if (isRtl) TextAlign.End else TextAlign.Start
+                    ),
+                    maxLines = 1
+                )
+            }
         }
-        val icon = @Composable {
-            Image(
-                provider = ImageProvider(R.drawable.ic_widget_mosque),
-                contentDescription = null,
-                modifier = GlanceModifier.size(13.dp),
-                colorFilter = ColorFilter.tint(ColorProvider(data.accent))
-            )
+        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            if (isRtl) {
+                RefreshButton(data)
+                Spacer(GlanceModifier.width(5.dp))
+                stackedLabels(GlanceModifier.defaultWeight())
+            } else {
+                stackedLabels(GlanceModifier.defaultWeight())
+                Spacer(GlanceModifier.width(5.dp))
+                RefreshButton(data)
+            }
         }
-        // Mirror icon-label-refresh (LTR) to refresh-label-icon (RTL) rather than dropping the
-        // icon, which the original single-branch reuse of this Row accidentally did.
-        if (isRtl) {
-            RefreshButton(data)
-            Spacer(GlanceModifier.width(5.dp))
-            labelText()
-            Spacer(GlanceModifier.width(4.dp))
-            icon()
-        } else {
-            icon()
-            Spacer(GlanceModifier.width(4.dp))
-            labelText()
-            Spacer(GlanceModifier.width(5.dp))
-            RefreshButton(data)
+    } else {
+        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            if (isRtl) {
+                RefreshButton(data)
+                Spacer(GlanceModifier.width(5.dp))
+                labelText(label, GlanceModifier.defaultWeight())
+            } else {
+                labelText(label, GlanceModifier.defaultWeight())
+                Spacer(GlanceModifier.width(5.dp))
+                RefreshButton(data)
+            }
         }
     }
 }
@@ -569,35 +778,41 @@ private fun RefreshButton(data: GlanceWidgetData) {
 }
 
 @Composable
-private fun HeroCard(data: GlanceWidgetData, compact: Boolean, isRtl: Boolean) {
+private fun HeroCard(
+    data: GlanceWidgetData,
+    compact: Boolean,
+    isRtl: Boolean,
+    fillAvailable: Boolean = false
+) {
     if (compact) {
         // Matches PrayerAppWidgetProvider's vertical-tier XML: name, time, and the countdown
         // pill each get their own centered line. The small tier's XML instead puts the pill
         // beside a weighted name+time column, but at ~110dp wide that leaves the pill and the
         // name fighting over the same few dp - a long countdown string ("in 7h 35m") squeezed
         // the name down to a single ellipsized letter. Stacking avoids that regardless of tier.
-        Column(
-            modifier = GlanceModifier
-                .fillMaxWidth()
+        Box(
+            modifier = (if (fillAvailable) GlanceModifier.fillMaxSize() else GlanceModifier.fillMaxWidth())
                 .background(ColorProvider(data.heroBg))
                 .cornerRadius(13.dp)
                 .padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                data.prayerName,
-                style = TextStyle(color = ColorProvider(data.accent), fontSize = scaledSp(11f, data), fontWeight = FontWeight.Medium),
-                maxLines = 1
-            )
-            Spacer(GlanceModifier.height(2.dp))
-            Text(
-                data.prayerTime,
-                style = TextStyle(color = ColorProvider(data.textPrimary), fontSize = scaledSp(17f, data), fontWeight = FontWeight.Bold),
-                maxLines = 1
-            )
-            if (data.widgetSettings.showCountdown) {
-                Spacer(GlanceModifier.height(4.dp))
-                CountdownPill(data.countdown, data)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    data.prayerName,
+                    style = TextStyle(color = ColorProvider(data.accent), fontSize = scaledSp(11f, data), fontWeight = FontWeight.Medium),
+                    maxLines = 1
+                )
+                Spacer(GlanceModifier.height(2.dp))
+                Text(
+                    data.prayerTime,
+                    style = TextStyle(color = ColorProvider(data.textPrimary), fontSize = scaledSp(17f, data), fontWeight = FontWeight.Bold),
+                    maxLines = 1
+                )
+                if (data.widgetSettings.showCountdown) {
+                    Spacer(GlanceModifier.height(4.dp))
+                    CountdownPill(data.countdown, data)
+                }
             }
         }
         return
@@ -606,8 +821,7 @@ private fun HeroCard(data: GlanceWidgetData, compact: Boolean, isRtl: Boolean) {
     // Matches PrayerAppWidgetProvider's large/expanded XML hero layout: name+time are grouped
     // in one weighted column and the pill sits beside that whole block.
     Row(
-        modifier = GlanceModifier
-            .fillMaxWidth()
+        modifier = (if (fillAvailable) GlanceModifier.fillMaxSize() else GlanceModifier.fillMaxWidth())
             .background(ColorProvider(data.heroBg))
             .cornerRadius(13.dp)
             .padding(10.dp),
@@ -644,36 +858,43 @@ private fun HeroCard(data: GlanceWidgetData, compact: Boolean, isRtl: Boolean) {
 }
 
 @Composable
-private fun DualHeroCard(data: GlanceWidgetData, isRtl: Boolean) {
+private fun DualHeroCard(data: GlanceWidgetData, isRtl: Boolean, compact: Boolean = false) {
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
             .background(ColorProvider(data.heroBg))
             .cornerRadius(13.dp)
-            .padding(9.dp)
+            .padding(if (compact) 5.dp else 9.dp)
     ) {
         val previousHalf = @Composable {
-            HeroHalf(data.previousName, data.previousTime, data.since, R.string.widget_hero_prev_label, data, GlanceModifier.defaultWeight(), isRtl)
+            HeroHalf(data.previousName, data.previousTime, data.since, data, GlanceModifier.defaultWeight(), isRtl, compact)
         }
         val nextHalf = @Composable {
-            HeroHalf(data.nextName, data.nextTime, data.until, R.string.widget_hero_next_label, data, GlanceModifier.defaultWeight(), isRtl)
+            HeroHalf(data.nextName, data.nextTime, data.until, data, GlanceModifier.defaultWeight(), isRtl, compact)
         }
         if (isRtl) {
-            nextHalf(); Spacer(GlanceModifier.width(10.dp)); previousHalf()
+            nextHalf(); Spacer(GlanceModifier.width(if (compact) 6.dp else 10.dp)); previousHalf()
         } else {
-            previousHalf(); Spacer(GlanceModifier.width(10.dp)); nextHalf()
+            previousHalf(); Spacer(GlanceModifier.width(if (compact) 6.dp else 10.dp)); nextHalf()
         }
     }
 }
 
 @Composable
-private fun HeroHalf(name: String, time: String, detail: String, labelRes: Int, data: GlanceWidgetData, modifier: GlanceModifier, isRtl: Boolean) {
-    val context = LocalContext.current
+private fun HeroHalf(
+    name: String,
+    time: String,
+    detail: String,
+    data: GlanceWidgetData,
+    modifier: GlanceModifier,
+    isRtl: Boolean,
+    compact: Boolean
+) {
     Column(modifier, horizontalAlignment = if (isRtl) Alignment.End else Alignment.Start) {
-        Text(context.getString(labelRes), style = TextStyle(color = ColorProvider(data.textSecondary), fontSize = scaledSp(8f, data)), maxLines = 1)
-        Text(name, style = TextStyle(color = ColorProvider(data.accent), fontSize = scaledSp(11f, data), fontWeight = FontWeight.Medium), maxLines = 1)
-        Text(time, style = TextStyle(color = ColorProvider(data.textPrimary), fontSize = scaledSp(18f, data), fontWeight = FontWeight.Bold), maxLines = 1)
-        Text(detail, style = TextStyle(color = ColorProvider(data.textSecondary), fontSize = scaledSp(9f, data)), maxLines = 1)
+        Text(name, style = TextStyle(color = ColorProvider(data.accent), fontSize = scaledSp(if (compact) 10f else 11f, data), fontWeight = FontWeight.Medium), maxLines = 1)
+        Text(time, style = TextStyle(color = ColorProvider(data.textPrimary), fontSize = scaledSp(if (compact) 16f else 18f, data), fontWeight = FontWeight.Bold), maxLines = 1)
+        Spacer(GlanceModifier.height(if (compact) 2.dp else 3.dp))
+        CountdownPill(detail, data)
     }
 }
 
@@ -690,8 +911,14 @@ private fun CountdownPill(text: String, data: GlanceWidgetData) {
 }
 
 @Composable
-private fun PrayerRibbon(slots: List<MiniSlot>, data: GlanceWidgetData, isRtl: Boolean) {
-    Row(GlanceModifier.fillMaxWidth()) {
+private fun PrayerRibbon(
+    slots: List<MiniSlot>,
+    data: GlanceWidgetData,
+    isRtl: Boolean,
+    chipGapDp: Float = 3f,
+    fillAvailable: Boolean = false
+) {
+    Row(if (fillAvailable) GlanceModifier.fillMaxSize() else GlanceModifier.fillMaxWidth()) {
         (if (isRtl) slots.reversed() else slots).forEach { slot ->
             // A single chained .padding().background() doesn't reliably inset the background in
             // Glance (confirmed on-device: the chips rendered edge-to-edge with zero gap despite
@@ -699,17 +926,24 @@ private fun PrayerRibbon(slots: List<MiniSlot>, data: GlanceWidgetData, isRtl: B
             // works because it uses two separate nested containers. Same fix here: an outer,
             // uncolored Box carries the weight and the gap-via-padding; the inner Column carries
             // the background and is what actually gets tinted.
-            Box(modifier = GlanceModifier.defaultWeight().padding(horizontal = 3.dp)) {
-                Column(
-                    modifier = GlanceModifier
-                        .fillMaxWidth()
+            val outerModifier = if (fillAvailable) {
+                GlanceModifier.defaultWeight().fillMaxHeight().padding(horizontal = chipGapDp.dp)
+            } else {
+                GlanceModifier.defaultWeight().padding(horizontal = chipGapDp.dp)
+            }
+            Box(modifier = outerModifier) {
+                Box(
+                    modifier = (if (fillAvailable) GlanceModifier.fillMaxSize() else GlanceModifier.fillMaxWidth())
                         .background(ColorProvider(if (slot.isActive) data.activePrayerBg else data.inactivePrayerBg))
                         .cornerRadius(8.dp)
                         .padding(vertical = 4.dp, horizontal = 2.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(slot.name, style = TextStyle(color = ColorProvider(if (slot.isActive) data.textOnAccent else data.textSecondary), fontSize = scaledSp(8f, data)), maxLines = 1)
-                    Text(slot.time, style = TextStyle(color = ColorProvider(if (slot.isActive) data.textOnAccent else data.textPrimary), fontSize = scaledSp(8f, data), fontWeight = FontWeight.Medium), maxLines = 1)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        val baseFontSize = if (fillAvailable) 10f else 8f
+                        Text(slot.name, style = TextStyle(color = ColorProvider(if (slot.isActive) data.textOnAccent else data.textSecondary), fontSize = scaledSp(baseFontSize, data)), maxLines = 1)
+                        Text(slot.time, style = TextStyle(color = ColorProvider(if (slot.isActive) data.textOnAccent else data.textPrimary), fontSize = scaledSp(baseFontSize, data), fontWeight = FontWeight.Medium), maxLines = 1)
+                    }
                 }
             }
         }
@@ -717,13 +951,21 @@ private fun PrayerRibbon(slots: List<MiniSlot>, data: GlanceWidgetData, isRtl: B
 }
 
 @Composable
-private fun PrayerListRow(slot: MiniSlot, data: GlanceWidgetData, dense: Boolean, isRtl: Boolean) {
+private fun PrayerListRow(
+    slot: MiniSlot,
+    data: GlanceWidgetData,
+    dense: Boolean,
+    isRtl: Boolean,
+    fillAvailable: Boolean = false
+) {
     // Same fix as PrayerRibbon: the vertical gap has to come from an outer, uncolored container's
     // padding, not a padding chained before .background() on the same Row.
-    Box(modifier = GlanceModifier.fillMaxWidth().padding(vertical = 1.dp)) {
+    Box(
+        modifier = (if (fillAvailable) GlanceModifier.fillMaxSize() else GlanceModifier.fillMaxWidth())
+            .padding(vertical = 1.dp)
+    ) {
         Row(
-            modifier = GlanceModifier
-                .fillMaxWidth()
+            modifier = (if (fillAvailable) GlanceModifier.fillMaxSize() else GlanceModifier.fillMaxWidth())
                 .background(ColorProvider(if (slot.isActive) data.activePrayerBg else data.inactivePrayerBg))
                 .cornerRadius(7.dp)
                 .padding(horizontal = 7.dp, vertical = if (dense) 2.dp else 4.dp),

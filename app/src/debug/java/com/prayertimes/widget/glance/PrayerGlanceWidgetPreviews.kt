@@ -8,7 +8,7 @@ import androidx.glance.preview.Preview
 import com.prayertimes.data.models.WidgetCustomizationSettings
 
 /**
- * Debug-only previews so the seven size tiers can be checked in Android Studio's Preview pane
+ * Debug-only previews of representative widget rectangles for Android Studio's Preview pane
  * without a full build/install/screenshot round trip. Only exists in the debug source set
  * because glance-appwidget-preview/glance-preview are debugImplementation - a release build
  * never sees this file. Sample data is hand-written (not pulled from PrayerPreferences or

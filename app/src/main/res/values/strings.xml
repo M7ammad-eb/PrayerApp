@@ -389,7 +389,7 @@
 
     <!-- ===== Widget Customization Strings ===== -->
     <string name="widget_settings_section">Home Screen Widgets</string>
-    <string name="widget_settings_section_subtitle">Customize colors, opacity, fonts &amp; content</string>
+    <string name="widget_settings_section_subtitle">Customize colors, opacity &amp; content</string>
     <string name="widget_settings_theme_mode_title">Widget Theme &amp; Palette</string>
     <string name="widget_settings_bg_style_title">Background Style</string>
     <string name="widget_settings_opacity_title">Background Opacity</string>

@@ -389,7 +389,7 @@
 
     <!-- ===== Widget Customization Strings ===== -->
     <string name="widget_settings_section">التطبيقات المصغرة (الودجت)</string>
-    <string name="widget_settings_section_subtitle">تخصيص الألوان، الشفافية، الخط والمحتوى</string>
+    <string name="widget_settings_section_subtitle">تخصيص الألوان، الشفافية والمحتوى</string>
     <string name="widget_settings_theme_mode_title">ثيم وألوان الودجت</string>
     <string name="widget_settings_bg_style_title">نمط الخلفية</string>
     <string name="widget_settings_opacity_title">درجة الشفافية</string>

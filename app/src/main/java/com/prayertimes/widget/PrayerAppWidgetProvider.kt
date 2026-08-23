@@ -315,7 +315,10 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 activePrayerBgColor = activePrayerBg,
                 inactivePrayerBgColor = inactivePrayerBg,
                 countdownBgColor = countdownBg,
-                fontScale = wSet.fontSize.scaleFactor
+                // XML layouts already define size-appropriate typography. The Glance widget
+                // derives its scale continuously from the exact host rectangle, so the former
+                // user font-size override is intentionally no longer applied by either renderer.
+                fontScale = 1f
             )
         }
     }

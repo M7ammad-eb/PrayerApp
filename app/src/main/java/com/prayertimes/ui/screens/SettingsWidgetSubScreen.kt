@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
@@ -81,7 +80,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.prayertimes.data.models.WidgetBackgroundStyle
 import com.prayertimes.data.models.WidgetCustomizationSettings
-import com.prayertimes.data.models.WidgetFontSize
 import com.prayertimes.data.models.WidgetHeroTimeMode
 import com.prayertimes.data.models.WidgetTextStyle
 import com.prayertimes.data.models.WidgetThemeMode
@@ -365,17 +363,6 @@ fun SettingsWidgetSubScreen(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
-                WidgetSettingsSubLabel(strings.widgetFontSizeTitle)
-                WidgetFontSizeSelector(
-                    currentSize = wSet.fontSize,
-                    onSelectSize = {
-                        onUpdateWidgetSettings(wSet.copy(fontSize = it))
-                        onRefreshAllWidgets()
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
                 // Text Color Style - a manual escape hatch for when the theme's own text colors
                 // can't be trusted for contrast, since a transparent/near-transparent widget has no
                 // way to know what's actually behind it (see PrayerAppWidgetProvider.resolveWidgetColors).
@@ -651,7 +638,7 @@ private fun WidgetBackgroundStyleSelector(
 }
 
 // ---------------------------------------------------------------------------
-// OPTION CHIP ROW - shared by Font Size / Text Color / Hero Time Mode. Labels here can run
+// OPTION CHIP ROW - shared by Text Color / Hero Time Mode. Labels here can run
 // longer than a single line comfortably fits at equal 1/3-1/4 width (e.g. "Both (Wide Widgets)",
 // "Extra Large"), so this wraps to two lines with an ellipsis fallback instead of the raw
 // mid-word clipping a hard maxLines=1 produces.
@@ -693,22 +680,6 @@ private fun <T> WidgetOptionChipRow(
             }
         }
     }
-}
-
-// ---------------------------------------------------------------------------
-// FONT SIZE SELECTOR
-// ---------------------------------------------------------------------------
-@Composable
-private fun WidgetFontSizeSelector(
-    currentSize: WidgetFontSize,
-    onSelectSize: (WidgetFontSize) -> Unit
-) {
-    WidgetOptionChipRow(
-        options = WidgetFontSize.values(),
-        selected = currentSize,
-        label = { it.titleRes },
-        onSelect = onSelectSize
-    )
 }
 
 // ---------------------------------------------------------------------------
@@ -1017,7 +988,7 @@ private fun PreviewStandard4x2(
     textOnAccent: Color,
     isArabic: Boolean
 ) {
-    val scale = wSet.fontSize.scaleFactor
+    val scale = 1.02f
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // Header - at 4+ columns the real widget shows Hijri date inline next to location
         Row(
@@ -1028,13 +999,6 @@ private fun PreviewStandard4x2(
             if (wSet.showLocation || wSet.showHijriDate) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (wSet.showLocation) {
-                        Icon(
-                            imageVector = Icons.Default.Mosque,
-                            contentDescription = null,
-                            tint = primaryAccent,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location),
                             fontSize = 11.sp * scale,
@@ -1173,7 +1137,7 @@ private fun PreviewExpandedMax(
     textOnAccent: Color,
     isArabic: Boolean
 ) {
-    val scale = wSet.fontSize.scaleFactor
+    val scale = 1.10f
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // Header - at 4+ columns the real widget shows Hijri date inline next to location
         Row(
@@ -1184,13 +1148,6 @@ private fun PreviewExpandedMax(
             if (wSet.showLocation || wSet.showHijriDate) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (wSet.showLocation) {
-                        Icon(
-                            imageVector = Icons.Default.Mosque,
-                            contentDescription = null,
-                            tint = primaryAccent,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location),
                             fontSize = 13.sp * scale,
@@ -1322,7 +1279,7 @@ private fun PreviewVertical1Col(
     textOnAccent: Color,
     isArabic: Boolean
 ) {
-    val scale = wSet.fontSize.scaleFactor
+    val scale = 0.98f
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -1330,8 +1287,6 @@ private fun PreviewVertical1Col(
         val vertRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
         if (wSet.showLocation) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Default.Mosque, contentDescription = null, tint = primaryAccent, modifier = Modifier.size(11.dp))
-                Spacer(modifier = Modifier.width(3.dp))
                 Text(text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
             }
         }
@@ -1393,7 +1348,7 @@ private fun PreviewSlimBar(
     textOnAccent: Color,
     isArabic: Boolean
 ) {
-    val scale = wSet.fontSize.scaleFactor
+    val scale = 0.92f
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1401,8 +1356,6 @@ private fun PreviewSlimBar(
     ) {
         val slimRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = Icons.Default.Mosque, contentDescription = null, tint = primaryAccent, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
             Column {
                 if (wSet.showLocation) {
                     Text(text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
@@ -1439,7 +1392,7 @@ private fun PreviewCompact2x1(
     textOnAccent: Color,
     isArabic: Boolean
 ) {
-    val scale = wSet.fontSize.scaleFactor
+    val scale = 0.95f
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
