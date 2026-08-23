@@ -88,7 +88,7 @@
                 android:resource="@xml/prayer_appwidget_info" />
         </receiver>
 
-        <!-- POC: Jetpack Glance widget, added alongside the existing widget for comparison -->
+        <!-- Responsive Jetpack Glance widget; classic widget remains during rollout. -->
         <receiver
             android:name=".widget.glance.PrayerGlanceWidgetReceiver"
             android:exported="true">

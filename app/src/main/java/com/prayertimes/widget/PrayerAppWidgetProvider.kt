@@ -89,8 +89,7 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                     }
                 }
             }
-            // POC: every trigger that should refresh the classic widget refreshes the Glance one
-            // too, rather than duplicating alarm/broadcast plumbing for it separately.
+            // Keep both widget implementations synchronized during the Glance rollout.
             com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(context)
         }
 
