@@ -85,6 +85,8 @@ dependencies {
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.datastore.preferences)
   implementation(libs.androidx.glance.appwidget)
+  debugImplementation(libs.androidx.glance.appwidget.preview)
+  debugImplementation(libs.androidx.glance.preview)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)

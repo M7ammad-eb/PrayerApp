@@ -245,9 +245,11 @@ class RefreshGlanceWidgetAction : ActionCallback {
     }
 }
 
-private data class MiniSlot(val name: String, val time: String, val isActive: Boolean)
+// internal (not private) so the debug-only @Preview functions in PrayerGlanceWidgetPreviews.kt
+// (app/src/debug/) can build sample data and call WidgetContent directly.
+internal data class MiniSlot(val name: String, val time: String, val isActive: Boolean)
 
-private data class GlanceWidgetData(
+internal data class GlanceWidgetData(
     val prayerName: String,
     val prayerTime: String,
     val countdown: String,
@@ -278,7 +280,7 @@ private data class GlanceWidgetData(
 private fun scaledSp(baseSp: Float, data: GlanceWidgetData): TextUnit = (baseSp * data.fontScale).sp
 
 @Composable
-private fun WidgetContent(data: GlanceWidgetData) {
+internal fun WidgetContent(data: GlanceWidgetData) {
     val tier = TIER_BY_SIZE[LocalSize.current] ?: Tier.SMALL
     val context = LocalContext.current
     // Glance doesn't mirror Row child order for RTL locales the way native RemoteViews/View
