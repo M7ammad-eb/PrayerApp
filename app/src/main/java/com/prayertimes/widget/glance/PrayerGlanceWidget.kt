@@ -5,7 +5,6 @@ import android.content.Intent
 import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,32 +65,32 @@ import java.util.Locale
 
 private enum class Tier { MICRO, SLIM, VERTICAL, SMALL, MEDIUM, LARGE, EXPANDED }
 
-// Same seven SizeF breakpoints as PrayerAppWidgetProvider.updateWidgetsInternal's
-// RemoteViews(mapOf(...)) call, so Glance recomposes into the matching tier instead of us
-// maintaining one XML layout per size. SizeMode.Responsive always resolves LocalSize.current to
-// its nearest match among exactly these values, so tier lookup below is a plain map read rather
-// than re-deriving the threshold table a second time.
-private val SIZE_MICRO = DpSize(40.dp, 40.dp)
-private val SIZE_SLIM = DpSize(90.dp, 40.dp)
-private val SIZE_VERTICAL = DpSize(40.dp, 110.dp)
-private val SIZE_SMALL = DpSize(110.dp, 100.dp)
-private val SIZE_MEDIUM = DpSize(230.dp, 90.dp)
-private val SIZE_LARGE = DpSize(250.dp, 180.dp)
-private val SIZE_EXPANDED = DpSize(250.dp, 320.dp)
+// Exact mode exposes the host's real dimensions through LocalSize. Responsive mode deliberately
+// substitutes one of its fixed candidate sizes, which made Vivo Launcher group 2x2 through 3x3
+// into one 110x100 layout and 4x2 through 5x3 into one 250x180 layout. The RemoteViews then sat at
+// the top of the larger host box, leaving the empty area seen on-device.
+private fun tierForSize(widthDp: Float, heightDp: Float): Tier = when {
+    // Vivo reports a one-row allocation closer to 80-100dp after host padding, not the
+    // theoretical 40-70dp cell height. Keep 2-3 columns slim, while 4-5 columns share the
+    // medium split layout. A width-only LARGE check here previously made 1x5 select a two-row
+    // composition and clip most of it, so 1x4 visibly contained more information than 1x5.
+    heightDp < 120f && widthDp < 270f -> Tier.SLIM
+    heightDp < 120f -> Tier.MEDIUM
+    widthDp < 100f -> Tier.VERTICAL
 
-private val TIER_BY_SIZE = mapOf(
-    SIZE_MICRO to Tier.MICRO,
-    SIZE_SLIM to Tier.SLIM,
-    SIZE_VERTICAL to Tier.VERTICAL,
-    SIZE_SMALL to Tier.SMALL,
-    SIZE_MEDIUM to Tier.MEDIUM,
-    SIZE_LARGE to Tier.LARGE,
-    SIZE_EXPANDED to Tier.EXPANDED
-)
+    // Three launcher rows: a narrow 2-column schedule and a full schedule at 3+ columns.
+    heightDp >= 190f && widthDp < 200f -> Tier.VERTICAL
+    heightDp >= 190f -> Tier.EXPANDED
+
+    // Two launcher rows: hero-only, split hero, then the wide ribbon presentation.
+    widthDp >= 285f -> Tier.LARGE
+    widthDp >= 200f -> Tier.MEDIUM
+    else -> Tier.SMALL
+}
 
 /**
- * Full Glance port of the seven RemoteViews size tiers in PrayerAppWidgetProvider - one
- * SizeMode.Responsive composable instead of seven hand-maintained XML layouts.
+ * Full Glance port of the seven RemoteViews size tiers in PrayerAppWidgetProvider. Exact sizing
+ * lets one composable adapt to the real launcher allocation instead of a fixed candidate canvas.
  */
 class PrayerGlanceWidget : GlanceAppWidget() {
 
@@ -103,7 +102,7 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         }
     }
 
-    override val sizeMode = SizeMode.Responsive(TIER_BY_SIZE.keys)
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val settings = PrayerPreferences.getInitialSettings(context)
@@ -281,7 +280,8 @@ private fun scaledSp(baseSp: Float, data: GlanceWidgetData): TextUnit = (baseSp 
 
 @Composable
 internal fun WidgetContent(data: GlanceWidgetData) {
-    val tier = TIER_BY_SIZE[LocalSize.current] ?: Tier.SMALL
+    val size = LocalSize.current
+    val tier = tierForSize(size.width.value, size.height.value)
     val context = LocalContext.current
     // Glance doesn't mirror Row child order for RTL locales the way native RemoteViews/View
     // layoutDirection does (confirmed on-device: Arabic text shapes correctly within each Text,
@@ -375,12 +375,69 @@ private fun SlimContent(data: GlanceWidgetData, isRtl: Boolean) {
 @Composable
 private fun VerticalContent(data: GlanceWidgetData, isRtl: Boolean) {
     Column(GlanceModifier.fillMaxSize().padding(7.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        if (data.widgetSettings.showHeroCard) HeroCard(data, compact = true, isRtl = isRtl)
+        VerticalHeader(data, isRtl)
+        if (data.widgetSettings.showHeroCard) {
+            Spacer(GlanceModifier.height(3.dp))
+            HeroCard(data, compact = true, isRtl = isRtl)
+        }
         if (data.widgetSettings.showAllPrayersList) {
-            Spacer(GlanceModifier.height(5.dp))
+            Spacer(GlanceModifier.height(3.dp))
             // Nested Column for the same RemoteViews 10-direct-children reason as LargeContent's
             // expanded branch - cheap insurance even though 6 slots is under the limit today.
             Column { data.allSlots.forEach { PrayerListRow(it, data, dense = true, isRtl = isRtl) } }
+        }
+    }
+}
+
+@Composable
+private fun VerticalHeader(data: GlanceWidgetData, isRtl: Boolean) {
+    Column(GlanceModifier.fillMaxWidth()) {
+        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            val location = @Composable {
+                Text(
+                    if (data.widgetSettings.showLocation) data.locationText else "",
+                    modifier = GlanceModifier.defaultWeight(),
+                    style = TextStyle(
+                        color = ColorProvider(data.textSecondary),
+                        fontSize = scaledSp(10f, data),
+                        textAlign = if (isRtl) TextAlign.End else TextAlign.Start
+                    ),
+                    maxLines = 1
+                )
+            }
+            val icon = @Composable {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_widget_mosque),
+                    contentDescription = null,
+                    modifier = GlanceModifier.size(13.dp),
+                    colorFilter = ColorFilter.tint(ColorProvider(data.accent))
+                )
+            }
+            if (isRtl) {
+                RefreshButton(data)
+                Spacer(GlanceModifier.width(3.dp))
+                location()
+                Spacer(GlanceModifier.width(4.dp))
+                icon()
+            } else {
+                icon()
+                Spacer(GlanceModifier.width(4.dp))
+                location()
+                Spacer(GlanceModifier.width(3.dp))
+                RefreshButton(data)
+            }
+        }
+        if (data.widgetSettings.showHijriDate) {
+            Text(
+                data.hijriText,
+                modifier = GlanceModifier.fillMaxWidth(),
+                style = TextStyle(
+                    color = ColorProvider(data.textSecondary),
+                    fontSize = scaledSp(9f, data),
+                    textAlign = if (isRtl) TextAlign.End else TextAlign.Start
+                ),
+                maxLines = 1
+            )
         }
     }
 }
@@ -498,12 +555,17 @@ private fun LocationHeader(data: GlanceWidgetData, isRtl: Boolean, showHijri: Bo
 
 @Composable
 private fun RefreshButton(data: GlanceWidgetData) {
-    Image(
-        provider = ImageProvider(R.drawable.ic_widget_refresh),
-        contentDescription = null,
-        modifier = GlanceModifier.size(20.dp).padding(3.dp).clickable(actionRunCallback<RefreshGlanceWidgetAction>()),
-        colorFilter = ColorFilter.tint(ColorProvider(data.textSecondary))
-    )
+    Box(
+        modifier = GlanceModifier.size(40.dp).clickable(actionRunCallback<RefreshGlanceWidgetAction>()),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            provider = ImageProvider(R.drawable.ic_widget_refresh),
+            contentDescription = null,
+            modifier = GlanceModifier.size(16.dp),
+            colorFilter = ColorFilter.tint(ColorProvider(data.textSecondary))
+        )
+    }
 }
 
 @Composable
