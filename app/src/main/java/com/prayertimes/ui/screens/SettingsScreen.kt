@@ -135,7 +135,6 @@ fun SettingsScreen(
     onUpdateCalculationMethod: (CalculationMethod) -> Unit,
     onUpdateJuristicMethod: (JuristicMethod) -> Unit,
     onUpdateHighLatitudeRule: (HighLatitudeRule) -> Unit,
-    onUpdateHijriOffset: (Int) -> Unit,
     onToggle24Hour: () -> Unit,
     onUpdateLanguage: (AppLanguage) -> Unit,
     onUpdateThemeMode: (AppThemeMode) -> Unit,
@@ -250,7 +249,6 @@ fun SettingsScreen(
             SettingsSubScreen.HIJRI_DISPLAY -> {
                 SettingsHijriDisplaySubScreen(
                     settings = settings,
-                    onUpdateHijriOffset = onUpdateHijriOffset,
                     onToggle24Hour = onToggle24Hour,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
@@ -354,7 +352,7 @@ private fun SettingsMainHub(
         // Hijri & Display
         SettingsHubCategoryCard(
             title = strings.displayHijriSection,
-            subtitle = "${if (settings.is24HourFormat) "24-Hour" else "12-Hour"} • ${if (settings.hijriAdjustmentDays == 0) "0 " + strings.days else (if (settings.hijriAdjustmentDays > 0) "+" else "") + settings.hijriAdjustmentDays + " " + strings.days}",
+            subtitle = stringResource(if (settings.is24HourFormat) R.string.time_format_24_summary else R.string.time_format_12_summary),
             icon = Icons.Default.CalendarMonth,
             testTag = "settings_cat_hijri",
             onClick = { onNavigateTo(SettingsSubScreen.HIJRI_DISPLAY) }
@@ -1803,7 +1801,6 @@ private fun SettingsLanguageSubScreen(
 @Composable
 private fun SettingsHijriDisplaySubScreen(
     settings: AppPrayerSettings,
-    onUpdateHijriOffset: (Int) -> Unit,
     onToggle24Hour: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -1853,61 +1850,6 @@ private fun SettingsHijriDisplaySubScreen(
                         checked = settings.is24HourFormat,
                         onCheckedChange = { onToggle24Hour() }
                     )
-                }
-            }
-
-            // Hijri Offset Stepper Card
-            Card(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = strings.hijriOffsetTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = strings.hijriOffsetDesc,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        FilledTonalButton(
-                            onClick = { onUpdateHijriOffset(settings.hijriAdjustmentDays - 1) },
-                            modifier = Modifier.size(44.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("-", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        Spacer(modifier = Modifier.width(20.dp))
-
-                        Text(
-                            text = "${if (settings.hijriAdjustmentDays > 0) "+" else ""}${settings.hijriAdjustmentDays} ${strings.days}",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-
-                        Spacer(modifier = Modifier.width(20.dp))
-
-                        FilledTonalButton(
-                            onClick = { onUpdateHijriOffset(settings.hijriAdjustmentDays + 1) },
-                            modifier = Modifier.size(44.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
                 }
             }
 

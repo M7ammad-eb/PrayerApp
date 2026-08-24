@@ -183,7 +183,7 @@
     </string-array>
 
     <!-- ===== Monthly Calendar ===== -->
-    <string name="calendar_title">Monthly Prayer Timetable</string>
+    <string name="calendar_title">Hijri Calendar</string>
     <string name="calendar_date_col">Date</string>
     <string name="calendar_hijri_col">Hijri</string>
     <string name="calendar_prev_month">Previous Month</string>
@@ -757,4 +757,51 @@
     <string name="country_argentina">Argentina</string>
     <string name="country_brazil">Brazil</string>
     <string name="country_mexico">Mexico</string>
+    <string name="prev_month">Previous Hijri month</string>
+    <string name="next_month">Next Hijri month</string>
+    <string name="hijri_calendar_year_format">%1$d AH</string>
+    <string name="hijri_calendar_today">Today</string>
+    <string name="hijri_calendar_adjustment_title">Hijri date adjustment</string>
+    <string name="hijri_calendar_adjustment_reset_note">Temporary • resets next Hijri month</string>
+    <string name="hijri_calendar_view_prayer_times">View prayer times for this day</string>
+    <string name="hijri_calendar_sunset_note">Umm al-Qura dates are shown. Islamic occasions begin at sunset on the preceding Gregorian evening and official moon-sighting announcements may differ. The current month can be adjusted with the + and − controls above; the adjustment resets automatically when the next Hijri month begins.</string>
+    <string name="hijri_calendar_legend_eid">Eid</string>
+    <string name="hijri_calendar_legend_fasting">Fasting</string>
+    <string name="hijri_calendar_legend_special">Special</string>
+    <string name="calendar_weekday_sun_short">Sun</string>
+    <string name="calendar_weekday_mon_short">Mon</string>
+    <string name="calendar_weekday_tue_short">Tue</string>
+    <string name="calendar_weekday_wed_short">Wed</string>
+    <string name="calendar_weekday_thu_short">Thu</string>
+    <string name="calendar_weekday_fri_short">Fri</string>
+    <string name="calendar_weekday_sat_short">Sat</string>
+    <string name="hijri_observance_new_year">Beginning of the Hijri year</string>
+    <string name="hijri_observance_tasua">Tasu‘a</string>
+    <string name="hijri_observance_ashura">Ashura</string>
+    <string name="hijri_observance_white_day">White Day</string>
+    <string name="hijri_observance_white_day_desc">The 13th, 14th and 15th are the White Days; fasting is recommended unless fasting is prohibited on that date.</string>
+    <string name="hijri_observance_recommended_fasting">Recommended fasting day</string>
+    <string name="hijri_observance_ramadan">Ramadan</string>
+    <string name="hijri_observance_ramadan_start">Beginning of Ramadan</string>
+    <string name="hijri_observance_last_ten_nights">Last ten nights of Ramadan</string>
+    <string name="hijri_observance_last_ten_nights_desc">A period of increased worship and seeking Laylat al-Qadr.</string>
+    <string name="hijri_observance_odd_night">One of Ramadan’s odd nights</string>
+    <string name="hijri_observance_odd_night_desc">One of the odd nights in the last ten on which Laylat al-Qadr is sought; its exact night is not asserted.</string>
+    <string name="hijri_observance_eid_fitr">Eid al-Fitr</string>
+    <string name="hijri_observance_first_ten_dhul_hijjah">First ten days of Dhu al-Hijjah</string>
+    <string name="hijri_observance_tarwiyah">Day of Tarwiyah</string>
+    <string name="hijri_observance_arafah">Day of Arafah</string>
+    <string name="hijri_observance_arafah_desc">Fasting is recommended for those not performing Hajj.</string>
+    <string name="hijri_observance_eid_adha">Eid al-Adha</string>
+    <string name="hijri_observance_tashreeq">Days of Tashreeq</string>
+    <string name="hijri_observance_tashreeq_desc">The 11th through 13th of Dhu al-Hijjah.</string>
+    <string name="hijri_observance_fasting_prohibited">Fasting is prohibited</string>
+    <string name="hijri_observance_fasting_prohibited_desc">This date is an Eid or one of the Days of Tashreeq.</string>
+    <string name="hijri_observance_sacred_month">One of the four sacred months</string>
+    <string name="hijri_calendar_sacred_month_badge">Sacred month</string>
+    <string name="hijri_observance_sacred_month_desc">Muharram, Rajab, Dhu al-Qi‘dah and Dhu al-Hijjah are the sacred months.</string>
+    <string name="hijri_observance_six_shawwal">Six days of Shawwal</string>
+    <string name="hijri_observance_six_shawwal_desc">Six optional fasting days may be observed anywhere in Shawwal after Eid al-Fitr.</string>
+    <string name="time_format_24_summary">24-hour time • 13:30</string>
+    <string name="time_format_12_summary">12-hour time • 1:30 PM</string>
 </resources>

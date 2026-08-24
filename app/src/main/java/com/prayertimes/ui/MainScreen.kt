@@ -98,7 +98,6 @@ fun MainScreen(
     val dailySchedule by viewModel.dailySchedule.collectAsState()
     val nextPrayerInfo by viewModel.nextPrayerInfo.collectAsState()
     val compassState by viewModel.compassState.collectAsState()
-    val monthlySchedule by viewModel.monthlySchedule.collectAsState()
     val isGpsLoading by viewModel.isGpsLoading.collectAsState()
     val locationErrorMessage by viewModel.locationErrorMessage.collectAsState()
 
@@ -221,7 +220,8 @@ fun MainScreen(
                         currentTab = AppNavTab.values()[selectedTab],
                         settings = settings,
                         strings = strings,
-                        onLocationClick = { showCityPickerFromHeader = true }
+                        onLocationClick = { showCityPickerFromHeader = true },
+                        onUpdateHijriAdjustment = { viewModel.updateHijriOffset(it) }
                     )
                 },
                 bottomBar = {
@@ -274,12 +274,12 @@ fun MainScreen(
                         }
                         AppNavTab.MONTHLY -> {
                             MonthlyCalendarScreen(
-                                monthlySchedule = monthlySchedule,
                                 selectedDate = selectedDate,
-                                location = settings.location,
-                                is24HourFormat = settings.is24HourFormat,
-                                onPreviousMonth = { viewModel.setSelectedDate(selectedDate.minusMonths(1)) },
-                                onNextMonth = { viewModel.setSelectedDate(selectedDate.plusMonths(1)) }
+                                hijriAdjustmentDays = settings.hijriAdjustmentDays,
+                                onViewPrayerTimes = { date ->
+                                    viewModel.setSelectedDate(date)
+                                    selectedTab = AppNavTab.PRAYER_TIMES.ordinal
+                                }
                             )
                         }
                         AppNavTab.SETTINGS -> {
@@ -309,7 +309,6 @@ fun MainScreen(
                                 onUpdateCalculationMethod = { viewModel.updateCalculationMethod(it) },
                                 onUpdateJuristicMethod = { viewModel.updateJuristicMethod(it) },
                                 onUpdateHighLatitudeRule = { viewModel.updateHighLatitudeRule(it) },
-                                onUpdateHijriOffset = { viewModel.updateHijriOffset(it) },
                                 onToggle24Hour = { viewModel.toggle24HourFormat() },
                                 onUpdateLanguage = { viewModel.updateLanguage(it) },
                                 onUpdateThemeMode = { viewModel.updateThemeMode(it) },
@@ -386,7 +385,8 @@ private fun ExpressiveTopHeader(
     currentTab: AppNavTab,
     settings: com.prayertimes.data.preferences.AppPrayerSettings,
     strings: com.prayertimes.ui.locale.AppStrings,
-    onLocationClick: () -> Unit
+    onLocationClick: () -> Unit,
+    onUpdateHijriAdjustment: (Int) -> Unit
 ) {
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -467,7 +467,49 @@ private fun ExpressiveTopHeader(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
+                if (currentTab == AppNavTab.MONTHLY) {
+                    CompactHijriAdjustmentControl(
+                        adjustmentDays = settings.hijriAdjustmentDays,
+                        onUpdate = onUpdateHijriAdjustment
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun CompactHijriAdjustmentControl(
+    adjustmentDays: Int,
+    onUpdate: (Int) -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Surface(
+            onClick = { onUpdate(adjustmentDays - 1) },
+            enabled = adjustmentDays > -2,
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(32.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) { Text("−", fontWeight = FontWeight.Bold) }
+        }
+        Text(
+            text = if (adjustmentDays > 0) "+$adjustmentDays" else adjustmentDays.toString(),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Surface(
+            onClick = { onUpdate(adjustmentDays + 1) },
+            enabled = adjustmentDays < 2,
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(32.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) { Text("+", fontWeight = FontWeight.Bold) }
         }
     }
 }

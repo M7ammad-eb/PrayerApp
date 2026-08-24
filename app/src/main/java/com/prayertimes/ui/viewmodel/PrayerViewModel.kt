@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.prayertimes.R
 import com.prayertimes.audio.AthanAudioEngine
 import com.prayertimes.data.calculator.PrayerTimesCalculator
+import com.prayertimes.data.calendar.HijriCalendar
 import com.prayertimes.data.models.AppColorPreset
 import com.prayertimes.data.models.AppLanguage
 import com.prayertimes.data.models.AppThemeMode
@@ -49,7 +50,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.Locale
@@ -140,9 +140,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     val compassState: StateFlow<CompassState> = compassManager.compassState
 
-    private val _monthlySchedule = MutableStateFlow<List<DailyPrayerSchedule>>(emptyList())
-    val monthlySchedule: StateFlow<List<DailyPrayerSchedule>> = _monthlySchedule.asStateFlow()
-
     // The stored IANA zone id can be invalid or missing for a hand-entered/legacy location, so every
     // schedule calculation falls back to the device zone rather than crashing.
     private fun AppPrayerSettings.zoneId(): ZoneId =
@@ -175,14 +172,15 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     // setForeground() from onPause/onResume.
     private val _isForeground = MutableStateFlow(true)
 
-    private var monthlyCalculationJob: Job? = null
     private var cachedBoundary: NextPrayerBoundary? = null
 
     fun setForeground(foreground: Boolean) {
         _isForeground.value = foreground
+        if (foreground) viewModelScope.launch { prefs.clearExpiredHijriOffset() }
     }
 
     init {
+        viewModelScope.launch { prefs.clearExpiredHijriOffset() }
         val initialSettings = settings.value
         compassManager.setLocation(initialSettings.location.latitude, initialSettings.location.longitude)
         recalculateSchedules(initialSettings, _selectedDate.value)
@@ -247,19 +245,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         val schedule = scheduleFor(currentSettings, date, zoneId, now)
         _dailySchedule.value = schedule
 
-        // Cancel any still-running monthly calculation before starting a new one - without this,
-        // rapid successive calls (e.g. quickly changing method then location) could let an older
-        // job finish after a newer one and overwrite its result with stale data.
-        monthlyCalculationJob?.cancel()
-        monthlyCalculationJob = viewModelScope.launch(Dispatchers.Default) {
-            val yearMonth = YearMonth.from(date)
-            val monthDays = (1..yearMonth.lengthOfMonth()).map { day ->
-                scheduleFor(currentSettings, yearMonth.atDay(day), zoneId, now)
-            }
-            if (isActive) {
-                _monthlySchedule.value = monthDays
-            }
-        }
     }
 
     private fun computeNextPrayerBoundary(currentSettings: AppPrayerSettings, now: ZonedDateTime): NextPrayerBoundary {
@@ -475,7 +460,8 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun updateHijriOffset(offset: Int) {
         viewModelScope.launch {
-            prefs.updateHijriOffset(offset)
+            val anchor = HijriCalendar.monthKeyFor(LocalDate.now())
+            prefs.updateHijriOffset(offset, anchor)
         }
     }
 

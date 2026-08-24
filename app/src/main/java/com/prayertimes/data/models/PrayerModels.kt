@@ -25,6 +25,24 @@ data class PrayerTimeItem(
     val isPassed: Boolean = false
 )
 
+enum class IslamicObservance {
+    HIJRI_NEW_YEAR,
+    TASUA,
+    ASHURA,
+    WHITE_DAY,
+    RAMADAN,
+    RAMADAN_START,
+    RAMADAN_LAST_TEN_NIGHTS,
+    RAMADAN_ODD_NIGHT,
+    EID_AL_FITR,
+    FIRST_TEN_DHU_AL_HIJJAH,
+    TARWIYAH,
+    ARAFAH,
+    EID_AL_ADHA,
+    TASHREEQ,
+    FASTING_PROHIBITED
+}
+
 data class HijriDate(
     val day: Int,
     val month: Int,
@@ -34,8 +52,7 @@ data class HijriDate(
     val formattedEn: String,
     val formattedAr: String,
     val calendarSource: String = "Umm al-Qura Calendar",
-    val islamicEvent: String? = null,
-    val islamicEventAr: String? = null,
+    val observances: List<IslamicObservance> = emptyList(),
     val isWhiteDay: Boolean = false,
     val isSacredMonth: Boolean = false
 )

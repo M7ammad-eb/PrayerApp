@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.prayertimes.data.calendar.HijriCalendar
 import com.prayertimes.data.cities.CityDatabase
 import com.prayertimes.data.models.AppColorPreset
 import com.prayertimes.data.models.AppLanguage
@@ -32,6 +33,7 @@ import com.prayertimes.data.models.WidgetTextStyle
 import com.prayertimes.data.models.WidgetThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "prayer_settings")
 
@@ -47,6 +49,7 @@ data class AppPrayerSettings(
     val juristicMethod: JuristicMethod = JuristicMethod.STANDARD,
     val highLatitudeRule: HighLatitudeRule = HighLatitudeRule.ANGLE_BASED,
     val hijriAdjustmentDays: Int = 0,
+    val hijriAdjustmentAnchorMonth: String? = null,
     val is24HourFormat: Boolean = false,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
@@ -107,6 +110,7 @@ class PrayerPreferences(private val context: Context) {
         private const val KEY_JURISTIC_METHOD = "cached_juristic_method"
         private const val KEY_HIGH_LAT_RULE = "cached_high_lat_rule"
         private const val KEY_HIJRI_OFFSET = "cached_hijri_offset"
+        private const val KEY_HIJRI_OFFSET_ANCHOR = "cached_hijri_offset_anchor"
 
         private const val KEY_ADJ_FAJR = "cached_adj_fajr"
         private const val KEY_ADJ_SUNRISE = "cached_adj_sunrise"
@@ -156,7 +160,10 @@ class PrayerPreferences(private val context: Context) {
             val juristic = parseEnumOrDefault(fastPrefs.getString(KEY_JURISTIC_METHOD, null), JuristicMethod.STANDARD)
             val highLat = parseEnumOrDefault(fastPrefs.getString(KEY_HIGH_LAT_RULE, null), HighLatitudeRule.ANGLE_BASED)
 
-            val hijriOffset = fastPrefs.getInt(KEY_HIJRI_OFFSET, 0)
+            val rawHijriOffset = fastPrefs.getInt(KEY_HIJRI_OFFSET, 0)
+            val rawHijriAnchor = fastPrefs.getString(KEY_HIJRI_OFFSET_ANCHOR, null)?.takeIf { it.isNotBlank() }
+            val hijriOffset = HijriCalendar.effectiveAdjustment(rawHijriOffset, rawHijriAnchor, LocalDate.now())
+            val hijriOffsetAnchor = rawHijriAnchor.takeIf { hijriOffset != 0 }
 
             // 3. Adjustments
             val adjustments = PrayerTimeAdjustments(
@@ -219,6 +226,7 @@ class PrayerPreferences(private val context: Context) {
                 juristicMethod = juristic,
                 highLatitudeRule = highLat,
                 hijriAdjustmentDays = hijriOffset,
+                hijriAdjustmentAnchorMonth = hijriOffsetAnchor,
                 is24HourFormat = is24h,
                 language = lang,
                 themeMode = theme,
@@ -248,6 +256,7 @@ class PrayerPreferences(private val context: Context) {
         val JURISTIC_METHOD = stringPreferencesKey("juristic_method")
         val HIGH_LAT_RULE = stringPreferencesKey("high_lat_rule")
         val HIJRI_OFFSET = intPreferencesKey("hijri_offset")
+        val HIJRI_OFFSET_ANCHOR = stringPreferencesKey("hijri_offset_anchor")
         val IS_24_HOUR = booleanPreferencesKey("is_24_hour")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
         val THEME_MODE = stringPreferencesKey("theme_mode")
@@ -303,7 +312,10 @@ class PrayerPreferences(private val context: Context) {
         val juristic = parseEnumOrDefault(prefs[Keys.JURISTIC_METHOD], JuristicMethod.STANDARD)
         val highLat = parseEnumOrDefault(prefs[Keys.HIGH_LAT_RULE], HighLatitudeRule.ANGLE_BASED)
 
-        val hijriOffset = prefs[Keys.HIJRI_OFFSET] ?: 0
+        val rawHijriOffset = prefs[Keys.HIJRI_OFFSET] ?: 0
+        val rawHijriAnchor = prefs[Keys.HIJRI_OFFSET_ANCHOR]?.takeIf { it.isNotBlank() }
+        val hijriOffset = HijriCalendar.effectiveAdjustment(rawHijriOffset, rawHijriAnchor, LocalDate.now())
+        val hijriOffsetAnchor = rawHijriAnchor.takeIf { hijriOffset != 0 }
         val is24Hour = prefs[Keys.IS_24_HOUR] ?: false
         val language = parseEnumOrDefault(prefs[Keys.APP_LANGUAGE], AppLanguage.SYSTEM)
         val themeMode = parseEnumOrDefault(prefs[Keys.THEME_MODE], AppThemeMode.SYSTEM)
@@ -409,6 +421,7 @@ class PrayerPreferences(private val context: Context) {
             .putString(KEY_JURISTIC_METHOD, juristic.name)
             .putString(KEY_HIGH_LAT_RULE, highLat.name)
             .putInt(KEY_HIJRI_OFFSET, hijriOffset)
+            .putString(KEY_HIJRI_OFFSET_ANCHOR, hijriOffsetAnchor.orEmpty())
             .putInt(KEY_ADJ_FAJR, adjustments.fajr)
             .putInt(KEY_ADJ_SUNRISE, adjustments.sunrise)
             .putInt(KEY_ADJ_DHUHR, adjustments.dhuhr)
@@ -428,6 +441,7 @@ class PrayerPreferences(private val context: Context) {
             juristicMethod = juristic,
             highLatitudeRule = highLat,
             hijriAdjustmentDays = hijriOffset,
+            hijriAdjustmentAnchorMonth = hijriOffsetAnchor,
             is24HourFormat = is24Hour,
             language = language,
             themeMode = themeMode,
@@ -562,12 +576,30 @@ class PrayerPreferences(private val context: Context) {
         }
     }
 
-    suspend fun updateHijriOffset(offset: Int) {
+    suspend fun updateHijriOffset(
+        offset: Int,
+        anchorMonth: String? = if (offset == 0) null else HijriCalendar.monthKeyFor(LocalDate.now())
+    ) {
+        val boundedOffset = offset.coerceIn(-2, 2)
+        val storedAnchor = anchorMonth.takeIf { boundedOffset != 0 }
         val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putInt(KEY_HIJRI_OFFSET, offset).apply()
+        fastPrefs.edit()
+            .putInt(KEY_HIJRI_OFFSET, boundedOffset)
+            .putString(KEY_HIJRI_OFFSET_ANCHOR, storedAnchor.orEmpty())
+            .apply()
         context.dataStore.edit { prefs ->
-            prefs[Keys.HIJRI_OFFSET] = offset
+            prefs[Keys.HIJRI_OFFSET] = boundedOffset
+            if (storedAnchor == null) prefs.remove(Keys.HIJRI_OFFSET_ANCHOR)
+            else prefs[Keys.HIJRI_OFFSET_ANCHOR] = storedAnchor
         }
+    }
+
+    suspend fun clearExpiredHijriOffset() {
+        val currentMonth = HijriCalendar.monthKeyFor(LocalDate.now())
+        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
+        val offset = fastPrefs.getInt(KEY_HIJRI_OFFSET, 0)
+        val anchor = fastPrefs.getString(KEY_HIJRI_OFFSET_ANCHOR, null)?.takeIf { it.isNotBlank() }
+        if (offset != 0 && anchor != currentMonth) updateHijriOffset(0, null)
     }
 
     suspend fun updateIs24Hour(is24: Boolean) {

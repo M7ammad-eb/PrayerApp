@@ -120,8 +120,8 @@
     <string name="sound_name_athan_fajr2_jordan_allala">أذان الفجر (الأردن) - كامل اللالا</string>
     <string name="sound_name_athan_riyadh_qatami">أذان الرياض - ناصر القطامي</string>
     <string name="sound_name_athan_qatar_nabet">أذان قطر - صالح النابت</string>
-    <string name="sound_name_athan_quds_qazaz_1">أذان المسجد الأقصى - ناجي قزاز (١)</string>
-    <string name="sound_name_athan_quds_qazaz_2">أذان المسجد الأقصى - ناجي قزاز (٢)</string>
+    <string name="sound_name_athan_quds_qazaz_1">أذان المسجد الأقصى - ناجي قزاز (1)</string>
+    <string name="sound_name_athan_quds_qazaz_2">أذان المسجد الأقصى - ناجي قزاز (2)</string>
     <string name="sound_name_athan_egypt_dawod">أذان مصر - أحمد داود</string>
     <string name="sound_name_athan_egypt_alalfi">أذان مصر - صلاح الألفي</string>
     <string name="sound_name_athan_egypt_abdulaati">أذان مصر (الحسين) - سيد عبد العاطي</string>
@@ -183,7 +183,7 @@
     </string-array>
 
     <!-- ===== Monthly Calendar ===== -->
-    <string name="calendar_title">جدول أوقات الصلاة للشهر</string>
+    <string name="calendar_title">التقويم الهجري</string>
     <string name="calendar_date_col">اليوم</string>
     <string name="calendar_hijri_col">الهجري</string>
     <string name="calendar_prev_month">الشهر السابق</string>
@@ -502,7 +502,7 @@
     <string name="widget_herotime_both">كلاهما (للودجت العريض)</string>
 
     <!-- Live preview mock text (fixed example values, not real countdowns) -->
-    <string name="widget_preview_mock_hijri_date">• ١٤ صفر ١٤٤٨ هـ</string>
+    <string name="widget_preview_mock_hijri_date">• 14 صفر 1448 هـ</string>
     <string name="widget_preview_mock_minutes_bare">%1$dد</string>
     <string name="widget_preview_compact_prev_label">الظهر</string>
     <string name="widget_preview_compact_next_label">العصر</string>
@@ -761,4 +761,51 @@
     <string name="country_argentina">الأرجنتين</string>
     <string name="country_brazil">البرازيل</string>
     <string name="country_mexico">المكسيك</string>
+    <string name="prev_month">الشهر الهجري السابق</string>
+    <string name="next_month">الشهر الهجري التالي</string>
+    <string name="hijri_calendar_year_format">%1$d هـ</string>
+    <string name="hijri_calendar_today">اليوم</string>
+    <string name="hijri_calendar_adjustment_title">تعديل التاريخ الهجري</string>
+    <string name="hijri_calendar_adjustment_reset_note">مؤقت • يُصفّر مع بداية الشهر الهجري القادم</string>
+    <string name="hijri_calendar_view_prayer_times">عرض مواقيت الصلاة لهذا اليوم</string>
+    <string name="hijri_calendar_sunset_note">تُعرض تواريخ تقويم أم القرى. تبدأ المناسبات الإسلامية من مغرب الليلة السابقة بالتاريخ الميلادي، وقد يختلف الإعلان الرسمي لرؤية الهلال. يمكن ضبط تاريخ الشهر الحالي فقط من أزرار + و− أعلاه، ويُصفّر الضبط تلقائياً مع بداية الشهر الهجري التالي.</string>
+    <string name="hijri_calendar_legend_eid">عيد</string>
+    <string name="hijri_calendar_legend_fasting">صيام</string>
+    <string name="hijri_calendar_legend_special">مناسبة</string>
+    <string name="calendar_weekday_sun_short">الأحد</string>
+    <string name="calendar_weekday_mon_short">الإثنين</string>
+    <string name="calendar_weekday_tue_short">الثلاثاء</string>
+    <string name="calendar_weekday_wed_short">الأربعاء</string>
+    <string name="calendar_weekday_thu_short">الخميس</string>
+    <string name="calendar_weekday_fri_short">الجمعة</string>
+    <string name="calendar_weekday_sat_short">السبت</string>
+    <string name="hijri_observance_new_year">بداية السنة الهجرية</string>
+    <string name="hijri_observance_tasua">تاسوعاء</string>
+    <string name="hijri_observance_ashura">عاشوراء</string>
+    <string name="hijri_observance_white_day">يوم من الأيام البيض</string>
+    <string name="hijri_observance_white_day_desc">الثالث عشر والرابع عشر والخامس عشر هي الأيام البيض، ويُستحب صيامها ما لم يكن الصيام محرماً في ذلك اليوم.</string>
+    <string name="hijri_observance_recommended_fasting">يُستحب صيام هذا اليوم</string>
+    <string name="hijri_observance_ramadan">شهر رمضان</string>
+    <string name="hijri_observance_ramadan_start">بداية شهر رمضان</string>
+    <string name="hijri_observance_last_ten_nights">العشر الأواخر من رمضان</string>
+    <string name="hijri_observance_last_ten_nights_desc">أيام وليالٍ يُستحب فيها الاجتهاد وطلب ليلة القدر.</string>
+    <string name="hijri_observance_odd_night">ليلة وترية من العشر الأواخر</string>
+    <string name="hijri_observance_odd_night_desc">إحدى الليالي الوترية التي تُلتمس فيها ليلة القدر دون الجزم بليلة محددة.</string>
+    <string name="hijri_observance_eid_fitr">عيد الفطر</string>
+    <string name="hijri_observance_first_ten_dhul_hijjah">العشر الأول من ذي الحجة</string>
+    <string name="hijri_observance_tarwiyah">يوم التروية</string>
+    <string name="hijri_observance_arafah">يوم عرفة</string>
+    <string name="hijri_observance_arafah_desc">يُستحب صيامه لغير الحاج.</string>
+    <string name="hijri_observance_eid_adha">عيد الأضحى</string>
+    <string name="hijri_observance_tashreeq">أيام التشريق</string>
+    <string name="hijri_observance_tashreeq_desc">الحادي عشر والثاني عشر والثالث عشر من ذي الحجة.</string>
+    <string name="hijri_observance_fasting_prohibited">يحرم الصيام</string>
+    <string name="hijri_observance_fasting_prohibited_desc">هذا اليوم يوم عيد أو من أيام التشريق.</string>
+    <string name="hijri_observance_sacred_month">من الأشهر الحرم</string>
+    <string name="hijri_calendar_sacred_month_badge">من الأشهر الحرم</string>
+    <string name="hijri_observance_sacred_month_desc">محرّم ورجب وذو القعدة وذو الحجة هي الأشهر الحرم.</string>
+    <string name="hijri_observance_six_shawwal">صيام ستة أيام من شوال</string>
+    <string name="hijri_observance_six_shawwal_desc">يمكن صيام ستة أيام تطوعاً في أي وقت من شوال بعد عيد الفطر.</string>
+    <string name="time_format_24_summary">نظام 24 ساعة • 13:30</string>
+    <string name="time_format_12_summary">نظام 12 ساعة • 1:30 م</string>
 </resources>
