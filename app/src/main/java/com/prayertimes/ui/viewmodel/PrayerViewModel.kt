@@ -542,14 +542,26 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    private var widgetSettingsUpdateJob: kotlinx.coroutines.Job? = null
+
     fun updateWidgetSettings(settings: com.prayertimes.data.models.WidgetCustomizationSettings) {
-        viewModelScope.launch {
+        widgetSettingsUpdateJob?.cancel()
+        widgetSettingsUpdateJob = viewModelScope.launch {
             prefs.updateWidgetSettings(settings)
+            // Refresh only after DataStore has committed the new settings. The UI previously
+            // started these as two unrelated asynchronous operations, so the widget frequently
+            // recomposed from the old value (most visibly when switching the hero to BOTH).
+            PrayerAppWidgetProvider.updateAllWidgets(getApplication())
         }
     }
 
     fun refreshAllWidgets() {
-        PrayerAppWidgetProvider.updateAllWidgets(getApplication())
+        viewModelScope.launch {
+            // If the Apply button is tapped while a setting write is still in flight, wait for it
+            // rather than refreshing stale preferences and falsely showing an applied notice.
+            widgetSettingsUpdateJob?.join()
+            PrayerAppWidgetProvider.updateAllWidgets(getApplication())
+        }
     }
 
     fun previewNotificationSound(soundType: NotificationSoundType, prayerType: PrayerType = PrayerType.DHUHR) {

@@ -88,6 +88,23 @@
                 android:resource="@xml/prayer_appwidget_info" />
         </receiver>
 
+        <!-- Responsive Jetpack Glance widget; classic widget remains during rollout. -->
+        <receiver
+            android:name=".widget.glance.PrayerGlanceWidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="com.prayertimes.ACTION_PRAYER_ALARM" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/prayer_glance_widget_info" />
+        </receiver>
+
         <service
             android:name=".audio.AthanAudioService"
             android:exported="false"

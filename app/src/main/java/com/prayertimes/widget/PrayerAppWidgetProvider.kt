@@ -89,6 +89,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                     }
                 }
             }
+            // Keep both widget implementations synchronized during the Glance rollout.
+            com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(context)
         }
 
         fun resolveWidgetColors(context: Context, settings: AppPrayerSettings): WidgetColorScheme {
@@ -313,7 +315,10 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 activePrayerBgColor = activePrayerBg,
                 inactivePrayerBgColor = inactivePrayerBg,
                 countdownBgColor = countdownBg,
-                fontScale = wSet.fontSize.scaleFactor
+                // XML layouts already define size-appropriate typography. The Glance widget
+                // derives its scale continuously from the exact host rectangle, so the former
+                // user font-size override is intentionally no longer applied by either renderer.
+                fontScale = 1f
             )
         }
     }
@@ -440,16 +445,8 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         val previousItem = todaySchedule.prayerItems
             .filter { it.type != PrayerType.SUNRISE && it.zonedDateTime.isBefore(nextPrayerZoned) }
             .lastOrNull()
-        val totalSpanSeconds = if (previousItem != null) {
-            Duration.between(previousItem.zonedDateTime, nextPrayerZoned).seconds.coerceAtLeast(1)
-        } else {
-            Duration.between(today.minusDays(1).atTime(todaySchedule.isha).atZone(zoneId), nextPrayerZoned).seconds.coerceAtLeast(1)
-        }
-        val elapsed = totalSpanSeconds - diffSeconds
-        val progressPercent = ((elapsed.toFloat() / totalSpanSeconds) * 100).toInt().coerceIn(0, 100)
-
         // Previous prayer ("current prayer, since...") - falls back to yesterday's Isha before
-        // today's first prayer has happened yet, same as the totalSpanSeconds fallback above.
+        // today's first prayer has happened yet.
         val previousPrayerType = previousItem?.type ?: PrayerType.ISHA
         val previousPrayerZoned = previousItem?.zonedDateTime
             ?: today.minusDays(1).atTime(todaySchedule.isha).atZone(zoneId)
@@ -575,7 +572,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 prayerName = prayerDisplayName,
                 prayerTime = formattedNextTime,
                 countdown = countdownFormatted,
-                progressPercent = progressPercent,
                 timeFormatter = timeFormatter,
                 mainIntent = mainPendingIntent,
                 refreshIntent = refreshPendingIntent,
@@ -596,7 +592,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 prayerTime = formattedNextTime,
                 countdown = countdownFormatted,
                 diffSeconds = diffSeconds,
-                progressPercent = progressPercent,
                 timeFormatter = timeFormatter,
                 mainIntent = mainPendingIntent,
                 refreshIntent = refreshPendingIntent,
@@ -624,7 +619,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 prayerTime = formattedNextTime,
                 countdown = countdownFormatted,
                 diffSeconds = diffSeconds,
-                progressPercent = progressPercent,
                 timeFormatter = timeFormatter,
                 mainIntent = mainPendingIntent,
                 refreshIntent = refreshPendingIntent,
@@ -932,7 +926,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         prayerName: String,
         prayerTime: String,
         countdown: String,
-        progressPercent: Int,
         timeFormatter: DateTimeFormatter,
         mainIntent: PendingIntent,
         refreshIntent: PendingIntent,
@@ -975,13 +968,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
             views.setTextViewTextSize(R.id.widget_med_countdown, TypedValue.COMPLEX_UNIT_SP, 10f * scale)
         } else {
             views.setViewVisibility(R.id.widget_med_countdown_container, View.GONE)
-        }
-
-        if (wSet.showProgressBar) {
-            views.setViewVisibility(R.id.widget_med_prayer_progress, View.VISIBLE)
-            views.setProgressBar(R.id.widget_med_prayer_progress, 100, progressPercent, false)
-        } else {
-            views.setViewVisibility(R.id.widget_med_prayer_progress, View.GONE)
         }
 
         val prayerMap = todaySchedule.prayerItems.associateBy { it.type }
@@ -1029,7 +1015,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         prayerTime: String,
         countdown: String,
         diffSeconds: Long,
-        progressPercent: Int,
         timeFormatter: DateTimeFormatter,
         mainIntent: PendingIntent,
         refreshIntent: PendingIntent,
@@ -1114,7 +1099,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_hero_next_in, countdown)
                 views.setTextColor(R.id.widget_hero_next_in, colors.textSecondaryColor)
 
-                views.setViewVisibility(R.id.widget_prayer_progress, View.GONE)
             } else {
                 views.setViewVisibility(R.id.widget_hero_single_content, View.VISIBLE)
                 views.setViewVisibility(R.id.widget_hero_dual_content, View.GONE)
@@ -1150,12 +1134,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                     views.setViewVisibility(R.id.widget_countdown_container, View.GONE)
                 }
 
-                if (wSet.showProgressBar) {
-                    views.setViewVisibility(R.id.widget_prayer_progress, View.VISIBLE)
-                    views.setProgressBar(R.id.widget_prayer_progress, 100, progressPercent, false)
-                } else {
-                    views.setViewVisibility(R.id.widget_prayer_progress, View.GONE)
-                }
             }
         } else {
             views.setViewVisibility(R.id.widget_hero_card, View.GONE)
@@ -1189,7 +1167,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
         prayerTime: String,
         countdown: String,
         diffSeconds: Long,
-        progressPercent: Int,
         timeFormatter: DateTimeFormatter,
         mainIntent: PendingIntent,
         refreshIntent: PendingIntent,
@@ -1274,7 +1251,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_exp_hero_next_in, countdown)
                 views.setTextColor(R.id.widget_exp_hero_next_in, colors.textSecondaryColor)
 
-                views.setViewVisibility(R.id.widget_exp_prayer_progress, View.GONE)
             } else {
                 views.setViewVisibility(R.id.widget_exp_hero_single_content, View.VISIBLE)
                 views.setViewVisibility(R.id.widget_exp_hero_dual_content, View.GONE)
@@ -1307,12 +1283,6 @@ class PrayerAppWidgetProvider : AppWidgetProvider() {
                     views.setViewVisibility(R.id.widget_exp_countdown_container, View.GONE)
                 }
 
-                if (wSet.showProgressBar) {
-                    views.setViewVisibility(R.id.widget_exp_prayer_progress, View.VISIBLE)
-                    views.setProgressBar(R.id.widget_exp_prayer_progress, 100, progressPercent, false)
-                } else {
-                    views.setViewVisibility(R.id.widget_exp_prayer_progress, View.GONE)
-                }
             }
         } else {
             views.setViewVisibility(R.id.widget_exp_hero_card, View.GONE)

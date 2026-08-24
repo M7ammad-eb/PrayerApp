@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">صلاتي</string>
     <string name="widget_description">يعرض وقت الصلاة القادمة والعد التنازلي على شاشتك الرئيسية.</string>
+    <string name="widget_description_glance_test">أوقات صلاة سلاتي (ودجت اختبار Glance، ليس للاستخدام العادي).</string>
 
     <!-- ===== App Branding ===== -->
     <string name="app_brand_name">صلاتي</string>
@@ -69,7 +70,6 @@
     <string name="widget_settings_content_section_subtitle">اختر ما يظهر في الودجت</string>
     <string name="widget_settings_toggle_show_hero_desc">بطاقة كبيرة للصلاة القادمة (أو الماضية)</string>
     <string name="widget_settings_toggle_show_countdown_desc">الوقت المتبقي، يظهر في البطاقة الرئيسية</string>
-    <string name="widget_settings_toggle_show_progress_desc">شريط بين الصلاة السابقة والقادمة</string>
     <string name="widget_settings_toggle_show_all_prayers_desc">صف يضم كل أوقات الصلاة الستة</string>
     <string name="widget_settings_toggle_show_sunrise_desc">تضمين الشروق في صف الصلوات</string>
     <string name="widget_settings_toggle_show_location_desc">اسم المدينة في أعلى الودجت</string>
@@ -388,7 +388,7 @@
 
     <!-- ===== Widget Customization Strings ===== -->
     <string name="widget_settings_section">التطبيقات المصغرة (الودجت)</string>
-    <string name="widget_settings_section_subtitle">تخصيص الألوان، الشفافية، الخط والمحتوى</string>
+    <string name="widget_settings_section_subtitle">تخصيص الألوان، الشفافية والمحتوى</string>
     <string name="widget_settings_theme_mode_title">ثيم وألوان الودجت</string>
     <string name="widget_settings_bg_style_title">نمط الخلفية</string>
     <string name="widget_settings_opacity_title">درجة الشفافية</string>
@@ -450,6 +450,10 @@
 
     <!-- ===== Widget Customization Screen ===== -->
     <string name="widget_settings_intro_banner">خصص شكل وحجم التطبيق المصغر على شاشتك الرئيسية ليتناسب تماماً مع أي عدد من الأعمدة والصفوف (من عمود واحد نحيف إلى الشاشة الكاملة).</string>
+    <string name="widget_settings_hero_section_title">بطاقة الصلاة الرئيسية</string>
+    <string name="widget_settings_hero_section_subtitle">اختر الصلاة البارزة والعدّ التنازلي</string>
+    <string name="widget_settings_schedule_section_title">الجدول والترويسة</string>
+    <string name="widget_settings_schedule_section_subtitle">اختر صفوف الصلوات والموقع والتاريخ الهجري</string>
     <string name="widget_settings_applied_notice">✓ تم تحديث جميع الودجات على الشاشة الرئيسية بنجاح!</string>
     <string name="widget_settings_opacity_transparent">شفاف (0%)</string>
     <string name="widget_settings_opacity_solid">معتم كامل (100%)</string>
@@ -458,7 +462,6 @@
     <string name="widget_settings_toggle_show_location">إظهار الموقع واسم المدينة</string>
     <string name="widget_settings_toggle_show_hijri">إظهار التاريخ الهجري</string>
     <string name="widget_settings_toggle_show_countdown">إظهار العداد التنازلي المتبقي</string>
-    <string name="widget_settings_toggle_show_progress">إظهار شريط التقدم للوقت المنقضي</string>
     <string name="widget_settings_toggle_show_sunrise">إظهار وقت الشروق في القائمة</string>
     <string name="widget_settings_toggle_show_hero">إظهار بطاقة الصلاة القادمة (Hero Card)</string>
     <string name="widget_settings_toggle_show_all_prayers">إظهار قائمة كافة الصلوات</string>

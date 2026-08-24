@@ -3,7 +3,6 @@ package com.prayertimes.ui.screens
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,33 +22,29 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.StayCurrentPortrait
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.WbSunny
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Slider
@@ -81,7 +76,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.prayertimes.data.models.WidgetBackgroundStyle
 import com.prayertimes.data.models.WidgetCustomizationSettings
-import com.prayertimes.data.models.WidgetFontSize
 import com.prayertimes.data.models.WidgetHeroTimeMode
 import com.prayertimes.data.models.WidgetTextStyle
 import com.prayertimes.data.models.WidgetThemeMode
@@ -125,7 +119,10 @@ fun SettingsWidgetSubScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 IconButton(onClick = onBack, modifier = Modifier.testTag("widget_back_button")) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -134,18 +131,26 @@ fun SettingsWidgetSubScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = strings.widgetsSection,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = strings.widgetsSection,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = stringResource(R.string.widget_settings_intro_banner),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             IconButton(
                 onClick = {
                     onUpdateWidgetSettings(WidgetCustomizationSettings())
-                    onRefreshAllWidgets()
                 },
                 modifier = Modifier.testTag("widget_reset_button")
             ) {
@@ -165,65 +170,42 @@ fun SettingsWidgetSubScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Description banner
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-                ),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
+            // Live preview header and the one explicit device refresh action.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Text(
+                    text = strings.widgetPreviewTitle,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                FilledTonalButton(
+                    onClick = {
+                        onRefreshAllWidgets()
+                        showAppliedNotice = true
+                    },
+                    modifier = Modifier.testTag("apply_widget_settings_btn"),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.StayCurrentPortrait,
+                        imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(17.dp)
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = stringResource(R.string.widget_settings_intro_banner),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = strings.widgetRefreshAll, style = MaterialTheme.typography.labelMedium)
                 }
             }
 
-            // Live Preview Card Header
-            Text(
-                text = strings.widgetPreviewTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+            WidgetPreviewTypeSelector(
+                currentType = selectedPreviewType,
+                onSelectType = { selectedPreviewType = it }
             )
-
-            // Preview Type Selector Chips
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                WidgetPreviewType.values().forEach { type ->
-                    FilterChip(
-                        selected = selectedPreviewType == type,
-                        onClick = { selectedPreviewType = type },
-                        label = {
-                            Text(
-                                text = stringResource(type.labelRes),
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    )
-                }
-            }
 
             // Live Widget Render Box
             WidgetCanvasPreview(
@@ -232,31 +214,6 @@ fun SettingsWidgetSubScreen(
                 previewType = selectedPreviewType,
                 isArabic = strings.isArabic
             )
-
-            // Primary Apply Button
-            Button(
-                onClick = {
-                    onRefreshAllWidgets()
-                    showAppliedNotice = true
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("apply_widget_settings_btn"),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = strings.widgetRefreshAll,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                )
-            }
 
             if (showAppliedNotice) {
                 Text(
@@ -279,7 +236,6 @@ fun SettingsWidgetSubScreen(
                     currentTheme = wSet.themeMode,
                     onSelectTheme = {
                         onUpdateWidgetSettings(wSet.copy(themeMode = it))
-                        onRefreshAllWidgets()
                     }
                 )
 
@@ -290,7 +246,6 @@ fun SettingsWidgetSubScreen(
                     currentStyle = wSet.bgStyle,
                     onSelectStyle = {
                         onUpdateWidgetSettings(wSet.copy(bgStyle = it))
-                        onRefreshAllWidgets()
                     }
                 )
 
@@ -335,9 +290,6 @@ fun SettingsWidgetSubScreen(
                         onValueChange = {
                             onUpdateWidgetSettings(wSet.copy(opacityPercent = it.toInt()))
                         },
-                        onValueChangeFinished = {
-                            onRefreshAllWidgets()
-                        },
                         valueRange = 0f..100f,
                         steps = 19,
                         colors = SliderDefaults.colors(
@@ -365,17 +317,6 @@ fun SettingsWidgetSubScreen(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
-                WidgetSettingsSubLabel(strings.widgetFontSizeTitle)
-                WidgetFontSizeSelector(
-                    currentSize = wSet.fontSize,
-                    onSelectSize = {
-                        onUpdateWidgetSettings(wSet.copy(fontSize = it))
-                        onRefreshAllWidgets()
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
                 // Text Color Style - a manual escape hatch for when the theme's own text colors
                 // can't be trusted for contrast, since a transparent/near-transparent widget has no
                 // way to know what's actually behind it (see PrayerAppWidgetProvider.resolveWidgetColors).
@@ -384,35 +325,25 @@ fun SettingsWidgetSubScreen(
                     currentStyle = wSet.textStyle,
                     onSelectStyle = {
                         onUpdateWidgetSettings(wSet.copy(textStyle = it))
-                        onRefreshAllWidgets()
                     }
                 )
             }
 
-            // ===== Behavior: hero card timing mode =====
+            // Hero controls belong together: display, timing, then the dependent countdown.
             WidgetSettingsSectionCard(
                 icon = Icons.Default.Schedule,
-                title = strings.widgetBehaviorSectionTitle,
-                subtitle = strings.widgetBehaviorSectionSubtitle
+                title = stringResource(R.string.widget_settings_hero_section_title),
+                subtitle = stringResource(R.string.widget_settings_hero_section_subtitle)
             ) {
-                // "In 2h 41m" (next prayer) vs "Since 2h 10m" (current/last prayer). Only one at
-                // a time, per user preference.
                 WidgetHeroTimeModeSelector(
                     currentMode = wSet.heroTimeMode,
                     onSelectMode = {
                         onUpdateWidgetSettings(wSet.copy(heroTimeMode = it))
-                        onRefreshAllWidgets()
                     }
                 )
-            }
 
-            // ===== Content: what shows on the widget, with dependent toggles dimmed when their
-            // parent is off (e.g. Countdown/Progress do nothing while the Hero Card is hidden) =====
-            WidgetSettingsSectionCard(
-                icon = Icons.Default.Tune,
-                title = strings.widgetContentTitle,
-                subtitle = strings.widgetContentSectionSubtitle
-            ) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+
                 WidgetToggleRow(
                     icon = Icons.Default.Layers,
                     title = stringResource(R.string.widget_settings_toggle_show_hero),
@@ -420,7 +351,6 @@ fun SettingsWidgetSubScreen(
                     checked = wSet.showHeroCard,
                     onCheckedChange = {
                         onUpdateWidgetSettings(wSet.copy(showHeroCard = it))
-                        onRefreshAllWidgets()
                     }
                 )
 
@@ -433,27 +363,18 @@ fun SettingsWidgetSubScreen(
                         enabled = wSet.showHeroCard,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showCountdown = it))
-                            onRefreshAllWidgets()
                         }
                     )
                 }
 
-                Box(modifier = Modifier.padding(start = 28.dp)) {
-                    WidgetToggleRow(
-                        icon = Icons.Default.ShowChart,
-                        title = stringResource(R.string.widget_settings_toggle_show_progress),
-                        subtitle = strings.widgetToggleShowProgressDesc,
-                        checked = wSet.showProgressBar,
-                        enabled = wSet.showHeroCard,
-                        onCheckedChange = {
-                            onUpdateWidgetSettings(wSet.copy(showProgressBar = it))
-                            onRefreshAllWidgets()
-                        }
-                    )
-                }
+            }
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
+            // Schedule and header metadata form the second independent content group.
+            WidgetSettingsSectionCard(
+                icon = Icons.Default.Tune,
+                title = stringResource(R.string.widget_settings_schedule_section_title),
+                subtitle = stringResource(R.string.widget_settings_schedule_section_subtitle)
+            ) {
                 WidgetToggleRow(
                     icon = Icons.Default.FormatListBulleted,
                     title = stringResource(R.string.widget_settings_toggle_show_all_prayers),
@@ -461,7 +382,6 @@ fun SettingsWidgetSubScreen(
                     checked = wSet.showAllPrayersList,
                     onCheckedChange = {
                         onUpdateWidgetSettings(wSet.copy(showAllPrayersList = it))
-                        onRefreshAllWidgets()
                     }
                 )
 
@@ -474,7 +394,6 @@ fun SettingsWidgetSubScreen(
                         enabled = wSet.showAllPrayersList,
                         onCheckedChange = {
                             onUpdateWidgetSettings(wSet.copy(showSunrise = it))
-                            onRefreshAllWidgets()
                         }
                     )
                 }
@@ -488,7 +407,6 @@ fun SettingsWidgetSubScreen(
                     checked = wSet.showLocation,
                     onCheckedChange = {
                         onUpdateWidgetSettings(wSet.copy(showLocation = it))
-                        onRefreshAllWidgets()
                     }
                 )
 
@@ -499,12 +417,76 @@ fun SettingsWidgetSubScreen(
                     checked = wSet.showHijriDate,
                     onCheckedChange = {
                         onUpdateWidgetSettings(wSet.copy(showHijriDate = it))
-                        onRefreshAllWidgets()
                     }
                 )
             }
 
             Spacer(modifier = Modifier.height(60.dp))
+        }
+    }
+}
+
+@Composable
+private fun WidgetPreviewTypeSelector(
+    currentType: WidgetPreviewType,
+    onSelectType: (WidgetPreviewType) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedCard(
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.StayCurrentPortrait,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = stringResource(currentType.labelRes),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.9f)
+        ) {
+            WidgetPreviewType.values().forEach { type ->
+                DropdownMenuItem(
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.StayCurrentPortrait,
+                            contentDescription = null,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    },
+                    text = { Text(stringResource(type.labelRes)) },
+                    onClick = {
+                        expanded = false
+                        onSelectType(type)
+                    }
+                )
+            }
         }
     }
 }
@@ -517,61 +499,63 @@ private fun WidgetThemeSelector(
     currentTheme: WidgetThemeMode,
     onSelectTheme: (WidgetThemeMode) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        WidgetThemeMode.values().forEach { mode ->
-            val isSelected = currentTheme == mode
-            OutlinedCard(
-                onClick = { onSelectTheme(mode) },
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
-                ),
-                border = CardDefaults.outlinedCardBorder().copy(
-                    brush = Brush.horizontalGradient(
-                        if (isSelected) listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary)
-                        else listOf(MaterialTheme.colorScheme.outlineVariant, MaterialTheme.colorScheme.outlineVariant)
-                    )
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Palette preview circles
-                        Row(horizontalArrangement = Arrangement.spacedBy((-6).dp)) {
-                            val (c1, c2, c3) = getThemePreviewColors(mode)
-                            Box(modifier = Modifier.size(20.dp).clip(CircleShape).background(c1).border(1.dp, Color.White, CircleShape))
-                            Box(modifier = Modifier.size(20.dp).clip(CircleShape).background(c2).border(1.dp, Color.White, CircleShape))
-                            Box(modifier = Modifier.size(20.dp).clip(CircleShape).background(c3).border(1.dp, Color.White, CircleShape))
-                        }
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column {
-                            Text(
-                                text = stringResource(mode.titleRes),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedCard(
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            WidgetThemeOptionRow(currentTheme, showArrow = true)
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.9f)
+        ) {
+            WidgetThemeMode.values().forEach { mode ->
+                DropdownMenuItem(
+                    text = { WidgetThemeOptionRow(mode, showArrow = false) },
+                    onClick = {
+                        expanded = false
+                        onSelectTheme(mode)
                     }
-
-                    if (isSelected) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun WidgetThemeOptionRow(mode: WidgetThemeMode, showArrow: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = if (showArrow) 14.dp else 0.dp, vertical = if (showArrow) 10.dp else 0.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy((-6).dp)) {
+                val (c1, c2, c3) = getThemePreviewColors(mode)
+                Box(modifier = Modifier.size(20.dp).clip(CircleShape).background(c1).border(1.dp, Color.White, CircleShape))
+                Box(modifier = Modifier.size(20.dp).clip(CircleShape).background(c2).border(1.dp, Color.White, CircleShape))
+                Box(modifier = Modifier.size(20.dp).clip(CircleShape).background(c3).border(1.dp, Color.White, CircleShape))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = stringResource(mode.titleRes),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        if (showArrow) {
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -603,55 +587,69 @@ private fun WidgetBackgroundStyleSelector(
     currentStyle: WidgetBackgroundStyle,
     onSelectStyle: (WidgetBackgroundStyle) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        WidgetBackgroundStyle.values().forEach { style ->
-            val isSelected = currentStyle == style
-            OutlinedCard(
-                onClick = { onSelectStyle(style) },
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surface
-                ),
-                border = CardDefaults.outlinedCardBorder().copy(
-                    brush = Brush.horizontalGradient(
-                        if (isSelected) listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary)
-                        else listOf(MaterialTheme.colorScheme.outlineVariant, MaterialTheme.colorScheme.outlineVariant)
-                    )
-                ),
-                modifier = Modifier.width(150.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Layers,
-                        contentDescription = null,
-                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(style.titleRes),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedCard(
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            WidgetBackgroundOptionRow(currentStyle, showArrow = true)
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.9f)
+        ) {
+            WidgetBackgroundStyle.values().forEach { style ->
+                DropdownMenuItem(
+                    text = { WidgetBackgroundOptionRow(style, showArrow = false) },
+                    onClick = {
+                        expanded = false
+                        onSelectStyle(style)
+                    }
+                )
             }
         }
     }
 }
 
+@Composable
+private fun WidgetBackgroundOptionRow(style: WidgetBackgroundStyle, showArrow: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = if (showArrow) 14.dp else 0.dp, vertical = if (showArrow) 10.dp else 0.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Default.Layers,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = stringResource(style.titleRes),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        if (showArrow) {
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
-// OPTION CHIP ROW - shared by Font Size / Text Color / Hero Time Mode. Labels here can run
+// OPTION CHIP ROW - shared by Text Color / Hero Time Mode. Labels here can run
 // longer than a single line comfortably fits at equal 1/3-1/4 width (e.g. "Both (Wide Widgets)",
 // "Extra Large"), so this wraps to two lines with an ellipsis fallback instead of the raw
 // mid-word clipping a hard maxLines=1 produces.
@@ -693,22 +691,6 @@ private fun <T> WidgetOptionChipRow(
             }
         }
     }
-}
-
-// ---------------------------------------------------------------------------
-// FONT SIZE SELECTOR
-// ---------------------------------------------------------------------------
-@Composable
-private fun WidgetFontSizeSelector(
-    currentSize: WidgetFontSize,
-    onSelectSize: (WidgetFontSize) -> Unit
-) {
-    WidgetOptionChipRow(
-        options = WidgetFontSize.values(),
-        selected = currentSize,
-        label = { it.titleRes },
-        onSelect = onSelectSize
-    )
 }
 
 // ---------------------------------------------------------------------------
@@ -1017,7 +999,7 @@ private fun PreviewStandard4x2(
     textOnAccent: Color,
     isArabic: Boolean
 ) {
-    val scale = wSet.fontSize.scaleFactor
+    val scale = 1.02f
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // Header - at 4+ columns the real widget shows Hijri date inline next to location
         Row(
@@ -1028,13 +1010,6 @@ private fun PreviewStandard4x2(
             if (wSet.showLocation || wSet.showHijriDate) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (wSet.showLocation) {
-                        Icon(
-                            imageVector = Icons.Default.Mosque,
-                            contentDescription = null,
-                            tint = primaryAccent,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location),
                             fontSize = 11.sp * scale,
@@ -1106,18 +1081,6 @@ private fun PreviewStandard4x2(
                         }
                     }
 
-                    if (wSet.showProgressBar) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        LinearProgressIndicator(
-                            progress = { 0.65f },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp)),
-                            color = primaryAccent,
-                            trackColor = textSecondary.copy(alpha = 0.2f)
-                        )
-                    }
                 }
             }
         }
@@ -1173,7 +1136,7 @@ private fun PreviewExpandedMax(
     textOnAccent: Color,
     isArabic: Boolean
 ) {
-    val scale = wSet.fontSize.scaleFactor
+    val scale = 1.10f
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // Header - at 4+ columns the real widget shows Hijri date inline next to location
         Row(
@@ -1184,13 +1147,6 @@ private fun PreviewExpandedMax(
             if (wSet.showLocation || wSet.showHijriDate) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (wSet.showLocation) {
-                        Icon(
-                            imageVector = Icons.Default.Mosque,
-                            contentDescription = null,
-                            tint = primaryAccent,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location),
                             fontSize = 13.sp * scale,
@@ -1256,18 +1212,6 @@ private fun PreviewExpandedMax(
                         }
                     }
 
-                    if (wSet.showProgressBar) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        LinearProgressIndicator(
-                            progress = { 0.65f },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(5.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = primaryAccent,
-                            trackColor = textSecondary.copy(alpha = 0.2f)
-                        )
-                    }
                 }
             }
         }
@@ -1322,7 +1266,7 @@ private fun PreviewVertical1Col(
     textOnAccent: Color,
     isArabic: Boolean
 ) {
-    val scale = wSet.fontSize.scaleFactor
+    val scale = 0.98f
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -1330,8 +1274,6 @@ private fun PreviewVertical1Col(
         val vertRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
         if (wSet.showLocation) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Default.Mosque, contentDescription = null, tint = primaryAccent, modifier = Modifier.size(11.dp))
-                Spacer(modifier = Modifier.width(3.dp))
                 Text(text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
             }
         }
@@ -1393,7 +1335,7 @@ private fun PreviewSlimBar(
     textOnAccent: Color,
     isArabic: Boolean
 ) {
-    val scale = wSet.fontSize.scaleFactor
+    val scale = 0.92f
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1401,8 +1343,6 @@ private fun PreviewSlimBar(
     ) {
         val slimRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = Icons.Default.Mosque, contentDescription = null, tint = primaryAccent, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
             Column {
                 if (wSet.showLocation) {
                     Text(text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
@@ -1439,7 +1379,7 @@ private fun PreviewCompact2x1(
     textOnAccent: Color,
     isArabic: Boolean
 ) {
-    val scale = wSet.fontSize.scaleFactor
+    val scale = 0.95f
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,

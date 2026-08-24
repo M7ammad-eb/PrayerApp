@@ -102,7 +102,6 @@ data class WidgetCustomizationSettings(
     val showLocation: Boolean = true,
     val showHijriDate: Boolean = true,
     val showCountdown: Boolean = true,
-    val showProgressBar: Boolean = true,
     val showSunrise: Boolean = true,
     val showAllPrayersList: Boolean = true,
     val showHeroCard: Boolean = true
