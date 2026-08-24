@@ -3,7 +3,6 @@ package com.prayertimes.ui.screens
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,7 +32,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.filled.StayCurrentPortrait
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.WbSunny
@@ -43,12 +42,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Slider
@@ -206,30 +202,10 @@ fun SettingsWidgetSubScreen(
                 }
             }
 
-            // Preview Type Selector Chips
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                WidgetPreviewType.values().forEach { type ->
-                    FilterChip(
-                        selected = selectedPreviewType == type,
-                        onClick = { selectedPreviewType = type },
-                        label = {
-                            Text(
-                                text = stringResource(type.labelRes),
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    )
-                }
-            }
+            WidgetPreviewTypeSelector(
+                currentType = selectedPreviewType,
+                onSelectType = { selectedPreviewType = it }
+            )
 
             // Live Widget Render Box
             WidgetCanvasPreview(
@@ -353,29 +329,21 @@ fun SettingsWidgetSubScreen(
                 )
             }
 
-            // ===== Behavior: hero card timing mode =====
+            // Hero controls belong together: display, timing, then the dependent countdown.
             WidgetSettingsSectionCard(
                 icon = Icons.Default.Schedule,
-                title = strings.widgetBehaviorSectionTitle,
-                subtitle = strings.widgetBehaviorSectionSubtitle
+                title = stringResource(R.string.widget_settings_hero_section_title),
+                subtitle = stringResource(R.string.widget_settings_hero_section_subtitle)
             ) {
-                // "In 2h 41m" (next prayer) vs "Since 2h 10m" (current/last prayer). Only one at
-                // a time, per user preference.
                 WidgetHeroTimeModeSelector(
                     currentMode = wSet.heroTimeMode,
                     onSelectMode = {
                         onUpdateWidgetSettings(wSet.copy(heroTimeMode = it))
                     }
                 )
-            }
 
-            // ===== Content: what shows on the widget, with dependent toggles dimmed when their
-            // parent is off (e.g. Countdown/Progress do nothing while the Hero Card is hidden) =====
-            WidgetSettingsSectionCard(
-                icon = Icons.Default.Tune,
-                title = strings.widgetContentTitle,
-                subtitle = strings.widgetContentSectionSubtitle
-            ) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+
                 WidgetToggleRow(
                     icon = Icons.Default.Layers,
                     title = stringResource(R.string.widget_settings_toggle_show_hero),
@@ -399,21 +367,14 @@ fun SettingsWidgetSubScreen(
                     )
                 }
 
-                Box(modifier = Modifier.padding(start = 28.dp)) {
-                    WidgetToggleRow(
-                        icon = Icons.Default.ShowChart,
-                        title = stringResource(R.string.widget_settings_toggle_show_progress),
-                        subtitle = strings.widgetToggleShowProgressDesc,
-                        checked = wSet.showProgressBar,
-                        enabled = wSet.showHeroCard,
-                        onCheckedChange = {
-                            onUpdateWidgetSettings(wSet.copy(showProgressBar = it))
-                        }
-                    )
-                }
+            }
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
+            // Schedule and header metadata form the second independent content group.
+            WidgetSettingsSectionCard(
+                icon = Icons.Default.Tune,
+                title = stringResource(R.string.widget_settings_schedule_section_title),
+                subtitle = stringResource(R.string.widget_settings_schedule_section_subtitle)
+            ) {
                 WidgetToggleRow(
                     icon = Icons.Default.FormatListBulleted,
                     title = stringResource(R.string.widget_settings_toggle_show_all_prayers),
@@ -461,6 +422,71 @@ fun SettingsWidgetSubScreen(
             }
 
             Spacer(modifier = Modifier.height(60.dp))
+        }
+    }
+}
+
+@Composable
+private fun WidgetPreviewTypeSelector(
+    currentType: WidgetPreviewType,
+    onSelectType: (WidgetPreviewType) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedCard(
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.StayCurrentPortrait,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = stringResource(currentType.labelRes),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.9f)
+        ) {
+            WidgetPreviewType.values().forEach { type ->
+                DropdownMenuItem(
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.StayCurrentPortrait,
+                            contentDescription = null,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    },
+                    text = { Text(stringResource(type.labelRes)) },
+                    onClick = {
+                        expanded = false
+                        onSelectType(type)
+                    }
+                )
+            }
         }
     }
 }
@@ -1055,18 +1081,6 @@ private fun PreviewStandard4x2(
                         }
                     }
 
-                    if (wSet.showProgressBar) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        LinearProgressIndicator(
-                            progress = { 0.65f },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp)),
-                            color = primaryAccent,
-                            trackColor = textSecondary.copy(alpha = 0.2f)
-                        )
-                    }
                 }
             }
         }
@@ -1198,18 +1212,6 @@ private fun PreviewExpandedMax(
                         }
                     }
 
-                    if (wSet.showProgressBar) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        LinearProgressIndicator(
-                            progress = { 0.65f },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(5.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = primaryAccent,
-                            trackColor = textSecondary.copy(alpha = 0.2f)
-                        )
-                    }
                 }
             }
         }

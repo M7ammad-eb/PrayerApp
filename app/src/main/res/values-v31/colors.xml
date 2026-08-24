@@ -15,6 +15,4 @@
     <color name="widget_text_accent">@android:color/system_accent1_700</color>
     <color name="widget_text_on_accent">#FFFFFFFF</color>
     <color name="widget_icon_tint">@android:color/system_accent1_600</color>
-    <color name="widget_progress_track">@android:color/system_neutral2_100</color>
-    <color name="widget_progress_indicator">@android:color/system_accent1_600</color>
 </resources>

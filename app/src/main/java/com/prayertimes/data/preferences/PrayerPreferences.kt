@@ -91,7 +91,6 @@ class PrayerPreferences(private val context: Context) {
         private const val KEY_WIDGET_SHOW_LOC = "cached_w_show_loc"
         private const val KEY_WIDGET_SHOW_HIJRI = "cached_w_show_hijri"
         private const val KEY_WIDGET_SHOW_COUNTDOWN = "cached_w_show_cd"
-        private const val KEY_WIDGET_SHOW_PROGRESS = "cached_w_show_prog"
         private const val KEY_WIDGET_SHOW_SUNRISE = "cached_w_show_sunrise"
         private const val KEY_WIDGET_SHOW_ALL = "cached_w_show_all"
         private const val KEY_WIDGET_SHOW_HERO = "cached_w_show_hero"
@@ -195,7 +194,6 @@ class PrayerPreferences(private val context: Context) {
             val wShowLoc = fastPrefs.getBoolean(KEY_WIDGET_SHOW_LOC, true)
             val wShowHijri = fastPrefs.getBoolean(KEY_WIDGET_SHOW_HIJRI, true)
             val wShowCd = fastPrefs.getBoolean(KEY_WIDGET_SHOW_COUNTDOWN, true)
-            val wShowProg = fastPrefs.getBoolean(KEY_WIDGET_SHOW_PROGRESS, true)
             val wShowSunrise = fastPrefs.getBoolean(KEY_WIDGET_SHOW_SUNRISE, true)
             val wShowAll = fastPrefs.getBoolean(KEY_WIDGET_SHOW_ALL, true)
             val wShowHero = fastPrefs.getBoolean(KEY_WIDGET_SHOW_HERO, true)
@@ -210,7 +208,6 @@ class PrayerPreferences(private val context: Context) {
                 showLocation = wShowLoc,
                 showHijriDate = wShowHijri,
                 showCountdown = wShowCd,
-                showProgressBar = wShowProg,
                 showSunrise = wShowSunrise,
                 showAllPrayersList = wShowAll,
                 showHeroCard = wShowHero
@@ -272,7 +269,6 @@ class PrayerPreferences(private val context: Context) {
         val WIDGET_SHOW_LOC = booleanPreferencesKey("widget_show_loc")
         val WIDGET_SHOW_HIJRI = booleanPreferencesKey("widget_show_hijri")
         val WIDGET_SHOW_COUNTDOWN = booleanPreferencesKey("widget_show_countdown")
-        val WIDGET_SHOW_PROGRESS = booleanPreferencesKey("widget_show_progress")
         val WIDGET_SHOW_SUNRISE = booleanPreferencesKey("widget_show_sunrise")
         val WIDGET_SHOW_ALL = booleanPreferencesKey("widget_show_all")
         val WIDGET_SHOW_HERO = booleanPreferencesKey("widget_show_hero")
@@ -326,7 +322,6 @@ class PrayerPreferences(private val context: Context) {
         val wShowLoc = prefs[Keys.WIDGET_SHOW_LOC] ?: true
         val wShowHijri = prefs[Keys.WIDGET_SHOW_HIJRI] ?: true
         val wShowCd = prefs[Keys.WIDGET_SHOW_COUNTDOWN] ?: true
-        val wShowProg = prefs[Keys.WIDGET_SHOW_PROGRESS] ?: true
         val wShowSunrise = prefs[Keys.WIDGET_SHOW_SUNRISE] ?: true
         val wShowAll = prefs[Keys.WIDGET_SHOW_ALL] ?: true
         val wShowHero = prefs[Keys.WIDGET_SHOW_HERO] ?: true
@@ -341,7 +336,6 @@ class PrayerPreferences(private val context: Context) {
             showLocation = wShowLoc,
             showHijriDate = wShowHijri,
             showCountdown = wShowCd,
-            showProgressBar = wShowProg,
             showSunrise = wShowSunrise,
             showAllPrayersList = wShowAll,
             showHeroCard = wShowHero
@@ -394,7 +388,6 @@ class PrayerPreferences(private val context: Context) {
             .putBoolean(KEY_WIDGET_SHOW_LOC, widgetSettings.showLocation)
             .putBoolean(KEY_WIDGET_SHOW_HIJRI, widgetSettings.showHijriDate)
             .putBoolean(KEY_WIDGET_SHOW_COUNTDOWN, widgetSettings.showCountdown)
-            .putBoolean(KEY_WIDGET_SHOW_PROGRESS, widgetSettings.showProgressBar)
             .putBoolean(KEY_WIDGET_SHOW_SUNRISE, widgetSettings.showSunrise)
             .putBoolean(KEY_WIDGET_SHOW_ALL, widgetSettings.showAllPrayersList)
             .putBoolean(KEY_WIDGET_SHOW_HERO, widgetSettings.showHeroCard)
@@ -463,7 +456,6 @@ class PrayerPreferences(private val context: Context) {
             .putBoolean(KEY_WIDGET_SHOW_LOC, settings.showLocation)
             .putBoolean(KEY_WIDGET_SHOW_HIJRI, settings.showHijriDate)
             .putBoolean(KEY_WIDGET_SHOW_COUNTDOWN, settings.showCountdown)
-            .putBoolean(KEY_WIDGET_SHOW_PROGRESS, settings.showProgressBar)
             .putBoolean(KEY_WIDGET_SHOW_SUNRISE, settings.showSunrise)
             .putBoolean(KEY_WIDGET_SHOW_ALL, settings.showAllPrayersList)
             .putBoolean(KEY_WIDGET_SHOW_HERO, settings.showHeroCard)
@@ -478,7 +470,6 @@ class PrayerPreferences(private val context: Context) {
             prefs[Keys.WIDGET_SHOW_LOC] = settings.showLocation
             prefs[Keys.WIDGET_SHOW_HIJRI] = settings.showHijriDate
             prefs[Keys.WIDGET_SHOW_COUNTDOWN] = settings.showCountdown
-            prefs[Keys.WIDGET_SHOW_PROGRESS] = settings.showProgressBar
             prefs[Keys.WIDGET_SHOW_SUNRISE] = settings.showSunrise
             prefs[Keys.WIDGET_SHOW_ALL] = settings.showAllPrayersList
             prefs[Keys.WIDGET_SHOW_HERO] = settings.showHeroCard

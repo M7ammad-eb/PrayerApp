@@ -41,7 +41,6 @@ private fun sampleData(showAllPrayersList: Boolean = true, heroTimeMode: com.pra
     until = "In 1h 12m",
     locationText = "Al Madinah",
     hijriText = "10 Rabi' I 1448",
-    progress = 0.4f,
     allSlots = listOf(
         MiniSlot("الفجر", "4:38 AM", false),
         MiniSlot("الشروق", "5:58 AM", false),

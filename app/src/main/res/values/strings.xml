@@ -70,7 +70,6 @@
     <string name="widget_settings_content_section_subtitle">Choose what shows on the widget</string>
     <string name="widget_settings_toggle_show_hero_desc">Big card with the next (or last) prayer</string>
     <string name="widget_settings_toggle_show_countdown_desc">Time remaining, shown on the hero card</string>
-    <string name="widget_settings_toggle_show_progress_desc">Bar between the previous and next prayer</string>
     <string name="widget_settings_toggle_show_all_prayers_desc">Row of all six prayer times</string>
     <string name="widget_settings_toggle_show_sunrise_desc">Include Sunrise in the prayer row</string>
     <string name="widget_settings_toggle_show_location_desc">City name in the widget header</string>
@@ -447,6 +446,10 @@
 
     <!-- ===== Widget Customization Screen ===== -->
     <string name="widget_settings_intro_banner">Customize how the widget looks on your home screen to perfectly fit any grid layout (from 1-column slim to full max expanded).</string>
+    <string name="widget_settings_hero_section_title">Hero card</string>
+    <string name="widget_settings_hero_section_subtitle">Choose the featured prayer and its countdown</string>
+    <string name="widget_settings_schedule_section_title">Schedule &amp; header</string>
+    <string name="widget_settings_schedule_section_subtitle">Choose prayer rows, location, and Hijri date</string>
     <string name="widget_settings_applied_notice">✓ All home screen widgets refreshed!</string>
     <string name="widget_settings_opacity_transparent">Transparent (0%)</string>
     <string name="widget_settings_opacity_solid">Solid (100%)</string>
@@ -455,7 +458,6 @@
     <string name="widget_settings_toggle_show_location">Show Location &amp; City</string>
     <string name="widget_settings_toggle_show_hijri">Show Hijri Date</string>
     <string name="widget_settings_toggle_show_countdown">Show Countdown Timer</string>
-    <string name="widget_settings_toggle_show_progress">Show Interval Progress Bar</string>
     <string name="widget_settings_toggle_show_sunrise">Show Sunrise in Schedule</string>
     <string name="widget_settings_toggle_show_hero">Show Next Prayer Hero Card</string>
     <string name="widget_settings_toggle_show_all_prayers">Show All Prayers Schedule</string>

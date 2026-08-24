@@ -23,6 +23,4 @@
     <color name="widget_text_accent">#FF165B33</color>
     <color name="widget_text_on_accent">#FFFFFFFF</color>
     <color name="widget_icon_tint">#FF165B33</color>
-    <color name="widget_progress_track">#FFE1E3E7</color>
-    <color name="widget_progress_indicator">#FF165B33</color>
 </resources>

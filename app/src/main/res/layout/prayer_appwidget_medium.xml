@@ -131,15 +131,6 @@
                     android:textSize="19sp"
                     android:textStyle="bold" />
 
-                <ProgressBar
-                    android:id="@+id/widget_med_prayer_progress"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="4dp"
-                    android:layout_marginTop="6dp"
-                    android:max="100"
-                    android:progress="60"
-                    android:progressDrawable="@drawable/widget_progress_bar" />
             </LinearLayout>
         </FrameLayout>
 

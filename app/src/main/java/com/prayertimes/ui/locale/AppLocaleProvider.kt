@@ -431,7 +431,6 @@ class AppStrings(
     val widgetContentSectionSubtitle: String = s(R.string.widget_settings_content_section_subtitle)
     val widgetToggleShowHeroDesc: String = s(R.string.widget_settings_toggle_show_hero_desc)
     val widgetToggleShowCountdownDesc: String = s(R.string.widget_settings_toggle_show_countdown_desc)
-    val widgetToggleShowProgressDesc: String = s(R.string.widget_settings_toggle_show_progress_desc)
     val widgetToggleShowAllPrayersDesc: String = s(R.string.widget_settings_toggle_show_all_prayers_desc)
     val widgetToggleShowSunriseDesc: String = s(R.string.widget_settings_toggle_show_sunrise_desc)
     val widgetToggleShowLocationDesc: String = s(R.string.widget_settings_toggle_show_location_desc)

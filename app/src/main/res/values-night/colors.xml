@@ -15,6 +15,4 @@
     <color name="widget_text_accent">#FF81C784</color>
     <color name="widget_text_on_accent">#FF00391F</color>
     <color name="widget_icon_tint">#FF81C784</color>
-    <color name="widget_progress_track">#FF49454F</color>
-    <color name="widget_progress_indicator">#FF81C784</color>
 </resources>

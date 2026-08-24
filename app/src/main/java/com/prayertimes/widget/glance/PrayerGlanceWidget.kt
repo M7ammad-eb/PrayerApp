@@ -18,7 +18,6 @@ import androidx.glance.LocalSize
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
@@ -189,7 +188,6 @@ class PrayerGlanceWidget : GlanceAppWidget() {
 
         val untilSeconds = Duration.between(now, next.zonedDateTime).seconds.coerceAtLeast(0)
         val sinceSeconds = Duration.between(previousTime, now).seconds.coerceAtLeast(0)
-        val totalSpanSeconds = Duration.between(previousTime, next.zonedDateTime).seconds.coerceAtLeast(1)
 
         val timeFormatter = if (settings.is24HourFormat) {
             DateTimeFormatter.ofPattern("HH:mm")
@@ -233,7 +231,6 @@ class PrayerGlanceWidget : GlanceAppWidget() {
             } else {
                 todaySchedule.hijriDate?.formattedEn ?: todaySchedule.hijriDateString
             },
-            progress = (sinceSeconds.toFloat() / totalSpanSeconds).coerceIn(0f, 1f),
             allSlots = allSlots,
             mediumSlots = mediumSlots,
             widgetSettings = widgetSettings,
@@ -309,7 +306,6 @@ internal data class GlanceWidgetData(
     val until: String,
     val locationText: String,
     val hijriText: String,
-    val progress: Float,
     val allSlots: List<MiniSlot>,
     val mediumSlots: List<MiniSlot>,
     val widgetSettings: WidgetCustomizationSettings,
@@ -569,51 +565,11 @@ private fun LargeRibbonContent(data: GlanceWidgetData, isRtl: Boolean, layout: A
                 HeroCard(data, compact = false, isRtl = isRtl)
             }
         }
-        if (data.widgetSettings.showProgressBar && data.widgetSettings.showHeroCard && !showDualHero) {
-            Spacer(GlanceModifier.height(layout.gapDp.dp))
-            AdaptiveProgressBar(
-                progress = data.progress,
-                data = data,
-                isRtl = isRtl,
-                availableWidthDp = layout.widthDp - layout.paddingDp * 2f
-            )
-        }
         if (data.widgetSettings.showAllPrayersList) {
             Spacer(GlanceModifier.height(layout.gapDp.dp))
             Box(GlanceModifier.defaultWeight()) {
                 PrayerRibbon(data.allSlots, data, isRtl, fillAvailable = true)
             }
-        }
-    }
-}
-
-@Composable
-private fun AdaptiveProgressBar(
-    progress: Float,
-    data: GlanceWidgetData,
-    isRtl: Boolean,
-    availableWidthDp: Float
-) {
-    val totalWidth = availableWidthDp.coerceAtLeast(1f)
-    val filledWidth = (totalWidth * progress.coerceIn(0f, 1f)).coerceAtLeast(0.1f)
-    val emptyWidth = (totalWidth - filledWidth).coerceAtLeast(0.1f)
-    val filled = @Composable {
-        Box(
-            GlanceModifier.width(filledWidth.dp).height(4.dp)
-                .background(ColorProvider(data.accent)).cornerRadius(2.dp)
-        ) {}
-    }
-    val empty = @Composable {
-        Box(
-            GlanceModifier.width(emptyWidth.dp).height(4.dp)
-                .background(ColorProvider(data.inactivePrayerBg)).cornerRadius(2.dp)
-        ) {}
-    }
-    Row(GlanceModifier.fillMaxWidth().height(4.dp)) {
-        if (isRtl) {
-            empty(); filled()
-        } else {
-            filled(); empty()
         }
     }
 }
@@ -628,15 +584,6 @@ private fun LargeContent(data: GlanceWidgetData, isRtl: Boolean, layout: Adaptiv
         val heroSection = @Composable {
             if (data.widgetSettings.showHeroCard) {
                 if (showDualHero) DualHeroCard(data, isRtl) else HeroCard(data, compact = false, isRtl = isRtl)
-                if (data.widgetSettings.showProgressBar && !showDualHero) {
-                    Spacer(GlanceModifier.height(layout.gapDp.dp))
-                    LinearProgressIndicator(
-                        progress = data.progress,
-                        modifier = GlanceModifier.fillMaxWidth().height(4.dp).cornerRadius(2.dp),
-                        color = ColorProvider(data.accent),
-                        backgroundColor = ColorProvider(data.inactivePrayerBg)
-                    )
-                }
             }
         }
         val schedule = @Composable {
