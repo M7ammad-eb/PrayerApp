@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Timer
@@ -65,8 +64,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -81,10 +78,9 @@ import com.prayertimes.data.models.WidgetCustomizationSettings
 import com.prayertimes.data.models.WidgetHeroTimeMode
 import com.prayertimes.data.models.WidgetTextStyle
 import com.prayertimes.data.models.WidgetThemeMode
-import android.content.res.Resources
 import com.prayertimes.data.preferences.AppPrayerSettings
 import com.prayertimes.ui.locale.LocalAppStrings
-import com.prayertimes.util.LocalizedStrings
+import com.prayertimes.widget.glance.LiveGlanceWidgetPreview
 import com.prayertimes.R
 
 @Composable
@@ -157,11 +153,7 @@ fun SettingsWidgetSubScreen(
 
         // Live Widget Render Box - fixed above the scrollable settings list so it stays visible
         // while flipping through styles below, instead of scrolling out of view.
-        WidgetCanvasPreview(
-            settings = settings,
-            widgetSettings = wSet,
-            isArabic = strings.isArabic
-        )
+        WidgetCanvasPreview(settings = settings)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -730,41 +722,7 @@ private fun WidgetSettingsSubLabel(text: String) {
 // LIVE CANVAS PREVIEW
 // ---------------------------------------------------------------------------
 @Composable
-private fun WidgetCanvasPreview(
-    settings: AppPrayerSettings,
-    widgetSettings: WidgetCustomizationSettings,
-    isArabic: Boolean
-) {
-    val (primaryAccent, bgCardColor, themeTextPrimary, themeTextSecondary) = resolveWidgetPreviewTheme(widgetSettings.themeMode)
-    // Mirrors the Glance widget color resolver's text-style override.
-    val (textPrimary, textSecondary) = when (widgetSettings.textStyle) {
-        WidgetTextStyle.AUTO -> themeTextPrimary to themeTextSecondary
-        WidgetTextStyle.LIGHT -> Color(0xFFFFFFFF) to Color(0xFFE2E8F0)
-        WidgetTextStyle.DARK -> Color(0xFF0F172A) to Color(0xFF334155)
-    }
-
-    // Mirrors the Glance widget color resolver's textOnAccent threshold (0.42
-    // threshold) - the preview previously hardcoded white pill/badge text regardless of theme.
-    val textOnAccent = if (primaryAccent.luminance() > 0.42f) Color(0xFF0F172A) else Color.White
-
-    val alpha = (widgetSettings.opacityPercent / 100f).coerceIn(0f, 1f)
-    // Mirrors the Glance widget color resolver so the preview matches the
-    // real widget for every background style, not just the default TRANSLUCENT one.
-    val finalBgColor = when (widgetSettings.bgStyle) {
-        WidgetBackgroundStyle.TRANSPARENT_CLEAN -> Color.Transparent
-        WidgetBackgroundStyle.MINIMAL_BORDER -> Color.Black.copy(alpha = 0.15f * alpha)
-        WidgetBackgroundStyle.SOLID_SURFACE -> bgCardColor.copy(alpha = 1f)
-        WidgetBackgroundStyle.FROSTED_GLASS -> lerp(bgCardColor, Color.White, 0.25f).copy(alpha = alpha.coerceAtLeast(0.55f))
-        WidgetBackgroundStyle.TRANSLUCENT -> bgCardColor.copy(alpha = alpha)
-    }
-    val borderWidth = if (widgetSettings.bgStyle == WidgetBackgroundStyle.MINIMAL_BORDER) 1.5.dp else 0.5.dp
-    val borderColor = when (widgetSettings.bgStyle) {
-        WidgetBackgroundStyle.MINIMAL_BORDER -> primaryAccent.copy(alpha = 0.8f)
-        WidgetBackgroundStyle.SOLID_SURFACE -> primaryAccent.copy(alpha = 0.35f)
-        WidgetBackgroundStyle.FROSTED_GLASS -> Color.White.copy(alpha = 0.20f)
-        else -> primaryAccent.copy(alpha = 0.25f)
-    }
-
+private fun WidgetCanvasPreview(settings: AppPrayerSettings) {
     // Simulated Wallpaper Background container - split diagonally into a bright half and a
     // dark half so a single preview shows how each background style (especially translucent/
     // frosted ones) reads against both a light, photographic wallpaper and a dark one at once,
@@ -804,201 +762,12 @@ private fun WidgetCanvasPreview(
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Widget Card Box - a fixed height, independent of font size or which toggles are on.
-        // A real widget's footprint is fixed by its home screen grid placement; it never grows
-        // or shrinks to fit its content, so the mockup shouldn't either.
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(210.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(finalBgColor)
-                .border(
-                    width = borderWidth,
-                    color = borderColor,
-                    shape = RoundedCornerShape(24.dp)
-                )
-                .padding(14.dp)
-        ) {
-            PreviewStandard4x2(
-                settings = settings,
-                wSet = widgetSettings,
-                primaryAccent = primaryAccent,
-                textPrimary = textPrimary,
-                textSecondary = textSecondary,
-                textOnAccent = textOnAccent,
-                isArabic = isArabic
-            )
-        }
+        // Renders the actual PrayerGlanceWidget composable at this footprint - not a hand-copied
+        // mockup - so this preview can never visually drift from the real home screen widget.
+        // Its own CardSurface already draws the correct background/border for the current
+        // bgStyle, so there's nothing left for this container to draw itself.
+        LiveGlanceWidgetPreview(settings = settings, height = 210.dp)
     }
-}
-
-@Composable
-private fun PreviewStandard4x2(
-    settings: AppPrayerSettings,
-    wSet: WidgetCustomizationSettings,
-    primaryAccent: Color,
-    textPrimary: Color,
-    textSecondary: Color,
-    textOnAccent: Color,
-    isArabic: Boolean
-) {
-    val scale = 1.02f
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // Header - at 4+ columns the real widget shows Hijri date inline next to location
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (wSet.showLocation || wSet.showHijriDate) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (wSet.showLocation) {
-                        Text(
-                            text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location),
-                            fontSize = 11.sp * scale,
-                            fontWeight = FontWeight.Bold,
-                            color = textPrimary
-                        )
-                    }
-                    if (wSet.showHijriDate) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(R.string.widget_preview_mock_hijri_date),
-                            fontSize = 9.sp * scale,
-                            color = textSecondary
-                        )
-                    }
-                }
-            }
-
-            Icon(
-                imageVector = Icons.Default.Refresh,
-                contentDescription = null,
-                tint = textSecondary,
-                modifier = Modifier.size(14.dp)
-            )
-        }
-
-        // Hero Card
-        if (wSet.showHeroCard) {
-            Surface(
-                color = textPrimary.copy(alpha = 0.16f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(10.dp)) {
-                    val previewRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
-                    val (heroName, heroTime, heroCountdown) = previewHeroMock(wSet.heroTimeMode, previewRes)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = heroName,
-                                fontSize = 12.sp * scale,
-                                fontWeight = FontWeight.Bold,
-                                color = primaryAccent
-                            )
-                            Text(
-                                text = heroTime,
-                                fontSize = 20.sp * scale,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = textPrimary
-                            )
-                        }
-
-                        if (wSet.showCountdown) {
-                            Surface(
-                                color = primaryAccent,
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(
-                                    text = heroCountdown,
-                                    color = textOnAccent,
-                                    fontSize = 11.sp * scale,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                    }
-
-                }
-            }
-        }
-
-        // 6-Prayer Ribbon
-        if (wSet.showAllPrayersList) {
-            val ribbonRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
-            val prayers = getPreviewPrayers(ribbonRes, wSet.showSunrise)
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                prayers.forEach { (name, time) ->
-                    val isActive = name == ribbonRes.getString(R.string.prayer_name_asr)
-                    Surface(
-                        modifier = Modifier.weight(1f),
-                        color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.14f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = name,
-                                fontSize = 8.sp * scale,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                color = if (isActive) textOnAccent else textSecondary
-                            )
-                            Text(
-                                text = time,
-                                fontSize = 8.sp * scale,
-                                maxLines = 1,
-                                color = if (isActive) textOnAccent else textPrimary
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Mock hero card content for the preview - name, time, and the countdown/elapsed label -
-// swapped based on heroTimeMode so the preview reflects the setting it's demonstrating.
-private fun previewHeroMock(heroTimeMode: WidgetHeroTimeMode, res: Resources): Triple<String, String, String> {
-    return if (heroTimeMode == WidgetHeroTimeMode.PREVIOUS) {
-        Triple(
-            res.getString(R.string.prayer_name_dhuhr),
-            "12:20 PM",
-            res.getString(R.string.widget_since_hours_minutes, 2, 10)
-        )
-    } else {
-        Triple(
-            res.getString(R.string.prayer_name_asr),
-            "3:45 PM",
-            res.getString(R.string.widget_countdown_hours_minutes, 1, 45)
-        )
-    }
-}
-
-private fun getPreviewPrayers(res: Resources, showSunrise: Boolean): List<Pair<String, String>> {
-    val list = mutableListOf<Pair<String, String>>()
-    list.add(res.getString(R.string.prayer_name_fajr) to "05:12")
-    if (showSunrise) {
-        list.add(res.getString(R.string.prayer_name_sunrise) to "06:34")
-    }
-    list.add(res.getString(R.string.prayer_name_dhuhr) to "12:20")
-    list.add(res.getString(R.string.prayer_name_asr) to "15:45")
-    list.add(res.getString(R.string.prayer_name_maghrib) to "18:05")
-    list.add(res.getString(R.string.prayer_name_isha) to "19:35")
-    return list
 }
 
 // Mirrors the Glance widget dynamic palette (same dynamicDarkColorScheme
@@ -1012,30 +781,6 @@ private fun resolveSystemDynamicPreviewPalette(): Quadruple<Color, Color, Color,
         Quadruple(scheme.primary, scheme.surfaceContainerHigh, scheme.onSurface, scheme.onSurfaceVariant)
     } catch (e: Exception) {
         null
-    }
-}
-
-@Composable
-private fun resolveWidgetPreviewTheme(theme: WidgetThemeMode): Quadruple<Color, Color, Color, Color> {
-    return when (theme) {
-        // MaterialTheme.colorScheme here is already exactly what "Match App Theme" should
-        // mirror - the app is already composed inside MyApplicationTheme, so this always tracks
-        // the user's actual current theme/color preset/light-dark mode with no separate logic.
-        WidgetThemeMode.APP_THEME -> Quadruple(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.surfaceContainerHigh,
-            MaterialTheme.colorScheme.onSurface,
-            MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        WidgetThemeMode.MATERIAL_YOU -> resolveSystemDynamicPreviewPalette()
-            ?: Quadruple(Color(0xFF3F51B5), Color(0xFF1C1B1F), Color(0xFFE6E1E5), Color(0xFFCAC4D0))
-        WidgetThemeMode.DARK_ELEGANT -> Quadruple(Color(0xFF10B981), Color(0xFF121820), Color(0xFFF1F5F9), Color(0xFF94A3B8))
-        WidgetThemeMode.LIGHT_CLEAN -> Quadruple(Color(0xFF059669), Color(0xFFFFFFFF), Color(0xFF0F172A), Color(0xFF64748B))
-        WidgetThemeMode.OLED_BLACK -> Quadruple(Color(0xFF34D399), Color(0xFF000000), Color(0xFFFFFFFF), Color(0xFFA1A1AA))
-        WidgetThemeMode.EMERALD_ISLAMIC -> Quadruple(Color(0xFFF59E0B), Color(0xFF064E3B), Color(0xFFECFDF5), Color(0xFFA7F3D0))
-        WidgetThemeMode.GOLDEN_HOUR -> Quadruple(Color(0xFFF59E0B), Color(0xFF451A03), Color(0xFFFEF3C7), Color(0xFFFDE68A))
-        WidgetThemeMode.ROYAL_BLUE -> Quadruple(Color(0xFF38BDF8), Color(0xFF0F172A), Color(0xFFF0F9FF), Color(0xFFBAE6FD))
-        WidgetThemeMode.MONOCHROME -> Quadruple(Color(0xFFFAFAFA), Color(0xFF18181B), Color(0xFFFAFAFA), Color(0xFFA1A1AA))
     }
 }
 

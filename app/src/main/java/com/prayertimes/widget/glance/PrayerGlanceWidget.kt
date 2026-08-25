@@ -52,6 +52,7 @@ import com.prayertimes.data.models.AppLanguage
 import com.prayertimes.data.models.PrayerType
 import com.prayertimes.data.models.WidgetCustomizationSettings
 import com.prayertimes.data.models.WidgetHeroTimeMode
+import com.prayertimes.data.preferences.AppPrayerSettings
 import com.prayertimes.data.preferences.PrayerPreferences
 import com.prayertimes.util.LocalizedStrings
 import kotlinx.coroutines.launch
@@ -153,6 +154,19 @@ class PrayerGlanceWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val settings = PrayerPreferences.getInitialSettings(context)
+        val data = buildGlanceWidgetData(context, settings)
+        provideContent { WidgetContent(data) }
+    }
+
+    /**
+     * Builds the exact same [GlanceWidgetData] the real widget renders, from an arbitrary
+     * [AppPrayerSettings] snapshot rather than always reading persisted preferences.
+     * [provideGlance] calls this with the persisted settings; the settings screen's live preview
+     * calls it with the screen's own in-memory (possibly unsaved) settings, then renders the
+     * result through the identical [WidgetContent] composable - so the preview can never visually
+     * drift from the real widget the way a hand-mirrored mockup can.
+     */
+    internal fun buildGlanceWidgetData(context: Context, settings: AppPrayerSettings): GlanceWidgetData {
         val isArabic = settings.language.resolveIsArabic()
         val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
         val zoneId = runCatching { ZoneId.of(settings.location.timeZoneId) }.getOrDefault(ZoneId.systemDefault())
@@ -213,7 +227,7 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         // buildMediumWidget's own hardcoded prayerList), not "the first 3 prayers of the day".
         val mediumSlots = listOf(PrayerType.DHUHR, PrayerType.ASR, PrayerType.MAGHRIB).map(::slot)
 
-        val data = GlanceWidgetData(
+        return GlanceWidgetData(
             prayerName = prayerName(if (showingPrevious) previousType else next.type, settings.language),
             prayerTime = (if (showingPrevious) previousTime else next.zonedDateTime).format(timeFormatter),
             countdown = if (showingPrevious) sinceText(context, sinceSeconds, isArabic) else countdownText(context, untilSeconds, isArabic),
@@ -244,8 +258,6 @@ class PrayerGlanceWidget : GlanceAppWidget() {
             inactivePrayerBg = Color(colors.inactivePrayerBgColor),
             activePrayerBg = Color(colors.activePrayerBgColor)
         )
-
-        provideContent { WidgetContent(data) }
     }
 
     private fun prayerName(type: PrayerType, language: AppLanguage): String {
