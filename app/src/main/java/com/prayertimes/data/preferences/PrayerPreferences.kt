@@ -488,7 +488,7 @@ class PrayerPreferences(private val context: Context) {
             prefs[Keys.WIDGET_SHOW_ALL] = settings.showAllPrayersList
             prefs[Keys.WIDGET_SHOW_HERO] = settings.showHeroCard
         }
-        com.prayertimes.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
+        com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(context)
     }
 
     suspend fun updateAudioStream(audioStream: AthanAudioStream) {
@@ -638,7 +638,7 @@ class PrayerPreferences(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[Keys.THEME_MODE] = themeMode.name
         }
-        com.prayertimes.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
+        com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(context)
     }
 
     suspend fun updateColorPreset(preset: AppColorPreset) {
@@ -650,7 +650,7 @@ class PrayerPreferences(private val context: Context) {
                 prefs[Keys.FOLLOW_SYSTEM_COLORS] = false
             }
         }
-        com.prayertimes.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
+        com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(context)
     }
 
     suspend fun updateFollowSystemColors(follow: Boolean) {
@@ -662,7 +662,7 @@ class PrayerPreferences(private val context: Context) {
                 prefs[Keys.COLOR_PRESET] = AppColorPreset.SYSTEM_DYNAMIC.name
             }
         }
-        com.prayertimes.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
+        com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(context)
     }
 
     suspend fun updatePrayerAdjustment(prayer: PrayerType, offsetMinutes: Int) {

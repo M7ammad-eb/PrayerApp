@@ -120,7 +120,9 @@ fun MonthlyCalendarScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(0.54f),
-            beyondViewportPageCount = 1,
+            // Avoid composing two 42-cell off-screen calendars while this tab is opening.
+            // Generated months are cached, so an adjacent page is still ready after first use.
+            beyondViewportPageCount = 0,
             key = { it }
         ) { page ->
             val pageMonth = remember(page, hijriAdjustmentDays) {

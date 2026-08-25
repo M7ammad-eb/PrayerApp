@@ -54,7 +54,6 @@ import com.prayertimes.data.models.WidgetCustomizationSettings
 import com.prayertimes.data.models.WidgetHeroTimeMode
 import com.prayertimes.data.preferences.PrayerPreferences
 import com.prayertimes.util.LocalizedStrings
-import com.prayertimes.widget.PrayerAppWidgetProvider
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDate
@@ -137,8 +136,8 @@ private fun layoutForSize(widthDp: Float, heightDp: Float): AdaptiveLayout {
 }
 
 /**
- * Glance port of the RemoteViews widget. Exact sizing lets one composable adapt to the real
- * launcher allocation instead of relying on grid-cell names or a fixed candidate canvas.
+ * Exact sizing lets one composable adapt to the real launcher allocation instead of relying on
+ * grid-cell names or a fixed candidate canvas.
  */
 class PrayerGlanceWidget : GlanceAppWidget() {
 
@@ -196,7 +195,7 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         }
         val widgetSettings = settings.widgetSettings
         val showingPrevious = widgetSettings.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
-        val colors = PrayerAppWidgetProvider.resolveWidgetColors(context, settings)
+        val colors = WidgetColorResolver.resolve(context, settings)
         val prayerMap = todaySchedule.prayerItems.associateBy { it.type }
 
         fun slot(type: PrayerType) = MiniSlot(
@@ -332,7 +331,7 @@ internal fun WidgetContent(data: GlanceWidgetData) {
     // Glance doesn't mirror Row child order for RTL locales the way native RemoteViews/View
     // layoutDirection does (confirmed on-device: Arabic text shapes correctly within each Text,
     // but multi-child Rows stayed in LTR visual order) - so child order is swapped manually
-    // below, the same fix PrayerAppWidgetProvider already applies via setLayoutDirection().
+    // below so metadata order remains natural in Arabic launchers.
     val isRtl = context.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
 
     CardSurface(fittedData.rootBg, fittedData.rootBorder) {
@@ -732,11 +731,8 @@ private fun HeroCard(
     fillAvailable: Boolean = false
 ) {
     if (compact) {
-        // Matches PrayerAppWidgetProvider's vertical-tier XML: name, time, and the countdown
-        // pill each get their own centered line. The small tier's XML instead puts the pill
-        // beside a weighted name+time column, but at ~110dp wide that leaves the pill and the
-        // name fighting over the same few dp - a long countdown string ("in 7h 35m") squeezed
-        // the name down to a single ellipsized letter. Stacking avoids that regardless of tier.
+        // Keep name, time, and countdown visually grouped in the vertical tier. Each gets a
+        // centered line so long countdown strings cannot squeeze the prayer name at narrow sizes.
         Box(
             modifier = (if (fillAvailable) GlanceModifier.fillMaxSize() else GlanceModifier.fillMaxWidth())
                 .background(ColorProvider(data.heroBg))
@@ -765,7 +761,7 @@ private fun HeroCard(
         return
     }
 
-    // Matches PrayerAppWidgetProvider's large/expanded XML hero layout: name+time are grouped
+    // In the large hero layout, name and time are grouped
     // in one weighted column and the pill sits beside that whole block.
     Row(
         modifier = (if (fillAvailable) GlanceModifier.fillMaxSize() else GlanceModifier.fillMaxWidth())

@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.prayertimes.R
 import com.prayertimes.audio.AthanAudioEngine
 import com.prayertimes.data.calculator.PrayerTimesCalculator
+import com.prayertimes.data.calculator.PrayerSchedulePrewarmer
 import com.prayertimes.data.calendar.HijriCalendar
 import com.prayertimes.data.models.AppColorPreset
 import com.prayertimes.data.models.AppLanguage
@@ -31,7 +32,7 @@ import com.prayertimes.data.preferences.PrayerPreferences
 import com.prayertimes.data.qibla.CompassSensorManager
 import com.prayertimes.data.qibla.CompassState
 import com.prayertimes.notifications.PrayerNotificationScheduler
-import com.prayertimes.widget.PrayerAppWidgetProvider
+import com.prayertimes.widget.glance.PrayerGlanceWidget
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -189,20 +190,26 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         // Split by concern (see the *Inputs projections above): a settings emission only triggers
         // the side effects whose actual inputs changed, instead of every emission rebuilding the
         // schedule, every AlarmManager entry, and the widget regardless of what changed.
-        viewModelScope.launch {
+        var lastCalculationInputs = initialSettings.calculationInputs()
+        viewModelScope.launch(Dispatchers.Default) {
             settings.map { it.calculationInputs() }.distinctUntilChanged().collect { calc ->
+                if (calc == lastCalculationInputs) return@collect
+                lastCalculationInputs = calc
                 compassManager.setLocation(calc.location.latitude, calc.location.longitude)
-                recalculateSchedules(settings.value, _selectedDate.value)
+                val currentSettings = settings.value
+                PrayerTimesCalculator.clearCache()
+                PrayerSchedulePrewarmer.prewarm(currentSettings)
+                recalculateSchedules(currentSettings, _selectedDate.value)
             }
         }
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             settings.map { it.notificationInputs() }.distinctUntilChanged().collect {
                 PrayerNotificationScheduler.scheduleDailyAlarms(getApplication(), settings.value)
             }
         }
         viewModelScope.launch {
             settings.map { it.widgetInputs() }.distinctUntilChanged().collect {
-                PrayerAppWidgetProvider.updateAllWidgets(getApplication())
+                PrayerGlanceWidget.refreshAll(getApplication())
             }
         }
 
@@ -320,27 +327,17 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    // A cached fix younger than this is treated as still representative - prayer times don't
-    // meaningfully change over a 30-minute window even if the user has moved slightly, so there's
-    // no need to force a fresh high-accuracy GPS fix (one of the more expensive sensors/radios on
-    // the phone) on every app launch just to end up at essentially the same coordinates.
-    private val cachedLocationMaxAgeMillis = 30 * 60 * 1000L
+    // A recent cached fix is enough to detect meaningful travel. Room-scale GPS drift is filtered
+    // separately before persistence so it cannot invalidate prayer schedules and alarms.
+    private val cachedLocationMaxAgeMillis = 2 * 60 * 60 * 1000L
     private val cachedLocationMaxAccuracyMeters = 500f
+    private val meaningfulLocationChangeMeters = 5_000f
 
-    /**
-     * @param forceRefresh Skip the cached-location check and request a fresh GPS fix - used by an
-     * explicit "Refresh location" user action, where a stale cached fix would be the wrong call.
-     */
     @SuppressLint("MissingPermission")
-    fun requestGpsLocation(context: Context, forceRefresh: Boolean = false) {
+    fun requestGpsLocation(context: Context) {
         _isGpsLoading.value = true
         _locationErrorMessage.value = null
         val localizedRes = com.prayertimes.util.LocalizedStrings.forLanguage(context, settings.value.language.resolveIsArabic())
-
-        if (forceRefresh) {
-            requestFreshGpsFix(context, localizedRes)
-            return
-        }
 
         fusedLocationClient.lastLocation
             .addOnSuccessListener { cached: Location? ->
@@ -420,7 +417,9 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                     isGps = true
                 )
             }
-            prefs.updateLocation(newLoc)
+            if (isMeaningfulLocationChange(settings.value.location, newLoc)) {
+                prefs.updateLocation(newLoc)
+            }
         } catch (e: Exception) {
             val newLoc = UserLocation(
                 name = localizedRes.getString(R.string.gps_coordinates_fallback),
@@ -430,7 +429,9 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 timeZoneId = ZoneId.systemDefault().id,
                 isGps = true
             )
-            prefs.updateLocation(newLoc)
+            if (isMeaningfulLocationChange(settings.value.location, newLoc)) {
+                prefs.updateLocation(newLoc)
+            }
         } finally {
             _isGpsLoading.value = false
         }
@@ -459,10 +460,31 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun updateHijriOffset(offset: Int) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             val anchor = HijriCalendar.monthKeyFor(LocalDate.now())
+            // Fill the newly adjusted pages before DataStore publishes the new setting and causes
+            // the visible calendar to recompose.
+            HijriCalendar.prewarm(
+                anchorDate = LocalDate.now(),
+                adjustmentDays = offset,
+                previousMonths = 1,
+                nextMonths = 1
+            )
             prefs.updateHijriOffset(offset, anchor)
         }
+    }
+
+    private fun isMeaningfulLocationChange(current: UserLocation, candidate: UserLocation): Boolean {
+        if (!current.isGps || current.timeZoneId != candidate.timeZoneId) return true
+        val distanceMeters = FloatArray(1)
+        Location.distanceBetween(
+            current.latitude,
+            current.longitude,
+            candidate.latitude,
+            candidate.longitude,
+            distanceMeters
+        )
+        return distanceMeters[0] >= meaningfulLocationChangeMeters
     }
 
     fun toggle24HourFormat() {
@@ -537,7 +559,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             // Refresh only after DataStore has committed the new settings. The UI previously
             // started these as two unrelated asynchronous operations, so the widget frequently
             // recomposed from the old value (most visibly when switching the hero to BOTH).
-            PrayerAppWidgetProvider.updateAllWidgets(getApplication())
+            PrayerGlanceWidget.refreshAll(getApplication())
         }
     }
 
@@ -546,7 +568,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             // If the Apply button is tapped while a setting write is still in flight, wait for it
             // rather than refreshing stale preferences and falsely showing an applied notice.
             widgetSettingsUpdateJob?.join()
-            PrayerAppWidgetProvider.updateAllWidgets(getApplication())
+            PrayerGlanceWidget.refreshAll(getApplication())
         }
     }
 

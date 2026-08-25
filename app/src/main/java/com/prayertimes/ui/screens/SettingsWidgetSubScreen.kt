@@ -319,7 +319,7 @@ fun SettingsWidgetSubScreen(
 
                 // Text Color Style - a manual escape hatch for when the theme's own text colors
                 // can't be trusted for contrast, since a transparent/near-transparent widget has no
-                // way to know what's actually behind it (see PrayerAppWidgetProvider.resolveWidgetColors).
+                // way to know what's actually behind it.
                 WidgetSettingsSubLabel(stringResource(R.string.widget_settings_text_color_title))
                 WidgetTextStyleSelector(
                     currentStyle = wSet.textStyle,
@@ -856,19 +856,19 @@ private fun WidgetCanvasPreview(
     isArabic: Boolean
 ) {
     val (primaryAccent, bgCardColor, themeTextPrimary, themeTextSecondary) = resolveWidgetPreviewTheme(widgetSettings.themeMode)
-    // Mirrors PrayerAppWidgetProvider.resolveWidgetColors' textStyle override exactly.
+    // Mirrors the Glance widget color resolver's text-style override.
     val (textPrimary, textSecondary) = when (widgetSettings.textStyle) {
         WidgetTextStyle.AUTO -> themeTextPrimary to themeTextSecondary
         WidgetTextStyle.LIGHT -> Color(0xFFFFFFFF) to Color(0xFFE2E8F0)
         WidgetTextStyle.DARK -> Color(0xFF0F172A) to Color(0xFF334155)
     }
 
-    // Mirrors PrayerAppWidgetProvider.resolveWidgetColors' textOnAccent exactly (same 0.42
+    // Mirrors the Glance widget color resolver's textOnAccent threshold (0.42
     // threshold) - the preview previously hardcoded white pill/badge text regardless of theme.
     val textOnAccent = if (primaryAccent.luminance() > 0.42f) Color(0xFF0F172A) else Color.White
 
     val alpha = (widgetSettings.opacityPercent / 100f).coerceIn(0f, 1f)
-    // Mirrors PrayerAppWidgetProvider.resolveWidgetColors exactly so the preview matches the
+    // Mirrors the Glance widget color resolver so the preview matches the
     // real widget for every background style, not just the default TRANSLUCENT one.
     val finalBgColor = when (widgetSettings.bgStyle) {
         WidgetBackgroundStyle.TRANSPARENT_CLEAN -> Color.Transparent
@@ -1434,7 +1434,7 @@ private fun getPreviewPrayers(res: Resources, showSunrise: Boolean): List<Pair<S
     return list
 }
 
-// Mirrors PrayerAppWidgetProvider.resolveSystemDynamicPalette exactly (same dynamicDarkColorScheme
+// Mirrors the Glance widget dynamic palette (same dynamicDarkColorScheme
 // derivation) so the preview shows the same colors "Material You Dynamic" will actually render with.
 @Composable
 private fun resolveSystemDynamicPreviewPalette(): Quadruple<Color, Color, Color, Color>? {

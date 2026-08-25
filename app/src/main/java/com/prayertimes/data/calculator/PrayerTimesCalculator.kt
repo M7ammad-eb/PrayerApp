@@ -12,6 +12,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.util.LinkedHashMap
 import kotlin.math.abs
 import kotlin.math.acos
 import kotlin.math.asin
@@ -24,6 +25,31 @@ import kotlin.math.sin
 import kotlin.math.tan
 
 object PrayerTimesCalculator {
+
+    private const val MAX_CACHED_SCHEDULES = 48
+
+    private data class ScheduleCacheKey(
+        val date: LocalDate,
+        val latitude: Double,
+        val longitude: Double,
+        val zoneId: String,
+        val method: CalculationMethod,
+        val juristicMethod: JuristicMethod,
+        val highLatitudeRule: HighLatitudeRule,
+        val adjustments: PrayerTimeAdjustments,
+        val hijriAdjustmentDays: Int
+    )
+
+    private val scheduleCache = object : LinkedHashMap<ScheduleCacheKey, DailyPrayerSchedule>(
+        MAX_CACHED_SCHEDULES,
+        0.75f,
+        true
+    ) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<ScheduleCacheKey, DailyPrayerSchedule>?
+        ): Boolean = size > MAX_CACHED_SCHEDULES
+    }
+    private var cacheGeneration = 0L
 
     private const val DEG_TO_RAD = Math.PI / 180.0
     private const val RAD_TO_DEG = 180.0 / Math.PI
@@ -151,6 +177,43 @@ object PrayerTimesCalculator {
         return date.atStartOfDay(ZoneOffset.UTC).plusMinutes(signedMinutes.toLong()).withZoneSameInstant(zoneId)
     }
 
+    fun clearCache() {
+        synchronized(scheduleCache) {
+            scheduleCache.clear()
+            cacheGeneration++
+        }
+    }
+
+    fun prewarm(
+        anchorDate: LocalDate,
+        latitude: Double,
+        longitude: Double,
+        zoneId: ZoneId,
+        method: CalculationMethod,
+        juristicMethod: JuristicMethod,
+        highLatitudeRule: HighLatitudeRule,
+        adjustments: PrayerTimeAdjustments,
+        hijriAdjustmentDays: Int,
+        previousDays: Int = 7,
+        nextDays: Int = 30
+    ) {
+        val now = ZonedDateTime.now(zoneId)
+        for (offset in -previousDays.coerceAtLeast(0)..nextDays.coerceAtLeast(0)) {
+            calculateDailySchedule(
+                date = anchorDate.plusDays(offset.toLong()),
+                latitude = latitude,
+                longitude = longitude,
+                zoneId = zoneId,
+                method = method,
+                juristicMethod = juristicMethod,
+                highLatitudeRule = highLatitudeRule,
+                adjustments = adjustments,
+                hijriAdjustmentDays = hijriAdjustmentDays,
+                now = now
+            )
+        }
+    }
+
     fun calculateDailySchedule(
         date: LocalDate,
         latitude: Double,
@@ -162,6 +225,58 @@ object PrayerTimesCalculator {
         adjustments: PrayerTimeAdjustments = PrayerTimeAdjustments(),
         hijriAdjustmentDays: Int = 0,
         now: ZonedDateTime = ZonedDateTime.now(zoneId)
+    ): DailyPrayerSchedule {
+        val key = ScheduleCacheKey(
+            date,
+            latitude,
+            longitude,
+            zoneId.id,
+            method,
+            juristicMethod,
+            highLatitudeRule,
+            adjustments,
+            hijriAdjustmentDays
+        )
+        val generation: Long
+        synchronized(scheduleCache) {
+            scheduleCache[key]?.let { return it.withPrayerStatus(now) }
+            generation = cacheGeneration
+        }
+
+        val generated = calculateDailyScheduleUncached(
+            date,
+            latitude,
+            longitude,
+            zoneId,
+            method,
+            juristicMethod,
+            highLatitudeRule,
+            adjustments,
+            hijriAdjustmentDays,
+            now
+        ).withoutPrayerStatus()
+
+        val cached = synchronized(scheduleCache) {
+            if (generation == cacheGeneration) {
+                scheduleCache.getOrPut(key) { generated }
+            } else {
+                generated
+            }
+        }
+        return cached.withPrayerStatus(now)
+    }
+
+    private fun calculateDailyScheduleUncached(
+        date: LocalDate,
+        latitude: Double,
+        longitude: Double,
+        zoneId: ZoneId,
+        method: CalculationMethod,
+        juristicMethod: JuristicMethod,
+        highLatitudeRule: HighLatitudeRule,
+        adjustments: PrayerTimeAdjustments,
+        hijriAdjustmentDays: Int,
+        now: ZonedDateTime
     ): DailyPrayerSchedule {
         val sunToday = computeSunTimes(date, latitude, longitude)
         val declination = sunToday.declination
@@ -300,6 +415,22 @@ object PrayerTimesCalculator {
             lastThirdOfNight = lastThirdTime,
             dhuha = dhuhaTime,
             prayerItems = items
+        )
+    }
+
+    private fun DailyPrayerSchedule.withoutPrayerStatus(): DailyPrayerSchedule = copy(
+        prayerItems = prayerItems.map { it.copy(isNext = false, isPassed = false) }
+    )
+
+    private fun DailyPrayerSchedule.withPrayerStatus(now: ZonedDateTime): DailyPrayerSchedule {
+        var foundNext = false
+        return copy(
+            prayerItems = prayerItems.map { item ->
+                val isPassed = now.isAfter(item.zonedDateTime)
+                val isNext = !foundNext && !isPassed && date == now.toLocalDate()
+                if (isNext) foundNext = true
+                item.copy(isNext = isNext, isPassed = isPassed)
+            }
         )
     }
 }

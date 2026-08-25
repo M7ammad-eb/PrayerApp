@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">Salati</string>
     <string name="widget_description">Displays the next prayer time and countdown on your home screen.</string>
-    <string name="widget_description_glance_test">Salati prayer times (Glance test widget, not for regular use).</string>
 
     <!-- ===== App Branding ===== -->
     <string name="app_brand_name">Salati</string>
@@ -432,7 +431,7 @@
         <item>Sunday</item>
     </string-array>
 
-    <!-- ===== Widget Provider (non-Compose RemoteViews) ===== -->
+    <!-- ===== Home-screen widget ===== -->
     <string name="widget_hero_prev_label">PREVIOUS</string>
     <string name="widget_hero_next_label">NEXT</string>
     <string name="widget_status_prayer_time">Prayer Time!</string>

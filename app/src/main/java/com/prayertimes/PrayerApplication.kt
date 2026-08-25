@@ -8,9 +8,14 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import com.prayertimes.data.calendar.HijriCalendar
+import com.prayertimes.data.calculator.PrayerSchedulePrewarmer
+import com.prayertimes.data.preferences.PrayerPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class PrayerApplication : Application() {
 
@@ -29,9 +34,10 @@ class PrayerApplication : Application() {
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private var lastNightModeBit = 0
+    private var userCachePrewarmStarted = false
     private val mainHandler = Handler(Looper.getMainLooper())
     private val pendingWidgetRefresh = Runnable {
-        com.prayertimes.widget.PrayerAppWidgetProvider.updateAllWidgets(this)
+        com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(this)
     }
 
     override fun onCreate() {
@@ -39,6 +45,19 @@ class PrayerApplication : Application() {
         instance = this
         createNotificationChannels()
         lastNightModeBit = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+    }
+
+    fun prewarmUserCaches() {
+        if (userCachePrewarmStarted) return
+        userCachePrewarmStarted = true
+        // Prepare likely calendar pages and daily prayer schedules off the main thread. The work
+        // is deliberately asynchronous so startup is not delayed while those immutable results
+        // are normally ready before the user navigates to them.
+        applicationScope.launch {
+            val settings = PrayerPreferences.getInitialSettings(this@PrayerApplication)
+            HijriCalendar.prewarm(LocalDate.now(), settings.hijriAdjustmentDays)
+            PrayerSchedulePrewarmer.prewarm(settings)
+        }
     }
 
     // System-wide day/night broadcasts don't reach a manifest-registered widget receiver on
