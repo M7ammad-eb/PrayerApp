@@ -421,8 +421,6 @@ class AppStrings(
     val widgetOpacityTitle: String = s(R.string.widget_settings_opacity_title)
     val widgetFontSizeTitle: String = s(R.string.widget_settings_font_size_title)
     val widgetContentTitle: String = s(R.string.widget_settings_content_title)
-    val widgetPreviewTitle: String = s(R.string.widget_settings_preview_title)
-    val widgetRefreshAll: String = s(R.string.widget_settings_refresh_all)
     val widgetResetDefaults: String = s(R.string.widget_settings_reset_defaults)
     val widgetAppearanceSectionTitle: String = s(R.string.widget_settings_appearance_section_title)
     val widgetAppearanceSectionSubtitle: String = s(R.string.widget_settings_appearance_section_subtitle)

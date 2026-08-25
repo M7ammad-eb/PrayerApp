@@ -141,7 +141,6 @@ fun SettingsScreen(
     onUpdateColorPreset: (com.prayertimes.data.models.AppColorPreset) -> Unit = {},
     onUpdateFollowSystemColors: (Boolean) -> Unit = {},
     onUpdateWidgetSettings: (com.prayertimes.data.models.WidgetCustomizationSettings) -> Unit = {},
-    onRefreshAllWidgets: () -> Unit = {},
     onUpdatePrayerAdjustment: (PrayerType, Int) -> Unit,
     onUpdateNotificationConfig: (PrayerType, Boolean, NotificationSoundType, Int) -> Unit,
     onTestNotification: (PrayerType, NotificationSoundType) -> Unit,
@@ -200,7 +199,6 @@ fun SettingsScreen(
                 SettingsWidgetSubScreen(
                     settings = settings,
                     onUpdateWidgetSettings = onUpdateWidgetSettings,
-                    onRefreshAllWidgets = onRefreshAllWidgets,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
             }

@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.StayCurrentPortrait
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.WbSunny
@@ -61,8 +60,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -85,25 +87,14 @@ import com.prayertimes.ui.locale.LocalAppStrings
 import com.prayertimes.util.LocalizedStrings
 import com.prayertimes.R
 
-enum class WidgetPreviewType(@androidx.annotation.StringRes val labelRes: Int) {
-    STANDARD_4X2(R.string.widget_preview_type_standard_4x2),
-    EXPANDED_MAX(R.string.widget_preview_type_expanded_max),
-    VERTICAL_1_COL(R.string.widget_preview_type_vertical_1col),
-    SLIM_BAR(R.string.widget_preview_type_slim_bar),
-    COMPACT_2X1(R.string.widget_preview_type_compact_2x1)
-}
-
 @Composable
 fun SettingsWidgetSubScreen(
     settings: AppPrayerSettings,
     onUpdateWidgetSettings: (WidgetCustomizationSettings) -> Unit,
-    onRefreshAllWidgets: () -> Unit = {},
     onBack: () -> Unit
 ) {
     val strings = LocalAppStrings.current
     val wSet = settings.widgetSettings
-    var selectedPreviewType by remember { mutableStateOf(WidgetPreviewType.STANDARD_4X2) }
-    var showAppliedNotice by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -164,67 +155,22 @@ fun SettingsWidgetSubScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Live Widget Render Box - fixed above the scrollable settings list so it stays visible
+        // while flipping through styles below, instead of scrolling out of view.
+        WidgetCanvasPreview(
+            settings = settings,
+            widgetSettings = wSet,
+            isArabic = strings.isArabic
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Live preview header and the one explicit device refresh action.
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = strings.widgetPreviewTitle,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                FilledTonalButton(
-                    onClick = {
-                        onRefreshAllWidgets()
-                        showAppliedNotice = true
-                    },
-                    modifier = Modifier.testTag("apply_widget_settings_btn"),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(17.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = strings.widgetRefreshAll, style = MaterialTheme.typography.labelMedium)
-                }
-            }
-
-            WidgetPreviewTypeSelector(
-                currentType = selectedPreviewType,
-                onSelectType = { selectedPreviewType = it }
-            )
-
-            // Live Widget Render Box
-            WidgetCanvasPreview(
-                settings = settings,
-                widgetSettings = wSet,
-                previewType = selectedPreviewType,
-                isArabic = strings.isArabic
-            )
-
-            if (showAppliedNotice) {
-                Text(
-                    text = stringResource(R.string.widget_settings_applied_notice),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
             // ===== Appearance: theme, background, opacity, font size, text color =====
             WidgetSettingsSectionCard(
                 icon = Icons.Default.Palette,
@@ -422,71 +368,6 @@ fun SettingsWidgetSubScreen(
             }
 
             Spacer(modifier = Modifier.height(60.dp))
-        }
-    }
-}
-
-@Composable
-private fun WidgetPreviewTypeSelector(
-    currentType: WidgetPreviewType,
-    onSelectType: (WidgetPreviewType) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedCard(
-            onClick = { expanded = true },
-            shape = RoundedCornerShape(14.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.StayCurrentPortrait,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = stringResource(currentType.labelRes),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth(0.9f)
-        ) {
-            WidgetPreviewType.values().forEach { type ->
-                DropdownMenuItem(
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.StayCurrentPortrait,
-                            contentDescription = null,
-                            modifier = Modifier.size(19.dp)
-                        )
-                    },
-                    text = { Text(stringResource(type.labelRes)) },
-                    onClick = {
-                        expanded = false
-                        onSelectType(type)
-                    }
-                )
-            }
         }
     }
 }
@@ -852,7 +733,6 @@ private fun WidgetSettingsSubLabel(text: String) {
 private fun WidgetCanvasPreview(
     settings: AppPrayerSettings,
     widgetSettings: WidgetCustomizationSettings,
-    previewType: WidgetPreviewType,
     isArabic: Boolean
 ) {
     val (primaryAccent, bgCardColor, themeTextPrimary, themeTextSecondary) = resolveWidgetPreviewTheme(widgetSettings.themeMode)
@@ -885,40 +765,52 @@ private fun WidgetCanvasPreview(
         else -> primaryAccent.copy(alpha = 0.25f)
     }
 
-    // Simulated Wallpaper Background container - deliberately bright & busy rather than an
-    // idealized dark gradient, since a faint translucent overlay reads very differently on
-    // a dark backdrop vs. a real (often bright, photographic) home screen wallpaper.
+    // Simulated Wallpaper Background container - split diagonally into a bright half and a
+    // dark half so a single preview shows how each background style (especially translucent/
+    // frosted ones) reads against both a light, photographic wallpaper and a dark one at once,
+    // rather than only ever testing against one extreme.
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        Color(0xFFB8C6D9),
-                        Color(0xFFE8DCC4),
-                        Color(0xFF9CAF88),
-                        Color(0xFFD9C4A8)
-                    )
+            .drawWithCache {
+                val brightTriangle = Path().apply {
+                    moveTo(0f, 0f)
+                    lineTo(size.width, 0f)
+                    lineTo(size.width, size.height)
+                    close()
+                }
+                val darkTriangle = Path().apply {
+                    moveTo(0f, 0f)
+                    lineTo(size.width, size.height)
+                    lineTo(0f, size.height)
+                    close()
+                }
+                val brightBrush = Brush.linearGradient(
+                    colors = listOf(Color(0xFFE8DCC4), Color(0xFFB8C6D9)),
+                    start = Offset(size.width, 0f),
+                    end = Offset(0f, size.height)
                 )
-            )
+                val darkBrush = Brush.linearGradient(
+                    colors = listOf(Color(0xFF1E293B), Color(0xFF0B1220)),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, size.height)
+                )
+                onDrawBehind {
+                    drawPath(brightTriangle, brightBrush)
+                    drawPath(darkTriangle, darkBrush)
+                }
+            }
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Widget Card Box - a fixed height per preview type, independent of font size or which
-        // toggles are on. A real widget's footprint is fixed by its home screen grid placement;
-        // it never grows or shrinks to fit its content, so the mockup shouldn't either.
-        val cardHeight = when (previewType) {
-            WidgetPreviewType.STANDARD_4X2 -> 210.dp
-            WidgetPreviewType.EXPANDED_MAX -> 340.dp
-            WidgetPreviewType.VERTICAL_1_COL -> 320.dp
-            WidgetPreviewType.SLIM_BAR -> 72.dp
-            WidgetPreviewType.COMPACT_2X1 -> 110.dp
-        }
+        // Widget Card Box - a fixed height, independent of font size or which toggles are on.
+        // A real widget's footprint is fixed by its home screen grid placement; it never grows
+        // or shrinks to fit its content, so the mockup shouldn't either.
         Box(
             modifier = Modifier
-                .fillMaxWidth(if (previewType == WidgetPreviewType.VERTICAL_1_COL) 0.52f else 1f)
-                .height(cardHeight)
+                .fillMaxWidth()
+                .height(210.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(finalBgColor)
                 .border(
@@ -928,63 +820,15 @@ private fun WidgetCanvasPreview(
                 )
                 .padding(14.dp)
         ) {
-            when (previewType) {
-                WidgetPreviewType.STANDARD_4X2 -> {
-                    PreviewStandard4x2(
-                        settings = settings,
-                        wSet = widgetSettings,
-                        primaryAccent = primaryAccent,
-                        textPrimary = textPrimary,
-                        textSecondary = textSecondary,
-                        textOnAccent = textOnAccent,
-                        isArabic = isArabic
-                    )
-                }
-                WidgetPreviewType.EXPANDED_MAX -> {
-                    PreviewExpandedMax(
-                        settings = settings,
-                        wSet = widgetSettings,
-                        primaryAccent = primaryAccent,
-                        textPrimary = textPrimary,
-                        textSecondary = textSecondary,
-                        textOnAccent = textOnAccent,
-                        isArabic = isArabic
-                    )
-                }
-                WidgetPreviewType.VERTICAL_1_COL -> {
-                    PreviewVertical1Col(
-                        settings = settings,
-                        wSet = widgetSettings,
-                        primaryAccent = primaryAccent,
-                        textPrimary = textPrimary,
-                        textSecondary = textSecondary,
-                        textOnAccent = textOnAccent,
-                        isArabic = isArabic
-                    )
-                }
-                WidgetPreviewType.SLIM_BAR -> {
-                    PreviewSlimBar(
-                        settings = settings,
-                        wSet = widgetSettings,
-                        primaryAccent = primaryAccent,
-                        textPrimary = textPrimary,
-                        textSecondary = textSecondary,
-                        textOnAccent = textOnAccent,
-                        isArabic = isArabic
-                    )
-                }
-                WidgetPreviewType.COMPACT_2X1 -> {
-                    PreviewCompact2x1(
-                        settings = settings,
-                        wSet = widgetSettings,
-                        primaryAccent = primaryAccent,
-                        textPrimary = textPrimary,
-                        textSecondary = textSecondary,
-                        textOnAccent = textOnAccent,
-                        isArabic = isArabic
-                    )
-                }
-            }
+            PreviewStandard4x2(
+                settings = settings,
+                wSet = widgetSettings,
+                primaryAccent = primaryAccent,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                textOnAccent = textOnAccent,
+                isArabic = isArabic
+            )
         }
     }
 }
@@ -1126,284 +970,7 @@ private fun PreviewStandard4x2(
     }
 }
 
-@Composable
-private fun PreviewExpandedMax(
-    settings: AppPrayerSettings,
-    wSet: WidgetCustomizationSettings,
-    primaryAccent: Color,
-    textPrimary: Color,
-    textSecondary: Color,
-    textOnAccent: Color,
-    isArabic: Boolean
-) {
-    val scale = 1.10f
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // Header - at 4+ columns the real widget shows Hijri date inline next to location
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (wSet.showLocation || wSet.showHijriDate) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (wSet.showLocation) {
-                        Text(
-                            text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location),
-                            fontSize = 13.sp * scale,
-                            fontWeight = FontWeight.Bold,
-                            color = textPrimary
-                        )
-                    }
-                    if (wSet.showHijriDate) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(R.string.widget_preview_mock_hijri_date),
-                            fontSize = 11.sp * scale,
-                            color = textSecondary
-                        )
-                    }
-                }
-            }
-            Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = textSecondary, modifier = Modifier.size(16.dp))
-        }
-
-        // Expanded Hero Card
-        if (wSet.showHeroCard) {
-            Surface(
-                color = textPrimary.copy(alpha = 0.16f),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    val previewRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
-                    val (heroName, heroTime, heroCountdown) = previewHeroMock(wSet.heroTimeMode, previewRes)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = heroName,
-                                fontSize = 13.sp * scale,
-                                fontWeight = FontWeight.Bold,
-                                color = primaryAccent
-                            )
-                            Text(
-                                text = heroTime,
-                                fontSize = 24.sp * scale,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = textPrimary
-                            )
-                        }
-
-                        if (wSet.showCountdown) {
-                            Surface(
-                                color = primaryAccent,
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text(
-                                    text = heroCountdown,
-                                    color = textOnAccent,
-                                    fontSize = 12.sp * scale,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                )
-                            }
-                        }
-                    }
-
-                }
-            }
-        }
-
-        // Expanded Prayer Rows List (Evenly distributed)
-        if (wSet.showAllPrayersList) {
-            val ribbonRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
-            val prayers = getPreviewPrayers(ribbonRes, wSet.showSunrise)
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                prayers.forEach { (name, time) ->
-                    val isActive = name == ribbonRes.getString(R.string.prayer_name_asr)
-                    Surface(
-                        color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.14f),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 10.dp, vertical = 5.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = name,
-                                fontSize = 12.sp * scale,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isActive) textOnAccent else textSecondary
-                            )
-                            Text(
-                                text = time,
-                                fontSize = 12.sp * scale,
-                                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isActive) textOnAccent else textPrimary
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PreviewVertical1Col(
-    settings: AppPrayerSettings,
-    wSet: WidgetCustomizationSettings,
-    primaryAccent: Color,
-    textPrimary: Color,
-    textSecondary: Color,
-    textOnAccent: Color,
-    isArabic: Boolean
-) {
-    val scale = 0.98f
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        val vertRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
-        if (wSet.showLocation) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
-            }
-        }
-
-        if (wSet.showHeroCard) {
-            Surface(
-                color = textPrimary.copy(alpha = 0.16f),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
-                    Text(text = vertRes.getString(if (isPrevious) R.string.prayer_name_dhuhr else R.string.prayer_name_asr), fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
-                    Text(text = if (isPrevious) "12:20 PM" else "3:45 PM", fontSize = 12.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)
-                    if (wSet.showCountdown) {
-                        Surface(color = primaryAccent, shape = RoundedCornerShape(6.dp)) {
-                            Text(text = if (isPrevious) vertRes.getString(R.string.widget_since_minutes_only, 45) else vertRes.getString(R.string.widget_countdown_minutes_only, 45), color = textOnAccent, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
-                        }
-                    }
-                }
-            }
-        }
-
-        val prayers = getPreviewPrayers(vertRes, wSet.showSunrise)
-
-        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            prayers.forEach { (name, time) ->
-                val isActive = name == vertRes.getString(R.string.prayer_name_asr)
-                Surface(
-                    color = if (isActive) primaryAccent else textPrimary.copy(alpha = 0.14f),
-                    shape = RoundedCornerShape(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 6.dp, vertical = 3.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = name, fontSize = 8.sp * scale, fontWeight = FontWeight.Bold, color = if (isActive) textOnAccent else textSecondary)
-                        Text(text = time, fontSize = 8.sp * scale, color = if (isActive) textOnAccent else textPrimary)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PreviewSlimBar(
-    settings: AppPrayerSettings,
-    wSet: WidgetCustomizationSettings,
-    primaryAccent: Color,
-    textPrimary: Color,
-    textSecondary: Color,
-    textOnAccent: Color,
-    isArabic: Boolean
-) {
-    val scale = 0.92f
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val slimRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column {
-                if (wSet.showLocation) {
-                    Text(text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
-                    Text(text = slimRes.getString(if (isPrevious) R.string.prayer_name_dhuhr else R.string.prayer_name_asr), fontSize = 12.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = if (isPrevious) "12:20 PM" else "3:45 PM", fontSize = 13.sp * scale, fontWeight = FontWeight.Bold, color = textPrimary)
-                }
-            }
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (wSet.showCountdown) {
-                val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
-                Surface(color = primaryAccent, shape = RoundedCornerShape(8.dp)) {
-                    Text(text = if (isPrevious) slimRes.getString(R.string.widget_since_minutes_only, 45) else slimRes.getString(R.string.widget_countdown_minutes_only, 45), color = textOnAccent, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-                }
-            }
-            Spacer(modifier = Modifier.width(6.dp))
-            Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = textSecondary, modifier = Modifier.size(14.dp))
-        }
-    }
-}
-
-@Composable
-private fun PreviewCompact2x1(
-    settings: AppPrayerSettings,
-    wSet: WidgetCustomizationSettings,
-    primaryAccent: Color,
-    textPrimary: Color,
-    textSecondary: Color,
-    textOnAccent: Color,
-    isArabic: Boolean
-) {
-    val scale = 0.95f
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val isPrevious = wSet.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
-        val compactRes = LocalizedStrings.forLanguage(LocalContext.current, isArabic)
-        Column {
-            if (wSet.showLocation) {
-                Text(text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalizedStrings.forLanguage(LocalContext.current, isArabic), settings.location), fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, color = textSecondary)
-            }
-            Text(text = compactRes.getString(if (isPrevious) R.string.widget_preview_compact_prev_label else R.string.widget_preview_compact_next_label), fontSize = 11.sp * scale, fontWeight = FontWeight.Bold, color = primaryAccent)
-            Text(text = if (isPrevious) "12:20 PM" else "3:45 PM", fontSize = 18.sp * scale, fontWeight = FontWeight.ExtraBold, color = textPrimary)
-        }
-
-        if (wSet.showCountdown) {
-            Surface(color = primaryAccent, shape = RoundedCornerShape(8.dp)) {
-                Text(text = if (isPrevious) compactRes.getString(R.string.widget_since_minutes_only, 45) else compactRes.getString(R.string.widget_preview_mock_minutes_bare, 45), color = textOnAccent, fontSize = 10.sp * scale, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-            }
-        }
-    }
-}
-
-// Mock hero card content for the previews - name, time, and the countdown/elapsed label -
+// Mock hero card content for the preview - name, time, and the countdown/elapsed label -
 // swapped based on heroTimeMode so the preview reflects the setting it's demonstrating.
 private fun previewHeroMock(heroTimeMode: WidgetHeroTimeMode, res: Resources): Triple<String, String, String> {
     return if (heroTimeMode == WidgetHeroTimeMode.PREVIOUS) {

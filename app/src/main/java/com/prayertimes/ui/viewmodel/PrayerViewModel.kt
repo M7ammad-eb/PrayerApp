@@ -563,15 +563,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun refreshAllWidgets() {
-        viewModelScope.launch {
-            // If the Apply button is tapped while a setting write is still in flight, wait for it
-            // rather than refreshing stale preferences and falsely showing an applied notice.
-            widgetSettingsUpdateJob?.join()
-            PrayerGlanceWidget.refreshAll(getApplication())
-        }
-    }
-
     fun previewNotificationSound(soundType: NotificationSoundType, prayerType: PrayerType = PrayerType.DHUHR) {
         AthanAudioEngine.playSoundType(
             context = getApplication(),

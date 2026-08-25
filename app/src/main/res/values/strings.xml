@@ -393,8 +393,6 @@
     <string name="widget_settings_opacity_title">Background Opacity</string>
     <string name="widget_settings_font_size_title">Font Size</string>
     <string name="widget_settings_content_title">Widget Content &amp; Toggles</string>
-    <string name="widget_settings_preview_title">Live Interactive Preview</string>
-    <string name="widget_settings_refresh_all">Apply &amp; Refresh Widgets</string>
     <string name="widget_settings_reset_defaults">Reset to Defaults</string>
 
     <!-- ===== Countdown / Date Formatting ===== -->
@@ -449,7 +447,6 @@
     <string name="widget_settings_hero_section_subtitle">Choose the featured prayer and its countdown</string>
     <string name="widget_settings_schedule_section_title">Schedule &amp; header</string>
     <string name="widget_settings_schedule_section_subtitle">Choose prayer rows, location, and Hijri date</string>
-    <string name="widget_settings_applied_notice">✓ All home screen widgets refreshed!</string>
     <string name="widget_settings_opacity_transparent">Transparent (0%)</string>
     <string name="widget_settings_opacity_solid">Solid (100%)</string>
     <string name="widget_settings_text_color_title">Text Color</string>
@@ -460,12 +457,6 @@
     <string name="widget_settings_toggle_show_sunrise">Show Sunrise in Schedule</string>
     <string name="widget_settings_toggle_show_hero">Show Next Prayer Hero Card</string>
     <string name="widget_settings_toggle_show_all_prayers">Show All Prayers Schedule</string>
-
-    <string name="widget_preview_type_standard_4x2">4x2 Ribbon</string>
-    <string name="widget_preview_type_expanded_max">Expanded (Max)</string>
-    <string name="widget_preview_type_vertical_1col">1-Col (1x4 / 1x6)</string>
-    <string name="widget_preview_type_slim_bar">Slim (4x1 / 6x1)</string>
-    <string name="widget_preview_type_compact_2x1">Compact (2x1)</string>
 
     <string name="widget_theme_app_theme">Match App Theme</string>
     <string name="widget_theme_material_you">Material You Dynamic</string>
@@ -498,9 +489,6 @@
 
     <!-- Live preview mock text (fixed example values, not real countdowns) -->
     <string name="widget_preview_mock_hijri_date">• 14 Safar 1448 AH</string>
-    <string name="widget_preview_mock_minutes_bare">%1$dm</string>
-    <string name="widget_preview_compact_prev_label">Dhuhr Prayer</string>
-    <string name="widget_preview_compact_next_label">Asr Prayer</string>
     <string name="settings_widget_subtitle_format">%1$s • %2$d%% Opacity</string>
     <!-- ===== City & Country Names (World Cities Preset List) ===== -->
     <!-- Saudi Arabia -->

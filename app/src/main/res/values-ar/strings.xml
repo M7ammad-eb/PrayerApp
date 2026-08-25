@@ -393,8 +393,6 @@
     <string name="widget_settings_opacity_title">درجة الشفافية</string>
     <string name="widget_settings_font_size_title">حجم الخط</string>
     <string name="widget_settings_content_title">محتوى وعناصر الودجت</string>
-    <string name="widget_settings_preview_title">معاينة تفاعلية حية</string>
-    <string name="widget_settings_refresh_all">تحديث وتطبيق الودجت الآن</string>
     <string name="widget_settings_reset_defaults">استعادة الإعدادات الافتراضية</string>
 
     <!-- ===== Countdown / Date Formatting ===== -->
@@ -453,7 +451,6 @@
     <string name="widget_settings_hero_section_subtitle">اختر الصلاة البارزة والعدّ التنازلي</string>
     <string name="widget_settings_schedule_section_title">الجدول والترويسة</string>
     <string name="widget_settings_schedule_section_subtitle">اختر صفوف الصلوات والموقع والتاريخ الهجري</string>
-    <string name="widget_settings_applied_notice">✓ تم تحديث جميع الودجات على الشاشة الرئيسية بنجاح!</string>
     <string name="widget_settings_opacity_transparent">شفاف (0%)</string>
     <string name="widget_settings_opacity_solid">معتم كامل (100%)</string>
     <string name="widget_settings_text_color_title">لون النص</string>
@@ -464,12 +461,6 @@
     <string name="widget_settings_toggle_show_sunrise">إظهار وقت الشروق في القائمة</string>
     <string name="widget_settings_toggle_show_hero">إظهار بطاقة الصلاة القادمة (Hero Card)</string>
     <string name="widget_settings_toggle_show_all_prayers">إظهار قائمة كافة الصلوات</string>
-
-    <string name="widget_preview_type_standard_4x2">شريط 4×2</string>
-    <string name="widget_preview_type_expanded_max">موسع كامل (أقصى حجم)</string>
-    <string name="widget_preview_type_vertical_1col">عمود نحيف 1×6</string>
-    <string name="widget_preview_type_slim_bar">شريط أفقي 4×1</string>
-    <string name="widget_preview_type_compact_2x1">مصغر 2×1</string>
 
     <string name="widget_theme_app_theme">مماثل لمظهر التطبيق</string>
     <string name="widget_theme_material_you">ألوان النظام التلقائية</string>
@@ -502,9 +493,6 @@
 
     <!-- Live preview mock text (fixed example values, not real countdowns) -->
     <string name="widget_preview_mock_hijri_date">• 14 صفر 1448 هـ</string>
-    <string name="widget_preview_mock_minutes_bare">%1$dد</string>
-    <string name="widget_preview_compact_prev_label">الظهر</string>
-    <string name="widget_preview_compact_next_label">العصر</string>
     <string name="settings_widget_subtitle_format">%1$s • شفافية %2$d%%</string>
     <!-- ===== City & Country Names (World Cities Preset List) ===== -->
     <!-- Saudi Arabia -->
