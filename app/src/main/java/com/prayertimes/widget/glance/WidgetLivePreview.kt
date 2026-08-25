@@ -2,10 +2,10 @@ package com.prayertimes.widget.glance
 
 import android.widget.FrameLayout
 import android.widget.RemoteViews
+import android.view.View
+import android.view.ViewGroup
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,12 +15,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
 import androidx.glance.appwidget.GlanceRemoteViews
 import com.prayertimes.data.preferences.AppPrayerSettings
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Renders the real [PrayerGlanceWidget] composable - not a hand-copied mockup - at the given
@@ -35,16 +36,16 @@ import com.prayertimes.data.preferences.AppPrayerSettings
  */
 @OptIn(ExperimentalGlanceRemoteViewsApi::class)
 @Composable
-fun LiveGlanceWidgetPreview(settings: AppPrayerSettings, height: Dp, modifier: Modifier = Modifier) {
+fun LiveGlanceWidgetPreview(settings: AppPrayerSettings, size: DpSize, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val glanceRemoteViews = remember { GlanceRemoteViews() }
+    var remoteViews by remember { mutableStateOf<RemoteViews?>(null) }
 
-    BoxWithConstraints(modifier = modifier.fillMaxWidth().height(height)) {
-        val size = DpSize(maxWidth, maxHeight)
-        var remoteViews by remember { mutableStateOf<RemoteViews?>(null) }
-
+    Box(modifier = modifier.size(size.width, size.height)) {
         LaunchedEffect(settings, size) {
-            val data = PrayerGlanceWidget().buildGlanceWidgetData(context, settings)
+            val data = withContext(Dispatchers.Default) {
+                PrayerGlanceWidget().buildGlanceWidgetData(context, settings)
+            }
             remoteViews = glanceRemoteViews.compose(context, size) { WidgetContent(data) }.remoteViews
         }
 
@@ -54,7 +55,15 @@ fun LiveGlanceWidgetPreview(settings: AppPrayerSettings, height: Dp, modifier: M
                 factory = { ctx -> FrameLayout(ctx) },
                 update = { container ->
                     container.removeAllViews()
-                    container.addView(rv.apply(context, container))
+                    // WidgetContent already performs explicit RTL child ordering because launcher
+                    // RemoteViews do not reliably mirror Glance rows. Inside this Arabic Compose
+                    // screen, however, AndroidView makes the inflated hierarchy inherit RTL and
+                    // mirrors it a second time. Pin the preview hierarchy to LTR so it exercises
+                    // the same explicit ordering as the actual launcher widget.
+                    container.layoutDirection = View.LAYOUT_DIRECTION_LTR
+                    val inflated = rv.apply(context, container)
+                    forceLayoutDirectionLtr(inflated)
+                    container.addView(inflated)
                 }
             )
             Box(
@@ -69,5 +78,12 @@ fun LiveGlanceWidgetPreview(settings: AppPrayerSettings, height: Dp, modifier: M
                     }
             )
         }
+    }
+}
+
+private fun forceLayoutDirectionLtr(view: View) {
+    view.layoutDirection = View.LAYOUT_DIRECTION_LTR
+    if (view is ViewGroup) {
+        for (index in 0 until view.childCount) forceLayoutDirectionLtr(view.getChildAt(index))
     }
 }

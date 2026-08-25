@@ -2,7 +2,6 @@ package com.prayertimes.widget.glance
 
 import android.content.Context
 import android.content.Intent
-import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.TextUnit
@@ -256,7 +255,8 @@ class PrayerGlanceWidget : GlanceAppWidget() {
             textSecondary = Color(colors.textSecondaryColor),
             textOnAccent = Color(colors.textOnAccentColor),
             inactivePrayerBg = Color(colors.inactivePrayerBgColor),
-            activePrayerBg = Color(colors.activePrayerBgColor)
+            activePrayerBg = Color(colors.activePrayerBgColor),
+            isRtl = isArabic
         )
     }
 
@@ -329,7 +329,8 @@ internal data class GlanceWidgetData(
     val textSecondary: Color,
     val textOnAccent: Color,
     val inactivePrayerBg: Color,
-    val activePrayerBg: Color
+    val activePrayerBg: Color,
+    val isRtl: Boolean = false
 )
 
 private fun scaledSp(baseSp: Float, data: GlanceWidgetData): TextUnit = (baseSp * data.fontScale).sp
@@ -339,12 +340,10 @@ internal fun WidgetContent(data: GlanceWidgetData) {
     val size = LocalSize.current
     val layout = layoutForSize(size.width.value, size.height.value)
     val fittedData = data.copy(fontScale = layout.fontScale)
-    val context = LocalContext.current
     // Glance doesn't mirror Row child order for RTL locales the way native RemoteViews/View
-    // layoutDirection does (confirmed on-device: Arabic text shapes correctly within each Text,
-    // but multi-child Rows stayed in LTR visual order) - so child order is swapped manually
-    // below so metadata order remains natural in Arabic launchers.
-    val isRtl = context.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
+    // layoutDirection does. Use the app/widget language carried with the data rather than the
+    // RemoteViews host context: the launcher or preview host may remain LTR while the app is Arabic.
+    val isRtl = data.isRtl
 
     CardSurface(fittedData.rootBg, fittedData.rootBorder) {
         when (layout.family) {

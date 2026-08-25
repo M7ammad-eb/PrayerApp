@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -117,6 +118,7 @@ private data class NextPrayerBoundary(
     val computedForSettings: AppPrayerSettings
 )
 
+@OptIn(kotlinx.coroutines.FlowPreview::class)
 class PrayerViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefs = PrayerPreferences(application)
@@ -208,7 +210,9 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
         viewModelScope.launch {
-            settings.map { it.widgetInputs() }.distinctUntilChanged().collect {
+            // Widget settings can emit rapidly (especially opacity). One projection owns all
+            // automatic refreshes and coalesces a burst into a single RemoteViews rebuild.
+            settings.map { it.widgetInputs() }.distinctUntilChanged().debounce(300).collect {
                 PrayerGlanceWidget.refreshAll(getApplication())
             }
         }
@@ -556,10 +560,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         widgetSettingsUpdateJob?.cancel()
         widgetSettingsUpdateJob = viewModelScope.launch {
             prefs.updateWidgetSettings(settings)
-            // Refresh only after DataStore has committed the new settings. The UI previously
-            // started these as two unrelated asynchronous operations, so the widget frequently
-            // recomposed from the old value (most visibly when switching the hero to BOTH).
-            PrayerGlanceWidget.refreshAll(getApplication())
+            // The debounced WidgetInputs collector above refreshes after DataStore commits.
         }
     }
 

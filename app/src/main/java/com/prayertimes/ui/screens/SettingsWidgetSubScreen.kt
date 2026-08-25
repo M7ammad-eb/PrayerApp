@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +25,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocationOn
@@ -72,6 +75,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.sp
 import com.prayertimes.data.models.WidgetBackgroundStyle
 import com.prayertimes.data.models.WidgetCustomizationSettings
@@ -83,6 +87,16 @@ import com.prayertimes.ui.locale.LocalAppStrings
 import com.prayertimes.widget.glance.LiveGlanceWidgetPreview
 import com.prayertimes.R
 
+private enum class WidgetPreviewPreset(@androidx.annotation.StringRes val labelRes: Int) {
+    MINIMAL(R.string.widget_preview_minimal),
+    HORIZONTAL(R.string.widget_preview_horizontal),
+    COMPACT(R.string.widget_preview_compact),
+    TWO_COLUMN(R.string.widget_preview_two_column),
+    LARGE_RIBBON(R.string.widget_preview_large_ribbon),
+    VERTICAL_SCHEDULE(R.string.widget_preview_vertical_schedule),
+    FULL_SCHEDULE(R.string.widget_preview_full_schedule)
+}
+
 @Composable
 fun SettingsWidgetSubScreen(
     settings: AppPrayerSettings,
@@ -91,6 +105,8 @@ fun SettingsWidgetSubScreen(
 ) {
     val strings = LocalAppStrings.current
     val wSet = settings.widgetSettings
+    var previewPreset by remember { mutableStateOf(WidgetPreviewPreset.LARGE_RIBBON) }
+    var isPreviewExpanded by remember { mutableStateOf(true) }
 
     Column(
         modifier = Modifier
@@ -153,7 +169,13 @@ fun SettingsWidgetSubScreen(
 
         // Live Widget Render Box - fixed above the scrollable settings list so it stays visible
         // while flipping through styles below, instead of scrolling out of view.
-        WidgetCanvasPreview(settings = settings)
+        WidgetPreviewPanel(
+            settings = settings,
+            preset = previewPreset,
+            expanded = isPreviewExpanded,
+            onPresetChange = { previewPreset = it },
+            onExpandedChange = { isPreviewExpanded = it }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -722,12 +744,77 @@ private fun WidgetSettingsSubLabel(text: String) {
 // LIVE CANVAS PREVIEW
 // ---------------------------------------------------------------------------
 @Composable
-private fun WidgetCanvasPreview(settings: AppPrayerSettings) {
+private fun WidgetPreviewPanel(
+    settings: AppPrayerSettings,
+    preset: WidgetPreviewPreset,
+    expanded: Boolean,
+    onPresetChange: (WidgetPreviewPreset) -> Unit,
+    onExpandedChange: (Boolean) -> Unit
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                OutlinedCard(
+                    onClick = { menuExpanded = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = stringResource(preset.labelRes),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                    }
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    WidgetPreviewPreset.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(option.labelRes)) },
+                            onClick = {
+                                menuExpanded = false
+                                onPresetChange(option)
+                                onExpandedChange(true)
+                            }
+                        )
+                    }
+                }
+            }
+            IconButton(onClick = { onExpandedChange(!expanded) }) {
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = stringResource(
+                        if (expanded) R.string.widget_preview_collapse else R.string.widget_preview_expand
+                    )
+                )
+            }
+        }
+
+        if (expanded) WidgetCanvasPreview(settings, preset)
+    }
+}
+
+@Composable
+private fun WidgetCanvasPreview(settings: AppPrayerSettings, preset: WidgetPreviewPreset) {
     // Simulated Wallpaper Background container - split diagonally into a bright half and a
     // dark half so a single preview shows how each background style (especially translucent/
     // frosted ones) reads against both a light, photographic wallpaper and a dark one at once,
     // rather than only ever testing against one extreme.
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
@@ -762,11 +849,22 @@ private fun WidgetCanvasPreview(settings: AppPrayerSettings) {
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
+        // maxWidth is already the content width after this container's padding modifier.
+        val availableWidth = maxWidth.coerceAtLeast(1.dp)
+        val previewSize = when (preset) {
+            WidgetPreviewPreset.MINIMAL -> DpSize(minOf(72.dp, availableWidth), 72.dp)
+            WidgetPreviewPreset.HORIZONTAL -> DpSize(availableWidth, 96.dp)
+            WidgetPreviewPreset.COMPACT -> DpSize(minOf(180.dp, availableWidth), 180.dp)
+            WidgetPreviewPreset.TWO_COLUMN -> DpSize(minOf(230.dp, availableWidth), 150.dp)
+            WidgetPreviewPreset.LARGE_RIBBON -> DpSize(availableWidth, 190.dp)
+            WidgetPreviewPreset.VERTICAL_SCHEDULE -> DpSize(minOf(180.dp, availableWidth), 280.dp)
+            WidgetPreviewPreset.FULL_SCHEDULE -> DpSize(availableWidth, 280.dp)
+        }
         // Renders the actual PrayerGlanceWidget composable at this footprint - not a hand-copied
         // mockup - so this preview can never visually drift from the real home screen widget.
         // Its own CardSurface already draws the correct background/border for the current
         // bgStyle, so there's nothing left for this container to draw itself.
-        LiveGlanceWidgetPreview(settings = settings, height = 210.dp)
+        LiveGlanceWidgetPreview(settings = settings, size = previewSize)
     }
 }
 

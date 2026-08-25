@@ -394,6 +394,15 @@
     <string name="widget_settings_font_size_title">حجم الخط</string>
     <string name="widget_settings_content_title">محتوى وعناصر الودجت</string>
     <string name="widget_settings_reset_defaults">استعادة الإعدادات الافتراضية</string>
+    <string name="widget_preview_minimal">مصغر جداً</string>
+    <string name="widget_preview_horizontal">شريط أفقي</string>
+    <string name="widget_preview_compact">مدمج</string>
+    <string name="widget_preview_two_column">عمودان</string>
+    <string name="widget_preview_large_ribbon">الشريط الكبير</string>
+    <string name="widget_preview_vertical_schedule">جدول عمودي</string>
+    <string name="widget_preview_full_schedule">الجدول الكامل</string>
+    <string name="widget_preview_expand">إظهار معاينة الودجت</string>
+    <string name="widget_preview_collapse">إخفاء معاينة الودجت</string>
 
     <!-- ===== Countdown / Date Formatting ===== -->
     <string name="countdown_time_for_prayer_now">حان وقت الصلاة الآن!</string>

@@ -394,6 +394,15 @@
     <string name="widget_settings_font_size_title">Font Size</string>
     <string name="widget_settings_content_title">Widget Content &amp; Toggles</string>
     <string name="widget_settings_reset_defaults">Reset to Defaults</string>
+    <string name="widget_preview_minimal">Minimal</string>
+    <string name="widget_preview_horizontal">Horizontal bar</string>
+    <string name="widget_preview_compact">Compact</string>
+    <string name="widget_preview_two_column">Two column</string>
+    <string name="widget_preview_large_ribbon">Large ribbon</string>
+    <string name="widget_preview_vertical_schedule">Vertical schedule</string>
+    <string name="widget_preview_full_schedule">Full schedule</string>
+    <string name="widget_preview_expand">Show widget preview</string>
+    <string name="widget_preview_collapse">Hide widget preview</string>
 
     <!-- ===== Countdown / Date Formatting ===== -->
     <string name="countdown_time_for_prayer_now">Time for Prayer!</string>
