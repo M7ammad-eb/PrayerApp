@@ -1,6 +1,7 @@
 package com.prayertimes.data.calculator
 
 import com.prayertimes.data.models.HijriDate
+import com.prayertimes.data.models.IslamicObservance
 import java.time.LocalDate
 import java.time.chrono.HijrahChronology
 import java.time.temporal.ChronoField
@@ -81,7 +82,6 @@ object HijriDateCalculator {
         val formattedEn = "$day $monthNameEn $year AH"
         val formattedAr = "$day $monthNameAr $year هـ"
 
-        val (eventEn, eventAr) = getIslamicEvent(month, day)
         val isWhiteDay = day in 13..15
         val isSacredMonth = month in SACRED_MONTHS
 
@@ -94,33 +94,42 @@ object HijriDateCalculator {
             formattedEn = formattedEn,
             formattedAr = formattedAr,
             calendarSource = CALENDAR_SOURCE,
-            islamicEvent = eventEn,
-            islamicEventAr = eventAr,
+            observances = observancesFor(month, day),
             isWhiteDay = isWhiteDay,
             isSacredMonth = isSacredMonth
         )
     }
 
-    private fun getIslamicEvent(month: Int, day: Int): Pair<String?, String?> {
-        return when {
-            month == 1 && day == 1 -> "Islamic New Year (1 Muharram)" to "رأس السنة الهجرية"
-            month == 1 && day == 9 -> "Tasu'a (Fasting Recommended)" to "يوم تاسوعاء"
-            month == 1 && day == 10 -> "Day of Ashura (Fasting Recommended)" to "يوم عاشوراء"
-            month == 3 && day == 12 -> "Mawlid an-Nabi" to "المولد النبوي الشريف"
-            month == 7 && day == 27 -> "Isra and Mi'raj" to "ذكرى الإسراء والمعراج"
-            month == 8 && day == 15 -> "Mid-Sha'ban (Laylat al-Bara'at)" to "ليلة النصف من شعبان"
-            month == 9 && day == 1 -> "First Day of Ramadan (Holy Month of Fasting)" to "أول أيام شهر رمضان المبارك"
-            month == 9 && day == 27 -> "Laylat al-Qadr (Night of Decree)" to "ليلة القدر المباركة"
-            month == 9 -> "Ramadan Mubarak" to "شهر رمضان المبارك"
-            month == 10 && day == 1 -> "Eid al-Fitr (1st Day)" to "عيد الفطر المبارك"
-            month == 10 && day == 2 -> "Eid al-Fitr (2nd Day)" to "ثاني أيام عيد الفطر"
-            month == 10 && day == 3 -> "Eid al-Fitr (3rd Day)" to "ثالث أيام عيد الفطر"
-            month == 12 && day == 8 -> "Day of Tarwiyah (Hajj)" to "يوم التروية"
-            month == 12 && day == 9 -> "Day of Arafah (Hajj Peak & Fasting)" to "يوم عرفة"
-            month == 12 && day == 10 -> "Eid al-Adha (Day of Sacrifice)" to "عيد الأضحى المبارك"
-            month == 12 && day in 11..13 -> "Days of Tashreeq" to "أيام التشريق"
-            month == 12 && day in 1..9 -> "First 10 Days of Dhu al-Hijjah" to "عشر ذي الحجة المباركة"
-            else -> null to null
+    fun observancesFor(month: Int, day: Int): List<IslamicObservance> = buildList {
+        if (month == 1 && day == 1) add(IslamicObservance.HIJRI_NEW_YEAR)
+        if (month == 1 && day == 9) add(IslamicObservance.TASUA)
+        if (month == 1 && day == 10) add(IslamicObservance.ASHURA)
+        // The 13th of Dhu al-Hijjah is a white day astronomically, but it is also
+        // a day of Tashreeq when fasting is prohibited. Do not present conflicting
+        // fasting guidance to the user.
+        if (day in 13..15 && month != 9 && !(month == 12 && day == 13)) {
+            add(IslamicObservance.WHITE_DAY)
+        }
+
+        if (month == 9 && day == 1) add(IslamicObservance.RAMADAN_START)
+        if (month == 9 && day >= 21) add(IslamicObservance.RAMADAN_LAST_TEN_NIGHTS)
+        if (month == 9 && day in setOf(21, 23, 25, 27, 29)) add(IslamicObservance.RAMADAN_ODD_NIGHT)
+
+        if (month == 10 && day == 1) {
+            add(IslamicObservance.EID_AL_FITR)
+            add(IslamicObservance.FASTING_PROHIBITED)
+        }
+
+        if (month == 12 && day in 1..9) add(IslamicObservance.FIRST_TEN_DHU_AL_HIJJAH)
+        if (month == 12 && day == 8) add(IslamicObservance.TARWIYAH)
+        if (month == 12 && day == 9) add(IslamicObservance.ARAFAH)
+        if (month == 12 && day == 10) {
+            add(IslamicObservance.EID_AL_ADHA)
+            add(IslamicObservance.FASTING_PROHIBITED)
+        }
+        if (month == 12 && day in 11..13) {
+            add(IslamicObservance.TASHREEQ)
+            add(IslamicObservance.FASTING_PROHIBITED)
         }
     }
 

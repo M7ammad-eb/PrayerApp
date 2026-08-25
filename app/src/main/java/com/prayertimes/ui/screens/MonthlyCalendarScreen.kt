@@ -1,195 +1,523 @@
 package com.prayertimes.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.prayertimes.data.models.DailyPrayerSchedule
-import com.prayertimes.data.models.PrayerType
-import com.prayertimes.data.models.UserLocation
-import androidx.compose.ui.platform.LocalContext
+import com.prayertimes.R
+import com.prayertimes.data.calendar.HijriCalendar
+import com.prayertimes.data.calendar.HijriCalendarDay
+import com.prayertimes.data.calendar.HijriCalendarMonth
+import com.prayertimes.data.calendar.HijriYearMonth
+import com.prayertimes.data.models.IslamicObservance
 import com.prayertimes.ui.locale.LocalAppStrings
-import com.prayertimes.ui.theme.GoldAccent
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @Composable
 fun MonthlyCalendarScreen(
-    monthlySchedule: List<DailyPrayerSchedule>,
     selectedDate: LocalDate,
-    location: UserLocation,
-    is24HourFormat: Boolean,
-    onPreviousMonth: () -> Unit,
-    onNextMonth: () -> Unit
+    hijriAdjustmentDays: Int,
+    onViewPrayerTimes: (LocalDate) -> Unit
 ) {
     val strings = LocalAppStrings.current
-    val timeFormatter = remember(is24HourFormat) {
-        if (is24HourFormat) DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH) else DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
+    val today = LocalDate.now()
+    val pagerOrigin = remember { HijriYearMonth(1300, 1) }
+    val initialMonth = remember { HijriCalendar.monthContaining(selectedDate, hijriAdjustmentDays) }
+    val initialPage = (initialMonth.year - pagerOrigin.year) * 12 + initialMonth.month - pagerOrigin.month
+    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { 3600 })
+    val coroutineScope = rememberCoroutineScope()
+    val visibleMonth = pagerOrigin.plusMonths(pagerState.settledPage)
+    var selectedGregorianDate by remember { mutableStateOf(selectedDate) }
+    val month = remember(visibleMonth, hijriAdjustmentDays) {
+        HijriCalendar.generate(visibleMonth, hijriAdjustmentDays)
     }
 
-    val headerTitle = "${strings.monthName(selectedDate.monthValue)} ${selectedDate.year}"
-    val today = LocalDate.now()
+    LaunchedEffect(visibleMonth, hijriAdjustmentDays) {
+        if (selectedGregorianDate !in month.firstGregorianDate..month.lastGregorianDate) {
+            selectedGregorianDate = month.firstGregorianDate
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .testTag("monthly_calendar_screen")
+            .padding(horizontal = 16.dp)
+            .testTag("hijri_calendar_screen")
     ) {
-        // Month Selector Header
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onPreviousMonth) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = strings.prevMonth)
-                }
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = headerTitle,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = com.prayertimes.data.cities.CityDatabase.localizedName(LocalContext.current.resources, location),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                IconButton(onClick = onNextMonth) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = strings.nextMonth)
-                }
+        HijriMonthHeader(
+            month = month,
+            isArabic = strings.isArabic,
+            onPreviousMonth = {
+                coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+            },
+            onNextMonth = {
+                coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+            },
+            onToday = {
+                val todayMonth = HijriCalendar.monthContaining(today, hijriAdjustmentDays)
+                val todayPage = (todayMonth.year - pagerOrigin.year) * 12 + todayMonth.month - pagerOrigin.month
+                coroutineScope.launch { pagerState.animateScrollToPage(todayPage) }
+                selectedGregorianDate = today
             }
+        )
+
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(0.54f),
+            // Avoid composing two 42-cell off-screen calendars while this tab is opening.
+            // Generated months are cached, so an adjacent page is still ready after first use.
+            beyondViewportPageCount = 0,
+            key = { it }
+        ) { page ->
+            val pageMonth = remember(page, hijriAdjustmentDays) {
+                HijriCalendar.generate(pagerOrigin.plusMonths(page), hijriAdjustmentDays)
+            }
+            HijriMonthGrid(
+                month = pageMonth,
+                selectedDate = selectedGregorianDate,
+                today = today,
+                onSelectDate = { selectedGregorianDate = it },
+                modifier = Modifier.fillMaxSize()
+            )
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
-        // Table Header & Rows
-        val horizontalScrollState = rememberScrollState()
-
-        Card(
-            modifier = Modifier.fillMaxSize(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(0.46f),
+            contentPadding = PaddingValues(top = 8.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .horizontalScroll(horizontalScrollState)
-            ) {
-                // Header Row
-                Row(
+            item {
+                val selectedDay = month.days.firstOrNull {
+                    it.isInDisplayedMonth && it.gregorianDate == selectedGregorianDate
+                }
+                    ?: month.days.first { it.isInDisplayedMonth }
+                SelectedHijriDayCard(
+                    day = selectedDay,
+                    month = month,
+                    isArabic = strings.isArabic,
+                    onViewPrayerTimes = { onViewPrayerTimes(selectedDay.gregorianDate) }
+                )
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.hijri_calendar_sunset_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.primary)
-                        .padding(vertical = 12.dp, horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TableCell(text = strings.dateCol, width = 60.dp, isHeader = true, textColor = Color.White)
-                    TableCell(text = strings.prayerName(PrayerType.FAJR), width = 76.dp, isHeader = true, textColor = Color.White)
-                    TableCell(text = strings.prayerName(PrayerType.SUNRISE), width = 76.dp, isHeader = true, textColor = Color.White)
-                    TableCell(text = strings.prayerName(PrayerType.DHUHR), width = 76.dp, isHeader = true, textColor = Color.White)
-                    TableCell(text = strings.prayerName(PrayerType.ASR), width = 76.dp, isHeader = true, textColor = Color.White)
-                    TableCell(text = strings.prayerName(PrayerType.MAGHRIB), width = 76.dp, isHeader = true, textColor = Color.White)
-                    TableCell(text = strings.prayerName(PrayerType.ISHA), width = 76.dp, isHeader = true, textColor = Color.White)
-                }
-
-                // Days Rows
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    itemsIndexed(monthlySchedule) { index, item ->
-                        val isTodayRow = item.date == today
-                        val rowBg = when {
-                            isTodayRow -> GoldAccent.copy(alpha = 0.2f)
-                            index % 2 == 1 -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                            else -> Color.Transparent
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .background(rowBg)
-                                .padding(vertical = 10.dp, horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val dayText = "${item.date.dayOfMonth}"
-                            TableCell(
-                                text = dayText,
-                                width = 60.dp,
-                                isHighlight = isTodayRow
-                            )
-                            TableCell(text = item.fajr.format(timeFormatter), width = 76.dp, isHighlight = isTodayRow)
-                            TableCell(text = item.sunrise.format(timeFormatter), width = 76.dp, isHighlight = isTodayRow)
-                            TableCell(text = item.dhuhr.format(timeFormatter), width = 76.dp, isHighlight = isTodayRow)
-                            TableCell(text = item.asr.format(timeFormatter), width = 76.dp, isHighlight = isTodayRow)
-                            TableCell(text = item.maghrib.format(timeFormatter), width = 76.dp, isHighlight = isTodayRow)
-                            TableCell(text = item.isha.format(timeFormatter), width = 76.dp, isHighlight = isTodayRow)
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    }
-                }
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                )
             }
         }
     }
 }
 
 @Composable
-private fun TableCell(
-    text: String,
-    width: androidx.compose.ui.unit.Dp,
-    isHeader: Boolean = false,
-    isHighlight: Boolean = false,
-    textColor: Color? = null
+private fun HijriMonthHeader(
+    month: HijriCalendarMonth,
+    isArabic: Boolean,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
+    onToday: () -> Unit
 ) {
-    Text(
-        text = text,
-        modifier = Modifier.width(width),
-        style = if (isHeader) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodySmall,
-        fontWeight = if (isHeader || isHighlight) FontWeight.Bold else FontWeight.Normal,
-        color = textColor ?: if (isHighlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-        textAlign = TextAlign.Center,
-        fontSize = if (isHeader) 13.sp else 12.sp
+    val locale = if (isArabic) Locale.forLanguageTag("ar") else Locale.ENGLISH
+    val rangeFormatter = remember(locale) { DateTimeFormatter.ofPattern("d MMM", locale) }
+    val yearFormatter = remember(locale) { DateTimeFormatter.ofPattern("yyyy", locale) }
+    val gregorianRange = buildString {
+        append(month.firstGregorianDate.format(rangeFormatter))
+        append(" – ")
+        append(month.lastGregorianDate.format(rangeFormatter))
+        append(" ")
+        append(month.lastGregorianDate.format(yearFormatter))
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .height(76.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = if (month.isSacredMonth) {
+                    stringResource(R.string.hijri_calendar_sacred_month_badge)
+                } else {
+                    " "
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = if (month.isSacredMonth) MaterialTheme.colorScheme.tertiary else Color.Transparent,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+            Text(
+                text = if (isArabic) {
+                    "${month.monthNameAr} ${month.yearMonth.year} هـ"
+                } else {
+                    "${month.monthNameEn} ${month.yearMonth.year} AH"
+                },
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1
+            )
+            Text(
+                text = gregorianRange,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        TextButton(onClick = onToday, contentPadding = PaddingValues(horizontal = 6.dp)) {
+            Text(stringResource(R.string.hijri_calendar_today))
+        }
+        if (isArabic) {
+            IconButton(onClick = onPreviousMonth, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.KeyboardArrowRight, contentDescription = stringResource(R.string.prev_month))
+            }
+            IconButton(onClick = onNextMonth, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.KeyboardArrowLeft, contentDescription = stringResource(R.string.next_month))
+            }
+        } else {
+            IconButton(onClick = onPreviousMonth, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.KeyboardArrowLeft, contentDescription = stringResource(R.string.prev_month))
+            }
+            IconButton(onClick = onNextMonth, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.KeyboardArrowRight, contentDescription = stringResource(R.string.next_month))
+            }
+        }
+    }
+}
+
+@Composable
+private fun HijriMonthGrid(
+    month: HijriCalendarMonth,
+    selectedDate: LocalDate,
+    today: LocalDate,
+    onSelectDate: (LocalDate) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val weekdays = listOf(
+        R.string.calendar_weekday_sat_short,
+        R.string.calendar_weekday_sun_short,
+        R.string.calendar_weekday_mon_short,
+        R.string.calendar_weekday_tue_short,
+        R.string.calendar_weekday_wed_short,
+        R.string.calendar_weekday_thu_short,
+        R.string.calendar_weekday_fri_short
     )
+    Column(modifier = modifier.padding(vertical = 4.dp)) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                weekdays.forEachIndexed { index, label ->
+                    Text(
+                        text = stringResource(label),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (index == 6) FontWeight.Bold else FontWeight.Medium,
+                        color = if (index == 6) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+            Spacer(Modifier.height(2.dp))
+            month.days.chunked(7).forEach { week ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    week.forEach { day ->
+                        HijriDayCell(
+                            day = day,
+                            selected = day.gregorianDate == selectedDate,
+                            today = day.gregorianDate == today,
+                            onClick = { onSelectDate(day.gregorianDate) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+    }
+}
+
+@Composable
+private fun HijriDayCell(
+    day: HijriCalendarDay,
+    selected: Boolean,
+    today: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val eid = day.hijriDate.observances.any { it == IslamicObservance.EID_AL_FITR || it == IslamicObservance.EID_AL_ADHA }
+    val fasting = day.hijriDate.observances.any {
+        it == IslamicObservance.TASUA || it == IslamicObservance.ASHURA ||
+            it == IslamicObservance.WHITE_DAY || it == IslamicObservance.ARAFAH
+    }
+    val special = day.hijriDate.observances.any {
+        it != IslamicObservance.RAMADAN && it != IslamicObservance.WHITE_DAY &&
+            it != IslamicObservance.FASTING_PROHIBITED
+    }
+    val background = when {
+        selected -> MaterialTheme.colorScheme.primaryContainer
+        today -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.65f)
+        day.hijriDate.month == 9 && day.isInDisplayedMonth -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.18f)
+        else -> Color.Transparent
+    }
+    val outline = when {
+        selected -> MaterialTheme.colorScheme.primary
+        today -> MaterialTheme.colorScheme.secondary
+        else -> Color.Transparent
+    }
+
+    if (day.isInDisplayedMonth) {
+        Column(
+            modifier = modifier
+                .padding(1.dp)
+                .background(background, RoundedCornerShape(12.dp))
+                .border(if (selected || today) 1.dp else 0.dp, outline, RoundedCornerShape(12.dp))
+                .clickable(onClick = onClick)
+                .padding(vertical = 2.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = day.hijriDate.day.toString(),
+                fontSize = 16.sp,
+                fontWeight = if (selected || today || eid) FontWeight.Bold else FontWeight.Medium,
+                color = if (eid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
+            Box(
+                modifier = Modifier.height(5.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                val eventColor = when {
+                    eid -> MaterialTheme.colorScheme.primary
+                    fasting -> MaterialTheme.colorScheme.tertiary
+                    special -> MaterialTheme.colorScheme.secondary
+                    else -> null
+                }
+                if (eventColor != null) EventDot(eventColor)
+            }
+            Text(
+                text = "${day.gregorianDate.dayOfMonth}/${day.gregorianDate.monthValue}",
+                fontSize = 9.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    } else {
+        Spacer(modifier)
+    }
+}
+
+@Composable
+private fun EventDot(color: Color) {
+    Box(Modifier.size(4.dp).background(color, CircleShape))
+}
+
+@Composable
+private fun SelectedHijriDayCard(
+    day: HijriCalendarDay,
+    month: HijriCalendarMonth,
+    isArabic: Boolean,
+    onViewPrayerTimes: () -> Unit
+) {
+    val locale = if (isArabic) Locale.forLanguageTag("ar") else Locale.ENGLISH
+    val gregorianFormatter = remember(locale) {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)
+    }
+    val visibleObservances = day.hijriDate.observances.filterNot {
+        it == IslamicObservance.RAMADAN && day.hijriDate.observances.size > 1
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (isArabic) day.hijriDate.formattedAr else day.hijriDate.formattedEn,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = day.gregorianDate.format(gregorianFormatter),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    imageVector = if (visibleObservances.any { it == IslamicObservance.EID_AL_FITR || it == IslamicObservance.EID_AL_ADHA }) Icons.Default.Star else Icons.Default.CalendarMonth,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            if (visibleObservances.isNotEmpty() || month.hasSixShawwalReminder) {
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                Spacer(Modifier.height(10.dp))
+                visibleObservances.forEach { observance ->
+                    ObservanceRow(observance)
+                }
+                if (month.hasSixShawwalReminder) {
+                    InfoRow(
+                        title = stringResource(R.string.hijri_observance_six_shawwal),
+                        description = stringResource(R.string.hijri_observance_six_shawwal_desc),
+                        fasting = true
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+            Button(
+                onClick = onViewPrayerTimes,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.hijri_calendar_view_prayer_times), fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ObservanceRow(observance: IslamicObservance) {
+    val (title, description) = observanceText(observance)
+    InfoRow(
+        title = title,
+        description = description,
+        fasting = observance in setOf(
+            IslamicObservance.TASUA,
+            IslamicObservance.ASHURA,
+            IslamicObservance.WHITE_DAY,
+            IslamicObservance.ARAFAH
+        )
+    )
+}
+
+@Composable
+private fun InfoRow(title: String, description: String, fasting: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 5.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = if (fasting) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(30.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = if (fasting) Icons.Default.Restaurant else Icons.Default.Star,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = if (fasting) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            if (description.isNotBlank()) {
+                Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun observanceText(observance: IslamicObservance): Pair<String, String> = when (observance) {
+    IslamicObservance.HIJRI_NEW_YEAR -> stringResource(R.string.hijri_observance_new_year) to ""
+    IslamicObservance.TASUA -> stringResource(R.string.hijri_observance_tasua) to stringResource(R.string.hijri_observance_recommended_fasting)
+    IslamicObservance.ASHURA -> stringResource(R.string.hijri_observance_ashura) to stringResource(R.string.hijri_observance_recommended_fasting)
+    IslamicObservance.WHITE_DAY -> stringResource(R.string.hijri_observance_white_day) to stringResource(R.string.hijri_observance_white_day_desc)
+    IslamicObservance.RAMADAN -> stringResource(R.string.hijri_observance_ramadan) to ""
+    IslamicObservance.RAMADAN_START -> stringResource(R.string.hijri_observance_ramadan_start) to ""
+    IslamicObservance.RAMADAN_LAST_TEN_NIGHTS -> stringResource(R.string.hijri_observance_last_ten_nights) to stringResource(R.string.hijri_observance_last_ten_nights_desc)
+    IslamicObservance.RAMADAN_ODD_NIGHT -> stringResource(R.string.hijri_observance_odd_night) to stringResource(R.string.hijri_observance_odd_night_desc)
+    IslamicObservance.EID_AL_FITR -> stringResource(R.string.hijri_observance_eid_fitr) to ""
+    IslamicObservance.FIRST_TEN_DHU_AL_HIJJAH -> stringResource(R.string.hijri_observance_first_ten_dhul_hijjah) to ""
+    IslamicObservance.TARWIYAH -> stringResource(R.string.hijri_observance_tarwiyah) to ""
+    IslamicObservance.ARAFAH -> stringResource(R.string.hijri_observance_arafah) to stringResource(R.string.hijri_observance_arafah_desc)
+    IslamicObservance.EID_AL_ADHA -> stringResource(R.string.hijri_observance_eid_adha) to ""
+    IslamicObservance.TASHREEQ -> stringResource(R.string.hijri_observance_tashreeq) to stringResource(R.string.hijri_observance_tashreeq_desc)
+    IslamicObservance.FASTING_PROHIBITED -> stringResource(R.string.hijri_observance_fasting_prohibited) to stringResource(R.string.hijri_observance_fasting_prohibited_desc)
 }

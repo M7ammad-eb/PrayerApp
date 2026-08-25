@@ -7,20 +7,4 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-
-    <!-- AppWidget Theme Colors (Light fallback) -->
-    <color name="widget_bg">#FFFFFFFF</color>
-    <color name="widget_bg_stroke">#00000000</color>
-    <color name="widget_hero_bg">#FFF2F4F7</color>
-    <color name="widget_hero_bg_stroke">#00000000</color>
-    <color name="widget_active_prayer_bg">#FF165B33</color>
-    <color name="widget_active_prayer_stroke">#00000000</color>
-    <color name="widget_inactive_prayer_bg">#FFF0F2F5</color>
-    <color name="widget_countdown_badge_bg">#FF165B33</color>
-    <color name="widget_text_primary">#FF1A1C1E</color>
-    <color name="widget_text_secondary">#FF73777F</color>
-    <color name="widget_text_on_hero">#FF1A1C1E</color>
-    <color name="widget_text_accent">#FF165B33</color>
-    <color name="widget_text_on_accent">#FFFFFFFF</color>
-    <color name="widget_icon_tint">#FF165B33</color>
 </resources>

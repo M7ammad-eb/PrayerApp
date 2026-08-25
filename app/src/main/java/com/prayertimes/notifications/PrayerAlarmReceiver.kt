@@ -219,7 +219,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         }
 
         // Update widget status
-        com.prayertimes.widget.PrayerAppWidgetProvider.updateAllWidgets(context)
+        com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(context)
 
         val pendingResult = goAsync()
         val audioStream = settings.audioStream

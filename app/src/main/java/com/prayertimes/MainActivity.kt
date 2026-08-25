@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        (application as PrayerApplication).prewarmUserCaches()
 
         requestAppPermissionsIfNeeded()
 
@@ -111,7 +112,8 @@ class MainActivity : ComponentActivity() {
         // the dedicated notifications step (page 4) of the setup wizard, which owns this request
         // for first-run users. Read via the synchronous fast-cache path since the ViewModel's
         // DataStore-backed settings flow hasn't necessarily emitted yet at this point in onCreate().
-        val onboardingCompleted = PrayerPreferences.getInitialSettings(this).onboardingCompleted
+        val initialSettings = PrayerPreferences.getInitialSettings(this)
+        val onboardingCompleted = initialSettings.onboardingCompleted
         if (onboardingCompleted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val notifGranted = ContextCompat.checkSelfPermission(
                 this,
@@ -122,7 +124,8 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // If location permissions are already granted, refresh GPS location on launch
+        // A manual city remains authoritative even if location permission is still granted.
+        // Only an already GPS-based selection participates in the lightweight startup check.
         val fineGranted = ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.ACCESS_FINE_LOCATION
@@ -132,7 +135,7 @@ class MainActivity : ComponentActivity() {
             Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
-        if (fineGranted || coarseGranted) {
+        if ((fineGranted || coarseGranted) && initialSettings.location.isGps) {
             prayerViewModel.requestGpsLocation(this)
         }
     }

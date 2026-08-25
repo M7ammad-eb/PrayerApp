@@ -255,4 +255,32 @@ class PrayerTimesCalculatorGoldenTest {
             date.minusDays(1), fajr.zonedDateTime.withZoneSameInstant(ZoneOffset.UTC).toLocalDate()
         )
     }
+
+    @Test
+    fun cachedScheduleRefreshesPassedAndNextPrayerStatus() {
+        PrayerTimesCalculator.clearCache()
+        val date = LocalDate.of(2026, 8, 25)
+        val beforeFajr = date.atStartOfDay(riyadh)
+        val initial = PrayerTimesCalculator.calculateDailySchedule(
+            date = date,
+            latitude = 24.7136,
+            longitude = 46.6753,
+            zoneId = riyadh,
+            now = beforeFajr
+        )
+        assertTrue(initial.prayerItems.first { it.type == PrayerType.FAJR }.isNext)
+
+        val afterFajr = initial.prayerItems.first { it.type == PrayerType.FAJR }
+            .zonedDateTime.plusMinutes(1)
+        val cached = PrayerTimesCalculator.calculateDailySchedule(
+            date = date,
+            latitude = 24.7136,
+            longitude = 46.6753,
+            zoneId = riyadh,
+            now = afterFajr
+        )
+
+        assertTrue(cached.prayerItems.first { it.type == PrayerType.FAJR }.isPassed)
+        assertTrue(cached.prayerItems.first { it.type == PrayerType.SUNRISE }.isNext)
+    }
 }
