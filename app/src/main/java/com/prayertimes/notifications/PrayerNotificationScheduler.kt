@@ -103,7 +103,7 @@ object PrayerNotificationScheduler {
                         action = PrayerAlarmReceiver.ACTION_PRAYER_ALARM
                         putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
                         putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_TIME, prayerFormatted)
-                        putExtra(PrayerAlarmReceiver.EXTRA_SOUND_TYPE, NotificationSoundType.MELODIC_TONE.name)
+                        putExtra(PrayerAlarmReceiver.EXTRA_SOUND_TYPE, NotificationSoundType.DEVICE_DEFAULT.name)
                         putExtra(PrayerAlarmReceiver.EXTRA_IS_PRE_REMINDER, true)
                         putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, settings.location.name)
                     }

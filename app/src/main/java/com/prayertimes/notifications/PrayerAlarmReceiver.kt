@@ -266,7 +266,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                         }
                     }
                 } else {
-                    AthanAudioEngine.playGentleChime(context, audioStream = audioStream)
+                    AthanAudioEngine.playDeviceDefaultNotification(context)
                 }
             } finally {
                 pendingResult.finish()

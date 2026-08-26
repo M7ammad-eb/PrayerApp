@@ -3,6 +3,8 @@ package com.prayertimes.data.models
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZonedDateTime
+import java.text.Collator
+import java.util.Locale
 
 enum class PrayerType(
     val title: String,
@@ -139,20 +141,18 @@ enum class NotificationSoundType(
     val displayNameAr: String = "",
     val isFullAthan: Boolean = false
 ) {
-    ATHAN_MAKKAH_MULLA("Makkah - Ali Bin Ahmad Mullah", "Holy Mosque in Makkah", "مكة المكرمة - علي بن أحمد ملا", true),
-    ATHAN_FAJR1_KWAIT_ALAFASY("Fajr (Kuwait) - Mishary Alafasy", "Fajr Adhan with As-Salatu Khayrun Minan-Nawm", "أذان الفجر (الكويت) - مشاري العفاسي", true),
+    ATHAN_DEFAULT("Default Athan", "", "الأذان الافتراضي", true),
+    ATHAN_EGYPT_ALALFI("Fajr (Egypt) - Salah Al-Alfi", "Fajr Athan from Al-Azhar and Cairo mosques", "أذان الفجر (مصر) - صلاح الألفي", true),
     ATHAN_FAJR2_JORDAN_ALLALA("Fajr (Jordan) - Kamel Allala", "Grand Hussein Mosque Fajr Adhan", "أذان الفجر (الأردن) - كامل اللالا", true),
-    ATHAN_RIYADH_QATAMI("Riyadh - Nasser Al-Qatami", "Saudi capital soulful recitation", "الرياض - ناصر القطامي", true),
-    ATHAN_QATAR_NABET("Qatar - Saleh Al-Nabet", "State Grand Mosque of Qatar", "قطر - صالح النابت", true),
-    ATHAN_QUDS_QAZAZ_1("Al-Aqsa Al-Quds - Naji Qazzaz (1)", "Blessed Jerusalem Al-Aqsa Mosque", "المسجد الأقصى - ناجي قزاز (1)", true),
-    ATHAN_QUDS_QAZAZ_2("Al-Aqsa Al-Quds - Naji Qazzaz (2)", "Blessed Jerusalem Al-Aqsa Mosque", "المسجد الأقصى - ناجي قزاز (2)", true),
+    ATHAN_FAJR1_KWAIT_ALAFASY("Fajr (Kuwait) - Mishary Alafasy", "Fajr Athan with As-Salatu Khayrun Minan-Nawm", "أذان الفجر (الكويت) - مشاري العفاسي", true),
+    ATHAN_QUDS_QAZAZ_1("Al-Aqsa Al-Quds - Naji Qazzaz", "Blessed Jerusalem Al-Aqsa Mosque", "المسجد الأقصى - ناجي قزاز", true),
     ATHAN_EGYPT_DAWOD("Egypt - Ahmad Dawod", "Classic Cairo melodic Maqam", "مصر - أحمد داود", true),
-    ATHAN_EGYPT_ALALFI("Egypt - Salah Al-Alfi", "Historic Egyptian recitation", "مصر - صلاح الألفي", true),
-    ATHAN_EGYPT_ABDULAATI("Egypt (Al-Hussein) - Sayed Abdulaati", "Imam Al-Hussein Mosque Cairo", "مصر (الحسين) - سيد عبد العاطي", true),
-    ATHAN_IRAQ_ALAMOURI("Iraq - Abu Omar Al-Amouri", "Traditional Iraqi Maqam", "العراق - أبو عمر العامري", true),
-    ATHAN_GEORGIA("Georgia Mosque Adhan", "Tbilisi Juma Mosque", "أذان جورجيا", true),
-    SHORT_TAKBEER("Takbeer Only", "Allahu Akbar takbeerat alert", "تكبيرات فقط", false),
-    MELODIC_TONE("Gentle Chime", "Soft chime notification", "نغمة هادئة", false),
+    ATHAN_EGYPT_ABDULAATI("Egypt - Sayed Abdulaati", "Imam Al-Hussein Mosque Cairo", "مصر - سيد عبد العاطي", true),
+    ATHAN_IRAQ_ALAMOURI("Iraq - Abu Omar Al-Maamouri", "Traditional Iraqi Maqam", "العراق - أبو عمر المعموري", true),
+    ATHAN_MAKKAH_MULLA("Makkah - Ali Bin Ahmad Mullah", "Holy Mosque in Makkah", "مكة المكرمة - علي بن أحمد ملا", true),
+    ATHAN_QATAR_NABET("Qatar - Saleh Al-Nabet", "State Grand Mosque of Qatar", "قطر - صالح النابت", true),
+    ATHAN_RIYADH_QATAMI("Riyadh - Nasser Al-Qatami", "Saudi capital soulful recitation", "الرياض - ناصر القطامي", true),
+    DEVICE_DEFAULT("Device Default", "Use the device notification sound", "صوت الإشعارات الافتراضي للجهاز", false),
     VIBRATE_ONLY("Vibrate Only", "Haptic vibration without audio", "اهتزاز فقط", false),
     SILENT("Silent", "Visual notification only", "صامت", false);
 
@@ -160,8 +160,26 @@ enum class NotificationSoundType(
         if (isArabic && displayNameAr.isNotBlank()) displayNameAr else displayName
 
     companion object {
+        private val fajrAthans = listOf(
+            ATHAN_EGYPT_ALALFI,
+            ATHAN_FAJR2_JORDAN_ALLALA,
+            ATHAN_FAJR1_KWAIT_ALAFASY
+        )
+        private val regularAthans = entries.filter { it.isFullAthan && it != ATHAN_DEFAULT && it !in fajrAthans }
+
+        fun selectableValues(isArabic: Boolean): List<NotificationSoundType> {
+            val collator = Collator.getInstance(Locale.forLanguageTag(if (isArabic) "ar" else "en"))
+            val alphabetizedAthans = regularAthans.sortedWith { first, second ->
+                collator.compare(first.localizedDisplayName(isArabic), second.localizedDisplayName(isArabic))
+            }
+            return listOf(ATHAN_DEFAULT) +
+                fajrAthans +
+                alphabetizedAthans +
+                listOf(DEVICE_DEFAULT, VIBRATE_ONLY, SILENT)
+        }
+
         // Fallback backward-compatibility mappings
-        val FULL_ATHAN get() = ATHAN_MAKKAH_MULLA
+        val FULL_ATHAN get() = ATHAN_DEFAULT
         val ATHAN_FAJR get() = ATHAN_FAJR1_KWAIT_ALAFASY
         val ATHAN_MADINAH get() = ATHAN_RIYADH_QATAMI
         val ATHAN_AL_AQSA get() = ATHAN_QUDS_QAZAZ_1

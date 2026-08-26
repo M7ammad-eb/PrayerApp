@@ -114,20 +114,18 @@
     <string name="additional_duha">Duha Time (approx.)</string>
 
     <!-- ===== Notification Sound Types ===== -->
+    <string name="sound_name_athan_default">Default Athan</string>
     <string name="sound_name_athan_makkah_mulla">Makkah - Ali Bin Ahmad Mullah</string>
     <string name="sound_name_athan_fajr1_kwait_alafasy">Fajr (Kuwait) - Mishary Alafasy</string>
     <string name="sound_name_athan_fajr2_jordan_allala">Fajr (Jordan) - Kamel Allala</string>
     <string name="sound_name_athan_riyadh_qatami">Riyadh - Nasser Al-Qatami</string>
     <string name="sound_name_athan_qatar_nabet">Qatar - Saleh Al-Nabet</string>
-    <string name="sound_name_athan_quds_qazaz_1">Al-Aqsa Al-Quds - Naji Qazzaz (1)</string>
-    <string name="sound_name_athan_quds_qazaz_2">Al-Aqsa Al-Quds - Naji Qazzaz (2)</string>
+    <string name="sound_name_athan_quds_qazaz_1">Al-Aqsa Al-Quds - Naji Qazzaz</string>
     <string name="sound_name_athan_egypt_dawod">Egypt - Ahmad Dawod</string>
-    <string name="sound_name_athan_egypt_alalfi">Egypt - Salah Al-Alfi</string>
-    <string name="sound_name_athan_egypt_abdulaati">Egypt (Al-Hussein) - Sayed Abdulaati</string>
-    <string name="sound_name_athan_iraq_alamouri">Iraq - Abu Omar Al-Amouri</string>
-    <string name="sound_name_athan_georgia">Georgia Mosque Adhan</string>
-    <string name="sound_name_short_takbeer">Takbeer Only</string>
-    <string name="sound_name_melodic_tone">Gentle Chime</string>
+    <string name="sound_name_athan_egypt_alalfi">Fajr (Egypt) - Salah Al-Alfi</string>
+    <string name="sound_name_athan_egypt_abdulaati">Egypt - Sayed Abdulaati</string>
+    <string name="sound_name_athan_iraq_alamouri">Iraq - Abu Omar Al-Maamouri</string>
+    <string name="sound_name_device_default">Device Default Notification Sound</string>
     <string name="sound_name_vibrate_only">Vibrate Only</string>
     <string name="sound_name_silent">Silent / Off</string>
 
@@ -137,14 +135,11 @@
     <string name="sound_subtitle_athan_riyadh_qatami">Soulful and reverent recitation from Riyadh mosques</string>
     <string name="sound_subtitle_athan_qatar_nabet">Imam Muhammad Ibn Abd al-Wahhab Mosque, Qatar</string>
     <string name="sound_subtitle_athan_quds_qazaz_1">Blessed Al-Aqsa Mosque, Hijaz maqam</string>
-    <string name="sound_subtitle_athan_quds_qazaz_2">Blessed Al-Aqsa Mosque, Bayati maqam</string>
     <string name="sound_subtitle_athan_egypt_dawod">Classic authentic Egyptian radio recitation</string>
-    <string name="sound_subtitle_athan_egypt_alalfi">Al-Azhar Mosque and Cairo mosques recitation</string>
+    <string name="sound_subtitle_athan_egypt_alalfi">Fajr Athan from Al-Azhar Mosque and Cairo mosques</string>
     <string name="sound_subtitle_athan_egypt_abdulaati">Imam Al-Hussein Mosque, Cairo</string>
     <string name="sound_subtitle_athan_iraq_alamouri">Baghdad and Iraqi mosques, classic Bayati tune</string>
-    <string name="sound_subtitle_athan_georgia">Historic Tbilisi mosque recitation</string>
-    <string name="sound_subtitle_short_takbeer">Eid takbeers and short Athan alert</string>
-    <string name="sound_subtitle_melodic_tone">Gentle chime for work and meetings</string>
+    <string name="sound_subtitle_device_default">Uses the notification tone selected in Android settings</string>
     <string name="sound_subtitle_vibrate_only">Vibration alert without sound</string>
     <string name="sound_subtitle_silent">Visual notification only</string>
 

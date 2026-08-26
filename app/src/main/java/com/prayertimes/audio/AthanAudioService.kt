@@ -254,9 +254,18 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
     private fun requestAudioFocus(): Boolean {
         val am = audioManager ?: return false
         val audioAttributes = AudioAttributes.Builder()
-            .setUsage(currentAudioStream.audioUsage)
+            .setUsage(
+                if (currentSoundType == NotificationSoundType.DEVICE_DEFAULT) {
+                    AudioAttributes.USAGE_NOTIFICATION
+                } else {
+                    currentAudioStream.audioUsage
+                }
+            )
             .setContentType(
-                if (currentAudioStream == AthanAudioStream.ALARM) AudioAttributes.CONTENT_TYPE_SONIFICATION
+                if (
+                    currentSoundType == NotificationSoundType.DEVICE_DEFAULT ||
+                    currentAudioStream == AthanAudioStream.ALARM
+                ) AudioAttributes.CONTENT_TYPE_SONIFICATION
                 else AudioAttributes.CONTENT_TYPE_MUSIC
             )
             .build()

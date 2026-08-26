@@ -114,20 +114,18 @@
     <string name="additional_duha">وقت صلاة الضحى (تقريبي)</string>
 
     <!-- ===== Notification Sound Types ===== -->
+    <string name="sound_name_athan_default">الأذان الافتراضي</string>
     <string name="sound_name_athan_makkah_mulla">أذان مكة المكرمة - علي أحمد ملا</string>
     <string name="sound_name_athan_fajr1_kwait_alafasy">أذان الفجر (الكويت) - مشاري العفاسي</string>
     <string name="sound_name_athan_fajr2_jordan_allala">أذان الفجر (الأردن) - كامل اللالا</string>
     <string name="sound_name_athan_riyadh_qatami">أذان الرياض - ناصر القطامي</string>
     <string name="sound_name_athan_qatar_nabet">أذان قطر - صالح النابت</string>
-    <string name="sound_name_athan_quds_qazaz_1">أذان المسجد الأقصى - ناجي قزاز (1)</string>
-    <string name="sound_name_athan_quds_qazaz_2">أذان المسجد الأقصى - ناجي قزاز (2)</string>
+    <string name="sound_name_athan_quds_qazaz_1">أذان المسجد الأقصى - ناجي قزاز</string>
     <string name="sound_name_athan_egypt_dawod">أذان مصر - أحمد داود</string>
-    <string name="sound_name_athan_egypt_alalfi">أذان مصر - صلاح الألفي</string>
-    <string name="sound_name_athan_egypt_abdulaati">أذان مصر (الحسين) - سيد عبد العاطي</string>
-    <string name="sound_name_athan_iraq_alamouri">أذان العراق - أبو عمر العامري</string>
-    <string name="sound_name_athan_georgia">أذان جورجيا (تبليسي)</string>
-    <string name="sound_name_short_takbeer">تكبير فقط (الله أكبر)</string>
-    <string name="sound_name_melodic_tone">نغمة هادئة</string>
+    <string name="sound_name_athan_egypt_alalfi">أذان الفجر (مصر) - صلاح الألفي</string>
+    <string name="sound_name_athan_egypt_abdulaati">أذان مصر - سيد عبد العاطي</string>
+    <string name="sound_name_athan_iraq_alamouri">أذان العراق - أبو عمر المعموري</string>
+    <string name="sound_name_device_default">صوت الإشعارات الافتراضي للجهاز</string>
     <string name="sound_name_vibrate_only">اهتزاز فقط</string>
     <string name="sound_name_silent">صامت / إيقاف</string>
 
@@ -137,14 +135,11 @@
     <string name="sound_subtitle_athan_riyadh_qatami">أذان ندي وخاشع من مساجد الرياض</string>
     <string name="sound_subtitle_athan_qatar_nabet">أذان جامع الإمام محمد بن عبد الوهاب بدولة قطر</string>
     <string name="sound_subtitle_athan_quds_qazaz_1">أذان المسجد الأقصى المبارك بمقام الحجاز</string>
-    <string name="sound_subtitle_athan_quds_qazaz_2">أذان المسجد الأقصى المبارك بمقام البياتي</string>
     <string name="sound_subtitle_athan_egypt_dawod">أذان الإذاعة المصرية التراثي الأصيل</string>
-    <string name="sound_subtitle_athan_egypt_alalfi">أذان الجامع الأزهر الشريف ومساجد القاهرة</string>
+    <string name="sound_subtitle_athan_egypt_alalfi">أذان الفجر من الجامع الأزهر الشريف ومساجد القاهرة</string>
     <string name="sound_subtitle_athan_egypt_abdulaati">أذان مسجد الإمام الحسين عليه السلام بالقاهرة</string>
     <string name="sound_subtitle_athan_iraq_alamouri">أذان بغداد والمساجد العراقية بنغم البياتي العريق</string>
-    <string name="sound_subtitle_athan_georgia">أذان جامع تبليسي التاريخي في جورجيا</string>
-    <string name="sound_subtitle_short_takbeer">تكبيرات العيد والأذان المختصرة</string>
-    <string name="sound_subtitle_melodic_tone">نغمة هادئة للتنبيه في العمل والاجتماعات</string>
+    <string name="sound_subtitle_device_default">يستخدم صوت الإشعارات المحدد في إعدادات أندرويد</string>
     <string name="sound_subtitle_vibrate_only">اهتزاز فقط دون إصدار صوت</string>
     <string name="sound_subtitle_silent">إشعار بصري فقط</string>
 

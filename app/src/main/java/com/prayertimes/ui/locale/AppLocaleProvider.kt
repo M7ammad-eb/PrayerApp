@@ -125,20 +125,18 @@ class AppStrings(
 
     // Notification Sound Types
     private val soundNameRes: Map<NotificationSoundType, Int> = mapOf(
+        NotificationSoundType.ATHAN_DEFAULT to R.string.sound_name_athan_default,
         NotificationSoundType.ATHAN_MAKKAH_MULLA to R.string.sound_name_athan_makkah_mulla,
         NotificationSoundType.ATHAN_FAJR1_KWAIT_ALAFASY to R.string.sound_name_athan_fajr1_kwait_alafasy,
         NotificationSoundType.ATHAN_FAJR2_JORDAN_ALLALA to R.string.sound_name_athan_fajr2_jordan_allala,
         NotificationSoundType.ATHAN_RIYADH_QATAMI to R.string.sound_name_athan_riyadh_qatami,
         NotificationSoundType.ATHAN_QATAR_NABET to R.string.sound_name_athan_qatar_nabet,
         NotificationSoundType.ATHAN_QUDS_QAZAZ_1 to R.string.sound_name_athan_quds_qazaz_1,
-        NotificationSoundType.ATHAN_QUDS_QAZAZ_2 to R.string.sound_name_athan_quds_qazaz_2,
         NotificationSoundType.ATHAN_EGYPT_DAWOD to R.string.sound_name_athan_egypt_dawod,
         NotificationSoundType.ATHAN_EGYPT_ALALFI to R.string.sound_name_athan_egypt_alalfi,
         NotificationSoundType.ATHAN_EGYPT_ABDULAATI to R.string.sound_name_athan_egypt_abdulaati,
         NotificationSoundType.ATHAN_IRAQ_ALAMOURI to R.string.sound_name_athan_iraq_alamouri,
-        NotificationSoundType.ATHAN_GEORGIA to R.string.sound_name_athan_georgia,
-        NotificationSoundType.SHORT_TAKBEER to R.string.sound_name_short_takbeer,
-        NotificationSoundType.MELODIC_TONE to R.string.sound_name_melodic_tone,
+        NotificationSoundType.DEVICE_DEFAULT to R.string.sound_name_device_default,
         NotificationSoundType.VIBRATE_ONLY to R.string.sound_name_vibrate_only,
         NotificationSoundType.SILENT to R.string.sound_name_silent
     )
@@ -149,19 +147,17 @@ class AppStrings(
         NotificationSoundType.ATHAN_RIYADH_QATAMI to R.string.sound_subtitle_athan_riyadh_qatami,
         NotificationSoundType.ATHAN_QATAR_NABET to R.string.sound_subtitle_athan_qatar_nabet,
         NotificationSoundType.ATHAN_QUDS_QAZAZ_1 to R.string.sound_subtitle_athan_quds_qazaz_1,
-        NotificationSoundType.ATHAN_QUDS_QAZAZ_2 to R.string.sound_subtitle_athan_quds_qazaz_2,
         NotificationSoundType.ATHAN_EGYPT_DAWOD to R.string.sound_subtitle_athan_egypt_dawod,
         NotificationSoundType.ATHAN_EGYPT_ALALFI to R.string.sound_subtitle_athan_egypt_alalfi,
         NotificationSoundType.ATHAN_EGYPT_ABDULAATI to R.string.sound_subtitle_athan_egypt_abdulaati,
         NotificationSoundType.ATHAN_IRAQ_ALAMOURI to R.string.sound_subtitle_athan_iraq_alamouri,
-        NotificationSoundType.ATHAN_GEORGIA to R.string.sound_subtitle_athan_georgia,
-        NotificationSoundType.SHORT_TAKBEER to R.string.sound_subtitle_short_takbeer,
-        NotificationSoundType.MELODIC_TONE to R.string.sound_subtitle_melodic_tone,
+        NotificationSoundType.DEVICE_DEFAULT to R.string.sound_subtitle_device_default,
         NotificationSoundType.VIBRATE_ONLY to R.string.sound_subtitle_vibrate_only,
         NotificationSoundType.SILENT to R.string.sound_subtitle_silent
     )
     fun soundTypeName(type: NotificationSoundType): String = s(soundNameRes.getValue(type))
-    fun soundTypeSubtitle(type: NotificationSoundType): String = s(soundSubtitleRes.getValue(type))
+    fun soundTypeSubtitle(type: NotificationSoundType): String =
+        soundSubtitleRes[type]?.let(::s).orEmpty()
 
     // Qibla Screen
     val qiblaTitle: String = s(R.string.qibla_title)

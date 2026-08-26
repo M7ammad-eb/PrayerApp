@@ -82,6 +82,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -2104,11 +2105,21 @@ fun SoundPickerDialog(
 ) {
     val strings = LocalAppStrings.current
     val playbackState by AthanAudioEngine.playbackState.collectAsState()
-
-    Dialog(onDismissRequest = {
+    val stopAndDismiss = {
         AthanAudioEngine.stop()
         onDismiss()
-    }) {
+    }
+    val stopAndSelect: (NotificationSoundType) -> Unit = { sound ->
+        AthanAudioEngine.stop()
+        onSelectSound(sound)
+    }
+
+    // Also stop if the picker leaves composition because its parent screen navigates away.
+    DisposableEffect(Unit) {
+        onDispose { AthanAudioEngine.stop() }
+    }
+
+    Dialog(onDismissRequest = stopAndDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surface,
@@ -2133,10 +2144,10 @@ fun SoundPickerDialog(
                     modifier = Modifier.weight(1f, fill = false),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(NotificationSoundType.values()) { sound ->
+                    items(NotificationSoundType.selectableValues(strings.isArabic)) { sound ->
                         val isSelected = sound == currentSound
                         Card(
-                            onClick = { onSelectSound(sound) },
+                            onClick = { stopAndSelect(sound) },
                             shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
@@ -2156,7 +2167,7 @@ fun SoundPickerDialog(
                                 ) {
                                     RadioButton(
                                         selected = isSelected,
-                                        onClick = { onSelectSound(sound) }
+                                        onClick = { stopAndSelect(sound) }
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Column {
@@ -2180,9 +2191,11 @@ fun SoundPickerDialog(
                                     val isThisPlaying = playbackState.isPlaying && playbackState.title.contains(sound.localizedDisplayName(strings.isArabic), ignoreCase = true)
                                     IconButton(
                                         onClick = {
-                                            if (playbackState.isPlaying) {
+                                            if (isThisPlaying) {
                                                 AthanAudioEngine.stop()
                                             } else {
+                                                // playSoundType stops any other current preview
+                                                // before starting this one, so switching is one tap.
                                                 onPreviewSound(sound)
                                             }
                                         },
@@ -2206,7 +2219,7 @@ fun SoundPickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    TextButton(onClick = stopAndDismiss) {
                         Text(strings.close)
                     }
                 }

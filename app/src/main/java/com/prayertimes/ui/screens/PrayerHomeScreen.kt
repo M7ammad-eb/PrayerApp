@@ -637,7 +637,7 @@ private fun BentoPrayerRow(
                     Icon(
                         imageVector = when {
                             !config.enabled -> Icons.Default.NotificationsOff
-                            config.soundType == NotificationSoundType.FULL_ATHAN -> Icons.Default.NotificationsActive
+                            config.soundType.isFullAthan -> Icons.Default.NotificationsActive
                             config.soundType == NotificationSoundType.SILENT -> Icons.Default.NotificationsOff
                             else -> Icons.Default.Notifications
                         },
@@ -651,7 +651,7 @@ private fun BentoPrayerRow(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false }
                 ) {
-                    NotificationSoundType.values().forEach { sound ->
+                    NotificationSoundType.selectableValues(strings.isArabic).forEach { sound ->
                         DropdownMenuItem(
                             text = { Text(strings.soundTypeName(sound)) },
                             onClick = {

@@ -68,7 +68,7 @@ data class AppPrayerSettings(
             enabled = it != PrayerType.SUNRISE, // Sunrise not a prayer, so disabled by default or reminder only
             soundType = when (it) {
                 PrayerType.FAJR -> NotificationSoundType.ATHAN_FAJR
-                PrayerType.SUNRISE -> NotificationSoundType.MELODIC_TONE
+                PrayerType.SUNRISE -> NotificationSoundType.DEVICE_DEFAULT
                 else -> NotificationSoundType.FULL_ATHAN
             },
             preReminderMinutes = 0
@@ -395,7 +395,7 @@ class PrayerPreferences(private val context: Context) {
             val defaultEnabled = prayer != PrayerType.SUNRISE
             val defaultSound = when (prayer) {
                 PrayerType.FAJR -> NotificationSoundType.ATHAN_FAJR
-                PrayerType.SUNRISE -> NotificationSoundType.MELODIC_TONE
+                PrayerType.SUNRISE -> NotificationSoundType.DEVICE_DEFAULT
                 else -> NotificationSoundType.FULL_ATHAN
             }
 

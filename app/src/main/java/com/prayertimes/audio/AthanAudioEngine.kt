@@ -3,6 +3,7 @@ package com.prayertimes.audio
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.media.RingtoneManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -26,7 +27,7 @@ data class AdhanPlaybackState(
     val isPlaying: Boolean = false,
     val currentPrayer: PrayerType = PrayerType.FAJR,
     val progress: Float = 0f,
-    val title: String = "Makkah Adhan"
+    val title: String = "Default Athan"
 )
 
 object AthanAudioEngine {
@@ -45,21 +46,18 @@ object AthanAudioEngine {
 
     fun getRawResourceForSoundType(soundType: NotificationSoundType): Int {
         return when (soundType) {
+            NotificationSoundType.ATHAN_DEFAULT -> R.raw.athan_default
             NotificationSoundType.ATHAN_MAKKAH_MULLA -> R.raw.athan_makkah_ali_bin_ahmad_mula
             NotificationSoundType.ATHAN_FAJR1_KWAIT_ALAFASY -> R.raw.athan_fajr1_kwait_mashary_alafasy
             NotificationSoundType.ATHAN_FAJR2_JORDAN_ALLALA -> R.raw.athan_fajr2_jordan_kamel_allala
             NotificationSoundType.ATHAN_RIYADH_QATAMI -> R.raw.athan_riyadh_naser_alqatami
             NotificationSoundType.ATHAN_QATAR_NABET -> R.raw.athan_qatar_saleh_alnabet
             NotificationSoundType.ATHAN_QUDS_QAZAZ_1 -> R.raw.athan_palastine_quds_nagi_qazaz_1
-            NotificationSoundType.ATHAN_QUDS_QAZAZ_2 -> R.raw.athan_palastine_quds_nagi_qazaz_2
             NotificationSoundType.ATHAN_EGYPT_DAWOD -> R.raw.athan_egypt_ahmad_dawod
             NotificationSoundType.ATHAN_EGYPT_ALALFI -> R.raw.athan_egypt_salah_alalfi
             NotificationSoundType.ATHAN_EGYPT_ABDULAATI -> R.raw.athan_egypt_alhusain_sayed_abdulaati
             NotificationSoundType.ATHAN_IRAQ_ALAMOURI -> R.raw.athan_iraq_abu_omar_alamouri
-            NotificationSoundType.ATHAN_GEORGIA -> R.raw.athan_georgia
-            NotificationSoundType.SHORT_TAKBEER -> R.raw.takbeer
-            NotificationSoundType.MELODIC_TONE -> R.raw.chime
-            else -> R.raw.athan_riyadh_naser_alqatami
+            else -> R.raw.athan_default
         }
     }
 
@@ -118,6 +116,27 @@ object AthanAudioEngine {
         }
 
         return null
+    }
+
+    private fun createDeviceNotificationPlayer(context: Context): MediaPlayer? {
+        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) ?: return null
+        val attributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        val player = MediaPlayer()
+        return try {
+            player.apply {
+                setAudioAttributes(attributes)
+                setDataSource(context.applicationContext, soundUri)
+                prepare()
+                setVolume(1.0f, 1.0f)
+            }
+        } catch (e: Exception) {
+            player.release()
+            Log.e(TAG, "Device notification sound could not be prepared", e)
+            null
+        }
     }
 
     /**
@@ -213,11 +232,8 @@ object AthanAudioEngine {
         }
 
         when (soundType) {
-            NotificationSoundType.SHORT_TAKBEER -> {
-                playTakbeer(context, audioStream, onFinished)
-            }
-            NotificationSoundType.MELODIC_TONE -> {
-                playGentleChime(context, audioStream, onFinished)
+            NotificationSoundType.DEVICE_DEFAULT -> {
+                playDeviceDefaultNotification(context, isArabic, onFinished)
             }
             NotificationSoundType.VIBRATE_ONLY -> {
                 vibrateDevice(context)
@@ -232,70 +248,22 @@ object AthanAudioEngine {
         }
     }
 
-    /**
-     * Plays authentic Mishari Alafasy Takbeerat.
-     */
-    fun playTakbeer(
+    /** Plays the user's current Android notification tone instead of bundling an imitation. */
+    fun playDeviceDefaultNotification(
         context: Context,
-        audioStream: AthanAudioStream = AthanAudioStream.ALARM,
+        isArabic: Boolean = false,
         onFinished: (() -> Unit)? = null
     ) {
         stop()
         try {
-            val player = createPreparedPlayer(context, R.raw.takbeer, audioStream) ?: run {
+            val player = createDeviceNotificationPlayer(context) ?: run {
                 onFinished?.invoke()
                 return
             }
             mediaPlayer = player
-            player.setVolume(1.0f, 1.0f)
-
             _playbackState.value = AdhanPlaybackState(
                 isPlaying = true,
-                title = "Takbeerat",
-                progress = 0f
-            )
-
-            player.setOnCompletionListener {
-                stop()
-                onFinished?.invoke()
-            }
-            player.setOnErrorListener { _, _, _ ->
-                stop()
-                onFinished?.invoke()
-                true
-            }
-            player.start()
-        } catch (e: Exception) {
-            Log.e(TAG, "Takbeer playback failed", e)
-            stop()
-            onFinished?.invoke()
-        }
-    }
-
-    /**
-     * Plays gentle crystal chime tone.
-     */
-    fun playGentleChime(
-        context: Context? = null,
-        audioStream: AthanAudioStream = AthanAudioStream.ALARM,
-        onFinished: (() -> Unit)? = null
-    ) {
-        stop()
-        if (context == null) {
-            onFinished?.invoke()
-            return
-        }
-        try {
-            val player = createPreparedPlayer(context, R.raw.chime, audioStream) ?: run {
-                onFinished?.invoke()
-                return
-            }
-            mediaPlayer = player
-            player.setVolume(1.0f, 1.0f)
-
-            _playbackState.value = AdhanPlaybackState(
-                isPlaying = true,
-                title = "Prayer Reminder Chime"
+                title = NotificationSoundType.DEVICE_DEFAULT.localizedDisplayName(isArabic)
             )
             player.setOnCompletionListener {
                 stop()
@@ -308,7 +276,7 @@ object AthanAudioEngine {
             }
             player.start()
         } catch (e: Exception) {
-            Log.e(TAG, "Chime playback failed", e)
+            Log.e(TAG, "Device notification sound playback failed", e)
             stop()
             onFinished?.invoke()
         }
