@@ -389,7 +389,7 @@
     <string name="widget_settings_section">التطبيقات المصغرة (الودجت)</string>
     <string name="widget_settings_section_subtitle">تخصيص الألوان، الشفافية والمحتوى</string>
     <string name="widget_settings_theme_mode_title">ثيم وألوان الودجت</string>
-    <string name="widget_settings_bg_style_title">نمط الخلفية</string>
+    <string name="widget_settings_bg_style_title">الخلفية</string>
     <string name="widget_settings_opacity_title">درجة الشفافية</string>
     <string name="widget_settings_font_size_title">حجم الخط</string>
     <string name="widget_settings_content_title">محتوى وعناصر الودجت</string>
@@ -481,11 +481,10 @@
     <string name="widget_theme_royal_blue">الياقوت الأزرق الليلي</string>
     <string name="widget_theme_monochrome">أحادي اللون مبسط</string>
 
-    <string name="widget_bgstyle_translucent">زجاجي شبه شفاف</string>
-    <string name="widget_bgstyle_solid_surface">معتم مصمت</string>
-    <string name="widget_bgstyle_frosted_glass">زجاج ضبابي عميق</string>
-    <string name="widget_bgstyle_minimal_border">إطار خارجي فقط</string>
-    <string name="widget_bgstyle_transparent_clean">شفاف تماماً (عائم)</string>
+    <string name="widget_settings_background_title">إظهار الخلفية</string>
+    <string name="widget_settings_background_subtitle">إبقاء خلفية البطاقة ومربعات الصلوات</string>
+    <string name="widget_settings_border_title">إظهار الإطار</string>
+    <string name="widget_settings_border_subtitle">رسم إطار حول الأداة</string>
 
     <string name="widget_fontsize_compact">مضغوط وصغير</string>
     <string name="widget_fontsize_standard">متوسط قياسي</string>

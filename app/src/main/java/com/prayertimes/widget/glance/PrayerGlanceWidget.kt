@@ -2,8 +2,18 @@ package com.prayertimes.widget.glance
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +38,7 @@ import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
@@ -54,6 +65,11 @@ import com.prayertimes.data.models.WidgetHeroTimeMode
 import com.prayertimes.data.preferences.AppPrayerSettings
 import com.prayertimes.data.preferences.PrayerPreferences
 import com.prayertimes.util.LocalizedStrings
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDate
@@ -61,6 +77,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.roundToInt
 
 private enum class LayoutFamily {
     MINIMAL, HORIZONTAL, COMPACT, TWO_COLUMN, LARGE_RIBBON, VERTICAL_SCHEDULE, SCHEDULE
@@ -142,7 +159,14 @@ private fun layoutForSize(widthDp: Float, heightDp: Float): AdaptiveLayout {
 class PrayerGlanceWidget : GlanceAppWidget() {
 
     companion object {
+        private val refreshGeneration = MutableStateFlow(0L)
+
+        internal fun signalRefresh() {
+            refreshGeneration.update { it + 1L }
+        }
+
         fun refreshAll(context: Context) {
+            signalRefresh()
             PrayerApplication.instance.applicationScope.launch {
                 runCatching { PrayerGlanceWidget().updateAll(context) }
             }
@@ -152,9 +176,21 @@ class PrayerGlanceWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val settings = PrayerPreferences.getInitialSettings(context)
-        val data = buildGlanceWidgetData(context, settings)
-        provideContent { WidgetContent(data) }
+        val initialSettings = PrayerPreferences.getInitialSettings(context)
+        val initialData = buildGlanceWidgetData(context, initialSettings)
+        val dataFlow = PrayerPreferences(context).settingsFlow
+            .combine(refreshGeneration) { settings, _ ->
+                buildGlanceWidgetData(context, settings)
+            }
+            .flowOn(Dispatchers.Default)
+
+        // A Glance composition remains alive for roughly 45 seconds. Observing both persisted
+        // settings and explicit refresh requests keeps that active composition current instead of
+        // reusing the immutable snapshot captured when the session first started.
+        provideContent {
+            val data by dataFlow.collectAsState(initialData)
+            WidgetContent(data)
+        }
     }
 
     /**
@@ -297,6 +333,7 @@ class PrayerGlanceWidget : GlanceAppWidget() {
 /** Tapping the small refresh icon re-renders just this widget instance with fresh data. */
 class RefreshGlanceWidgetAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        PrayerGlanceWidget.signalRefresh()
         PrayerGlanceWidget().update(context, glanceId)
     }
 }
@@ -345,7 +382,12 @@ internal fun WidgetContent(data: GlanceWidgetData) {
     // RemoteViews host context: the launcher or preview host may remain LTR while the app is Arabic.
     val isRtl = data.isRtl
 
-    CardSurface(fittedData.rootBg, fittedData.rootBorder) {
+    CardSurface(
+        rootBg = fittedData.rootBg,
+        borderColor = fittedData.rootBorder,
+        widthDp = size.width.value,
+        heightDp = size.height.value
+    ) {
         when (layout.family) {
             LayoutFamily.MINIMAL -> MicroContent(fittedData)
             LayoutFamily.HORIZONTAL -> SlimContent(fittedData, isRtl, layout)
@@ -358,31 +400,93 @@ internal fun WidgetContent(data: GlanceWidgetData) {
     }
 }
 
-/** Two-layer Box trick for a stroked card - Glance has no native border() modifier. */
+/**
+ * Draws fill and stroke into one bitmap because Glance/RemoteViews has no native border modifier.
+ * A nested transparent Box cannot form a border: transparency reveals the colored parent and
+ * therefore fills the whole widget. Keeping both layers in one ARGB bitmap preserves a truly
+ * transparent center when only the accent outline is enabled.
+ */
 @Composable
-private fun CardSurface(rootBg: Color, borderColor: Color, content: @Composable () -> Unit) {
+private fun CardSurface(
+    rootBg: Color,
+    borderColor: Color,
+    widthDp: Float,
+    heightDp: Float,
+    content: @Composable () -> Unit
+) {
     val context = LocalContext.current
+    val density = context.resources.displayMetrics.density
+    val surface = remember(rootBg, borderColor, widthDp, heightDp, density) {
+        createWidgetSurfaceBitmap(
+            widthPx = (widthDp * density).roundToInt(),
+            heightPx = (heightDp * density).roundToInt(),
+            fillColor = rootBg.toArgb(),
+            borderColor = borderColor.toArgb(),
+            cornerRadiusPx = 20f * density,
+            borderWidthPx = 1.5f * density
+        )
+    }
     val clickModifier = GlanceModifier
         .fillMaxSize()
+        .background(ImageProvider(surface), contentScale = ContentScale.FillBounds)
         .clickable(actionStartActivity(Intent(context, MainActivity::class.java)))
 
-    if (borderColor != Color.Transparent) {
-        Box(clickModifier.background(ColorProvider(borderColor)).cornerRadius(20.dp)) {
-            Box(
-                modifier = GlanceModifier
-                    .fillMaxSize()
-                    .padding(1.dp)
-                    .background(ColorProvider(rootBg))
-                    .cornerRadius(19.dp)
-            ) {
-                content()
-            }
-        }
-    } else {
-        Box(clickModifier.background(ColorProvider(rootBg)).cornerRadius(20.dp)) {
-            content()
-        }
+    Box(clickModifier) {
+        content()
     }
+}
+
+internal fun createWidgetSurfaceBitmap(
+    widthPx: Int,
+    heightPx: Int,
+    fillColor: Int,
+    borderColor: Int,
+    cornerRadiusPx: Float,
+    borderWidthPx: Float
+): Bitmap {
+    val width = widthPx.coerceAtLeast(1)
+    val height = heightPx.coerceAtLeast(1)
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    if (android.graphics.Color.alpha(borderColor) > 0 && borderWidthPx > 0f) {
+        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = borderColor
+            style = Paint.Style.FILL
+        }
+        canvas.drawRoundRect(
+            RectF(0f, 0f, width.toFloat(), height.toFloat()),
+            cornerRadiusPx,
+            cornerRadiusPx,
+            borderPaint
+        )
+
+        // SRC replaces (rather than blends with) the border layer, so a transparent fill really
+        // clears the center and a translucent fill keeps its intended unpolluted color/opacity.
+        val innerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = fillColor
+            style = Paint.Style.FILL
+            xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC)
+        }
+        val inset = borderWidthPx
+        canvas.drawRoundRect(
+            RectF(inset, inset, width - inset, height - inset),
+            (cornerRadiusPx - inset).coerceAtLeast(0f),
+            (cornerRadiusPx - inset).coerceAtLeast(0f),
+            innerPaint
+        )
+    } else {
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = fillColor
+            style = Paint.Style.FILL
+        }
+        canvas.drawRoundRect(
+            RectF(0f, 0f, width.toFloat(), height.toFloat()),
+            cornerRadiusPx,
+            cornerRadiusPx,
+            fillPaint
+        )
+    }
+    return bitmap
 }
 
 @Composable

@@ -389,7 +389,7 @@
     <string name="widget_settings_section">Home Screen Widgets</string>
     <string name="widget_settings_section_subtitle">Customize colors, opacity &amp; content</string>
     <string name="widget_settings_theme_mode_title">Widget Theme &amp; Palette</string>
-    <string name="widget_settings_bg_style_title">Background Style</string>
+    <string name="widget_settings_bg_style_title">Background</string>
     <string name="widget_settings_opacity_title">Background Opacity</string>
     <string name="widget_settings_font_size_title">Font Size</string>
     <string name="widget_settings_content_title">Widget Content &amp; Toggles</string>
@@ -477,11 +477,10 @@
     <string name="widget_theme_royal_blue">Midnight Sapphire</string>
     <string name="widget_theme_monochrome">Minimal Monochrome</string>
 
-    <string name="widget_bgstyle_translucent">Translucent Glass</string>
-    <string name="widget_bgstyle_solid_surface">Solid Surface</string>
-    <string name="widget_bgstyle_frosted_glass">Deep Blur Glass</string>
-    <string name="widget_bgstyle_minimal_border">Border Outline Only</string>
-    <string name="widget_bgstyle_transparent_clean">Fully Transparent (Floating)</string>
+    <string name="widget_settings_background_title">Show Background</string>
+    <string name="widget_settings_background_subtitle">Keep the card and prayer tile surfaces</string>
+    <string name="widget_settings_border_title">Show Border</string>
+    <string name="widget_settings_border_subtitle">Draw an outline around the widget</string>
 
     <string name="widget_fontsize_compact">Compact</string>
     <string name="widget_fontsize_standard">Standard</string>

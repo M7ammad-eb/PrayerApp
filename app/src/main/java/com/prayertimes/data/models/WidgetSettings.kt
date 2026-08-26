@@ -65,14 +65,6 @@ enum class WidgetThemeMode(
     )
 }
 
-enum class WidgetBackgroundStyle(@StringRes val titleRes: Int) {
-    TRANSLUCENT(R.string.widget_bgstyle_translucent),
-    SOLID_SURFACE(R.string.widget_bgstyle_solid_surface),
-    FROSTED_GLASS(R.string.widget_bgstyle_frosted_glass),
-    MINIMAL_BORDER(R.string.widget_bgstyle_minimal_border),
-    TRANSPARENT_CLEAN(R.string.widget_bgstyle_transparent_clean)
-}
-
 enum class WidgetFontSize(@StringRes val titleRes: Int, val scaleFactor: Float) {
     COMPACT(R.string.widget_fontsize_compact, 0.88f),
     STANDARD(R.string.widget_fontsize_standard, 1.0f),
@@ -94,8 +86,9 @@ enum class WidgetHeroTimeMode(@StringRes val titleRes: Int) {
 
 data class WidgetCustomizationSettings(
     val themeMode: WidgetThemeMode = WidgetThemeMode.APP_THEME,
-    val bgStyle: WidgetBackgroundStyle = WidgetBackgroundStyle.TRANSLUCENT,
+    val showBackground: Boolean = true,
     val opacityPercent: Int = 85,
+    val showBorder: Boolean = true,
     val fontSize: WidgetFontSize = WidgetFontSize.STANDARD,
     val textStyle: WidgetTextStyle = WidgetTextStyle.AUTO,
     val heroTimeMode: WidgetHeroTimeMode = WidgetHeroTimeMode.NEXT,

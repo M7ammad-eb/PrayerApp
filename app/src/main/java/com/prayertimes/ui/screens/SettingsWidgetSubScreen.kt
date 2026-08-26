@@ -77,7 +77,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.sp
-import com.prayertimes.data.models.WidgetBackgroundStyle
 import com.prayertimes.data.models.WidgetCustomizationSettings
 import com.prayertimes.data.models.WidgetHeroTimeMode
 import com.prayertimes.data.models.WidgetTextStyle
@@ -201,16 +200,27 @@ fun SettingsWidgetSubScreen(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
-                WidgetSettingsSubLabel(strings.widgetBgStyleTitle)
-                WidgetBackgroundStyleSelector(
-                    currentStyle = wSet.bgStyle,
-                    onSelectStyle = {
-                        onUpdateWidgetSettings(wSet.copy(bgStyle = it))
+                WidgetToggleRow(
+                    icon = Icons.Default.Layers,
+                    title = stringResource(R.string.widget_settings_background_title),
+                    subtitle = stringResource(R.string.widget_settings_background_subtitle),
+                    checked = wSet.showBackground,
+                    onCheckedChange = {
+                        onUpdateWidgetSettings(wSet.copy(showBackground = it))
                     }
                 )
 
-                // Opacity Slider
-                Column {
+                WidgetToggleRow(
+                    icon = Icons.Default.Layers,
+                    title = stringResource(R.string.widget_settings_border_title),
+                    subtitle = stringResource(R.string.widget_settings_border_subtitle),
+                    checked = wSet.showBorder,
+                    onCheckedChange = {
+                        onUpdateWidgetSettings(wSet.copy(showBorder = it))
+                    }
+                )
+
+                if (wSet.showBackground) Column {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -471,75 +481,6 @@ private fun getThemePreviewColors(theme: WidgetThemeMode): Triple<Color, Color, 
         WidgetThemeMode.GOLDEN_HOUR -> Triple(Color(0xFFB45309), Color(0xFFF59E0B), Color(0xFFFEF3C7))
         WidgetThemeMode.ROYAL_BLUE -> Triple(Color(0xFF0284C7), Color(0xFF38BDF8), Color(0xFF0F172A))
         WidgetThemeMode.MONOCHROME -> Triple(Color(0xFFFAFAFA), Color(0xFF71717A), Color(0xFF18181B))
-    }
-}
-
-// ---------------------------------------------------------------------------
-// BACKGROUND STYLE SELECTOR
-// ---------------------------------------------------------------------------
-@Composable
-private fun WidgetBackgroundStyleSelector(
-    currentStyle: WidgetBackgroundStyle,
-    onSelectStyle: (WidgetBackgroundStyle) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedCard(
-            onClick = { expanded = true },
-            shape = RoundedCornerShape(14.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            WidgetBackgroundOptionRow(currentStyle, showArrow = true)
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth(0.9f)
-        ) {
-            WidgetBackgroundStyle.values().forEach { style ->
-                DropdownMenuItem(
-                    text = { WidgetBackgroundOptionRow(style, showArrow = false) },
-                    onClick = {
-                        expanded = false
-                        onSelectStyle(style)
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun WidgetBackgroundOptionRow(style: WidgetBackgroundStyle, showArrow: Boolean) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = if (showArrow) 14.dp else 0.dp, vertical = if (showArrow) 10.dp else 0.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Default.Layers,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = stringResource(style.titleRes),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-        if (showArrow) {
-            Icon(
-                imageVector = Icons.Default.ArrowDropDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
     }
 }
 
@@ -862,8 +803,8 @@ private fun WidgetCanvasPreview(settings: AppPrayerSettings, preset: WidgetPrevi
         }
         // Renders the actual PrayerGlanceWidget composable at this footprint - not a hand-copied
         // mockup - so this preview can never visually drift from the real home screen widget.
-        // Its own CardSurface already draws the correct background/border for the current
-        // bgStyle, so there's nothing left for this container to draw itself.
+        // Its own CardSurface already draws the correct optional background and border, so
+        // there's nothing left for this container to draw itself.
         LiveGlanceWidgetPreview(settings = settings, size = previewSize)
     }
 }

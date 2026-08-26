@@ -25,7 +25,6 @@ import com.prayertimes.data.models.NotificationSoundType
 import com.prayertimes.data.models.PrayerTimeAdjustments
 import com.prayertimes.data.models.PrayerType
 import com.prayertimes.data.models.UserLocation
-import com.prayertimes.data.models.WidgetBackgroundStyle
 import com.prayertimes.data.models.WidgetCustomizationSettings
 import com.prayertimes.data.models.WidgetFontSize
 import com.prayertimes.data.models.WidgetHeroTimeMode
@@ -42,6 +41,9 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "pr
 // fallback - a plain generic helper here avoids that try/catch being duplicated at every call site.
 private inline fun <reified T : Enum<T>> parseEnumOrDefault(value: String?, default: T): T =
     value?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: default
+
+private fun legacyWidgetBackgroundWasEnabled(value: String?): Boolean =
+    value != "TRANSPARENT_CLEAN" && value != "MINIMAL_BORDER"
 
 data class AppPrayerSettings(
     val location: UserLocation,
@@ -86,8 +88,10 @@ class PrayerPreferences(private val context: Context) {
         private const val KEY_24H = "cached_24h"
 
         private const val KEY_WIDGET_THEME = "cached_w_theme"
-        private const val KEY_WIDGET_BG = "cached_w_bg"
+        private const val LEGACY_KEY_WIDGET_BG = "cached_w_bg"
+        private const val KEY_WIDGET_SHOW_BACKGROUND = "cached_w_show_background"
         private const val KEY_WIDGET_OPACITY = "cached_w_opacity"
+        private const val KEY_WIDGET_SHOW_BORDER = "cached_w_show_border"
         private const val KEY_WIDGET_FONT = "cached_w_font"
         private const val KEY_WIDGET_TEXT_STYLE = "cached_w_text_style"
         private const val KEY_WIDGET_HERO_TIME_MODE = "cached_w_hero_time_mode"
@@ -192,8 +196,18 @@ class PrayerPreferences(private val context: Context) {
 
             // Widget Customization
             val wTheme = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_THEME, null), WidgetThemeMode.APP_THEME)
-            val wBg = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_BG, null), WidgetBackgroundStyle.TRANSLUCENT)
+            val rawWBg = fastPrefs.getString(LEGACY_KEY_WIDGET_BG, null)
+            val wShowBackground = if (fastPrefs.contains(KEY_WIDGET_SHOW_BACKGROUND)) {
+                fastPrefs.getBoolean(KEY_WIDGET_SHOW_BACKGROUND, true)
+            } else {
+                legacyWidgetBackgroundWasEnabled(rawWBg)
+            }
             val wOpacity = fastPrefs.getInt(KEY_WIDGET_OPACITY, 85)
+            val wShowBorder = if (fastPrefs.contains(KEY_WIDGET_SHOW_BORDER)) {
+                fastPrefs.getBoolean(KEY_WIDGET_SHOW_BORDER, true)
+            } else {
+                true
+            }
             val wFont = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_FONT, null), WidgetFontSize.STANDARD)
             val wTextStyle = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_TEXT_STYLE, null), WidgetTextStyle.AUTO)
             val wHeroTimeMode = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_HERO_TIME_MODE, null), WidgetHeroTimeMode.NEXT)
@@ -207,8 +221,9 @@ class PrayerPreferences(private val context: Context) {
 
             val widgetSettings = WidgetCustomizationSettings(
                 themeMode = wTheme,
-                bgStyle = wBg,
+                showBackground = wShowBackground,
                 opacityPercent = wOpacity,
+                showBorder = wShowBorder,
                 fontSize = wFont,
                 textStyle = wTextStyle,
                 heroTimeMode = wHeroTimeMode,
@@ -270,8 +285,10 @@ class PrayerPreferences(private val context: Context) {
 
         // Widget Settings
         val WIDGET_THEME_MODE = stringPreferencesKey("widget_theme_mode")
-        val WIDGET_BG_STYLE = stringPreferencesKey("widget_bg_style")
+        val LEGACY_WIDGET_BG_STYLE = stringPreferencesKey("widget_bg_style")
+        val WIDGET_SHOW_BACKGROUND = booleanPreferencesKey("widget_show_background")
         val WIDGET_OPACITY = intPreferencesKey("widget_opacity")
+        val WIDGET_SHOW_BORDER = booleanPreferencesKey("widget_show_border")
         val WIDGET_FONT_SIZE = stringPreferencesKey("widget_font_size")
         val WIDGET_TEXT_STYLE = stringPreferencesKey("widget_text_style")
         val WIDGET_HERO_TIME_MODE = stringPreferencesKey("widget_hero_time_mode")
@@ -325,8 +342,12 @@ class PrayerPreferences(private val context: Context) {
 
         // Widget settings
         val wTheme = parseEnumOrDefault(prefs[Keys.WIDGET_THEME_MODE], WidgetThemeMode.APP_THEME)
-        val wBg = parseEnumOrDefault(prefs[Keys.WIDGET_BG_STYLE], WidgetBackgroundStyle.TRANSLUCENT)
+        val rawWBg = prefs[Keys.LEGACY_WIDGET_BG_STYLE]
+        val wShowBackground = prefs[Keys.WIDGET_SHOW_BACKGROUND]
+            ?: legacyWidgetBackgroundWasEnabled(rawWBg)
         val wOpacity = prefs[Keys.WIDGET_OPACITY] ?: 85
+        val wShowBorder = prefs[Keys.WIDGET_SHOW_BORDER]
+            ?: true
         val wFont = parseEnumOrDefault(prefs[Keys.WIDGET_FONT_SIZE], WidgetFontSize.STANDARD)
         val wTextStyle = parseEnumOrDefault(prefs[Keys.WIDGET_TEXT_STYLE], WidgetTextStyle.AUTO)
         val wHeroTimeMode = parseEnumOrDefault(prefs[Keys.WIDGET_HERO_TIME_MODE], WidgetHeroTimeMode.NEXT)
@@ -340,8 +361,9 @@ class PrayerPreferences(private val context: Context) {
 
         val widgetSettings = WidgetCustomizationSettings(
             themeMode = wTheme,
-            bgStyle = wBg,
+            showBackground = wShowBackground,
             opacityPercent = wOpacity,
+            showBorder = wShowBorder,
             fontSize = wFont,
             textStyle = wTextStyle,
             heroTimeMode = wHeroTimeMode,
@@ -392,8 +414,10 @@ class PrayerPreferences(private val context: Context) {
             .putString(KEY_COLOR_PRESET, colorPreset.name)
             .putBoolean(KEY_FOLLOW_SYSTEM_COLORS, followSystemColors)
             .putString(KEY_WIDGET_THEME, widgetSettings.themeMode.name)
-            .putString(KEY_WIDGET_BG, widgetSettings.bgStyle.name)
+            .putBoolean(KEY_WIDGET_SHOW_BACKGROUND, widgetSettings.showBackground)
+            .remove(LEGACY_KEY_WIDGET_BG)
             .putInt(KEY_WIDGET_OPACITY, widgetSettings.opacityPercent)
+            .putBoolean(KEY_WIDGET_SHOW_BORDER, widgetSettings.showBorder)
             .putString(KEY_WIDGET_FONT, widgetSettings.fontSize.name)
             .putString(KEY_WIDGET_TEXT_STYLE, widgetSettings.textStyle.name)
             .putString(KEY_WIDGET_HERO_TIME_MODE, widgetSettings.heroTimeMode.name)
@@ -462,8 +486,10 @@ class PrayerPreferences(private val context: Context) {
         val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
         fastPrefs.edit()
             .putString(KEY_WIDGET_THEME, settings.themeMode.name)
-            .putString(KEY_WIDGET_BG, settings.bgStyle.name)
+            .putBoolean(KEY_WIDGET_SHOW_BACKGROUND, settings.showBackground)
+            .remove(LEGACY_KEY_WIDGET_BG)
             .putInt(KEY_WIDGET_OPACITY, settings.opacityPercent)
+            .putBoolean(KEY_WIDGET_SHOW_BORDER, settings.showBorder)
             .putString(KEY_WIDGET_FONT, settings.fontSize.name)
             .putString(KEY_WIDGET_TEXT_STYLE, settings.textStyle.name)
             .putString(KEY_WIDGET_HERO_TIME_MODE, settings.heroTimeMode.name)
@@ -476,8 +502,10 @@ class PrayerPreferences(private val context: Context) {
             .apply()
         context.dataStore.edit { prefs ->
             prefs[Keys.WIDGET_THEME_MODE] = settings.themeMode.name
-            prefs[Keys.WIDGET_BG_STYLE] = settings.bgStyle.name
+            prefs[Keys.WIDGET_SHOW_BACKGROUND] = settings.showBackground
+            prefs.remove(Keys.LEGACY_WIDGET_BG_STYLE)
             prefs[Keys.WIDGET_OPACITY] = settings.opacityPercent
+            prefs[Keys.WIDGET_SHOW_BORDER] = settings.showBorder
             prefs[Keys.WIDGET_FONT_SIZE] = settings.fontSize.name
             prefs[Keys.WIDGET_TEXT_STYLE] = settings.textStyle.name
             prefs[Keys.WIDGET_HERO_TIME_MODE] = settings.heroTimeMode.name

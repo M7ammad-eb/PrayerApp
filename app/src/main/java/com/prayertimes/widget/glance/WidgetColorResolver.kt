@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import com.prayertimes.data.models.AppColorPreset
 import com.prayertimes.data.models.AppThemeMode
-import com.prayertimes.data.models.WidgetBackgroundStyle
 import com.prayertimes.data.models.WidgetTextStyle
 import com.prayertimes.data.models.WidgetThemeMode
 import com.prayertimes.data.preferences.AppPrayerSettings
@@ -58,30 +57,24 @@ internal object WidgetColorResolver {
             }
         }
 
-        val rootBackground = when (widget.bgStyle) {
-            WidgetBackgroundStyle.TRANSPARENT_CLEAN -> Color.TRANSPARENT
-            WidgetBackgroundStyle.MINIMAL_BORDER ->
-                ColorUtils.setAlphaComponent(Color.BLACK, (0.15f * opacity * 255).toInt())
-            WidgetBackgroundStyle.SOLID_SURFACE ->
-                ColorUtils.setAlphaComponent(palette.background, 255)
-            WidgetBackgroundStyle.FROSTED_GLASS -> {
-                val frosted = ColorUtils.blendARGB(palette.background, Color.WHITE, 0.25f)
-                ColorUtils.setAlphaComponent(frosted, (opacity.coerceAtLeast(0.55f) * 255).toInt())
-            }
-            WidgetBackgroundStyle.TRANSLUCENT ->
-                ColorUtils.setAlphaComponent(palette.background, (opacity * 255).toInt())
+        val rootBackground = if (widget.showBackground) {
+            ColorUtils.setAlphaComponent(palette.background, (opacity * 255).toInt())
+        } else {
+            Color.TRANSPARENT
         }
-        val rootBorder = when (widget.bgStyle) {
-            WidgetBackgroundStyle.TRANSPARENT_CLEAN -> Color.TRANSPARENT
-            WidgetBackgroundStyle.MINIMAL_BORDER -> ColorUtils.setAlphaComponent(palette.accent, 204)
-            WidgetBackgroundStyle.SOLID_SURFACE -> ColorUtils.setAlphaComponent(palette.accent, 89)
-            WidgetBackgroundStyle.FROSTED_GLASS -> ColorUtils.setAlphaComponent(Color.WHITE, 51)
-            WidgetBackgroundStyle.TRANSLUCENT -> ColorUtils.setAlphaComponent(palette.accent, 64)
+        // The outline deliberately uses the exact same resolved accent as the Hero countdown pill.
+        val rootBorder = if (widget.showBorder) palette.accent else Color.TRANSPARENT
+        val hasFloatingContent = !widget.showBackground
+        val heroBackground = if (hasFloatingContent) {
+            Color.TRANSPARENT
+        } else {
+            ColorUtils.setAlphaComponent(palette.primaryText, 41)
         }
-        val heroBackground = ColorUtils.setAlphaComponent(
-            palette.primaryText,
-            if (widget.bgStyle == WidgetBackgroundStyle.TRANSPARENT_CLEAN) 31 else 41
-        )
+        val inactivePrayerBackground = if (hasFloatingContent) {
+            Color.TRANSPARENT
+        } else {
+            ColorUtils.setAlphaComponent(palette.primaryText, 36)
+        }
         val textOnAccent = if (ColorUtils.calculateLuminance(palette.accent) > 0.42) {
             0xFF0F172A.toInt()
         } else {
@@ -98,7 +91,7 @@ internal object WidgetColorResolver {
             textSecondaryColor = palette.secondaryText,
             textOnAccentColor = textOnAccent,
             activePrayerBgColor = palette.accent,
-            inactivePrayerBgColor = ColorUtils.setAlphaComponent(palette.primaryText, 36),
+            inactivePrayerBgColor = inactivePrayerBackground,
             countdownBgColor = palette.accent,
             fontScale = 1f
         )
