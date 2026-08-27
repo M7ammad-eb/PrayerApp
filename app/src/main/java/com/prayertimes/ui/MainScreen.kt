@@ -96,7 +96,7 @@ fun MainScreen(
     val settings by viewModel.settings.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
     val dailySchedule by viewModel.dailySchedule.collectAsState()
-    val nextPrayerInfo by viewModel.nextPrayerInfo.collectAsState()
+    val currentPrayerInfo by viewModel.currentPrayerInfo.collectAsState()
     val compassState by viewModel.compassState.collectAsState()
     val isGpsLoading by viewModel.isGpsLoading.collectAsState()
     val locationErrorMessage by viewModel.locationErrorMessage.collectAsState()
@@ -245,7 +245,7 @@ fun MainScreen(
                         AppNavTab.PRAYER_TIMES -> {
                             PrayerHomeScreen(
                                 dailySchedule = dailySchedule,
-                                nextPrayerInfo = nextPrayerInfo,
+                                currentPrayerInfo = currentPrayerInfo,
                                 settings = settings,
                                 selectedDate = selectedDate,
                                 onPreviousDay = { viewModel.previousDay() },

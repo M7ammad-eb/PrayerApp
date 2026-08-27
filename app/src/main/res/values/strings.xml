@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Salati</string>
-    <string name="widget_description">Displays the next prayer time and countdown on your home screen.</string>
+    <string name="widget_description">Displays the current prayer and its remaining time on your home screen.</string>
 
     <!-- ===== App Branding ===== -->
     <string name="app_brand_name">Salati</string>
@@ -67,7 +67,7 @@
     <string name="widget_settings_behavior_section_title">Behavior</string>
     <string name="widget_settings_behavior_section_subtitle">How the hero countdown behaves</string>
     <string name="widget_settings_content_section_subtitle">Choose what shows on the widget</string>
-    <string name="widget_settings_toggle_show_hero_desc">Big card with the next (or last) prayer</string>
+    <string name="widget_settings_toggle_show_hero_desc">Big card with the current prayer and remaining time</string>
     <string name="widget_settings_toggle_show_countdown_desc">Time remaining, shown on the hero card</string>
     <string name="widget_settings_toggle_show_all_prayers_desc">Row of all six prayer times</string>
     <string name="widget_settings_toggle_show_sunrise_desc">Include Sunrise in the prayer row</string>
@@ -75,8 +75,9 @@
     <string name="widget_settings_toggle_show_hijri_desc">Islamic calendar date in the header</string>
 
     <!-- ===== Next Prayer / Hero ===== -->
-    <string name="hero_next_prayer_label">NEXT PRAYER</string>
-    <string name="hero_tomorrow_prayer_label">TOMORROW\'S PRAYER</string>
+    <string name="hero_current_prayer_label">CURRENT PRAYER</string>
+    <string name="hero_prayer_time_ended_label">PRAYER TIME ENDED</string>
+    <string name="hero_fajr_time_ended">Fajr time has ended</string>
     <string name="hero_next_label_prefix">NEXT:</string>
     <string name="hero_athan_alert">Athan Alert</string>
     <string name="hero_athan_at">Athan at</string>
@@ -435,12 +436,16 @@
 
     <!-- ===== Home-screen widget ===== -->
     <string name="widget_hero_prev_label">PREVIOUS</string>
-    <string name="widget_hero_next_label">NEXT</string>
     <string name="widget_status_prayer_time">Prayer Time!</string>
     <string name="widget_countdown_now">Now</string>
     <string name="widget_countdown_hours_minutes">In %1$dh %2$dm</string>
     <string name="widget_countdown_minutes_only">In %1$dm</string>
     <string name="widget_countdown_less_than_min">In &lt; 1 min</string>
+    <string name="widget_time_ending_now">Time ending now</string>
+    <string name="widget_remaining_hours_minutes">%1$dh %2$dm remaining</string>
+    <string name="widget_remaining_minutes_only">%1$dm remaining</string>
+    <string name="widget_remaining_less_than_min">Less than 1 minute remaining</string>
+    <string name="widget_fajr_time_ended">Fajr time has ended</string>
     <string name="widget_since_just_now">Just now</string>
     <string name="widget_since_hours_minutes">%1$dh %2$dm ago</string>
     <string name="widget_since_minutes_only">%1$dm ago</string>
@@ -448,18 +453,17 @@
     <!-- ===== Widget Customization Screen ===== -->
     <string name="widget_settings_intro_banner">Customize how the widget looks on your home screen to perfectly fit any grid layout (from 1-column slim to full max expanded).</string>
     <string name="widget_settings_hero_section_title">Hero card</string>
-    <string name="widget_settings_hero_section_subtitle">Choose the featured prayer and its countdown</string>
+    <string name="widget_settings_hero_section_subtitle">Show the current prayer and time remaining</string>
     <string name="widget_settings_schedule_section_title">Schedule &amp; header</string>
     <string name="widget_settings_schedule_section_subtitle">Choose prayer rows, location, and Hijri date</string>
     <string name="widget_settings_opacity_transparent">Transparent (0%)</string>
     <string name="widget_settings_opacity_solid">Solid (100%)</string>
     <string name="widget_settings_text_color_title">Text Color</string>
-    <string name="widget_settings_hero_timing_title">Hero Card Timing</string>
     <string name="widget_settings_toggle_show_location">Show Location &amp; City</string>
     <string name="widget_settings_toggle_show_hijri">Show Hijri Date</string>
     <string name="widget_settings_toggle_show_countdown">Show Countdown Timer</string>
     <string name="widget_settings_toggle_show_sunrise">Show Sunrise in Schedule</string>
-    <string name="widget_settings_toggle_show_hero">Show Next Prayer Hero Card</string>
+    <string name="widget_settings_toggle_show_hero">Show Current Prayer Hero Card</string>
     <string name="widget_settings_toggle_show_all_prayers">Show All Prayers Schedule</string>
 
     <string name="widget_theme_app_theme">Match App Theme</string>
@@ -486,9 +490,6 @@
     <string name="widget_textstyle_light">Always Light Text</string>
     <string name="widget_textstyle_dark">Always Dark Text</string>
 
-    <string name="widget_herotime_next">Next Prayer (In...)</string>
-    <string name="widget_herotime_previous">Current Prayer (Since...)</string>
-    <string name="widget_herotime_both">Both (Wide Widgets)</string>
 
     <!-- Live preview mock text (fixed example values, not real countdowns) -->
     <string name="widget_preview_mock_hijri_date">• 14 Safar 1448 AH</string>

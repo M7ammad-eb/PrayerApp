@@ -79,7 +79,6 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.sp
 import com.prayertimes.data.models.WidgetCustomizationSettings
 import com.prayertimes.data.models.WidgetFontSize
-import com.prayertimes.data.models.WidgetHeroTimeMode
 import com.prayertimes.data.models.WidgetTextStyle
 import com.prayertimes.data.models.WidgetThemeMode
 import com.prayertimes.data.preferences.AppPrayerSettings
@@ -310,21 +309,12 @@ fun SettingsWidgetSubScreen(
                 )
             }
 
-            // Hero controls belong together: display, timing, then the dependent countdown.
+            // Hero controls: current prayer display and its remaining-time countdown.
             WidgetSettingsSectionCard(
                 icon = Icons.Default.Schedule,
                 title = stringResource(R.string.widget_settings_hero_section_title),
                 subtitle = stringResource(R.string.widget_settings_hero_section_subtitle)
             ) {
-                WidgetHeroTimeModeSelector(
-                    currentMode = wSet.heroTimeMode,
-                    onSelectMode = {
-                        onUpdateWidgetSettings(wSet.copy(heroTimeMode = it))
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
                 WidgetToggleRow(
                     icon = Icons.Default.Layers,
                     title = stringResource(R.string.widget_settings_toggle_show_hero),
@@ -497,7 +487,7 @@ private fun getThemePreviewColors(theme: WidgetThemeMode): Triple<Color, Color, 
 
 // ---------------------------------------------------------------------------
 // OPTION CHIP ROW - shared by Text Color / Hero Time Mode. Labels here can run
-// longer than a single line comfortably fits at equal 1/3-1/4 width (e.g. "Both (Wide Widgets)",
+// longer than a single line comfortably fits at equal 1/3-1/4 width (e.g. "Extra Large",
 // "Extra Large"), so this wraps to two lines with an ellipsis fallback instead of the raw
 // mid-word clipping a hard maxLines=1 produces.
 // ---------------------------------------------------------------------------
@@ -553,22 +543,6 @@ private fun WidgetTextStyleSelector(
         selected = currentStyle,
         label = { it.titleRes },
         onSelect = onSelectStyle
-    )
-}
-
-// ---------------------------------------------------------------------------
-// HERO TIME MODE SELECTOR
-// ---------------------------------------------------------------------------
-@Composable
-private fun WidgetHeroTimeModeSelector(
-    currentMode: WidgetHeroTimeMode,
-    onSelectMode: (WidgetHeroTimeMode) -> Unit
-) {
-    WidgetOptionChipRow(
-        options = WidgetHeroTimeMode.values(),
-        selected = currentMode,
-        label = { it.titleRes },
-        onSelect = onSelectMode
     )
 }
 

@@ -136,7 +136,7 @@ class MainActivity : ComponentActivity() {
         ) == PackageManager.PERMISSION_GRANTED
 
         if ((fineGranted || coarseGranted) && initialSettings.location.isGps) {
-            prayerViewModel.requestGpsLocation(this)
+            prayerViewModel.requestGpsLocation(this, forceRefresh = false)
         }
     }
 }

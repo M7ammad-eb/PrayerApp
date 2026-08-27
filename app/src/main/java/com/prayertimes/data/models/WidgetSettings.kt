@@ -78,12 +78,6 @@ enum class WidgetTextStyle(@StringRes val titleRes: Int) {
     DARK(R.string.widget_textstyle_dark)
 }
 
-enum class WidgetHeroTimeMode(@StringRes val titleRes: Int) {
-    NEXT(R.string.widget_herotime_next),
-    PREVIOUS(R.string.widget_herotime_previous),
-    BOTH(R.string.widget_herotime_both)
-}
-
 data class WidgetCustomizationSettings(
     val themeMode: WidgetThemeMode = WidgetThemeMode.APP_THEME,
     val showBackground: Boolean = true,
@@ -91,7 +85,6 @@ data class WidgetCustomizationSettings(
     val showBorder: Boolean = true,
     val fontSize: WidgetFontSize = WidgetFontSize.STANDARD,
     val textStyle: WidgetTextStyle = WidgetTextStyle.AUTO,
-    val heroTimeMode: WidgetHeroTimeMode = WidgetHeroTimeMode.NEXT,
     val showLocation: Boolean = true,
     val showHijriDate: Boolean = true,
     val showCountdown: Boolean = true,

@@ -57,11 +57,11 @@ import com.prayertimes.MainActivity
 import com.prayertimes.PrayerApplication
 import com.prayertimes.R
 import com.prayertimes.data.calculator.PrayerTimesCalculator
+import com.prayertimes.data.calculator.CurrentPrayerResolver
 import com.prayertimes.data.cities.CityDatabase
 import com.prayertimes.data.models.AppLanguage
 import com.prayertimes.data.models.PrayerType
 import com.prayertimes.data.models.WidgetCustomizationSettings
-import com.prayertimes.data.models.WidgetHeroTimeMode
 import com.prayertimes.data.preferences.AppPrayerSettings
 import com.prayertimes.data.preferences.PrayerPreferences
 import com.prayertimes.util.LocalizedStrings
@@ -98,7 +98,6 @@ private data class AdaptiveLayout(
     val heightDp: Float,
     val denseRows: Boolean,
     val sideBySideSchedule: Boolean,
-    val supportsDualHero: Boolean,
     val stackHeader: Boolean,
     val showBarCountdown: Boolean,
     val showBarMetadata: Boolean,
@@ -146,7 +145,6 @@ private fun layoutForSize(widthDp: Float, heightDp: Float, systemFontScale: Floa
         heightDp = height,
         denseRows = height < 360f,
         sideBySideSchedule = family == LayoutFamily.SCHEDULE && width >= 340f && aspectRatio >= 1.45f,
-        supportsDualHero = width >= 220f,
         stackHeader = width < 300f,
         showBarCountdown = family == LayoutFamily.HORIZONTAL && width >= 200f,
         showBarMetadata = family == LayoutFamily.HORIZONTAL && width >= 280f,
@@ -223,21 +221,12 @@ class PrayerGlanceWidget : GlanceAppWidget() {
             now = now
         )
 
+        val yesterdaySchedule = schedule(today.minusDays(1))
         val todaySchedule = schedule(today)
-        val nextToday = todaySchedule.prayerItems.firstOrNull {
-            it.type != PrayerType.SUNRISE && it.zonedDateTime.isAfter(now)
-        }
-        val isTomorrowFajr = nextToday == null
-        val next = nextToday ?: schedule(today.plusDays(1)).prayerItems.first { it.type == PrayerType.FAJR }
-
-        val previous = todaySchedule.prayerItems
-            .filter { it.type != PrayerType.SUNRISE && it.zonedDateTime.isBefore(next.zonedDateTime) }
-            .lastOrNull()
-        val previousType = previous?.type ?: PrayerType.ISHA
-        val previousTime = previous?.zonedDateTime ?: today.minusDays(1).atTime(todaySchedule.isha).atZone(zoneId)
-
-        val untilSeconds = Duration.between(now, next.zonedDateTime).seconds.coerceAtLeast(0)
-        val sinceSeconds = Duration.between(previousTime, now).seconds.coerceAtLeast(0)
+        val tomorrowSchedule = schedule(today.plusDays(1))
+        val currentPeriod = CurrentPrayerResolver.resolve(now, yesterdaySchedule, todaySchedule, tomorrowSchedule)
+        val remainingSeconds = if (currentPeriod.isPrayerTimeEnded) 0L
+        else Duration.between(now, currentPeriod.endsAt).seconds.coerceAtLeast(0)
 
         val timeFormatter = if (settings.is24HourFormat) {
             DateTimeFormatter.ofPattern("HH:mm")
@@ -245,14 +234,13 @@ class PrayerGlanceWidget : GlanceAppWidget() {
             DateTimeFormatter.ofPattern("h:mm a")
         }
         val widgetSettings = settings.widgetSettings
-        val showingPrevious = widgetSettings.heroTimeMode == WidgetHeroTimeMode.PREVIOUS
         val colors = WidgetColorResolver.resolve(context, settings)
         val prayerMap = todaySchedule.prayerItems.associateBy { it.type }
 
         fun slot(type: PrayerType) = MiniSlot(
             name = prayerName(type, settings.language),
             time = prayerMap[type]?.time?.format(timeFormatter) ?: "--:--",
-            isActive = !isTomorrowFajr && type == next.type
+            isActive = !currentPeriod.isPrayerTimeEnded && type == currentPeriod.prayerItem.type
         )
 
         // All six prayers (Sunrise optionally hidden) - matches populatePrayerRibbon /
@@ -265,15 +253,13 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         val mediumSlots = listOf(PrayerType.DHUHR, PrayerType.ASR, PrayerType.MAGHRIB).map(::slot)
 
         return GlanceWidgetData(
-            prayerName = prayerName(if (showingPrevious) previousType else next.type, settings.language),
-            prayerTime = (if (showingPrevious) previousTime else next.zonedDateTime).format(timeFormatter),
-            countdown = if (showingPrevious) sinceText(context, sinceSeconds, isArabic) else countdownText(context, untilSeconds, isArabic),
-            previousName = prayerName(previousType, settings.language),
-            previousTime = previousTime.format(timeFormatter),
-            since = sinceText(context, sinceSeconds, isArabic),
-            nextName = prayerName(next.type, settings.language),
-            nextTime = next.zonedDateTime.format(timeFormatter),
-            until = countdownText(context, untilSeconds, isArabic),
+            prayerName = prayerName(currentPeriod.prayerItem.type, settings.language),
+            prayerTime = currentPeriod.prayerItem.zonedDateTime.format(timeFormatter),
+            countdown = if (currentPeriod.isPrayerTimeEnded) {
+                localizedRes.getString(R.string.widget_fajr_time_ended)
+            } else {
+                remainingText(context, remainingSeconds, isArabic)
+            },
             locationText = CityDatabase.localizedName(localizedRes, settings.location)
                 .ifBlank { CityDatabase.localizedCountry(localizedRes, settings.location) },
             hijriText = if (isArabic) {
@@ -308,26 +294,15 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         return if (useArabic) arabicNames.getValue(type) else type.title
     }
 
-    private fun countdownText(context: Context, seconds: Long, isArabic: Boolean): String {
+    private fun remainingText(context: Context, seconds: Long, isArabic: Boolean): String {
         val res = LocalizedStrings.forLanguage(context, isArabic)
         val hours = seconds / 3600
         val minutes = (seconds % 3600) / 60
         return when {
-            seconds <= 0 -> res.getString(R.string.widget_countdown_now)
-            hours > 0 -> res.getString(R.string.widget_countdown_hours_minutes, hours, minutes)
-            minutes > 0 -> res.getString(R.string.widget_countdown_minutes_only, minutes)
-            else -> res.getString(R.string.widget_countdown_less_than_min)
-        }
-    }
-
-    private fun sinceText(context: Context, seconds: Long, isArabic: Boolean): String {
-        val res = LocalizedStrings.forLanguage(context, isArabic)
-        val hours = seconds / 3600
-        val minutes = (seconds % 3600) / 60
-        return when {
-            seconds <= 60 -> res.getString(R.string.widget_since_just_now)
-            hours > 0 -> res.getString(R.string.widget_since_hours_minutes, hours, minutes)
-            else -> res.getString(R.string.widget_since_minutes_only, minutes)
+            seconds <= 0 -> res.getString(R.string.widget_time_ending_now)
+            hours > 0 -> res.getString(R.string.widget_remaining_hours_minutes, hours, minutes)
+            minutes > 0 -> res.getString(R.string.widget_remaining_minutes_only, minutes)
+            else -> res.getString(R.string.widget_remaining_less_than_min)
         }
     }
 }
@@ -348,12 +323,6 @@ internal data class GlanceWidgetData(
     val prayerName: String,
     val prayerTime: String,
     val countdown: String,
-    val previousName: String,
-    val previousTime: String,
-    val since: String,
-    val nextName: String,
-    val nextTime: String,
-    val until: String,
     val locationText: String,
     val hijriText: String,
     val allSlots: List<MiniSlot>,
@@ -655,9 +624,6 @@ private fun fittedScheduleSlots(data: GlanceWidgetData, layout: AdaptiveLayout):
     }
     val heroHeight = when {
         !data.widgetSettings.showHeroCard -> 0f
-        // Reserve the largest hero that this rectangle supports. Row count must remain stable
-        // when the user switches NEXT/PREVIOUS/BOTH without resizing the widget itself.
-        layout.supportsDualHero -> 105f
         else -> 74f
     }
     val sectionGapCount = (if (data.widgetSettings.showHeroCard) 1 else 0) +
@@ -686,11 +652,7 @@ private fun VerticalContent(data: GlanceWidgetData, isRtl: Boolean, layout: Adap
         }
         if (data.widgetSettings.showHeroCard) {
             Spacer(GlanceModifier.height(layout.gapDp.dp))
-            if (data.widgetSettings.heroTimeMode == WidgetHeroTimeMode.BOTH && layout.supportsDualHero) {
-                DualHeroCard(data, isRtl)
-            } else {
-                HeroCard(data, compact = true, isRtl = isRtl)
-            }
+            HeroCard(data, compact = true, isRtl = isRtl)
         }
         if (data.widgetSettings.showAllPrayersList) {
             Spacer(GlanceModifier.height(layout.gapDp.dp))
@@ -760,14 +722,9 @@ private fun LargeRibbonContent(data: GlanceWidgetData, isRtl: Boolean, layout: A
         if (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate) {
             LocationHeader(data, isRtl, showHijri = true, stacked = layout.stackHeader)
         }
-        val showDualHero = data.widgetSettings.heroTimeMode == WidgetHeroTimeMode.BOTH
         if (data.widgetSettings.showHeroCard) {
             Spacer(GlanceModifier.height(layout.gapDp.dp))
-            if (showDualHero) {
-                DualHeroCard(data, isRtl, compact = true)
-            } else {
-                HeroCard(data, compact = false, isRtl = isRtl)
-            }
+            HeroCard(data, compact = false, isRtl = isRtl)
         }
         if (data.widgetSettings.showAllPrayersList) {
             Spacer(GlanceModifier.height(layout.gapDp.dp))
@@ -795,10 +752,9 @@ private fun LargeContent(data: GlanceWidgetData, isRtl: Boolean, layout: Adaptiv
         if (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate) {
             LocationHeader(data, isRtl, showHijri = true, stacked = layout.stackHeader)
         }
-        val showDualHero = data.widgetSettings.heroTimeMode == WidgetHeroTimeMode.BOTH
         val heroSection = @Composable {
             if (data.widgetSettings.showHeroCard) {
-                if (showDualHero) DualHeroCard(data, isRtl) else HeroCard(data, compact = false, isRtl = isRtl)
+                HeroCard(data, compact = false, isRtl = isRtl)
             }
         }
         val schedule = @Composable {
@@ -1011,54 +967,6 @@ private fun HeroCard(
             Spacer(GlanceModifier.width(6.dp))
             if (data.widgetSettings.showCountdown) CountdownPill(data.countdown, data)
         }
-    }
-}
-
-@Composable
-private fun DualHeroCard(data: GlanceWidgetData, isRtl: Boolean, compact: Boolean = false) {
-    Row(
-        modifier = GlanceModifier
-            .fillMaxWidth()
-            .background(ColorProvider(data.heroBg))
-            .cornerRadius(13.dp)
-            .padding(horizontal = if (compact) 5.dp else 9.dp, vertical = if (compact) 3.dp else 5.dp)
-    ) {
-        val previousHalf = @Composable {
-            HeroHalf(data.previousName, data.previousTime, data.since, data, GlanceModifier.defaultWeight(), isRtl, compact)
-        }
-        val nextHalf = @Composable {
-            HeroHalf(data.nextName, data.nextTime, data.until, data, GlanceModifier.defaultWeight(), isRtl, compact)
-        }
-        if (isRtl) {
-            nextHalf(); Spacer(GlanceModifier.width(if (compact) 6.dp else 10.dp)); previousHalf()
-        } else {
-            previousHalf(); Spacer(GlanceModifier.width(if (compact) 6.dp else 10.dp)); nextHalf()
-        }
-    }
-}
-
-@Composable
-private fun HeroHalf(
-    name: String,
-    time: String,
-    detail: String,
-    data: GlanceWidgetData,
-    modifier: GlanceModifier,
-    isRtl: Boolean,
-    compact: Boolean
-) {
-    Column(modifier, horizontalAlignment = if (isRtl) Alignment.End else Alignment.Start) {
-        Text(name, style = TextStyle(color = ColorProvider(data.accent), fontSize = scaledSp(if (compact) 10f else 11f, data), fontWeight = FontWeight.Medium), maxLines = 1)
-        TimeText(
-            time,
-            if (compact) 16f else 18f,
-            data,
-            data.textPrimary,
-            FontWeight.Bold,
-            suffixScale = 0.65f
-        )
-        Spacer(GlanceModifier.height(if (compact) 1.dp else 2.dp))
-        CountdownPill(detail, data)
     }
 }
 

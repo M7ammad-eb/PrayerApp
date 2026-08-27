@@ -77,7 +77,7 @@ import com.prayertimes.data.models.PrayerType
 import com.prayertimes.data.preferences.AppPrayerSettings
 import com.prayertimes.ui.locale.LocalAppStrings
 import com.prayertimes.ui.theme.BentoBorder
-import com.prayertimes.ui.viewmodel.NextPrayerInfo
+import com.prayertimes.ui.viewmodel.CurrentPrayerInfo
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZonedDateTime
@@ -86,7 +86,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun PrayerHomeScreen(
     dailySchedule: DailyPrayerSchedule?,
-    nextPrayerInfo: NextPrayerInfo,
+    currentPrayerInfo: CurrentPrayerInfo,
     settings: AppPrayerSettings,
     selectedDate: LocalDate,
     onPreviousDay: () -> Unit,
@@ -239,12 +239,12 @@ fun PrayerHomeScreen(
         // 1. Next Prayer Hero Card - always relative to the actual current time, so it stays
         // visible regardless of which day is being browsed below via the date navigator.
         item {
-            if (nextPrayerInfo.prayerItem != null) {
+            if (currentPrayerInfo.prayerItem != null) {
                 Spacer(modifier = Modifier.height(2.dp))
-                BentoNextPrayerHeroCard(
-                    nextPrayerInfo = nextPrayerInfo,
+                BentoCurrentPrayerHeroCard(
+                    currentPrayerInfo = currentPrayerInfo,
                     timeFormatter = timeFormatter,
-                    onClick = { soundPickerPrayerType = nextPrayerInfo.prayerItem.type }
+                    onClick = { soundPickerPrayerType = currentPrayerInfo.prayerItem.type }
                 )
             }
         }
@@ -312,20 +312,21 @@ fun PrayerHomeScreen(
 }
 
 @Composable
-private fun BentoNextPrayerHeroCard(
-    nextPrayerInfo: NextPrayerInfo,
+private fun BentoCurrentPrayerHeroCard(
+    currentPrayerInfo: CurrentPrayerInfo,
     timeFormatter: DateTimeFormatter,
     onClick: () -> Unit
 ) {
-    val prayerItem = nextPrayerInfo.prayerItem ?: return
+    val prayerItem = currentPrayerInfo.prayerItem ?: return
     val prayerType = prayerItem.type
     val isDark = isSystemInDarkTheme()
 
     val cardBg = MaterialTheme.colorScheme.primaryContainer
     val contentColor = MaterialTheme.colorScheme.onPrimaryContainer
     val strings = LocalAppStrings.current
-    val countdownText = remember(nextPrayerInfo.remainingSeconds, strings) {
-        strings.formatCountdown(nextPrayerInfo.remainingSeconds)
+    val countdownText = remember(currentPrayerInfo.remainingSeconds, currentPrayerInfo.isPrayerTimeEnded, strings) {
+        if (currentPrayerInfo.isPrayerTimeEnded) strings.fajrTimeEnded
+        else strings.formatCountdown(currentPrayerInfo.remainingSeconds)
     }
 
     Card(
@@ -333,7 +334,7 @@ private fun BentoNextPrayerHeroCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(26.dp))
             .clickable { onClick() }
-            .testTag("next_prayer_hero_card"),
+            .testTag("current_prayer_hero_card"),
         shape = RoundedCornerShape(26.dp),
         colors = CardDefaults.cardColors(containerColor = cardBg)
     ) {
@@ -360,7 +361,7 @@ private fun BentoNextPrayerHeroCard(
             Column(modifier = Modifier.fillMaxWidth()) {
                 // Tracking label
                 Text(
-                    text = if (nextPrayerInfo.isNextDayFajr) strings.tomorrowPrayerLabel else strings.nextPrayerLabel,
+                    text = if (currentPrayerInfo.isPrayerTimeEnded) strings.prayerTimeEndedLabel else strings.currentPrayerLabel,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = contentColor.copy(alpha = 0.75f),

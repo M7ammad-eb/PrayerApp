@@ -29,16 +29,10 @@ private class SampleColors {
     val activePrayerBg = Color(0xFF34D399)
 }
 
-private fun sampleData(showAllPrayersList: Boolean = true, heroTimeMode: com.prayertimes.data.models.WidgetHeroTimeMode = com.prayertimes.data.models.WidgetHeroTimeMode.NEXT) = GlanceWidgetData(
+private fun sampleData(showAllPrayersList: Boolean = true) = GlanceWidgetData(
     prayerName = "العصر",
     prayerTime = "3:47 PM",
     countdown = "In 1h 12m",
-    previousName = "الظهر",
-    previousTime = "12:24 PM",
-    since = "42m ago",
-    nextName = "العصر",
-    nextTime = "3:47 PM",
-    until = "In 1h 12m",
     locationText = "Al Madinah",
     hijriText = "10 Rabi' I 1448",
     allSlots = listOf(
@@ -54,7 +48,7 @@ private fun sampleData(showAllPrayersList: Boolean = true, heroTimeMode: com.pra
         MiniSlot("العصر", "3:47 PM", true),
         MiniSlot("المغرب", "6:50 PM", false)
     ),
-    widgetSettings = WidgetCustomizationSettings(showAllPrayersList = showAllPrayersList, heroTimeMode = heroTimeMode),
+    widgetSettings = WidgetCustomizationSettings(showAllPrayersList = showAllPrayersList),
     fontScale = 1f,
     rootBg = sampleColors.rootBg,
     rootBorder = sampleColors.rootBorder,
@@ -107,10 +101,4 @@ private fun LargePreview() {
 @Preview(widthDp = 250, heightDp = 320)
 private fun ExpandedPreview() {
     WidgetContent(sampleData())
-}
-
-@Composable
-@Preview(widthDp = 250, heightDp = 320)
-private fun ExpandedDualHeroPreview() {
-    WidgetContent(sampleData(heroTimeMode = com.prayertimes.data.models.WidgetHeroTimeMode.BOTH))
 }

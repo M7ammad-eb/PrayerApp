@@ -83,10 +83,9 @@ class PrayerTimesCalculatorGoldenTest {
     }
 
     @Test
-    fun islamicMidnightUsesTomorrowsActualSunrise() {
-        // Pick a date where day length is changing quickly (near the equinox) so an approximation
-        // based on *today's* sunrise would measurably diverge from one based on tomorrow's actual
-        // sunrise.
+    fun islamicMidnightUsesTomorrowsActualFajr() {
+        // Pick a date where night length is changing quickly so using sunrise instead of true
+        // Fajr would produce an obviously different midpoint.
         val date = LocalDate.of(2026, 3, 5)
         val schedule = PrayerTimesCalculator.calculateDailySchedule(
             date = date, latitude = 51.5072, longitude = -0.1276, zoneId = london
@@ -96,19 +95,27 @@ class PrayerTimesCalculatorGoldenTest {
         )
 
         val maghribZoned = date.atTime(schedule.maghrib).atZone(london)
-        val tomorrowSunriseZoned = date.plusDays(1).atTime(tomorrowSchedule.sunrise).atZone(london)
-        val expectedMidnight = maghribZoned.plus(Duration.between(maghribZoned, tomorrowSunriseZoned).dividedBy(2))
-
-        // Compare as time-of-day only: islamicMidnight legitimately rolls past 00:00 into the
+        val tomorrowFajrZoned = date.plusDays(1).atTime(tomorrowSchedule.fajr).atZone(london)
+        val night = Duration.between(maghribZoned, tomorrowFajrZoned)
+        val expectedMidnight = maghribZoned.plus(night.dividedBy(2))
+        val expectedLastThird = maghribZoned.plus(night.multipliedBy(2).dividedBy(3))
+        // Compare as time-of-day only: Islamic midnight legitimately rolls past 00:00 into the
         // next calendar date, so re-anchoring it to `date` before diffing would itself introduce
         // a spurious ~24h offset.
         val diffMinutes = abs(
             Duration.between(schedule.islamicMidnight, expectedMidnight.toLocalTime()).toMinutes()
         )
         assertTrue(
-            "islamicMidnight should match halfway between maghrib and tomorrow's actual sunrise " +
+            "islamicMidnight should match halfway between maghrib and tomorrow's actual Fajr " +
                 "(off by ${diffMinutes}min)",
             diffMinutes <= 2
+        )
+        val lastThirdDiffMinutes = abs(
+            Duration.between(schedule.lastThirdOfNight, expectedLastThird.toLocalTime()).toMinutes()
+        )
+        assertTrue(
+            "lastThirdOfNight should use the same Maghrib-to-Fajr night (off by ${lastThirdDiffMinutes}min)",
+            lastThirdDiffMinutes <= 2
         )
     }
 

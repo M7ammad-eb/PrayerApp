@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">صلاتي</string>
-    <string name="widget_description">يعرض وقت الصلاة القادمة والعد التنازلي على شاشتك الرئيسية.</string>
+    <string name="widget_description">يعرض الصلاة الحالية والوقت المتبقي على شاشتك الرئيسية.</string>
 
     <!-- ===== App Branding ===== -->
     <string name="app_brand_name">صلاتي</string>
@@ -67,7 +67,7 @@
     <string name="widget_settings_behavior_section_title">السلوك</string>
     <string name="widget_settings_behavior_section_subtitle">كيفية عرض بطاقة العد التنازلي</string>
     <string name="widget_settings_content_section_subtitle">اختر ما يظهر في الودجت</string>
-    <string name="widget_settings_toggle_show_hero_desc">بطاقة كبيرة للصلاة القادمة (أو الماضية)</string>
+    <string name="widget_settings_toggle_show_hero_desc">بطاقة كبيرة للصلاة الحالية والوقت المتبقي</string>
     <string name="widget_settings_toggle_show_countdown_desc">الوقت المتبقي، يظهر في البطاقة الرئيسية</string>
     <string name="widget_settings_toggle_show_all_prayers_desc">صف يضم كل أوقات الصلاة الستة</string>
     <string name="widget_settings_toggle_show_sunrise_desc">تضمين الشروق في صف الصلوات</string>
@@ -75,8 +75,9 @@
     <string name="widget_settings_toggle_show_hijri_desc">التاريخ الهجري في أعلى الودجت</string>
 
     <!-- ===== Next Prayer / Hero ===== -->
-    <string name="hero_next_prayer_label">الصلاة القادمة</string>
-    <string name="hero_tomorrow_prayer_label">صلاة الغد</string>
+    <string name="hero_current_prayer_label">الصلاة الحالية</string>
+    <string name="hero_prayer_time_ended_label">انتهى وقت الصلاة</string>
+    <string name="hero_fajr_time_ended">انتهى وقت الفجر</string>
     <string name="hero_next_label_prefix">القادمة:</string>
     <string name="hero_athan_alert">تنبيه الأذان</string>
     <string name="hero_athan_at">الأذان في</string>
@@ -439,12 +440,16 @@
 
     <!-- ===== أداة الشاشة الرئيسية ===== -->
     <string name="widget_hero_prev_label">الصلاة السابقة</string>
-    <string name="widget_hero_next_label">الصلاة القادمة</string>
     <string name="widget_status_prayer_time">حان وقت الصلاة</string>
     <string name="widget_countdown_now">الآن</string>
     <string name="widget_countdown_hours_minutes">خلال %1$dس و %2$dد</string>
     <string name="widget_countdown_minutes_only">خلال %1$dد</string>
     <string name="widget_countdown_less_than_min">أقل من دقيقة</string>
+    <string name="widget_time_ending_now">ينتهي الوقت الآن</string>
+    <string name="widget_remaining_hours_minutes">متبقٍ %1$dس و %2$dد</string>
+    <string name="widget_remaining_minutes_only">متبقٍ %1$dد</string>
+    <string name="widget_remaining_less_than_min">متبقي أقل من دقيقة</string>
+    <string name="widget_fajr_time_ended">انتهى وقت الفجر</string>
     <string name="widget_since_just_now">منذ قليل</string>
     <string name="widget_since_hours_minutes">منذ %1$dس و %2$dد</string>
     <string name="widget_since_minutes_only">منذ %1$dد</string>
@@ -452,18 +457,17 @@
     <!-- ===== Widget Customization Screen ===== -->
     <string name="widget_settings_intro_banner">خصص شكل وحجم التطبيق المصغر على شاشتك الرئيسية ليتناسب تماماً مع أي عدد من الأعمدة والصفوف (من عمود واحد نحيف إلى الشاشة الكاملة).</string>
     <string name="widget_settings_hero_section_title">بطاقة الصلاة الرئيسية</string>
-    <string name="widget_settings_hero_section_subtitle">اختر الصلاة البارزة والعدّ التنازلي</string>
+    <string name="widget_settings_hero_section_subtitle">عرض الصلاة الحالية والوقت المتبقي</string>
     <string name="widget_settings_schedule_section_title">الجدول والترويسة</string>
     <string name="widget_settings_schedule_section_subtitle">اختر صفوف الصلوات والموقع والتاريخ الهجري</string>
     <string name="widget_settings_opacity_transparent">شفاف (0%)</string>
     <string name="widget_settings_opacity_solid">معتم كامل (100%)</string>
     <string name="widget_settings_text_color_title">لون النص</string>
-    <string name="widget_settings_hero_timing_title">توقيت البطاقة الرئيسية</string>
     <string name="widget_settings_toggle_show_location">إظهار الموقع واسم المدينة</string>
     <string name="widget_settings_toggle_show_hijri">إظهار التاريخ الهجري</string>
     <string name="widget_settings_toggle_show_countdown">إظهار العداد التنازلي المتبقي</string>
     <string name="widget_settings_toggle_show_sunrise">إظهار وقت الشروق في القائمة</string>
-    <string name="widget_settings_toggle_show_hero">إظهار بطاقة الصلاة القادمة (Hero Card)</string>
+    <string name="widget_settings_toggle_show_hero">إظهار بطاقة الصلاة الحالية</string>
     <string name="widget_settings_toggle_show_all_prayers">إظهار قائمة كافة الصلوات</string>
 
     <string name="widget_theme_app_theme">مماثل لمظهر التطبيق</string>
@@ -490,9 +494,6 @@
     <string name="widget_textstyle_light">نص فاتح دائماً</string>
     <string name="widget_textstyle_dark">نص داكن دائماً</string>
 
-    <string name="widget_herotime_next">الصلاة القادمة (خلال...)</string>
-    <string name="widget_herotime_previous">الصلاة الحالية (منذ...)</string>
-    <string name="widget_herotime_both">كلاهما (للودجت العريض)</string>
 
     <!-- Live preview mock text (fixed example values, not real countdowns) -->
     <string name="widget_preview_mock_hijri_date">• 14 صفر 1448 هـ</string>

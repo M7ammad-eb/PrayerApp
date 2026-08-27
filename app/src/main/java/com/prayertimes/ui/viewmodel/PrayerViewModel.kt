@@ -10,6 +10,8 @@ import com.prayertimes.R
 import com.prayertimes.audio.AthanAudioEngine
 import com.prayertimes.data.calculator.PrayerTimesCalculator
 import com.prayertimes.data.calculator.PrayerSchedulePrewarmer
+import com.prayertimes.data.calculator.CurrentPrayerPeriod
+import com.prayertimes.data.calculator.CurrentPrayerResolver
 import com.prayertimes.data.calendar.HijriCalendar
 import com.prayertimes.data.models.AppColorPreset
 import com.prayertimes.data.models.AppLanguage
@@ -50,18 +52,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.Locale
 
-data class NextPrayerInfo(
+data class CurrentPrayerInfo(
     val prayerItem: PrayerTimeItem? = null,
-    val remainingFormatted: String = "",
     val remainingSeconds: Long = 0,
     val progressPercent: Float = 0f,
-    val isNextDayFajr: Boolean = false
+    val isPrayerTimeEnded: Boolean = false
 )
 
 // Narrow projections of AppPrayerSettings, one per side effect - collecting these instead of the
@@ -110,11 +112,8 @@ private fun AppPrayerSettings.widgetInputs() = WidgetInputs(
 // Cached next-prayer boundary so the 1Hz countdown tick only subtracts a Duration instead of
 // re-running the full astronomical calculation every second - recomputed only when the boundary
 // is actually crossed or the inputs it depends on change.
-private data class NextPrayerBoundary(
-    val nextItem: PrayerTimeItem,
-    val previousZoned: ZonedDateTime?, // null for the "next prayer is tomorrow's Fajr" case
-    val totalSpanSeconds: Long,
-    val isNextDayFajr: Boolean,
+private data class CurrentPrayerBoundary(
+    val period: CurrentPrayerPeriod,
     val computedForSettings: AppPrayerSettings
 )
 
@@ -138,8 +137,8 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _dailySchedule = MutableStateFlow<DailyPrayerSchedule?>(null)
     val dailySchedule: StateFlow<DailyPrayerSchedule?> = _dailySchedule.asStateFlow()
 
-    private val _nextPrayerInfo = MutableStateFlow(NextPrayerInfo())
-    val nextPrayerInfo: StateFlow<NextPrayerInfo> = _nextPrayerInfo.asStateFlow()
+    private val _currentPrayerInfo = MutableStateFlow(CurrentPrayerInfo())
+    val currentPrayerInfo: StateFlow<CurrentPrayerInfo> = _currentPrayerInfo.asStateFlow()
 
     val compassState: StateFlow<CompassState> = compassManager.compassState
 
@@ -175,7 +174,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     // setForeground() from onPause/onResume.
     private val _isForeground = MutableStateFlow(true)
 
-    private var cachedBoundary: NextPrayerBoundary? = null
+    private var cachedBoundary: CurrentPrayerBoundary? = null
 
     fun setForeground(foreground: Boolean) {
         _isForeground.value = foreground
@@ -187,7 +186,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         val initialSettings = settings.value
         compassManager.setLocation(initialSettings.location.latitude, initialSettings.location.longitude)
         recalculateSchedules(initialSettings, _selectedDate.value)
-        updateNextPrayerCountdown(initialSettings, ZonedDateTime.now(initialSettings.zoneId()))
+        updateCurrentPrayerCountdown(initialSettings, ZonedDateTime.now(initialSettings.zoneId()))
 
         // Split by concern (see the *Inputs projections above): a settings emission only triggers
         // the side effects whose actual inputs changed, instead of every emission rebuilding the
@@ -217,13 +216,13 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
 
-        // Live timer for countdown to next prayer, paused while backgrounded.
+        // Live timer for the active prayer's remaining time, paused while backgrounded.
         viewModelScope.launch {
             while (isActive) {
                 if (_isForeground.value) {
                     val currentSettings = settings.value
                     val now = ZonedDateTime.now(currentSettings.zoneId())
-                    updateNextPrayerCountdown(currentSettings, now)
+                    updateCurrentPrayerCountdown(currentSettings, now)
                     delay(1000)
                 } else {
                     _isForeground.first { it }
@@ -258,70 +257,44 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     }
 
-    private fun computeNextPrayerBoundary(currentSettings: AppPrayerSettings, now: ZonedDateTime): NextPrayerBoundary {
+    private fun computeCurrentPrayerBoundary(currentSettings: AppPrayerSettings, now: ZonedDateTime): CurrentPrayerBoundary {
         val zoneId = currentSettings.zoneId()
         val today = now.toLocalDate()
+        val yesterdaySchedule = scheduleFor(currentSettings, today.minusDays(1), zoneId, now)
         val todaySchedule = scheduleFor(currentSettings, today, zoneId, now)
-
-        // Find the first prayer today after now (excluding Sunrise as a prayer)
-        val nextItem = todaySchedule.prayerItems.firstOrNull { it.type != PrayerType.SUNRISE && it.zonedDateTime.isAfter(now) }
-
-        return if (nextItem != null) {
-            val previousItem = todaySchedule.prayerItems.filter { it.type != PrayerType.SUNRISE && it.zonedDateTime.isBefore(nextItem.zonedDateTime) }.lastOrNull()
-            val previousZoned = previousItem?.zonedDateTime
-                ?: today.minusDays(1).atTime(todaySchedule.isha).atZone(zoneId)
-            val totalSpanSeconds = Duration.between(previousZoned, nextItem.zonedDateTime).seconds.coerceAtLeast(1)
-            NextPrayerBoundary(
-                nextItem = nextItem,
-                previousZoned = previousZoned,
-                totalSpanSeconds = totalSpanSeconds,
-                isNextDayFajr = false,
-                computedForSettings = currentSettings
-            )
-        } else {
-            // Next prayer is tomorrow's Fajr
-            val tomorrow = today.plusDays(1)
-            val tomorrowSchedule = scheduleFor(currentSettings, tomorrow, zoneId, now)
-            val tomorrowFajr = tomorrowSchedule.prayerItems.first { it.type == PrayerType.FAJR }
-            NextPrayerBoundary(
-                nextItem = tomorrowFajr,
-                previousZoned = null,
-                totalSpanSeconds = 0L,
-                isNextDayFajr = true,
-                computedForSettings = currentSettings
-            )
-        }
+        val tomorrowSchedule = scheduleFor(currentSettings, today.plusDays(1), zoneId, now)
+        return CurrentPrayerBoundary(
+            period = CurrentPrayerResolver.resolve(now, yesterdaySchedule, todaySchedule, tomorrowSchedule),
+            computedForSettings = currentSettings
+        )
     }
 
-    private fun updateNextPrayerCountdown(currentSettings: AppPrayerSettings, now: ZonedDateTime) {
+    private fun updateCurrentPrayerCountdown(currentSettings: AppPrayerSettings, now: ZonedDateTime) {
         // Only re-run the astronomical calculation when the boundary was actually crossed or the
         // inputs it depends on changed - every other tick just subtracts a Duration.
         val existing = cachedBoundary
-        val boundary = if (existing != null && existing.computedForSettings == currentSettings && now.isBefore(existing.nextItem.zonedDateTime)) {
+        val boundary = if (existing != null && existing.computedForSettings == currentSettings && now.isBefore(existing.period.changesAt)) {
             existing
         } else {
-            computeNextPrayerBoundary(currentSettings, now).also { cachedBoundary = it }
+            computeCurrentPrayerBoundary(currentSettings, now).also { cachedBoundary = it }
         }
 
-        val diffSeconds = Duration.between(now, boundary.nextItem.zonedDateTime).seconds.coerceAtLeast(0)
-        val hours = diffSeconds / 3600
-        val minutes = (diffSeconds % 3600) / 60
-        val seconds = diffSeconds % 60
-        val formatted = String.format("%02d:%02d:%02d", hours, minutes, seconds)
-
-        val progress = if (boundary.isNextDayFajr || boundary.previousZoned == null) {
-            0.5f
+        val period = boundary.period
+        val diffSeconds = if (period.isPrayerTimeEnded) {
+            0L
         } else {
-            val elapsed = boundary.totalSpanSeconds - diffSeconds
-            (elapsed.toFloat() / boundary.totalSpanSeconds).coerceIn(0f, 1f)
+            Duration.between(now, period.endsAt).seconds.coerceAtLeast(0)
         }
+        val totalSpanSeconds = Duration.between(period.prayerItem.zonedDateTime, period.endsAt).seconds.coerceAtLeast(1)
+        val elapsed = totalSpanSeconds - diffSeconds
+        val progress = if (period.isPrayerTimeEnded) 1f
+        else (elapsed.toFloat() / totalSpanSeconds).coerceIn(0f, 1f)
 
-        _nextPrayerInfo.value = NextPrayerInfo(
-            prayerItem = boundary.nextItem,
-            remainingFormatted = formatted,
+        _currentPrayerInfo.value = CurrentPrayerInfo(
+            prayerItem = period.prayerItem,
             remainingSeconds = diffSeconds,
             progressPercent = progress,
-            isNextDayFajr = boundary.isNextDayFajr
+            isPrayerTimeEnded = period.isPrayerTimeEnded
         )
     }
 
@@ -338,34 +311,47 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private val meaningfulLocationChangeMeters = 5_000f
 
     @SuppressLint("MissingPermission")
-    fun requestGpsLocation(context: Context) {
+    fun requestGpsLocation(context: Context, forceRefresh: Boolean = true) {
         _isGpsLoading.value = true
         _locationErrorMessage.value = null
-        val localizedRes = com.prayertimes.util.LocalizedStrings.forLanguage(context, settings.value.language.resolveIsArabic())
+        val language = settings.value.language
+        val localizedRes = com.prayertimes.util.LocalizedStrings.forLanguage(context, language.resolveIsArabic())
+
+        // A button press is an explicit request for a new fix. Do not silently reuse the
+        // two-hour startup cache or discard a result merely because it is within 5 km.
+        if (forceRefresh) {
+            requestFreshGpsFix(context, localizedRes, language, forcePersist = true)
+            return
+        }
 
         fusedLocationClient.lastLocation
             .addOnSuccessListener { cached: Location? ->
                 val ageMillis = cached?.let { System.currentTimeMillis() - it.time } ?: Long.MAX_VALUE
                 if (cached != null && ageMillis in 0..cachedLocationMaxAgeMillis && cached.accuracy <= cachedLocationMaxAccuracyMeters) {
                     viewModelScope.launch(Dispatchers.IO) {
-                        resolveAndPersistGpsLocation(context, cached, localizedRes)
+                        resolveAndPersistGpsLocation(context, cached, localizedRes, language)
                     }
                 } else {
-                    requestFreshGpsFix(context, localizedRes)
+                    requestFreshGpsFix(context, localizedRes, language)
                 }
             }
             .addOnFailureListener {
-                requestFreshGpsFix(context, localizedRes)
+                requestFreshGpsFix(context, localizedRes, language)
             }
     }
 
     @SuppressLint("MissingPermission")
-    private fun requestFreshGpsFix(context: Context, localizedRes: android.content.res.Resources) {
+    private fun requestFreshGpsFix(
+        context: Context,
+        localizedRes: android.content.res.Resources,
+        language: AppLanguage,
+        forcePersist: Boolean = false
+    ) {
         fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
             .addOnSuccessListener { location: Location? ->
                 if (location != null) {
                     viewModelScope.launch(Dispatchers.IO) {
-                        resolveAndPersistGpsLocation(context, location, localizedRes)
+                        resolveAndPersistGpsLocation(context, location, localizedRes, language, forcePersist)
                     }
                 } else {
                     _isGpsLoading.value = false
@@ -378,50 +364,22 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             }
     }
 
-    private suspend fun resolveAndPersistGpsLocation(context: Context, location: Location, localizedRes: android.content.res.Resources) {
+    private suspend fun resolveAndPersistGpsLocation(
+        context: Context,
+        location: Location,
+        localizedRes: android.content.res.Resources,
+        language: AppLanguage,
+        forcePersist: Boolean = false
+    ) {
         try {
-            // Resolve from the app's own language setting rather than
-            // Locale.getDefault() - on API < 33 that reflects the device's
-            // system-wide language, not the in-app override.
-            val isArabic = when (settings.value.language) {
-                AppLanguage.ARABIC -> true
-                AppLanguage.ENGLISH -> false
-                AppLanguage.SYSTEM -> Locale.getDefault().language == "ar"
-            }
-            val displayLocale = if (isArabic) Locale("ar") else Locale.ENGLISH
-
-            val nearest = PlaceRepository.nearestPlace(context, location.latitude, location.longitude)
-            val newLoc = if (nearest != null) {
-                val placeName = if (isArabic) nearest.place.nameAr ?: nearest.place.nameEn else nearest.place.nameEn
-                val countryName = Locale("", nearest.place.countryCode).getDisplayCountry(displayLocale)
-                // Transparently flags how approximate the match is, per the offline
-                // dataset's distance to the actual GPS fix, rather than silently
-                // presenting a possibly-distant "nearest" place as if it were exact.
-                val displayName = when (nearest.relation) {
-                    PlaceRelation.SAME_CITY -> placeName
-                    PlaceRelation.NEAR_CITY -> localizedRes.getString(R.string.gps_relation_near_city, placeName)
-                    PlaceRelation.NEAREST_CITY -> localizedRes.getString(R.string.gps_relation_nearest_city, placeName)
-                }
-                UserLocation(
-                    name = displayName,
-                    country = countryName,
-                    latitude = location.latitude,
-                    longitude = location.longitude,
-                    timeZoneId = nearest.place.timeZoneId,
-                    isGps = true,
-                    nearestPlaceDistanceKm = nearest.distanceKm
-                )
-            } else {
-                UserLocation(
-                    name = localizedRes.getString(R.string.gps_coordinates_fallback),
-                    country = String.format(Locale.US, "%.4f°, %.4f°", location.latitude, location.longitude),
-                    latitude = location.latitude,
-                    longitude = location.longitude,
-                    timeZoneId = ZoneId.systemDefault().id,
-                    isGps = true
-                )
-            }
-            if (isMeaningfulLocationChange(settings.value.location, newLoc)) {
+            val newLoc = resolveGpsLocation(
+                context = context,
+                latitude = location.latitude,
+                longitude = location.longitude,
+                language = language,
+                localizedRes = localizedRes
+            )
+            if (forcePersist || isMeaningfulLocationChange(settings.value.location, newLoc)) {
                 prefs.updateLocation(newLoc)
             }
         } catch (e: Exception) {
@@ -433,13 +391,58 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 timeZoneId = ZoneId.systemDefault().id,
                 isGps = true
             )
-            if (isMeaningfulLocationChange(settings.value.location, newLoc)) {
+            if (forcePersist || isMeaningfulLocationChange(settings.value.location, newLoc)) {
                 prefs.updateLocation(newLoc)
             }
         } finally {
             _isGpsLoading.value = false
         }
     }
+
+    private suspend fun resolveGpsLocation(
+        context: Context,
+        latitude: Double,
+        longitude: Double,
+        language: AppLanguage,
+        localizedRes: android.content.res.Resources
+    ): UserLocation {
+        val isArabic = language.resolveIsArabic()
+        val displayLocale = if (isArabic) Locale("ar") else Locale.ENGLISH
+        val nearest = PlaceRepository.nearestPlace(context, latitude, longitude)
+        return if (nearest != null) {
+            val placeName = if (isArabic) nearest.place.nameAr ?: nearest.place.nameEn else nearest.place.nameEn
+            val countryName = Locale("", nearest.place.countryCode).getDisplayCountry(displayLocale)
+            val displayName = when (nearest.relation) {
+                PlaceRelation.SAME_CITY -> placeName
+                PlaceRelation.NEAR_CITY -> localizedRes.getString(R.string.gps_relation_near_city, placeName)
+                PlaceRelation.NEAREST_CITY -> localizedRes.getString(R.string.gps_relation_nearest_city, placeName)
+            }
+            UserLocation(
+                name = displayName,
+                country = countryName,
+                latitude = latitude,
+                longitude = longitude,
+                timeZoneId = nearest.place.timeZoneId,
+                isGps = true,
+                nearestPlaceDistanceKm = nearest.distanceKm
+            )
+        } else {
+            gpsFallbackLocation(latitude, longitude, localizedRes)
+        }
+    }
+
+    private fun gpsFallbackLocation(
+        latitude: Double,
+        longitude: Double,
+        localizedRes: android.content.res.Resources
+    ) = UserLocation(
+        name = localizedRes.getString(R.string.gps_coordinates_fallback),
+        country = String.format(Locale.US, "%.4f°, %.4f°", latitude, longitude),
+        latitude = latitude,
+        longitude = longitude,
+        timeZoneId = ZoneId.systemDefault().id,
+        isGps = true
+    )
 
     fun clearLocationError() {
         _locationErrorMessage.value = null
@@ -499,6 +502,31 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun updateLanguage(language: com.prayertimes.data.models.AppLanguage) {
         viewModelScope.launch {
+            val currentLocation = settings.value.location
+            if (currentLocation.isGps) {
+                val localizedRes = com.prayertimes.util.LocalizedStrings.forLanguage(
+                    getApplication(),
+                    language.resolveIsArabic()
+                )
+                val relocalized = withContext(Dispatchers.IO) {
+                    runCatching {
+                        resolveGpsLocation(
+                            context = getApplication(),
+                            latitude = currentLocation.latitude,
+                            longitude = currentLocation.longitude,
+                            language = language,
+                            localizedRes = localizedRes
+                        )
+                    }.getOrElse {
+                        gpsFallbackLocation(
+                            currentLocation.latitude,
+                            currentLocation.longitude,
+                            localizedRes
+                        )
+                    }
+                }
+                prefs.updateLocation(relocalized)
+            }
             prefs.updateLanguage(language)
         }
     }

@@ -73,8 +73,9 @@ class AppStrings(
     val currentLocationFallback: String = s(R.string.common_current_location)
 
     // Next Prayer / Hero
-    val nextPrayerLabel: String = s(R.string.hero_next_prayer_label)
-    val tomorrowPrayerLabel: String = s(R.string.hero_tomorrow_prayer_label)
+    val currentPrayerLabel: String = s(R.string.hero_current_prayer_label)
+    val prayerTimeEndedLabel: String = s(R.string.hero_prayer_time_ended_label)
+    val fajrTimeEnded: String = s(R.string.hero_fajr_time_ended)
     val nextLabelPrefix: String = s(R.string.hero_next_label_prefix)
     val athanAlert: String = s(R.string.hero_athan_alert)
     val athanAt: String = s(R.string.hero_athan_at)

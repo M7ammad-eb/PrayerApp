@@ -359,13 +359,37 @@ object PrayerTimesCalculator {
         val maghribTime = maghribZoned.toLocalTime()
         val ishaTime = ishaZoned.toLocalTime()
 
-        // Islamic Midnight (halfway between sunset and the *next* day's actual sunrise) and Last
-        // Third of Night (Qiyam / Tahajjud), computed from real instants - using tomorrow's actual
-        // sunrise rather than projecting today's forward, and correctly spanning any DST change
-        // that falls overnight.
+        // Islamic Midnight and the last third divide the Shari'ah night: Maghrib to the next true
+        // Fajr, not Maghrib to sunrise. Calculate tomorrow's Fajr with tomorrow's own declination
+        // and high-latitude adjustment so seasonal and DST transitions remain correct.
         val sunTomorrow = computeSunTimes(date.plusDays(1), latitude, longitude)
-        val tomorrowSunriseZoned = zonedTimeFromUtcDecimalHours(date.plusDays(1), sunTomorrow.sunriseHour, zoneId)
-        val night = Duration.between(maghribZoned, tomorrowSunriseZoned)
+        var tomorrowFajrHour = computeTime(
+            method.fajrAngle,
+            latitude,
+            sunTomorrow.declination,
+            sunTomorrow.midDayHour,
+            isMorning = true
+        )
+        val tomorrowNightDuration = fixHour(24.0 + sunTomorrow.sunriseHour - sunTomorrow.sunsetHour)
+        if (highLatitudeRule != HighLatitudeRule.NONE && tomorrowNightDuration in 0.0..24.0) {
+            val maximumFajrDistance = when (highLatitudeRule) {
+                HighLatitudeRule.ANGLE_BASED -> (method.fajrAngle / 60.0) * tomorrowNightDuration
+                HighLatitudeRule.MIDNIGHT -> tomorrowNightDuration / 2.0
+                HighLatitudeRule.ONE_SEVENTH -> tomorrowNightDuration / 7.0
+                HighLatitudeRule.NONE -> Double.POSITIVE_INFINITY
+            }
+            if (sunTomorrow.sunriseHour - tomorrowFajrHour > maximumFajrDistance ||
+                tomorrowFajrHour > sunTomorrow.sunriseHour
+            ) {
+                tomorrowFajrHour = sunTomorrow.sunriseHour - maximumFajrDistance
+            }
+        }
+        val tomorrowFajrZoned = zonedTimeFromUtcDecimalHours(
+            date.plusDays(1),
+            tomorrowFajrHour,
+            zoneId
+        ).plusMinutes(adjustments.fajr.toLong())
+        val night = Duration.between(maghribZoned, tomorrowFajrZoned)
         val midnightZoned = maghribZoned.plus(night.dividedBy(2))
         val lastThirdZoned = maghribZoned.plus(night.multipliedBy(2).dividedBy(3))
 
