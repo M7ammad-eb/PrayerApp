@@ -641,6 +641,14 @@ class PrayerPreferences(private val context: Context) {
         val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
         fastPrefs.edit().putString(KEY_LANG, language.name).apply()
 
+        // Persist before touching LocaleManager. Assigning applicationLocales can recreate the
+        // Activity immediately; when it happened first, that recreation cancelled this coroutine
+        // before DataStore was updated. A fresh Arabic setup then reopened with SYSTEM/English
+        // data while Android had already switched the window to RTL.
+        context.dataStore.edit { prefs ->
+            prefs[Keys.APP_LANGUAGE] = language.name
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             try {
                 val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
@@ -652,10 +660,6 @@ class PrayerPreferences(private val context: Context) {
             } catch (e: Exception) {
                 // ignore
             }
-        }
-
-        context.dataStore.edit { prefs ->
-            prefs[Keys.APP_LANGUAGE] = language.name
         }
     }
 

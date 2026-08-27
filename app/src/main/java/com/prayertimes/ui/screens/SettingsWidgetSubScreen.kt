@@ -78,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.sp
 import com.prayertimes.data.models.WidgetCustomizationSettings
+import com.prayertimes.data.models.WidgetFontSize
 import com.prayertimes.data.models.WidgetHeroTimeMode
 import com.prayertimes.data.models.WidgetTextStyle
 import com.prayertimes.data.models.WidgetThemeMode
@@ -284,6 +285,16 @@ fun SettingsWidgetSubScreen(
                         )
                     }
                 }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+
+                WidgetSettingsSubLabel(strings.widgetFontSizeTitle)
+                WidgetFontSizeSelector(
+                    currentSize = wSet.fontSize,
+                    onSelectSize = {
+                        onUpdateWidgetSettings(wSet.copy(fontSize = it))
+                    }
+                )
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
@@ -747,6 +758,19 @@ private fun WidgetPreviewPanel(
 
         if (expanded) WidgetCanvasPreview(settings, preset)
     }
+}
+
+@Composable
+private fun WidgetFontSizeSelector(
+    currentSize: WidgetFontSize,
+    onSelectSize: (WidgetFontSize) -> Unit
+) {
+    WidgetOptionChipRow(
+        options = WidgetFontSize.values(),
+        selected = currentSize,
+        label = { it.titleRes },
+        onSelect = onSelectSize
+    )
 }
 
 @Composable

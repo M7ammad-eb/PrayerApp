@@ -3,6 +3,7 @@ package com.prayertimes.widget.glance
 import android.graphics.Color
 import androidx.test.core.app.ApplicationProvider
 import com.prayertimes.data.models.WidgetCustomizationSettings
+import com.prayertimes.data.models.WidgetFontSize
 import com.prayertimes.data.models.WidgetThemeMode
 import com.prayertimes.data.preferences.AppPrayerSettings
 import com.prayertimes.data.cities.CityDatabase
@@ -72,6 +73,17 @@ class WidgetColorResolverTest {
         )
 
         assertEquals(0, Color.alpha(bitmap.getPixel(50, 40)))
+    }
+
+    @Test
+    fun fontPreferenceIsReturnedAsRelativeScale() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val settings = AppPrayerSettings(
+            location = CityDatabase.defaultLocation(context.resources),
+            widgetSettings = WidgetCustomizationSettings(fontSize = WidgetFontSize.EXTRA_LARGE)
+        )
+
+        assertEquals(WidgetFontSize.EXTRA_LARGE.scaleFactor, WidgetColorResolver.resolve(context, settings).fontScale)
     }
 
 }

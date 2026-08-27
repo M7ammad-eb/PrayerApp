@@ -93,6 +93,7 @@ private data class AdaptiveLayout(
     val paddingDp: Float,
     val gapDp: Float,
     val fontScale: Float,
+    val systemFontScale: Float,
     val widthDp: Float,
     val heightDp: Float,
     val denseRows: Boolean,
@@ -104,7 +105,7 @@ private data class AdaptiveLayout(
     val showBarPrayerRibbon: Boolean
 )
 
-private fun layoutForSize(widthDp: Float, heightDp: Float): AdaptiveLayout {
+private fun layoutForSize(widthDp: Float, heightDp: Float, systemFontScale: Float): AdaptiveLayout {
     val width = widthDp.coerceAtLeast(1f)
     val height = heightDp.coerceAtLeast(1f)
     val shortestSide = minOf(width, height)
@@ -125,14 +126,14 @@ private fun layoutForSize(widthDp: Float, heightDp: Float): AdaptiveLayout {
     }
 
     val fontScale = when (family) {
-        LayoutFamily.MINIMAL -> (0.82f + (shortestSide - 40f) / 160f).coerceIn(0.82f, 0.95f)
-        LayoutFamily.HORIZONTAL -> (0.88f + (height - 48f) / 400f).coerceIn(0.88f, 1.05f)
+        LayoutFamily.MINIMAL -> (0.95f + (shortestSide - 40f) / 160f).coerceIn(0.95f, 1.08f)
+        LayoutFamily.HORIZONTAL -> (1.0f + (height - 48f) / 320f).coerceIn(1.0f, 1.15f)
         LayoutFamily.COMPACT, LayoutFamily.TWO_COLUMN ->
-            (0.94f + (shortestSide - 100f) / 420f).coerceIn(0.94f, 1.18f)
+            (1.0f + (shortestSide - 100f) / 360f).coerceIn(1.0f, 1.22f)
         LayoutFamily.LARGE_RIBBON ->
-            (1.05f + (shortestSide - 140f) / 320f).coerceIn(1.05f, 1.30f)
+            (1.08f + (shortestSide - 140f) / 300f).coerceIn(1.08f, 1.32f)
         LayoutFamily.VERTICAL_SCHEDULE, LayoutFamily.SCHEDULE ->
-            (1.05f + (shortestSide - 160f) / 400f).coerceIn(1.05f, 1.35f)
+            (1.10f + (shortestSide - 160f) / 360f).coerceIn(1.10f, 1.38f)
     }
 
     return AdaptiveLayout(
@@ -140,6 +141,7 @@ private fun layoutForSize(widthDp: Float, heightDp: Float): AdaptiveLayout {
         paddingDp = padding,
         gapDp = gap,
         fontScale = fontScale,
+        systemFontScale = systemFontScale.coerceIn(0.85f, 2f),
         widthDp = width,
         heightDp = height,
         denseRows = height < 360f,
@@ -372,11 +374,83 @@ internal data class GlanceWidgetData(
 
 private fun scaledSp(baseSp: Float, data: GlanceWidgetData): TextUnit = (baseSp * data.fontScale).sp
 
+private data class TimeParts(val clock: String, val suffix: String?)
+
+private fun splitTime(text: String): TimeParts {
+    val separator = text.lastIndexOf(' ')
+    if (separator <= 0 || separator == text.lastIndex) return TimeParts(text, null)
+    val suffix = text.substring(separator + 1)
+    return if (suffix in setOf("ص", "م", "AM", "PM", "am", "pm")) {
+        TimeParts(text.substring(0, separator), suffix)
+    } else {
+        TimeParts(text, null)
+    }
+}
+
+/**
+ * Keeps the clock and its period in a stable physical order. Leaving them in one bidi Text lets
+ * Arabic context move ص/م to different sides, and gives the one-letter suffix the Hero's huge
+ * number font metrics. A smaller separate suffix fixes both issues.
+ */
+@Composable
+private fun TimeText(
+    text: String,
+    baseSp: Float,
+    data: GlanceWidgetData,
+    color: Color,
+    fontWeight: FontWeight = FontWeight.Medium,
+    modifier: GlanceModifier = GlanceModifier,
+    suffixScale: Float = 0.72f
+) {
+    val parts = splitTime(text)
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        val clockText = @Composable {
+            Text(
+                parts.clock,
+                style = TextStyle(
+                    color = ColorProvider(color),
+                    fontSize = scaledSp(baseSp, data),
+                    fontWeight = fontWeight
+                ),
+                maxLines = 1
+            )
+        }
+        val suffixText = @Composable { suffix: String ->
+            Text(
+                suffix,
+                style = TextStyle(
+                    color = ColorProvider(color),
+                    fontSize = scaledSp(baseSp * suffixScale, data),
+                    fontWeight = fontWeight
+                ),
+                maxLines = 1
+            )
+        }
+        val suffix = parts.suffix
+        if (suffix == "ص" || suffix == "م") {
+            // Glance Rows keep physical LTR child order. The Arabic suffix belongs visually on
+            // the left of the clock (after it in RTL reading order).
+            suffixText(suffix)
+            Spacer(GlanceModifier.width(3.dp))
+            clockText()
+        } else {
+            clockText()
+            suffix?.let {
+                Spacer(GlanceModifier.width(3.dp))
+                suffixText(it)
+            }
+        }
+    }
+}
+
 @Composable
 internal fun WidgetContent(data: GlanceWidgetData) {
     val size = LocalSize.current
-    val layout = layoutForSize(size.width.value, size.height.value)
-    val fittedData = data.copy(fontScale = layout.fontScale)
+    val systemFontScale = LocalContext.current.resources.configuration.fontScale
+    val layout = layoutForSize(size.width.value, size.height.value, systemFontScale)
+    // The saved option is deliberately relative: adaptive sizing remains the baseline and the
+    // user's preference nudges every layout up or down from that device-appropriate result.
+    val fittedData = data.copy(fontScale = layout.fontScale * data.fontScale)
     // Glance doesn't mirror Row child order for RTL locales the way native RemoteViews/View
     // layoutDirection does. Use the app/widget language carried with the data rather than the
     // RemoteViews host context: the launcher or preview host may remain LTR while the app is Arabic.
@@ -492,11 +566,7 @@ internal fun createWidgetSurfaceBitmap(
 @Composable
 private fun MicroContent(data: GlanceWidgetData) {
     Box(GlanceModifier.fillMaxSize().padding(5.dp), contentAlignment = Alignment.Center) {
-        Text(
-            data.prayerTime,
-            style = TextStyle(color = ColorProvider(data.textPrimary), fontSize = scaledSp(13f, data), fontWeight = FontWeight.Bold),
-            maxLines = 1
-        )
+        TimeText(data.prayerTime, 14f, data, data.textPrimary, FontWeight.Bold)
     }
 }
 
@@ -506,18 +576,25 @@ private fun SlimContent(data: GlanceWidgetData, isRtl: Boolean, layout: Adaptive
         modifier = GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val heroText = @Composable {
+        val prayerLabel = @Composable {
             Text(
-                "${data.prayerName}  ${data.prayerTime}",
-                modifier = GlanceModifier.defaultWeight(),
-                style = TextStyle(
-                    color = ColorProvider(data.textPrimary),
-                    fontSize = scaledSp(13f, data),
-                    fontWeight = FontWeight.Bold,
-                    textAlign = if (isRtl) TextAlign.End else TextAlign.Start
-                ),
+                data.prayerName,
+                style = TextStyle(color = ColorProvider(data.textPrimary), fontSize = scaledSp(14f, data), fontWeight = FontWeight.Bold),
                 maxLines = 1
             )
+        }
+        val heroText = @Composable {
+            Row(GlanceModifier.defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
+                if (isRtl) {
+                    TimeText(data.prayerTime, 14f, data, data.textPrimary, FontWeight.Bold)
+                    Spacer(GlanceModifier.width(5.dp))
+                    prayerLabel()
+                } else {
+                    prayerLabel()
+                    Spacer(GlanceModifier.width(5.dp))
+                    TimeText(data.prayerTime, 14f, data, data.textPrimary, FontWeight.Bold)
+                }
+            }
         }
         if (isRtl) {
             if (data.widgetSettings.showCountdown && layout.showBarCountdown) CountdownPill(data.countdown, data)
@@ -542,7 +619,7 @@ private fun SlimContent(data: GlanceWidgetData, isRtl: Boolean, layout: Adaptive
                 modifier = GlanceModifier.defaultWeight(),
                 style = TextStyle(
                     color = ColorProvider(data.textSecondary),
-                    fontSize = scaledSp(9f, data),
+                    fontSize = scaledSp(10f, data),
                     textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                 ),
                 maxLines = 1
@@ -551,7 +628,13 @@ private fun SlimContent(data: GlanceWidgetData, isRtl: Boolean, layout: Adaptive
         if (layout.showBarPrayerRibbon && data.widgetSettings.showAllPrayersList) {
             Spacer(GlanceModifier.width(layout.gapDp.dp))
             Box(GlanceModifier.defaultWeight()) {
-                PrayerRibbon(data.mediumSlots, data, isRtl, chipGapDp = 1f)
+                val ribbonSlots = fittedRibbonSlots(
+                    slots = data.mediumSlots,
+                    availableWidthDp = layout.widthDp * 0.30f,
+                    data = data,
+                    layout = layout
+                )
+                PrayerRibbon(ribbonSlots, data, isRtl, chipGapDp = 1f)
             }
         }
         RefreshButton(data)
@@ -582,7 +665,10 @@ private fun fittedScheduleSlots(data: GlanceWidgetData, layout: AdaptiveLayout):
     val availableForRows = layout.heightDp -
         (layout.paddingDp * 2f) - headerHeight - heroHeight - (layout.gapDp * sectionGapCount)
     val rowHeight = availableForRows / slots.size
-    val minimumReadableRowHeight = (18f + 6f * layout.fontScale).coerceIn(24f, 27f)
+    // Glance Text uses sp, so the host font scale affects its real height even though LocalSize is
+    // reported in dp. Reduce row count when necessary instead of letting RemoteViews clip text.
+    val renderedScale = data.fontScale * layout.systemFontScale
+    val minimumReadableRowHeight = (11f * renderedScale * 1.35f + 8f).coerceAtLeast(25f)
     if (rowHeight >= minimumReadableRowHeight) return slots
 
     val firstUpcoming = slots.indexOfFirst { it.isActive }.takeIf { it >= 0 } ?: 0
@@ -658,7 +744,11 @@ private fun MediumContent(data: GlanceWidgetData, isRtl: Boolean, layout: Adapti
             }
             if (data.widgetSettings.showAllPrayersList) {
                 Spacer(GlanceModifier.height(layout.gapDp.dp))
-                PrayerRibbon(data.mediumSlots, data, isRtl)
+                PrayerRibbon(
+                    fittedRibbonSlots(data.mediumSlots, layout.widthDp * 0.48f, data, layout),
+                    data,
+                    isRtl
+                )
             }
         }
     }
@@ -682,7 +772,18 @@ private fun LargeRibbonContent(data: GlanceWidgetData, isRtl: Boolean, layout: A
         if (data.widgetSettings.showAllPrayersList) {
             Spacer(GlanceModifier.height(layout.gapDp.dp))
             Box(GlanceModifier.defaultWeight()) {
-                PrayerRibbon(data.allSlots, data, isRtl, fillAvailable = true)
+                val ribbonSlots = fittedRibbonSlots(
+                    data.allSlots,
+                    layout.widthDp - layout.paddingDp * 2f,
+                    data,
+                    layout
+                )
+                PrayerRibbon(
+                    ribbonSlots,
+                    data,
+                    isRtl,
+                    fillAvailable = true
+                )
             }
         }
     }
@@ -765,7 +866,7 @@ private fun LocationHeader(
             modifier = modifier,
             style = TextStyle(
                 color = ColorProvider(data.textSecondary),
-                fontSize = scaledSp(10f, data),
+                fontSize = scaledSp(11f, data),
                 textAlign = if (isRtl) TextAlign.End else TextAlign.Start
             ),
             maxLines = 1
@@ -780,7 +881,7 @@ private fun LocationHeader(
                     modifier = GlanceModifier.fillMaxWidth(),
                     style = TextStyle(
                         color = ColorProvider(data.textSecondary),
-                        fontSize = scaledSp(10f, data),
+                        fontSize = scaledSp(11f, data),
                         textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                     ),
                     maxLines = 1
@@ -790,43 +891,49 @@ private fun LocationHeader(
                     modifier = GlanceModifier.fillMaxWidth(),
                     style = TextStyle(
                         color = ColorProvider(data.textSecondary),
-                        fontSize = scaledSp(9f, data),
+                        fontSize = scaledSp(10f, data),
                         textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                     ),
                     maxLines = 1
                 )
             }
         }
-        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            GlanceModifier.fillMaxWidth().height(20.dp).clickable(actionRunCallback<RefreshGlanceWidgetAction>()),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             if (isRtl) {
-                RefreshButton(data)
+                RefreshButton(data, touchSizeDp = 20f)
                 Spacer(GlanceModifier.width(5.dp))
                 stackedLabels(GlanceModifier.defaultWeight())
             } else {
                 stackedLabels(GlanceModifier.defaultWeight())
                 Spacer(GlanceModifier.width(5.dp))
-                RefreshButton(data)
+                RefreshButton(data, touchSizeDp = 20f)
             }
         }
     } else {
-        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            GlanceModifier.fillMaxWidth().height(20.dp).clickable(actionRunCallback<RefreshGlanceWidgetAction>()),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             if (isRtl) {
-                RefreshButton(data)
+                RefreshButton(data, touchSizeDp = 20f)
                 Spacer(GlanceModifier.width(5.dp))
                 labelText(label, GlanceModifier.defaultWeight())
             } else {
                 labelText(label, GlanceModifier.defaultWeight())
                 Spacer(GlanceModifier.width(5.dp))
-                RefreshButton(data)
+                RefreshButton(data, touchSizeDp = 20f)
             }
         }
     }
 }
 
 @Composable
-private fun RefreshButton(data: GlanceWidgetData) {
+private fun RefreshButton(data: GlanceWidgetData, touchSizeDp: Float = 40f) {
     Box(
-        modifier = GlanceModifier.size(40.dp).clickable(actionRunCallback<RefreshGlanceWidgetAction>()),
+        modifier = GlanceModifier.size(touchSizeDp.dp).clickable(actionRunCallback<RefreshGlanceWidgetAction>()),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -852,7 +959,7 @@ private fun HeroCard(
             modifier = (if (fillAvailable) GlanceModifier.fillMaxSize() else GlanceModifier.fillMaxWidth())
                 .background(ColorProvider(data.heroBg))
                 .cornerRadius(13.dp)
-                .padding(8.dp),
+                .padding(horizontal = 8.dp, vertical = 4.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -861,14 +968,10 @@ private fun HeroCard(
                     style = TextStyle(color = ColorProvider(data.accent), fontSize = scaledSp(11f, data), fontWeight = FontWeight.Medium),
                     maxLines = 1
                 )
-                Spacer(GlanceModifier.height(2.dp))
-                Text(
-                    data.prayerTime,
-                    style = TextStyle(color = ColorProvider(data.textPrimary), fontSize = scaledSp(17f, data), fontWeight = FontWeight.Bold),
-                    maxLines = 1
-                )
+                Spacer(GlanceModifier.height(1.dp))
+                TimeText(data.prayerTime, 17f, data, data.textPrimary, FontWeight.Bold, suffixScale = 0.68f)
                 if (data.widgetSettings.showCountdown) {
-                    Spacer(GlanceModifier.height(4.dp))
+                    Spacer(GlanceModifier.height(2.dp))
                     CountdownPill(data.countdown, data)
                 }
             }
@@ -882,7 +985,7 @@ private fun HeroCard(
         modifier = (if (fillAvailable) GlanceModifier.fillMaxSize() else GlanceModifier.fillMaxWidth())
             .background(ColorProvider(data.heroBg))
             .cornerRadius(13.dp)
-            .padding(10.dp),
+            .padding(horizontal = 10.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val nameAndTime = @Composable {
@@ -895,12 +998,8 @@ private fun HeroCard(
                     style = TextStyle(color = ColorProvider(data.accent), fontSize = scaledSp(13f, data), fontWeight = FontWeight.Medium),
                     maxLines = 1
                 )
-                Spacer(GlanceModifier.height(3.dp))
-                Text(
-                    data.prayerTime,
-                    style = TextStyle(color = ColorProvider(data.textPrimary), fontSize = scaledSp(23f, data), fontWeight = FontWeight.Bold),
-                    maxLines = 1
-                )
+                Spacer(GlanceModifier.height(1.dp))
+                TimeText(data.prayerTime, 23f, data, data.textPrimary, FontWeight.Bold, suffixScale = 0.58f)
             }
         }
         if (isRtl) {
@@ -922,7 +1021,7 @@ private fun DualHeroCard(data: GlanceWidgetData, isRtl: Boolean, compact: Boolea
             .fillMaxWidth()
             .background(ColorProvider(data.heroBg))
             .cornerRadius(13.dp)
-            .padding(if (compact) 5.dp else 9.dp)
+            .padding(horizontal = if (compact) 5.dp else 9.dp, vertical = if (compact) 3.dp else 5.dp)
     ) {
         val previousHalf = @Composable {
             HeroHalf(data.previousName, data.previousTime, data.since, data, GlanceModifier.defaultWeight(), isRtl, compact)
@@ -950,8 +1049,15 @@ private fun HeroHalf(
 ) {
     Column(modifier, horizontalAlignment = if (isRtl) Alignment.End else Alignment.Start) {
         Text(name, style = TextStyle(color = ColorProvider(data.accent), fontSize = scaledSp(if (compact) 10f else 11f, data), fontWeight = FontWeight.Medium), maxLines = 1)
-        Text(time, style = TextStyle(color = ColorProvider(data.textPrimary), fontSize = scaledSp(if (compact) 16f else 18f, data), fontWeight = FontWeight.Bold), maxLines = 1)
-        Spacer(GlanceModifier.height(if (compact) 2.dp else 3.dp))
+        TimeText(
+            time,
+            if (compact) 16f else 18f,
+            data,
+            data.textPrimary,
+            FontWeight.Bold,
+            suffixScale = 0.65f
+        )
+        Spacer(GlanceModifier.height(if (compact) 1.dp else 2.dp))
         CountdownPill(detail, data)
     }
 }
@@ -962,10 +1068,25 @@ private fun CountdownPill(text: String, data: GlanceWidgetData) {
         modifier = GlanceModifier
             .background(ColorProvider(data.activePrayerBg))
             .cornerRadius(10.dp)
-            .padding(horizontal = 7.dp, vertical = 3.dp)
+            .padding(horizontal = 6.dp, vertical = 2.dp)
     ) {
-        Text(text, style = TextStyle(color = ColorProvider(data.textOnAccent), fontSize = scaledSp(9f, data), fontWeight = FontWeight.Medium), maxLines = 1)
+        Text(text, style = TextStyle(color = ColorProvider(data.textOnAccent), fontSize = scaledSp(10f, data), fontWeight = FontWeight.Medium), maxLines = 1)
     }
+}
+
+private fun fittedRibbonSlots(
+    slots: List<MiniSlot>,
+    availableWidthDp: Float,
+    data: GlanceWidgetData,
+    layout: AdaptiveLayout
+): List<MiniSlot> {
+    if (slots.size <= 2) return slots
+    val renderedScale = data.fontScale * layout.systemFontScale
+    val minimumCellWidth = (43f * renderedScale).coerceAtLeast(46f)
+    val visibleCount = (availableWidthDp / minimumCellWidth).toInt().coerceIn(2, slots.size)
+    if (visibleCount >= slots.size) return slots
+    val firstUpcoming = slots.indexOfFirst { it.isActive }.takeIf { it >= 0 } ?: 0
+    return List(visibleCount) { offset -> slots[(firstUpcoming + offset) % slots.size] }
 }
 
 @Composable
@@ -998,9 +1119,9 @@ private fun PrayerRibbon(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        val baseFontSize = if (fillAvailable) 10f else 8f
+                        val baseFontSize = if (fillAvailable) 11f else 10f
                         Text(slot.name, style = TextStyle(color = ColorProvider(if (slot.isActive) data.textOnAccent else data.textSecondary), fontSize = scaledSp(baseFontSize, data)), maxLines = 1)
-                        Text(slot.time, style = TextStyle(color = ColorProvider(if (slot.isActive) data.textOnAccent else data.textPrimary), fontSize = scaledSp(baseFontSize, data), fontWeight = FontWeight.Medium), maxLines = 1)
+                        TimeText(slot.time, baseFontSize, data, if (slot.isActive) data.textOnAccent else data.textPrimary)
                     }
                 }
             }
@@ -1035,17 +1156,18 @@ private fun PrayerListRow(
                     modifier = GlanceModifier.defaultWeight(),
                     style = TextStyle(
                         color = ColorProvider(if (slot.isActive) data.textOnAccent else data.textSecondary),
-                        fontSize = scaledSp(if (dense) 8f else 10f, data),
+                        fontSize = scaledSp(if (dense) 10f else 11f, data),
                         textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                     ),
                     maxLines = 1
                 )
             }
             val timeText = @Composable {
-                Text(
+                TimeText(
                     slot.time,
-                    style = TextStyle(color = ColorProvider(if (slot.isActive) data.textOnAccent else data.textPrimary), fontSize = scaledSp(if (dense) 8f else 10f, data), fontWeight = FontWeight.Medium),
-                    maxLines = 1
+                    if (dense) 10f else 11f,
+                    data,
+                    if (slot.isActive) data.textOnAccent else data.textPrimary
                 )
             }
             if (isRtl) {

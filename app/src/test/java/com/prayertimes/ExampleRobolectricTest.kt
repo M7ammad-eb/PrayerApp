@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.prayertimes.data.calculator.PrayerTimesCalculator
 import com.prayertimes.data.cities.CityDatabase
 import com.prayertimes.data.models.CalculationMethod
+import com.prayertimes.data.models.AppLanguage
 import com.prayertimes.data.models.JuristicMethod
 import com.prayertimes.data.preferences.PrayerPreferences
 import com.prayertimes.data.qibla.QiblaCalculator
@@ -191,6 +192,17 @@ class ExampleRobolectricTest {
     preferences.updateCalculationMethod(CalculationMethod.EGYPTIAN)
     settings = preferences.settingsFlow.first()
     assertEquals(CalculationMethod.EGYPTIAN, settings.calculationMethod)
+  }
+
+  @Test
+  fun `first run language selection persists explicit Arabic choice`() = kotlinx.coroutines.runBlocking {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val preferences = PrayerPreferences(context)
+
+    preferences.updateLanguage(AppLanguage.ARABIC)
+
+    assertEquals(AppLanguage.ARABIC, preferences.settingsFlow.first().language)
+    assertEquals(AppLanguage.ARABIC, PrayerPreferences.getInitialSettings(context).language)
   }
 
   @Test

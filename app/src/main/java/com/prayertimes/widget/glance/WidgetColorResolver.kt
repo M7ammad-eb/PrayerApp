@@ -93,7 +93,9 @@ internal object WidgetColorResolver {
             activePrayerBgColor = palette.accent,
             inactivePrayerBgColor = inactivePrayerBackground,
             countdownBgColor = palette.accent,
-            fontScale = 1f
+            // This is a preference multiplier, not an absolute text size. The Glance renderer
+            // combines it with the scale calculated from the widget host's exact rectangle.
+            fontScale = widget.fontSize.scaleFactor
         )
     }
 
