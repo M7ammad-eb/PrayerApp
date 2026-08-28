@@ -764,8 +764,6 @@
     <string name="hijri_calendar_adjustment_title">تعديل التاريخ الهجري</string>
     <string name="hijri_calendar_adjustment_reset_note">مؤقت • يُصفّر مع بداية الشهر الهجري القادم</string>
     <string name="hijri_calendar_view_prayer_times">عرض مواقيت الصلاة لهذا اليوم</string>
-    <string name="hijri_calendar_significant_dates">مناسبات الشهر</string>
-    <string name="hijri_calendar_no_significant_dates">لا توجد مناسبات محددة في هذا الشهر الهجري.</string>
     <string name="hijri_calendar_sunset_note">تُعرض تواريخ تقويم أم القرى. تبدأ المناسبات الإسلامية من مغرب الليلة السابقة بالتاريخ الميلادي، وقد يختلف الإعلان الرسمي لرؤية الهلال. يمكن ضبط تاريخ الشهر الحالي فقط من أزرار + و− أعلاه، ويُصفّر الضبط تلقائياً مع بداية الشهر الهجري التالي.</string>
     <string name="hijri_calendar_legend_eid">عيد</string>
     <string name="hijri_calendar_legend_fasting">صيام</string>

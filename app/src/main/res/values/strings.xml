@@ -760,8 +760,6 @@
     <string name="hijri_calendar_adjustment_title">Hijri date adjustment</string>
     <string name="hijri_calendar_adjustment_reset_note">Temporary • resets next Hijri month</string>
     <string name="hijri_calendar_view_prayer_times">View prayer times for this day</string>
-    <string name="hijri_calendar_significant_dates">Significant dates</string>
-    <string name="hijri_calendar_no_significant_dates">No significant dates are marked for this Hijri month.</string>
     <string name="hijri_calendar_sunset_note">Umm al-Qura dates are shown. Islamic occasions begin at sunset on the preceding Gregorian evening and official moon-sighting announcements may differ. The current month can be adjusted with the + and − controls above; the adjustment resets automatically when the next Hijri month begins.</string>
     <string name="hijri_calendar_legend_eid">Eid</string>
     <string name="hijri_calendar_legend_fasting">Fasting</string>

@@ -129,7 +129,7 @@ class AthanAudioService : Service(), AudioManager.OnAudioFocusChangeListener {
         }
 
         // 1. Start as foreground immediately with initial notification to satisfy Android OS requirements
-        val isArabic = PrayerPreferences.getInitialSettings(this).language.resolveIsArabic()
+        val isArabic = PrayerPreferences.getInitialSettings(this).language.resolveIsArabic(this)
         val localizedRes = LocalizedStrings.forLanguage(this, isArabic)
         val localizedPrayerName = LocalizedStrings.prayerName(localizedRes, currentPrayerType)
         val initialNotification = buildNotification(

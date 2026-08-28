@@ -3,8 +3,10 @@ package com.prayertimes.ui.locale
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
+import android.os.LocaleList
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
@@ -487,22 +489,20 @@ fun ProvideAppLocale(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
-    val isArabic = when (appLanguage) {
-        AppLanguage.SYSTEM -> {
-            val systemLang = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val appLocales = try {
-                    val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
-                    val locales = localeManager?.applicationLocales
-                    if (locales != null && !locales.isEmpty) locales.get(0)?.language else null
-                } catch (e: Exception) { null }
-                appLocales ?: Locale.getDefault().language
-            } else {
-                Locale.getDefault().language
+    val isArabic = appLanguage.resolveIsArabic(context)
+
+    // Repair a stale explicit override left by older builds. Without this, SYSTEM can remain
+    // visually Arabic after an update even though both preferences and the device language are
+    // English. A non-empty override is never valid while SYSTEM is selected.
+    LaunchedEffect(appLanguage) {
+        if (appLanguage == AppLanguage.SYSTEM && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            runCatching {
+                val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
+                if (localeManager != null && !localeManager.applicationLocales.isEmpty) {
+                    localeManager.applicationLocales = LocaleList.getEmptyLocaleList()
+                }
             }
-            systemLang.equals("ar", ignoreCase = true)
         }
-        AppLanguage.ARABIC -> true
-        AppLanguage.ENGLISH -> false
     }
 
     // The app's chosen language can differ from the actual system/Activity locale (there's no

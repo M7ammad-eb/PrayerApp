@@ -202,7 +202,7 @@ class PrayerGlanceWidget : GlanceAppWidget() {
      * drift from the real widget the way a hand-mirrored mockup can.
      */
     internal fun buildGlanceWidgetData(context: Context, settings: AppPrayerSettings): GlanceWidgetData {
-        val isArabic = settings.language.resolveIsArabic()
+        val isArabic = settings.language.resolveIsArabic(context)
         val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
         val zoneId = runCatching { ZoneId.of(settings.location.timeZoneId) }.getOrDefault(ZoneId.systemDefault())
         val now = ZonedDateTime.now(zoneId)

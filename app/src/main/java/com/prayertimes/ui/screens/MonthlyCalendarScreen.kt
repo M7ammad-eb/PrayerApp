@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -69,11 +68,6 @@ import java.time.format.FormatStyle
 import java.util.Locale
 import kotlinx.coroutines.launch
 
-private data class MonthObservanceDay(
-    val day: HijriCalendarDay,
-    val observances: List<IslamicObservance>
-)
-
 @Composable
 fun MonthlyCalendarScreen(
     selectedDate: LocalDate,
@@ -92,7 +86,6 @@ fun MonthlyCalendarScreen(
     val month = remember(visibleMonth, hijriAdjustmentDays) {
         HijriCalendar.generate(visibleMonth, hijriAdjustmentDays)
     }
-    val monthObservances = remember(month) { month.significantDays() }
     val visibleWeekCount = remember(month) {
         month.days.chunked(7).count { week -> week.any { it.isInDisplayedMonth } }
     }
@@ -160,8 +153,8 @@ fun MonthlyCalendarScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            contentPadding = PaddingValues(top = 12.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(top = 10.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item {
                 val selectedDay = month.days.firstOrNull {
@@ -173,33 +166,6 @@ fun MonthlyCalendarScreen(
                     isArabic = strings.isArabic,
                     onViewPrayerTimes = { onViewPrayerTimes(selectedDay.gregorianDate) }
                 )
-            }
-            item {
-                Text(
-                    text = stringResource(R.string.hijri_calendar_significant_dates),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-            if (monthObservances.isEmpty() && !month.hasSixShawwalReminder) {
-                item { EmptyMonthObservancesCard() }
-            } else {
-                items(
-                    items = monthObservances,
-                    key = { it.day.gregorianDate.toEpochDay() }
-                ) { eventDay ->
-                    MonthObservanceCard(
-                        eventDay = eventDay,
-                        isArabic = strings.isArabic,
-                        selected = eventDay.day.gregorianDate == selectedGregorianDate,
-                        onClick = { selectedGregorianDate = eventDay.day.gregorianDate }
-                    )
-                }
-                if (month.hasSixShawwalReminder) {
-                    item { SixShawwalCard() }
-                }
             }
             item {
                 CalendarSourceNote()
@@ -413,12 +379,14 @@ private fun HijriDayCell(
                 Text(
                     text = day.hijriDate.day.toString(),
                     fontSize = 15.sp,
+                    lineHeight = 16.sp,
                     fontWeight = if (selected || today || eid) FontWeight.Bold else FontWeight.Medium,
                     color = if (selected) primaryTextColor else if (eid) MaterialTheme.colorScheme.primary else primaryTextColor
                 )
                 Text(
                     text = "${day.gregorianDate.dayOfMonth}/${day.gregorianDate.monthValue}",
                     fontSize = 9.sp,
+                    lineHeight = 10.sp,
                     color = if (!selected) MaterialTheme.colorScheme.primary else secondaryTextColor,
                     maxLines = 1
                 )
@@ -472,130 +440,6 @@ private fun CalendarGridLegend() {
     }
 }
 
-private fun HijriCalendarMonth.significantDays(): List<MonthObservanceDay> = days
-    .asSequence()
-    .filter { it.isInDisplayedMonth }
-    .mapNotNull { day ->
-        val hijriDay = day.hijriDate.day
-        val observances = day.hijriDate.observances.filter { observance ->
-            when (observance) {
-                // These are periods, so represent each one with a single useful card rather
-                // than repeating an identical card on every day of the range.
-                IslamicObservance.RAMADAN -> false
-                IslamicObservance.FIRST_TEN_DHU_AL_HIJJAH -> hijriDay == 1
-                IslamicObservance.RAMADAN_LAST_TEN_NIGHTS -> hijriDay == 21
-                IslamicObservance.TASHREEQ -> hijriDay == 11
-                IslamicObservance.FASTING_PROHIBITED -> !(day.hijriDate.month == 12 && hijriDay in 12..13)
-                else -> true
-            }
-        }
-        observances.takeIf { it.isNotEmpty() }?.let { MonthObservanceDay(day, it) }
-    }
-    .toList()
-
-@Composable
-private fun MonthObservanceCard(
-    eventDay: MonthObservanceDay,
-    isArabic: Boolean,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val locale = if (isArabic) Locale.forLanguageTag("ar") else Locale.ENGLISH
-    val gregorianFormatter = remember(locale) { DateTimeFormatter.ofPattern("d MMM yyyy", locale) }
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(
-                if (selected) Modifier.border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(18.dp))
-                else Modifier
-            ),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f)
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            }
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = eventDay.day.hijriDate.day.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                eventDay.observances.forEachIndexed { index, observance ->
-                    val (title, description) = observanceText(observance)
-                    if (index > 0) Spacer(Modifier.height(6.dp))
-                    Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    if (description.isNotBlank()) {
-                        Text(
-                            description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                Spacer(Modifier.height(5.dp))
-                Text(
-                    text = eventDay.day.gregorianDate.format(gregorianFormatter),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyMonthObservancesCard() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow
-    ) {
-        Text(
-            text = stringResource(R.string.hijri_calendar_no_significant_dates),
-            modifier = Modifier.padding(18.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-private fun SixShawwalCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            InfoRow(
-                title = stringResource(R.string.hijri_observance_six_shawwal),
-                description = stringResource(R.string.hijri_observance_six_shawwal_desc),
-                fasting = true
-            )
-        }
-    }
-}
-
 @Composable
 private fun CalendarSourceNote() {
     Surface(
@@ -634,42 +478,62 @@ private fun SelectedHijriDayCard(
     val gregorianFormatter = remember(locale) {
         DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)
     }
+    val visibleObservances = day.hijriDate.observances.filterNot {
+        // Ramadan is already clear from the month title; keep this section specific to events
+        // that belong to the selected date.
+        it == IslamicObservance.RAMADAN
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f))
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(12.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (isArabic) day.hijriDate.formattedAr else day.hijriDate.formattedEn,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = day.gregorianDate.format(gregorianFormatter),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
-            }
-            Spacer(Modifier.width(10.dp))
-            Button(
-                onClick = onViewPrayerTimes,
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 9.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(stringResource(R.string.nav_prayer_times), fontWeight = FontWeight.Bold)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (isArabic) day.hijriDate.formattedAr else day.hijriDate.formattedEn,
+                        style = MaterialTheme.typography.titleMedium,
+                        lineHeight = 21.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = day.gregorianDate.format(gregorianFormatter),
+                        style = MaterialTheme.typography.bodySmall,
+                        lineHeight = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Button(
+                    onClick = onViewPrayerTimes,
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 9.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.nav_prayer_times), fontWeight = FontWeight.Bold)
+                }
+            }
+            if (visibleObservances.isNotEmpty()) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(top = 10.dp, bottom = 5.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+                )
+                visibleObservances.forEach { observance ->
+                    ObservanceRow(observance)
+                }
             }
         }
     }

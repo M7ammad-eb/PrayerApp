@@ -1,5 +1,9 @@
 package com.prayertimes.data.models
 
+import android.content.Context
+import android.content.res.Resources
+import android.os.Build
+import android.provider.Settings
 import java.util.Locale
 
 enum class AppLanguage(
@@ -29,9 +33,27 @@ enum class AppLanguage(
      * broadcast receivers, foreground services) that needs to pick a display language without an
      * ambient Compose locale to read from.
      */
-    fun resolveIsArabic(): Boolean = when (this) {
+    fun resolveIsArabic(context: Context): Boolean = when (this) {
         ARABIC -> true
         ENGLISH -> false
-        SYSTEM -> Locale.getDefault().language.equals("ar", ignoreCase = true)
+        SYSTEM -> {
+            // Some OEMs incorrectly return the active per-app override from systemLocales. The
+            // system_locales setting remains the actual device choice; use the public API and
+            // global Resources as fallbacks because that setting is not present on every build.
+            val storedSystemLanguage = runCatching {
+                Settings.System.getString(context.contentResolver, "system_locales")
+                    ?.substringBefore(',')
+                    ?.let(Locale::forLanguageTag)
+                    ?.language
+            }.getOrNull()
+            val managerLanguage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val locales = context.getSystemService(android.app.LocaleManager::class.java)?.systemLocales
+                if (locales != null && !locales.isEmpty) locales[0]?.language else null
+            } else null
+            val resourceLocales = Resources.getSystem().configuration.locales
+            val resourceLanguage = if (!resourceLocales.isEmpty) resourceLocales[0]?.language else null
+            val systemLanguage = storedSystemLanguage ?: managerLanguage ?: resourceLanguage
+            (systemLanguage ?: Locale.getDefault().language).equals("ar", ignoreCase = true)
+        }
     }
 }

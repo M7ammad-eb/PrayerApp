@@ -91,7 +91,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             }
             val targetMillis = intent.getLongExtra(EXTRA_TARGET_MILLIS, System.currentTimeMillis())
             val locationName = intent.getStringExtra(EXTRA_LOCATION_NAME) ?: ""
-            val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic()
+            val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic(context)
             PrayerLiveCountdownManager.show(context, prayerType, targetMillis, locationName, isArabic)
             return
         }
@@ -125,7 +125,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         // receiver) rather than awaiting the DataStore flow - lets wakeScreenOnAlarm factor into
         // the notification built below instead of only being available later inside the coroutine.
         val settings = PrayerPreferences.getInitialSettings(context)
-        val isArabic = settings.language.resolveIsArabic()
+        val isArabic = settings.language.resolveIsArabic(context)
         val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
         val localizedPrayerName = LocalizedStrings.prayerName(localizedRes, prayerType)
 

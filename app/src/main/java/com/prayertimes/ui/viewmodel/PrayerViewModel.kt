@@ -315,7 +315,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         _isGpsLoading.value = true
         _locationErrorMessage.value = null
         val language = settings.value.language
-        val localizedRes = com.prayertimes.util.LocalizedStrings.forLanguage(context, language.resolveIsArabic())
+        val localizedRes = com.prayertimes.util.LocalizedStrings.forLanguage(context, language.resolveIsArabic(context))
 
         // A button press is an explicit request for a new fix. Do not silently reuse the
         // two-hour startup cache or discard a result merely because it is within 5 km.
@@ -406,7 +406,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         language: AppLanguage,
         localizedRes: android.content.res.Resources
     ): UserLocation {
-        val isArabic = language.resolveIsArabic()
+        val isArabic = language.resolveIsArabic(context)
         val displayLocale = if (isArabic) Locale("ar") else Locale.ENGLISH
         val nearest = PlaceRepository.nearestPlace(context, latitude, longitude)
         return if (nearest != null) {
@@ -506,7 +506,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             if (currentLocation.isGps) {
                 val localizedRes = com.prayertimes.util.LocalizedStrings.forLanguage(
                     getApplication(),
-                    language.resolveIsArabic()
+                    language.resolveIsArabic(getApplication())
                 )
                 val relocalized = withContext(Dispatchers.IO) {
                     runCatching {
@@ -598,7 +598,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             soundType = soundType,
             prayerType = prayerType,
             audioStream = settings.value.audioStream,
-            isArabic = settings.value.language.resolveIsArabic()
+            isArabic = settings.value.language.resolveIsArabic(getApplication())
         )
     }
 

@@ -147,7 +147,7 @@ object PrayerNotificationScheduler {
                             prayerType = prayerType,
                             targetEpochMillis = prayerEpochMillis,
                             locationName = settings.location.name,
-                            isArabic = settings.language.resolveIsArabic()
+                            isArabic = settings.language.resolveIsArabic(context)
                         )
                         cancelAlarm(context, alarmManager, countdownRequestCode, PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN)
                     } else {
@@ -318,7 +318,7 @@ object PrayerNotificationScheduler {
     }
 
     fun triggerTestLiveCountdown(context: Context, minutesFromNow: Int = 2) {
-        val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic()
+        val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic(context)
         val targetMillis = System.currentTimeMillis() + minutesFromNow * 60 * 1000L
         PrayerLiveCountdownManager.show(
             context = context,
