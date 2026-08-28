@@ -220,8 +220,8 @@
     <string name="settings_language_section">اللغة والعرض</string>
     <string name="settings_app_language">لغة التطبيق</string>
     <string name="settings_select_language_subtitle">اختر لغة واجهة التطبيق</string>
-    <string name="settings_location_section">الموقع والإحداثيات</string>
-    <string name="settings_use_gps">تحديد الموقع تلقائياً (GPS)</string>
+    <string name="settings_location_section">الموقع</string>
+    <string name="settings_use_gps">تحديث موقعي</string>
     <string name="settings_choose_city">اختيار مدينة عالمية</string>
     <string name="settings_manual_coordinates">إدخال الإحداثيات يدوياً (خط الطول/العرض)</string>
     <string name="settings_calc_method_section">طريقة الحساب الفلكي</string>
@@ -248,7 +248,7 @@
     <string name="settings_adjustments_custom_active">تعديلات مخصصة مفعلة</string>
     <string name="settings_adjustments_standard">افتراضي (0 دقيقة)</string>
     <string name="settings_about_hub_title">حول التطبيق والحسابات الفلكية</string>
-    <string name="settings_about_hub_subtitle">حسابات فلكية بدون إنترنت • الإصدار 1.0</string>
+    <string name="settings_about_hub_subtitle">معلومات التطبيق والخصوصية والتراخيص</string>
     <string name="about_data_attribution_title">بيانات الأماكن</string>
     <string name="about_data_attribution_body">أسماء المدن والأماكن مقدَّمة من GeoNames.org، مرخّصة بموجب رخصة المشاع الإبداعي - النسب 4.0 (CC BY 4.0).</string>
     <string name="about_typeface_title">الخط والترخيص</string>
@@ -261,18 +261,18 @@
     <string name="settings_hijri_offset_desc">مطابقة رؤية الهلال مع الجهة الشرعية المحلية</string>
     <string name="settings_reset_all_adjustments">إعادة ضبط جميع الصلوات (0 دقيقة)</string>
     <string name="settings_about_screen_title">حول التطبيق والحسابات</string>
-    <string name="settings_version_engine_label">الإصدار 1.0.0 • محرك حسابات دقيق بدون إنترنت 100%</string>
+    <string name="settings_version_engine_label">الإصدار %1$s • تعمل حسابات الصلاة دون إنترنت</string>
     <string name="settings_astro_engine_title">الخوارزميات الفلكية المعتمدة</string>
     <string name="settings_astro_engine_desc">يعتمد التطبيق خوارزميات جان ميوس (Jean Meeus) الفلكية لحساب موقع الشمس، زاوية الميل الشمسي، ومعادلة الزمن بدقة متناهية متوافقة مع معايير رابطة العالم الإسلامي وتقويم أم القرى.</string>
 
     <!-- ===== Audio Output Channel & Wake Screen Settings ===== -->
-    <string name="settings_audio_stream_section_title">قناة صوت الأذان (Audio Stream)</string>
-    <string name="settings_audio_stream_desc">اختر القناة الصوتية التي يعمل بها صوت الأذان ليتبع مستوى صوت النظام المختار.</string>
-    <string name="settings_audio_stream_alarm_title">مستوى صوت المنبه (Alarm)</string>
+    <string name="settings_audio_stream_section_title">التحكم بمستوى صوت الأذان</string>
+    <string name="settings_audio_stream_desc">اختر زر مستوى الصوت في الهاتف الذي يتحكم بصوت الأذان.</string>
+    <string name="settings_audio_stream_alarm_title">مستوى صوت المنبه (موصى به)</string>
     <string name="settings_audio_stream_alarm_desc">يعمل بمستوى صوت منبه الهاتف، ويرن حتى في الوضع الصامت إذا سمح النظام.</string>
-    <string name="settings_audio_stream_media_title">مستوى صوت الوسائط (Media)</string>
+    <string name="settings_audio_stream_media_title">مستوى صوت الوسائط</string>
     <string name="settings_audio_stream_media_desc">يعمل بمستوى صوت الموسيقى والفيديوهات.</string>
-    <string name="settings_audio_stream_ringtone_title">مستوى صوت رنين الهاتف (Ringtone)</string>
+    <string name="settings_audio_stream_ringtone_title">مستوى صوت رنين الهاتف</string>
     <string name="settings_audio_stream_ringtone_desc">يعمل بمستوى نغمة رنين المكالمات.</string>
 
     <string name="settings_wake_screen_title">إيقاظ الشاشة وعرض منبه الأذان بالكامل (عند إغلاق الشاشة فقط)</string>
@@ -286,6 +286,33 @@
     <string name="live_countdown_minutes_chip">%dد</string>
     <string name="live_countdown_notif_title">عداد أذان %1$s</string>
     <string name="live_countdown_test_btn">جرّب العد التنازلي الآن</string>
+
+    <!-- إعدادات مبسطة وإظهار الخيارات المتقدمة عند الحاجة -->
+    <string name="settings_advanced_title">إعدادات متقدمة</string>
+    <string name="settings_advanced_calculation_desc">قواعد المناطق عالية العرض وتعديل دقائق كل صلاة. لا يحتاج معظم المستخدمين إلى تغييرها.</string>
+    <string name="settings_advanced_notifications_desc">سلوك الشاشة والعداد المباشر وأدوات حل المشكلات.</string>
+    <string name="settings_show_advanced">إظهار الإعدادات المتقدمة</string>
+    <string name="settings_hide_advanced">إخفاء الإعدادات المتقدمة</string>
+    <string name="settings_help_reset_title">المساعدة وإعادة الإعداد</string>
+    <string name="settings_help_reset_subtitle">تشغيل الإعداد الموجّه مرة أخرى</string>
+    <string name="settings_reset_confirm_title">تشغيل الإعداد مرة أخرى؟</string>
+    <string name="settings_reset_confirm_message">سيفتح الإعداد الموجّه لمراجعة اللغة والموقع والأذان والمظهر. ستبقى اختياراتك الحالية حتى تغيّرها.</string>
+    <string name="settings_reset_confirm_action">متابعة</string>
+    <string name="settings_cancel">إلغاء</string>
+    <string name="settings_location_details">تفاصيل الموقع</string>
+    <string name="settings_location_details_desc">الإحداثيات ومعلومات المكان المحفوظة دون إنترنت</string>
+    <string name="settings_choose_another_city">اختيار مدينة أخرى</string>
+    <string name="settings_no_city_results">لم نعثر على مدينة مطابقة. جرّب كتابة أخرى.</string>
+    <string name="settings_prayer_alerts_title">تنبيهات الصلوات</string>
+    <string name="settings_prayer_alerts_desc">فعّل تنبيه كل صلاة أو أوقفه واختر صوته.</string>
+    <string name="settings_test_tools_title">اختبار التنبيهات</string>
+    <string name="settings_test_tools_desc">استخدمها فقط للتأكد من عمل التنبيهات بصورة صحيحة.</string>
+    <string name="settings_test_alarm_scheduled">تم ضبط تنبيه تجريبي بعد 5 ثوانٍ.</string>
+    <string name="settings_minute_value">%1$d دقيقة</string>
+    <string name="widget_settings_preview_size_title">حجم المعاينة</string>
+    <string name="widget_settings_preview_size_hint">للمعاينة فقط — يتكيف الودجت الحقيقي تلقائياً مع المساحة المتاحة.</string>
+    <string name="widget_settings_advanced_title">مظهر متقدم</string>
+    <string name="widget_settings_advanced_desc">الشفافية والإطار وفرض لون النص</string>
 
     <!-- ===== Dynamic Island / Live Countdown Feature ===== -->
 
@@ -306,9 +333,9 @@
     <string name="calc_method_russia">الإدارة الدينية لمسلمي روسيا (SAMR)</string>
 
     <!-- ===== High Latitude Rule translations ===== -->
-    <string name="high_latitude_midnight">منتصف الليل (Middle of Night)</string>
-    <string name="high_latitude_one_seventh">سُبع الليل (One Seventh of Night)</string>
-    <string name="high_latitude_angle_based">على أساس الزاوية النسبية (Angle-Based)</string>
+    <string name="high_latitude_midnight">منتصف الليل</string>
+    <string name="high_latitude_one_seventh">سُبع الليل</string>
+    <string name="high_latitude_angle_based">بحسب الزاوية النسبية</string>
     <string name="high_latitude_none">بدون تعديل (None)</string>
 
     <!-- ===== Athan Player Dialog ===== -->

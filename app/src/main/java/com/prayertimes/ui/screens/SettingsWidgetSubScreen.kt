@@ -3,6 +3,7 @@ package com.prayertimes.ui.screens
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -106,6 +107,7 @@ fun SettingsWidgetSubScreen(
     val wSet = settings.widgetSettings
     var previewPreset by remember { mutableStateOf(WidgetPreviewPreset.LARGE_RIBBON) }
     var isPreviewExpanded by remember { mutableStateOf(true) }
+    var advancedAppearanceExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -144,7 +146,7 @@ fun SettingsWidgetSubScreen(
                         text = stringResource(R.string.widget_settings_intro_banner),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -209,6 +211,40 @@ fun SettingsWidgetSubScreen(
                         onUpdateWidgetSettings(wSet.copy(showBackground = it))
                     }
                 )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                WidgetSettingsSubLabel(strings.widgetFontSizeTitle)
+                WidgetFontSizeSelector(
+                    currentSize = wSet.fontSize,
+                    onSelectSize = { onUpdateWidgetSettings(wSet.copy(fontSize = it)) }
+                )
+
+                Card(
+                    onClick = { advancedAppearanceExpanded = !advancedAppearanceExpanded },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.widget_settings_advanced_title), fontWeight = FontWeight.Bold)
+                            Text(
+                                stringResource(R.string.widget_settings_advanced_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            if (advancedAppearanceExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null
+                        )
+                    }
+                }
+
+                if (advancedAppearanceExpanded) Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
 
                 WidgetToggleRow(
                     icon = Icons.Default.Layers,
@@ -287,16 +323,6 @@ fun SettingsWidgetSubScreen(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
-                WidgetSettingsSubLabel(strings.widgetFontSizeTitle)
-                WidgetFontSizeSelector(
-                    currentSize = wSet.fontSize,
-                    onSelectSize = {
-                        onUpdateWidgetSettings(wSet.copy(fontSize = it))
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
                 // Text Color Style - a manual escape hatch for when the theme's own text colors
                 // can't be trusted for contrast, since a transparent/near-transparent widget has no
                 // way to know what's actually behind it.
@@ -307,6 +333,7 @@ fun SettingsWidgetSubScreen(
                         onUpdateWidgetSettings(wSet.copy(textStyle = it))
                     }
                 )
+                }
             }
 
             // Hero controls: current prayer display and its remaining-time countdown.
@@ -561,6 +588,9 @@ private fun WidgetToggleRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(enabled = enabled) { onCheckedChange(!checked) }
+            .padding(vertical = 8.dp)
             .alpha(if (enabled) 1f else 0.4f),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -596,7 +626,7 @@ private fun WidgetToggleRow(
         }
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = null,
             enabled = enabled
         )
     }
@@ -680,6 +710,11 @@ private fun WidgetPreviewPanel(
     var menuExpanded by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.widget_settings_preview_size_title),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -729,6 +764,12 @@ private fun WidgetPreviewPanel(
                 )
             }
         }
+
+        Text(
+            text = stringResource(R.string.widget_settings_preview_size_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         if (expanded) WidgetCanvasPreview(settings, preset)
     }

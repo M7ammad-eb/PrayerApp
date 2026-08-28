@@ -220,8 +220,8 @@
     <string name="settings_language_section">Language &amp; Localization</string>
     <string name="settings_app_language">App Language</string>
     <string name="settings_select_language_subtitle">Choose application interface language</string>
-    <string name="settings_location_section">Location &amp; Coordinates</string>
-    <string name="settings_use_gps">Use GPS Location</string>
+    <string name="settings_location_section">Location</string>
+    <string name="settings_use_gps">Update My Location</string>
     <string name="settings_choose_city">World Cities</string>
     <string name="settings_manual_coordinates">Enter Lat / Lon Coordinates</string>
     <string name="settings_calc_method_section">Calculation Method</string>
@@ -248,7 +248,7 @@
     <string name="settings_adjustments_custom_active">Custom offsets active</string>
     <string name="settings_adjustments_standard">Standard (0 min)</string>
     <string name="settings_about_hub_title">About &amp; Calculation Info</string>
-    <string name="settings_about_hub_subtitle">Offline Astronomical Algorithms • v1.0</string>
+    <string name="settings_about_hub_subtitle">App information, privacy, and licenses</string>
     <string name="about_data_attribution_title">Place Data</string>
     <string name="about_data_attribution_body">City and place names are provided by GeoNames.org, licensed under Creative Commons Attribution 4.0 (CC BY 4.0).</string>
     <string name="about_typeface_title">Typeface &amp; License</string>
@@ -261,18 +261,18 @@
     <string name="settings_hijri_offset_desc">Sync with official local moon sighting declarations</string>
     <string name="settings_reset_all_adjustments">Reset All Adjustments to 0</string>
     <string name="settings_about_screen_title">About &amp; Precision Engine</string>
-    <string name="settings_version_engine_label">Version 1.0.0 • 100% Offline Precision Calculation Engine</string>
+    <string name="settings_version_engine_label">Version %1$s • Prayer calculations work offline</string>
     <string name="settings_astro_engine_title">Astronomical Calculation Engine</string>
     <string name="settings_astro_engine_desc">Calculates exact solar coordinates, solar declination angle, and equation of time using Jean Meeus astronomical algorithms, supporting major world Islamic authorities with zero network dependencies.</string>
 
     <!-- ===== Audio Output Channel & Wake Screen Settings ===== -->
-    <string name="settings_audio_stream_section_title">Athan Audio Stream Channel</string>
-    <string name="settings_audio_stream_desc">Choose which system audio channel the Athan plays through. It will follow your device\'s system volume.</string>
-    <string name="settings_audio_stream_alarm_title">Alarm Stream (Recommended)</string>
+    <string name="settings_audio_stream_section_title">Athan Volume Control</string>
+    <string name="settings_audio_stream_desc">Choose which volume control on your phone changes the Athan volume.</string>
+    <string name="settings_audio_stream_alarm_title">Alarm Volume (Recommended)</string>
     <string name="settings_audio_stream_alarm_desc">Plays at alarm volume level, sounds reliably when idle or silent.</string>
-    <string name="settings_audio_stream_media_title">Media Stream</string>
+    <string name="settings_audio_stream_media_title">Media Volume</string>
     <string name="settings_audio_stream_media_desc">Plays at music/video media volume level.</string>
-    <string name="settings_audio_stream_ringtone_title">Ringtone Stream</string>
+    <string name="settings_audio_stream_ringtone_title">Ringtone Volume</string>
     <string name="settings_audio_stream_ringtone_desc">Plays at incoming call ringtone volume level.</string>
 
     <string name="settings_wake_screen_title">Wake Screen &amp; Full-Screen Alarm (Screen Off Only)</string>
@@ -286,6 +286,33 @@
     <string name="live_countdown_minutes_chip">%dm</string>
     <string name="live_countdown_notif_title">%1$s Athan Countdown</string>
     <string name="live_countdown_test_btn">Test Live Countdown Now</string>
+
+    <!-- Simplified settings and progressive disclosure -->
+    <string name="settings_advanced_title">Advanced Settings</string>
+    <string name="settings_advanced_calculation_desc">High-latitude rules and manual minute adjustments. Most users do not need to change these.</string>
+    <string name="settings_advanced_notifications_desc">Screen behavior, live countdown, and troubleshooting tools.</string>
+    <string name="settings_show_advanced">Show advanced settings</string>
+    <string name="settings_hide_advanced">Hide advanced settings</string>
+    <string name="settings_help_reset_title">Help &amp; Reset</string>
+    <string name="settings_help_reset_subtitle">Run the guided setup again</string>
+    <string name="settings_reset_confirm_title">Run setup again?</string>
+    <string name="settings_reset_confirm_message">This opens the guided setup so you can review language, location, Athan, and appearance. Your current choices remain until you change them.</string>
+    <string name="settings_reset_confirm_action">Continue</string>
+    <string name="settings_cancel">Cancel</string>
+    <string name="settings_location_details">Location details</string>
+    <string name="settings_location_details_desc">Coordinates and offline place information</string>
+    <string name="settings_choose_another_city">Choose another city</string>
+    <string name="settings_no_city_results">No matching cities found. Try another spelling.</string>
+    <string name="settings_prayer_alerts_title">Prayer Alerts</string>
+    <string name="settings_prayer_alerts_desc">Turn each prayer alert on or off and choose its sound.</string>
+    <string name="settings_test_tools_title">Test Notifications</string>
+    <string name="settings_test_tools_desc">Use these only to check that alerts work correctly.</string>
+    <string name="settings_test_alarm_scheduled">Test alarm scheduled for 5 seconds from now.</string>
+    <string name="settings_minute_value">%1$d min</string>
+    <string name="widget_settings_preview_size_title">Preview Size</string>
+    <string name="widget_settings_preview_size_hint">Preview only — the real widget adapts automatically to its available space.</string>
+    <string name="widget_settings_advanced_title">Advanced Appearance</string>
+    <string name="widget_settings_advanced_desc">Opacity, border, and forced text color</string>
 
     <!-- ===== Dynamic Island / Live Countdown Feature ===== -->
 

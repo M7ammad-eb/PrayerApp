@@ -3,6 +3,7 @@ package com.prayertimes.ui.screens
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -63,6 +64,9 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.StayCurrentPortrait
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -96,6 +100,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.prayertimes.data.models.AppLanguage
 import com.prayertimes.data.models.AppThemeMode
 import com.prayertimes.data.models.AthanAudioStream
@@ -257,6 +264,30 @@ private fun SettingsMainHub(
     onResetOnboarding: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    var showResetConfirmation by remember { mutableStateOf(false) }
+
+    if (showResetConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showResetConfirmation = false },
+            title = { Text(stringResource(R.string.settings_reset_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_reset_confirm_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showResetConfirmation = false
+                        onResetOnboarding()
+                    }
+                ) {
+                    Text(stringResource(R.string.settings_reset_confirm_action))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetConfirmation = false }) {
+                    Text(stringResource(R.string.settings_cancel))
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -266,7 +297,34 @@ private fun SettingsMainHub(
             .testTag("settings_screen"),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Appearance, palette, and language
+        val locationHubName = com.prayertimes.data.cities.CityDatabase.localizedName(LocalContext.current.resources, settings.location)
+        val locationHubCountry = com.prayertimes.data.cities.CityDatabase.localizedCountry(LocalContext.current.resources, settings.location)
+        SettingsHubCategoryCard(
+            title = strings.locationSection,
+            subtitle = "$locationHubName${if (locationHubCountry.isNotEmpty()) ", $locationHubCountry" else ""}${if (settings.location.isGps) " • ${strings.locationSourceGps}" else ""}",
+            icon = Icons.Default.LocationOn,
+            testTag = "settings_cat_location",
+            onClick = { onNavigateTo(SettingsSubScreen.LOCATION) }
+        )
+
+        val hasAdjustments = settings.adjustments.let { it.fajr != 0 || it.sunrise != 0 || it.dhuhr != 0 || it.asr != 0 || it.maghrib != 0 || it.isha != 0 }
+        SettingsHubCategoryCard(
+            title = strings.prayerCalculationTimeTitle,
+            subtitle = "${strings.calcMethodName(settings.calculationMethod)} • ${stringResource(if (settings.is24HourFormat) R.string.time_format_24_summary else R.string.time_format_12_summary)} • ${if (hasAdjustments) strings.adjustmentsCustomActive else strings.adjustmentsStandard}",
+            icon = Icons.Default.Calculate,
+            testTag = "settings_cat_calc",
+            onClick = { onNavigateTo(SettingsSubScreen.CALCULATION) }
+        )
+
+        val enabledNotifsCount = settings.prayerConfigs.values.count { it.enabled }
+        SettingsHubCategoryCard(
+            title = strings.notifSectionTitle,
+            subtitle = strings.notifCountActive(enabledNotifsCount),
+            icon = Icons.Default.NotificationsActive,
+            testTag = "settings_cat_notifications",
+            onClick = { onNavigateTo(SettingsSubScreen.NOTIFICATIONS) }
+        )
+
         SettingsHubCategoryCard(
             title = strings.appearanceLanguageTitle,
             subtitle = "${settings.language.getDisplayName(strings.isArabic)} • ${strings.themeModeName(settings.themeMode)} • ${strings.colorPresetName(if (settings.followSystemColors) com.prayertimes.data.models.AppColorPreset.SYSTEM_DYNAMIC else settings.colorPreset)}",
@@ -275,7 +333,6 @@ private fun SettingsMainHub(
             onClick = { onNavigateTo(SettingsSubScreen.APPEARANCE) }
         )
 
-        // Widgets (التطبيقات المصغرة)
         SettingsHubCategoryCard(
             title = strings.widgetsSection,
             subtitle = stringResource(
@@ -288,38 +345,6 @@ private fun SettingsMainHub(
             onClick = { onNavigateTo(SettingsSubScreen.WIDGETS) }
         )
 
-        // Calculation, time format, and per-prayer adjustments
-        val hasAdjustments = settings.adjustments.let { it.fajr != 0 || it.sunrise != 0 || it.dhuhr != 0 || it.asr != 0 || it.maghrib != 0 || it.isha != 0 }
-        SettingsHubCategoryCard(
-            title = strings.prayerCalculationTimeTitle,
-            subtitle = "${strings.calcMethodName(settings.calculationMethod)} • ${stringResource(if (settings.is24HourFormat) R.string.time_format_24_summary else R.string.time_format_12_summary)} • ${if (hasAdjustments) strings.adjustmentsCustomActive else strings.adjustmentsStandard}",
-            icon = Icons.Default.Calculate,
-            testTag = "settings_cat_calc",
-            onClick = { onNavigateTo(SettingsSubScreen.CALCULATION) }
-        )
-
-        // Location
-        val locationHubName = com.prayertimes.data.cities.CityDatabase.localizedName(LocalContext.current.resources, settings.location)
-        val locationHubCountry = com.prayertimes.data.cities.CityDatabase.localizedCountry(LocalContext.current.resources, settings.location)
-        SettingsHubCategoryCard(
-            title = strings.locationSection,
-            subtitle = "$locationHubName${if (locationHubCountry.isNotEmpty()) ", $locationHubCountry" else ""} ${if (settings.location.isGps) "(GPS)" else ""}",
-            icon = Icons.Default.LocationOn,
-            testTag = "settings_cat_location",
-            onClick = { onNavigateTo(SettingsSubScreen.LOCATION) }
-        )
-
-        // Notifications
-        val enabledNotifsCount = settings.prayerConfigs.values.count { it.enabled }
-        SettingsHubCategoryCard(
-            title = strings.notifSectionTitle,
-            subtitle = strings.notifCountActive(enabledNotifsCount),
-            icon = Icons.Default.NotificationsActive,
-            testTag = "settings_cat_notifications",
-            onClick = { onNavigateTo(SettingsSubScreen.NOTIFICATIONS) }
-        )
-
-        // About
         SettingsHubCategoryCard(
             title = strings.aboutHubTitle,
             subtitle = strings.aboutHubSubtitle,
@@ -328,14 +353,32 @@ private fun SettingsMainHub(
             onClick = { onNavigateTo(SettingsSubScreen.ABOUT) }
         )
 
-        // Re-run Setup Wizard
-        SettingsHubCategoryCard(
-            title = strings.rerunSetupTitle,
-            subtitle = strings.rerunSetupSubtitle,
-            icon = Icons.Default.AutoAwesome,
-            testTag = "settings_cat_rerun_setup",
-            onClick = onResetOnboarding
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 8.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
         )
+
+        TextButton(
+            onClick = { showResetConfirmation = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("settings_cat_rerun_setup")
+        ) {
+            Icon(Icons.Default.AutoAwesome, contentDescription = null)
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.settings_help_reset_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(R.string.settings_help_reset_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(40.dp))
     }
@@ -400,7 +443,7 @@ private fun SettingsHubCategoryCard(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
+                        maxLines = 2
                     )
                 }
             }
@@ -509,6 +552,60 @@ private fun <T> SettingsDropdownSelector(
                             if (option != selected) onSelected(option)
                         }
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdvancedSettingsSection(
+    description: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    content: @Composable () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onExpandedChange(!expanded) }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_advanced_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = stringResource(
+                        if (expanded) R.string.settings_hide_advanced else R.string.settings_show_advanced
+                    )
+                )
+            }
+            AnimatedVisibility(visible = expanded) {
+                Column(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    content()
                 }
             }
         }
@@ -713,6 +810,7 @@ private fun SettingsCalculationSubScreen(
     onBack: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    var advancedExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -773,7 +871,7 @@ private fun SettingsCalculationSubScreen(
                             }
                             RadioButton(
                                 selected = settings.juristicMethod == JuristicMethod.STANDARD,
-                                onClick = { onUpdateJuristicMethod(JuristicMethod.STANDARD) }
+                                onClick = null
                             )
                         }
 
@@ -802,21 +900,11 @@ private fun SettingsCalculationSubScreen(
                             }
                             RadioButton(
                                 selected = settings.juristicMethod == JuristicMethod.HANAFI,
-                                onClick = { onUpdateJuristicMethod(JuristicMethod.HANAFI) }
+                                onClick = null
                             )
                         }
                     }
                 }
-            }
-
-            item {
-                SettingsDropdownSelector(
-                    title = strings.highLatitudeSection,
-                    selected = settings.highLatitudeRule,
-                    options = HighLatitudeRule.values().toList(),
-                    optionLabel = strings::highLatitudeName,
-                    onSelected = onUpdateHighLatitudeRule
-                )
             }
 
             item {
@@ -830,6 +918,7 @@ private fun SettingsCalculationSubScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable { onToggle24Hour() }
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -848,61 +937,71 @@ private fun SettingsCalculationSubScreen(
                         }
                         Switch(
                             checked = settings.is24HourFormat,
-                            onCheckedChange = { onToggle24Hour() }
+                            onCheckedChange = null
                         )
                     }
                 }
             }
 
             item {
-                Text(
-                    text = strings.minuteAdjustmentsTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = strings.minuteAdjustmentsSubtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            items(PrayerType.values()) { prayer ->
-                val currentOffset = when (prayer) {
-                    PrayerType.FAJR -> settings.adjustments.fajr
-                    PrayerType.SUNRISE -> settings.adjustments.sunrise
-                    PrayerType.DHUHR -> settings.adjustments.dhuhr
-                    PrayerType.ASR -> settings.adjustments.asr
-                    PrayerType.MAGHRIB -> settings.adjustments.maghrib
-                    PrayerType.ISHA -> settings.adjustments.isha
-                }
-                PrayerAdjustmentCard(
-                    prayerName = strings.prayerName(prayer),
-                    currentOffset = currentOffset,
-                    onDecrease = { onUpdatePrayerAdjustment(prayer, currentOffset - 1) },
-                    onIncrease = { onUpdatePrayerAdjustment(prayer, currentOffset + 1) }
-                )
-            }
-
-            item {
-                OutlinedButton(
-                    onClick = { PrayerType.values().forEach { onUpdatePrayerAdjustment(it, 0) } },
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
+                AdvancedSettingsSection(
+                    expanded = advancedExpanded,
+                    onExpandedChange = { advancedExpanded = it },
+                    description = stringResource(R.string.settings_advanced_calculation_desc)
                 ) {
-                    Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(strings.resetAllAdjustments)
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Card(
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    SettingsDropdownSelector(
+                        title = strings.highLatitudeSection,
+                        selected = settings.highLatitudeRule,
+                        options = HighLatitudeRule.values().toList(),
+                        optionLabel = strings::highLatitudeName,
+                        onSelected = onUpdateHighLatitudeRule
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = strings.minuteAdjustmentsTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = strings.minuteAdjustmentsSubtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    PrayerType.values().forEach { prayer ->
+                        val currentOffset = when (prayer) {
+                            PrayerType.FAJR -> settings.adjustments.fajr
+                            PrayerType.SUNRISE -> settings.adjustments.sunrise
+                            PrayerType.DHUHR -> settings.adjustments.dhuhr
+                            PrayerType.ASR -> settings.adjustments.asr
+                            PrayerType.MAGHRIB -> settings.adjustments.maghrib
+                            PrayerType.ISHA -> settings.adjustments.isha
+                        }
+                        PrayerAdjustmentCard(
+                            prayerName = strings.prayerName(prayer),
+                            currentOffset = currentOffset,
+                            onDecrease = { onUpdatePrayerAdjustment(prayer, currentOffset - 1) },
+                            onIncrease = { onUpdatePrayerAdjustment(prayer, currentOffset + 1) }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    OutlinedButton(
+                        onClick = { PrayerType.values().forEach { onUpdatePrayerAdjustment(it, 0) } },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(strings.resetAllAdjustments)
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                      Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = strings.aboutUmmAlQuraTitle,
                             style = MaterialTheme.typography.titleSmall,
@@ -915,10 +1014,11 @@ private fun SettingsCalculationSubScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                      }
                     }
                 }
-                Spacer(modifier = Modifier.height(40.dp))
             }
+            item { Spacer(modifier = Modifier.height(40.dp)) }
         }
     }
 }
@@ -950,14 +1050,14 @@ private fun PrayerAdjustmentCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 FilledTonalButton(
                     onClick = onDecrease,
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(48.dp),
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Text("−", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "${if (currentOffset > 0) "+" else ""}${currentOffset}m",
+                    text = stringResource(R.string.settings_minute_value, currentOffset),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (currentOffset != 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -965,7 +1065,7 @@ private fun PrayerAdjustmentCard(
                 Spacer(modifier = Modifier.width(10.dp))
                 FilledTonalButton(
                     onClick = onIncrease,
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(48.dp),
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold)
@@ -988,13 +1088,18 @@ private fun SettingsLocationSubScreen(
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<PlaceEntity>>(emptyList()) }
+    var locationDetailsExpanded by remember { mutableStateOf(false) }
+    var searchCompleted by remember { mutableStateOf(false) }
 
     LaunchedEffect(searchQuery) {
         if (searchQuery.isBlank()) {
             searchResults = emptyList()
+            searchCompleted = false
         } else {
+            searchCompleted = false
             delay(200)
             searchResults = PlaceRepository.search(context, searchQuery)
+            searchCompleted = true
         }
     }
 
@@ -1055,17 +1160,41 @@ private fun SettingsLocationSubScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                     if (settings.location.isGps) {
-                        Text(
-                            text = String.format(Locale.US, "%.4f°, %.4f°", settings.location.latitude, settings.location.longitude),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (settings.location.nearestPlaceDistanceKm != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { locationDetailsExpanded = !locationDetailsExpanded }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = strings.gpsLocationDisclaimer,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = stringResource(R.string.settings_location_details),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.weight(1f)
                             )
+                            Icon(
+                                imageVector = if (locationDetailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = stringResource(if (locationDetailsExpanded) R.string.settings_hide_advanced else R.string.settings_show_advanced)
+                            )
+                        }
+                        AnimatedVisibility(visible = locationDetailsExpanded) {
+                            Column {
+                                Text(
+                                    text = String.format(Locale.US, "%.4f°, %.4f°", settings.location.latitude, settings.location.longitude),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                if (settings.location.nearestPlaceDistanceKm != null) {
+                                    Text(
+                                        text = strings.gpsLocationDisclaimer,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -1118,6 +1247,13 @@ private fun SettingsLocationSubScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        Text(
+            text = stringResource(R.string.settings_choose_another_city),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -1131,6 +1267,14 @@ private fun SettingsLocationSubScreen(
         Spacer(modifier = Modifier.height(10.dp))
 
         if (searchQuery.isNotBlank()) {
+            if (searchCompleted && searchResults.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.settings_no_city_results),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -1217,9 +1361,20 @@ private fun SettingsNotificationsSubScreen(
     var activeSoundDialogPrayer by remember { mutableStateOf<PrayerType?>(null) }
     var testAlarmScheduledText by remember { mutableStateOf<String?>(null) }
     var previewPrayerArtwork by remember { mutableStateOf(PrayerType.FAJR) }
+    var advancedExpanded by remember { mutableStateOf(false) }
 
-    val notificationsEnabled = remember {
-        androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+    var notificationsEnabled by remember {
+        mutableStateOf(androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled())
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                notificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     if (activeSoundDialogPrayer != null) {
@@ -1424,7 +1579,7 @@ private fun SettingsNotificationsSubScreen(
                                     }
                                     RadioButton(
                                         selected = isSelected,
-                                        onClick = { onUpdateAudioStream(stream) }
+                                        onClick = null
                                     )
                                 }
                             }
@@ -1433,8 +1588,16 @@ private fun SettingsNotificationsSubScreen(
                 }
             }
 
-            // Wake Screen & Full-Screen Alarm Artwork Card
             item {
+                AdvancedSettingsSection(
+                    expanded = advancedExpanded,
+                    onExpandedChange = { advancedExpanded = it },
+                    description = stringResource(R.string.settings_advanced_notifications_desc)
+                ) {}
+            }
+
+            // Wake Screen & Full-Screen Alarm Artwork Card
+            if (advancedExpanded) item {
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
@@ -1497,18 +1660,19 @@ private fun SettingsNotificationsSubScreen(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         // Chips to choose prayer artwork for preview
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            listOf(
+                        listOf(
                                 PrayerType.FAJR,
                                 PrayerType.SUNRISE,
                                 PrayerType.DHUHR,
                                 PrayerType.ASR,
                                 PrayerType.MAGHRIB,
                                 PrayerType.ISHA
-                            ).forEach { p ->
+                            ).chunked(3).forEach { rowPrayers ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                              rowPrayers.forEach { p ->
                                 val isSelected = previewPrayerArtwork == p
                                 FilledTonalButton(
                                     onClick = { previewPrayerArtwork = p },
@@ -1526,7 +1690,9 @@ private fun SettingsNotificationsSubScreen(
                                         color = if (isSelected) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurface
                                     )
                                 }
+                              }
                             }
+                            Spacer(modifier = Modifier.height(6.dp))
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -1552,7 +1718,7 @@ private fun SettingsNotificationsSubScreen(
             }
 
             // Live Athan Countdown Card (standard Android Live Update notification)
-            item {
+            if (advancedExpanded) item {
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -1610,11 +1776,12 @@ private fun SettingsNotificationsSubScreen(
                             )
                             Spacer(modifier = Modifier.height(6.dp))
 
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                listOf(5, 10, 15, 20, 25, 30).forEach { mins ->
+                            listOf(5, 10, 15, 20, 25, 30).chunked(3).forEach { rowMinutes ->
+                              Row(
+                                  horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                  modifier = Modifier.fillMaxWidth()
+                              ) {
+                                rowMinutes.forEach { mins ->
                                     val isSelected = settings.liveCountdownMinutesBefore == mins
                                     FilledTonalButton(
                                         onClick = { onUpdateLiveCountdownSettings(true, mins) },
@@ -1633,6 +1800,8 @@ private fun SettingsNotificationsSubScreen(
                                         )
                                     }
                                 }
+                              }
+                              Spacer(modifier = Modifier.height(6.dp))
                             }
                         }
 
@@ -1650,6 +1819,20 @@ private fun SettingsNotificationsSubScreen(
                 }
             }
 
+            item {
+                Text(
+                    text = stringResource(R.string.settings_prayer_alerts_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = stringResource(R.string.settings_prayer_alerts_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             items(PrayerType.values()) { prayer ->
                 val cfg = settings.prayerConfigs[prayer] ?: NotificationPrayerConfig()
                 Card(
@@ -1659,7 +1842,13 @@ private fun SettingsNotificationsSubScreen(
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable {
+                                    onUpdateNotificationConfig(prayer, !cfg.enabled, cfg.soundType, cfg.preReminderMinutes)
+                                }
+                                .padding(vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
@@ -1670,9 +1859,7 @@ private fun SettingsNotificationsSubScreen(
                             )
                             Switch(
                                 checked = cfg.enabled,
-                                onCheckedChange = { isChecked ->
-                                    onUpdateNotificationConfig(prayer, isChecked, cfg.soundType, cfg.preReminderMinutes)
-                                }
+                                onCheckedChange = null
                             )
                         }
 
@@ -1716,7 +1903,7 @@ private fun SettingsNotificationsSubScreen(
                 }
             }
 
-            item {
+            if (advancedExpanded) item {
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Test instant notification
@@ -1736,7 +1923,7 @@ private fun SettingsNotificationsSubScreen(
                 OutlinedButton(
                     onClick = {
                         onTestAlarmInSeconds(PrayerType.DHUHR, NotificationSoundType.FULL_ATHAN, 5)
-                        testAlarmScheduledText = "Alarm scheduled in 5 seconds! Lock screen or leave app to test."
+                        testAlarmScheduledText = context.getString(R.string.settings_test_alarm_scheduled)
                     },
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -1755,22 +1942,6 @@ private fun SettingsNotificationsSubScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Reschedule 7-Day Alarms
-                FilledTonalButton(
-                    onClick = {
-                        onRescheduleAlarms()
-                        testAlarmScheduledText = "All 7-day prayer alarms synced and scheduled in AlarmManager!"
-                    },
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(strings.reschedule7Days, style = MaterialTheme.typography.labelMedium)
-                }
-
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
@@ -1781,6 +1952,10 @@ private fun SettingsNotificationsSubScreen(
 @Composable
 private fun SettingsAboutSubScreen(onBack: () -> Unit) {
     val strings = LocalAppStrings.current
+    val context = LocalContext.current
+    val versionName = remember(context) {
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty()
+    }
 
     Column(
         modifier = Modifier
@@ -1819,7 +1994,10 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = strings.versionEngineLabel,
+                        text = stringResource(
+                            R.string.settings_version_engine_label,
+                            versionName
+                        ),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
@@ -1842,27 +2020,6 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = strings.astroEngineDesc,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Card(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = strings.compassCalibTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = strings.compassCalibText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
