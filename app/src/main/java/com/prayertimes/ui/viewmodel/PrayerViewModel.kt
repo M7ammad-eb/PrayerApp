@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -167,18 +168,21 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _locationErrorMessage = MutableStateFlow<String?>(null)
     val locationErrorMessage: StateFlow<String?> = _locationErrorMessage.asStateFlow()
 
-    // Drives whether the 1Hz countdown loop below actually ticks - the OS-scheduled AlarmManager
-    // alarm is what fires the Athan/notification in the background, this loop only exists to
-    // animate the visible countdown, so there's no reason to keep it running while the app isn't
-    // in the foreground. Defaults true so behavior is unchanged until the Activity calls
-    // setForeground() from onPause/onResume.
+    // The 1Hz loop exists only to animate the visible home-screen countdown. AlarmManager owns
+    // background prayer timing, so the loop should run only when both the app and Prayer Times tab
+    // are visible.
     private val _isForeground = MutableStateFlow(true)
+    private val _isPrayerTabVisible = MutableStateFlow(false)
 
     private var cachedBoundary: CurrentPrayerBoundary? = null
 
     fun setForeground(foreground: Boolean) {
         _isForeground.value = foreground
         if (foreground) viewModelScope.launch { prefs.clearExpiredHijriOffset() }
+    }
+
+    fun setPrayerTabVisible(visible: Boolean) {
+        _isPrayerTabVisible.value = visible
     }
 
     init {
@@ -216,17 +220,17 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
 
-        // Live timer for the active prayer's remaining time, paused while backgrounded.
+        // Live timer for the active prayer's remaining time, paused unless its UI is visible.
+        val countdownActive = combine(_isForeground, _isPrayerTabVisible) { foreground, visible ->
+            foreground && visible
+        }.distinctUntilChanged()
         viewModelScope.launch {
             while (isActive) {
-                if (_isForeground.value) {
-                    val currentSettings = settings.value
-                    val now = ZonedDateTime.now(currentSettings.zoneId())
-                    updateCurrentPrayerCountdown(currentSettings, now)
-                    delay(1000)
-                } else {
-                    _isForeground.first { it }
-                }
+                countdownActive.first { it }
+                val currentSettings = settings.value
+                val now = ZonedDateTime.now(currentSettings.zoneId())
+                updateCurrentPrayerCountdown(currentSettings, now)
+                delay(1000)
             }
         }
     }

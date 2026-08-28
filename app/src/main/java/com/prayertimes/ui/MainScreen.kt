@@ -37,6 +37,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -93,12 +94,17 @@ fun MainScreen(
     var showCityPickerFromHeader by remember { mutableStateOf(false) }
 
     val settings by viewModel.settings.collectAsState()
-    val selectedDate by viewModel.selectedDate.collectAsState()
-    val dailySchedule by viewModel.dailySchedule.collectAsState()
-    val currentPrayerInfo by viewModel.currentPrayerInfo.collectAsState()
-    val compassState by viewModel.compassState.collectAsState()
     val isGpsLoading by viewModel.isGpsLoading.collectAsState()
     val locationErrorMessage by viewModel.locationErrorMessage.collectAsState()
+
+    val prayerTabVisible = settings.onboardingCompleted &&
+        selectedTab == AppNavTab.PRAYER_TIMES.ordinal
+    DisposableEffect(prayerTabVisible) {
+        viewModel.setPrayerTabVisible(prayerTabVisible)
+        onDispose {
+            if (prayerTabVisible) viewModel.setPrayerTabVisible(false)
+        }
+    }
 
     // Location Permission launcher
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -242,6 +248,9 @@ fun MainScreen(
                 ) {
                     when (AppNavTab.values()[selectedTab]) {
                         AppNavTab.PRAYER_TIMES -> {
+                            val selectedDate by viewModel.selectedDate.collectAsState()
+                            val dailySchedule by viewModel.dailySchedule.collectAsState()
+                            val currentPrayerInfo by viewModel.currentPrayerInfo.collectAsState()
                             PrayerHomeScreen(
                                 dailySchedule = dailySchedule,
                                 currentPrayerInfo = currentPrayerInfo,
@@ -265,6 +274,7 @@ fun MainScreen(
                             )
                         }
                         AppNavTab.QIBLA -> {
+                            val compassState by viewModel.compassState.collectAsState()
                             QiblaScreen(
                                 compassSensorManager = viewModel.compassManager,
                                 compassState = compassState,
@@ -272,6 +282,7 @@ fun MainScreen(
                             )
                         }
                         AppNavTab.MONTHLY -> {
+                            val selectedDate by viewModel.selectedDate.collectAsState()
                             MonthlyCalendarScreen(
                                 selectedDate = selectedDate,
                                 hijriAdjustmentDays = settings.hijriAdjustmentDays,
