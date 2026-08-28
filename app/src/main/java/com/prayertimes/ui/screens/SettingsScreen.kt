@@ -41,13 +41,12 @@ import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Calculate
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import com.prayertimes.audio.AthanAudioEngine
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MusicNote
@@ -63,12 +62,13 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.StayCurrentPortrait
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -115,14 +115,11 @@ import java.util.Locale
 
 enum class SettingsSubScreen {
     MAIN,
-    THEME,
+    APPEARANCE,
     WIDGETS,
     CALCULATION,
     LOCATION,
     NOTIFICATIONS,
-    LANGUAGE,
-    HIJRI_DISPLAY,
-    ADJUSTMENTS,
     ABOUT
 }
 
@@ -187,9 +184,10 @@ fun SettingsScreen(
                     onResetOnboarding = onResetOnboarding
                 )
             }
-            SettingsSubScreen.THEME -> {
-                SettingsThemeSubScreen(
+            SettingsSubScreen.APPEARANCE -> {
+                SettingsAppearanceSubScreen(
                     settings = settings,
+                    onUpdateLanguage = onUpdateLanguage,
                     onUpdateThemeMode = onUpdateThemeMode,
                     onUpdateColorPreset = onUpdateColorPreset,
                     onUpdateFollowSystemColors = onUpdateFollowSystemColors,
@@ -209,6 +207,8 @@ fun SettingsScreen(
                     onUpdateCalculationMethod = onUpdateCalculationMethod,
                     onUpdateJuristicMethod = onUpdateJuristicMethod,
                     onUpdateHighLatitudeRule = onUpdateHighLatitudeRule,
+                    onToggle24Hour = onToggle24Hour,
+                    onUpdatePrayerAdjustment = onUpdatePrayerAdjustment,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
             }
@@ -235,27 +235,6 @@ fun SettingsScreen(
                     onUpdateLiveCountdownSettings = onUpdateLiveCountdownSettings,
                     onTestLiveCountdown = onTestLiveCountdown,
                     onPreviewFullScreenAlarm = onPreviewFullScreenAlarm,
-                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
-                )
-            }
-            SettingsSubScreen.LANGUAGE -> {
-                SettingsLanguageSubScreen(
-                    settings = settings,
-                    onUpdateLanguage = onUpdateLanguage,
-                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
-                )
-            }
-            SettingsSubScreen.HIJRI_DISPLAY -> {
-                SettingsHijriDisplaySubScreen(
-                    settings = settings,
-                    onToggle24Hour = onToggle24Hour,
-                    onBack = { currentSubScreen = SettingsSubScreen.MAIN }
-                )
-            }
-            SettingsSubScreen.ADJUSTMENTS -> {
-                SettingsAdjustmentsSubScreen(
-                    settings = settings,
-                    onUpdatePrayerAdjustment = onUpdatePrayerAdjustment,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
             }
@@ -287,13 +266,13 @@ private fun SettingsMainHub(
             .testTag("settings_screen"),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Theme
+        // Appearance, palette, and language
         SettingsHubCategoryCard(
-            title = strings.themeSection,
-            subtitle = strings.themeModeName(settings.themeMode),
+            title = strings.appearanceLanguageTitle,
+            subtitle = "${settings.language.getDisplayName(strings.isArabic)} • ${strings.themeModeName(settings.themeMode)} • ${strings.colorPresetName(if (settings.followSystemColors) com.prayertimes.data.models.AppColorPreset.SYSTEM_DYNAMIC else settings.colorPreset)}",
             icon = Icons.Default.Palette,
-            testTag = "settings_cat_theme",
-            onClick = { onNavigateTo(SettingsSubScreen.THEME) }
+            testTag = "settings_cat_appearance",
+            onClick = { onNavigateTo(SettingsSubScreen.APPEARANCE) }
         )
 
         // Widgets (التطبيقات المصغرة)
@@ -309,10 +288,11 @@ private fun SettingsMainHub(
             onClick = { onNavigateTo(SettingsSubScreen.WIDGETS) }
         )
 
-        // Calculation
+        // Calculation, time format, and per-prayer adjustments
+        val hasAdjustments = settings.adjustments.let { it.fajr != 0 || it.sunrise != 0 || it.dhuhr != 0 || it.asr != 0 || it.maghrib != 0 || it.isha != 0 }
         SettingsHubCategoryCard(
-            title = strings.calcMethodSection,
-            subtitle = "${strings.calcMethodName(settings.calculationMethod)} • ${if (settings.juristicMethod == JuristicMethod.STANDARD) strings.standardJuristic else strings.hanafiJuristic}",
+            title = strings.prayerCalculationTimeTitle,
+            subtitle = "${strings.calcMethodName(settings.calculationMethod)} • ${stringResource(if (settings.is24HourFormat) R.string.time_format_24_summary else R.string.time_format_12_summary)} • ${if (hasAdjustments) strings.adjustmentsCustomActive else strings.adjustmentsStandard}",
             icon = Icons.Default.Calculate,
             testTag = "settings_cat_calc",
             onClick = { onNavigateTo(SettingsSubScreen.CALCULATION) }
@@ -337,34 +317,6 @@ private fun SettingsMainHub(
             icon = Icons.Default.NotificationsActive,
             testTag = "settings_cat_notifications",
             onClick = { onNavigateTo(SettingsSubScreen.NOTIFICATIONS) }
-        )
-
-        // Language
-        SettingsHubCategoryCard(
-            title = strings.languageSection,
-            subtitle = settings.language.getDisplayName(strings.isArabic),
-            icon = Icons.Default.Language,
-            testTag = "settings_cat_language",
-            onClick = { onNavigateTo(SettingsSubScreen.LANGUAGE) }
-        )
-
-        // Hijri & Display
-        SettingsHubCategoryCard(
-            title = strings.displayHijriSection,
-            subtitle = stringResource(if (settings.is24HourFormat) R.string.time_format_24_summary else R.string.time_format_12_summary),
-            icon = Icons.Default.CalendarMonth,
-            testTag = "settings_cat_hijri",
-            onClick = { onNavigateTo(SettingsSubScreen.HIJRI_DISPLAY) }
-        )
-
-        // Adjustments
-        val hasAdjustments = settings.adjustments.let { it.fajr != 0 || it.sunrise != 0 || it.dhuhr != 0 || it.asr != 0 || it.maghrib != 0 || it.isha != 0 }
-        SettingsHubCategoryCard(
-            title = strings.minuteAdjustmentsTitle,
-            subtitle = if (hasAdjustments) strings.adjustmentsCustomActive else strings.adjustmentsStandard,
-            icon = Icons.Default.Tune,
-            testTag = "settings_cat_adjustments",
-            onClick = { onNavigateTo(SettingsSubScreen.ADJUSTMENTS) }
         )
 
         // About
@@ -492,31 +444,108 @@ private fun SubScreenHeader(
     }
 }
 
-// 1. THEME
 @Composable
-private fun SettingsThemeSubScreen(
+private fun <T> SettingsDropdownSelector(
+    title: String,
+    selected: T,
+    options: List<T>,
+    optionLabel: (T) -> String,
+    onSelected: (T) -> Unit,
+    leading: (@Composable (T) -> Unit)? = null
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Box(modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = { expanded = true },
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
+            ) {
+                leading?.let {
+                    it(selected)
+                    Spacer(modifier = Modifier.width(10.dp))
+                }
+                Text(
+                    text = optionLabel(selected),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.fillMaxWidth(0.9f)
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                leading?.let {
+                                    it(option)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                }
+                                Text(optionLabel(option), modifier = Modifier.weight(1f))
+                                if (option == selected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        },
+                        onClick = {
+                            expanded = false
+                            if (option != selected) onSelected(option)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsAppearanceSubScreen(
     settings: AppPrayerSettings,
+    onUpdateLanguage: (AppLanguage) -> Unit,
     onUpdateThemeMode: (AppThemeMode) -> Unit,
     onUpdateColorPreset: (com.prayertimes.data.models.AppColorPreset) -> Unit,
     onUpdateFollowSystemColors: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    val selectedPalette = if (settings.followSystemColors) {
+        com.prayertimes.data.models.AppColorPreset.SYSTEM_DYNAMIC
+    } else {
+        settings.colorPreset
+    }
+    val darkPalette = settings.themeMode == AppThemeMode.DARK ||
+        (settings.themeMode == AppThemeMode.SYSTEM && androidx.compose.foundation.isSystemInDarkTheme())
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .testTag("theme_subscreen")
+            .testTag("appearance_subscreen")
     ) {
-        SubScreenHeader(title = strings.themeSection, onBack = onBack)
-        Spacer(modifier = Modifier.height(12.dp))
-
+        SubScreenHeader(title = strings.appearanceLanguageTitle, onBack = onBack)
+        Spacer(modifier = Modifier.height(10.dp))
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             Text(
                 text = strings.themeModeTitle,
@@ -532,7 +561,6 @@ private fun SettingsThemeSubScreen(
                 isSelected = settings.themeMode == AppThemeMode.SYSTEM,
                 onClick = { onUpdateThemeMode(AppThemeMode.SYSTEM) }
             )
-
             ThemeSelectionCard(
                 title = strings.themeModeName(AppThemeMode.LIGHT),
                 description = strings.lightThemeDesc,
@@ -540,7 +568,6 @@ private fun SettingsThemeSubScreen(
                 isSelected = settings.themeMode == AppThemeMode.LIGHT,
                 onClick = { onUpdateThemeMode(AppThemeMode.LIGHT) }
             )
-
             ThemeSelectionCard(
                 title = strings.themeModeName(AppThemeMode.DARK),
                 description = strings.darkThemeDesc,
@@ -549,165 +576,48 @@ private fun SettingsThemeSubScreen(
                 onClick = { onUpdateThemeMode(AppThemeMode.DARK) }
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-                text = strings.colorPaletteSection,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+            SettingsDropdownSelector(
+                title = strings.appLanguage,
+                selected = settings.language,
+                options = AppLanguage.values().toList(),
+                optionLabel = { it.getDisplayName(strings.isArabic) },
+                onSelected = onUpdateLanguage
             )
 
-            // Follow System Colors Card (App Theming)
-            Card(
-                onClick = { onUpdateFollowSystemColors(!settings.followSystemColors) },
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (settings.followSystemColors) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-                ),
-                border = if (settings.followSystemColors) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
+            SettingsDropdownSelector(
+                title = strings.colorPaletteSection,
+                selected = selectedPalette,
+                options = com.prayertimes.data.models.AppColorPreset.values().toList(),
+                optionLabel = strings::colorPresetName,
+                onSelected = { preset ->
+                    if (preset == com.prayertimes.data.models.AppColorPreset.SYSTEM_DYNAMIC) {
+                        onUpdateFollowSystemColors(true)
+                    } else {
+                        onUpdateColorPreset(preset)
+                    }
+                },
+                leading = { preset ->
+                    val primary = if (darkPalette) preset.primaryDark else preset.primaryLight
+                    val secondary = if (darkPalette) preset.secondaryDark else preset.secondaryLight
+                    Box(
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(androidx.compose.ui.graphics.Color(primary)),
+                        contentAlignment = Alignment.BottomEnd
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(12.dp)
                                 .clip(CircleShape)
-                                .background(if (settings.followSystemColors) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = if (settings.followSystemColors) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(14.dp))
-
-                        Column {
-                            Text(
-                                text = strings.followSystemColorsTitle,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = strings.followSystemColorsDesc,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Switch(
-                        checked = settings.followSystemColors,
-                        onCheckedChange = { onUpdateFollowSystemColors(it) }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = strings.presetColorsTitle,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            // Preset Colors list
-            com.prayertimes.data.models.AppColorPreset.values().filter { it != com.prayertimes.data.models.AppColorPreset.SYSTEM_DYNAMIC }.forEach { preset ->
-                val isSelected = !settings.followSystemColors && settings.colorPreset == preset
-                val isDark = settings.themeMode == AppThemeMode.DARK || (settings.themeMode == AppThemeMode.SYSTEM && androidx.compose.foundation.isSystemInDarkTheme())
-                val primaryColorLong = if (isDark) preset.primaryDark else preset.primaryLight
-                val secondaryColorLong = if (isDark) preset.secondaryDark else preset.secondaryLight
-
-                Card(
-                    onClick = {
-                        if (settings.followSystemColors) {
-                            onUpdateFollowSystemColors(false)
-                        }
-                        onUpdateColorPreset(preset)
-                    },
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-                    ),
-                    border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            // Dual Color Preview Swatch
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(androidx.compose.ui.graphics.Color(primaryColorLong)),
-                                contentAlignment = Alignment.BottomEnd
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(18.dp)
-                                        .clip(CircleShape)
-                                        .background(androidx.compose.ui.graphics.Color(secondaryColorLong))
-                                        .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(14.dp))
-
-                            Column {
-                                Text(
-                                    text = strings.colorPresetName(preset),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = strings.colorPresetName(preset),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        RadioButton(
-                            selected = isSelected,
-                            onClick = {
-                                if (settings.followSystemColors) {
-                                    onUpdateFollowSystemColors(false)
-                                }
-                                onUpdateColorPreset(preset)
-                            }
+                                .background(androidx.compose.ui.graphics.Color(secondary))
+                                .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape)
                         )
                     }
                 }
-            }
+            )
 
             Spacer(modifier = Modifier.height(30.dp))
         }
@@ -726,9 +636,19 @@ private fun ThemeSelectionCard(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
         ),
-        border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+        border = if (isSelected) {
+            CardDefaults.outlinedCardBorder().copy(
+                brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
+            )
+        } else {
+            null
+        },
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -746,19 +666,21 @@ private fun ThemeSelectionCard(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
-                        .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
+                        .background(
+                            if (isSelected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.surfaceVariant
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(22.dp)
                     )
                 }
-
                 Spacer(modifier = Modifier.width(14.dp))
-
                 Column {
                     Text(
                         text = title,
@@ -774,11 +696,7 @@ private fun ThemeSelectionCard(
                     )
                 }
             }
-
-            RadioButton(
-                selected = isSelected,
-                onClick = onClick
-            )
+            RadioButton(selected = isSelected, onClick = onClick)
         }
     }
 }
@@ -790,6 +708,8 @@ private fun SettingsCalculationSubScreen(
     onUpdateCalculationMethod: (CalculationMethod) -> Unit,
     onUpdateJuristicMethod: (JuristicMethod) -> Unit,
     onUpdateHighLatitudeRule: (HighLatitudeRule) -> Unit,
+    onToggle24Hour: () -> Unit,
+    onUpdatePrayerAdjustment: (PrayerType, Int) -> Unit,
     onBack: () -> Unit
 ) {
     val strings = LocalAppStrings.current
@@ -800,13 +720,23 @@ private fun SettingsCalculationSubScreen(
             .padding(16.dp)
             .testTag("calc_subscreen")
     ) {
-        SubScreenHeader(title = strings.calcMethodSection, onBack = onBack)
+        SubScreenHeader(title = strings.prayerCalculationTimeTitle, onBack = onBack)
         Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            item {
+                SettingsDropdownSelector(
+                    title = strings.calcMethodSection,
+                    selected = settings.calculationMethod,
+                    options = CalculationMethod.values().toList(),
+                    optionLabel = strings::calcMethodName,
+                    onSelected = onUpdateCalculationMethod
+                )
+            }
+
             item {
                 Text(
                     text = strings.juristicMethodTitle,
@@ -880,58 +810,167 @@ private fun SettingsCalculationSubScreen(
             }
 
             item {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = strings.calcMethodSection,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                SettingsDropdownSelector(
+                    title = strings.highLatitudeSection,
+                    selected = settings.highLatitudeRule,
+                    options = HighLatitudeRule.values().toList(),
+                    optionLabel = strings::highLatitudeName,
+                    onSelected = onUpdateHighLatitudeRule
                 )
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            items(CalculationMethod.values()) { method ->
-                val isSelected = settings.calculationMethod == method
+            item {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(modifier = Modifier.height(10.dp))
                 Card(
-                    onClick = { onUpdateCalculationMethod(method) },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-                    ),
-                    border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp),
+                            .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = strings.calcMethodName(method),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                text = strings.timeFormatTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            val ishaDesc = if ((method.ishaMinutesAfterMaghrib ?: 0) > 0) "${method.ishaMinutesAfterMaghrib}m" else "${method.ishaAngle}°"
                             Text(
-                                text = "${strings.prayerName(PrayerType.FAJR)}: ${method.fajrAngle}° • ${strings.prayerName(PrayerType.ISHA)}: $ishaDesc",
+                                text = stringResource(if (settings.is24HourFormat) R.string.time_format_24_summary else R.string.time_format_12_summary),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        RadioButton(
-                            selected = isSelected,
-                            onClick = { onUpdateCalculationMethod(method) }
+                        Switch(
+                            checked = settings.is24HourFormat,
+                            onCheckedChange = { onToggle24Hour() }
                         )
                     }
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(40.dp)) }
+            item {
+                Text(
+                    text = strings.minuteAdjustmentsTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = strings.minuteAdjustmentsSubtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            items(PrayerType.values()) { prayer ->
+                val currentOffset = when (prayer) {
+                    PrayerType.FAJR -> settings.adjustments.fajr
+                    PrayerType.SUNRISE -> settings.adjustments.sunrise
+                    PrayerType.DHUHR -> settings.adjustments.dhuhr
+                    PrayerType.ASR -> settings.adjustments.asr
+                    PrayerType.MAGHRIB -> settings.adjustments.maghrib
+                    PrayerType.ISHA -> settings.adjustments.isha
+                }
+                PrayerAdjustmentCard(
+                    prayerName = strings.prayerName(prayer),
+                    currentOffset = currentOffset,
+                    onDecrease = { onUpdatePrayerAdjustment(prayer, currentOffset - 1) },
+                    onIncrease = { onUpdatePrayerAdjustment(prayer, currentOffset + 1) }
+                )
+            }
+
+            item {
+                OutlinedButton(
+                    onClick = { PrayerType.values().forEach { onUpdatePrayerAdjustment(it, 0) } },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(strings.resetAllAdjustments)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = strings.aboutUmmAlQuraTitle,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = strings.aboutUmmAlQuraDesc,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(40.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrayerAdjustmentCard(
+    prayerName: String,
+    currentOffset: Int,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = prayerName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FilledTonalButton(
+                    onClick = onDecrease,
+                    modifier = Modifier.size(36.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text("−", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "${if (currentOffset > 0) "+" else ""}${currentOffset}m",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (currentOffset != 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                FilledTonalButton(
+                    onClick = onIncrease,
+                    modifier = Modifier.size(36.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 }
@@ -1732,246 +1771,6 @@ private fun SettingsNotificationsSubScreen(
                     Text(strings.reschedule7Days, style = MaterialTheme.typography.labelMedium)
                 }
 
-                Spacer(modifier = Modifier.height(40.dp))
-            }
-        }
-    }
-}
-
-// 5. LANGUAGE
-@Composable
-private fun SettingsLanguageSubScreen(
-    settings: AppPrayerSettings,
-    onUpdateLanguage: (AppLanguage) -> Unit,
-    onBack: () -> Unit
-) {
-    val strings = LocalAppStrings.current
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .testTag("language_subscreen")
-    ) {
-        SubScreenHeader(title = strings.languageSection, onBack = onBack)
-        Spacer(modifier = Modifier.height(12.dp))
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            items(AppLanguage.values()) { lang ->
-                val isSelected = settings.language == lang
-                Card(
-                    onClick = { onUpdateLanguage(lang) },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-                    ),
-                    border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = lang.getDisplayName(strings.isArabic),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        RadioButton(
-                            selected = isSelected,
-                            onClick = { onUpdateLanguage(lang) }
-                        )
-                    }
-                }
-            }
-            item { Spacer(modifier = Modifier.height(40.dp)) }
-        }
-    }
-}
-
-// 6. HIJRI & DISPLAY
-@Composable
-private fun SettingsHijriDisplaySubScreen(
-    settings: AppPrayerSettings,
-    onToggle24Hour: () -> Unit,
-    onBack: () -> Unit
-) {
-    val strings = LocalAppStrings.current
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .testTag("hijri_subscreen")
-    ) {
-        SubScreenHeader(title = strings.displayHijriSection, onBack = onBack)
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            // 24-Hour Switch Card
-            Card(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = strings.timeFormatTitle,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = if (settings.is24HourFormat) "13:30 (24-Hour)" else "1:30 PM (12-Hour AM/PM)",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = settings.is24HourFormat,
-                        onCheckedChange = { onToggle24Hour() }
-                    )
-                }
-            }
-
-            // Umm al Qura info card
-            Card(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = strings.aboutUmmAlQuraTitle,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = strings.aboutUmmAlQuraDesc,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
-// 7. ADJUSTMENTS
-@Composable
-private fun SettingsAdjustmentsSubScreen(
-    settings: AppPrayerSettings,
-    onUpdatePrayerAdjustment: (PrayerType, Int) -> Unit,
-    onBack: () -> Unit
-) {
-    val strings = LocalAppStrings.current
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .testTag("adjustments_subscreen")
-    ) {
-        SubScreenHeader(title = strings.minuteAdjustmentsTitle, onBack = onBack)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            items(PrayerType.values()) { prayer ->
-                val currentOffset = when (prayer) {
-                    PrayerType.FAJR -> settings.adjustments.fajr
-                    PrayerType.SUNRISE -> settings.adjustments.sunrise
-                    PrayerType.DHUHR -> settings.adjustments.dhuhr
-                    PrayerType.ASR -> settings.adjustments.asr
-                    PrayerType.MAGHRIB -> settings.adjustments.maghrib
-                    PrayerType.ISHA -> settings.adjustments.isha
-                }
-
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = strings.prayerName(prayer),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            FilledTonalButton(
-                                onClick = { onUpdatePrayerAdjustment(prayer, currentOffset - 1) },
-                                modifier = Modifier.size(36.dp),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("-", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                            }
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Text(
-                                text = "${if (currentOffset > 0) "+" else ""}${currentOffset}m",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (currentOffset != 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            FilledTonalButton(
-                                onClick = { onUpdatePrayerAdjustment(prayer, currentOffset + 1) },
-                                modifier = Modifier.size(36.dp),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = {
-                        PrayerType.values().forEach { onUpdatePrayerAdjustment(it, 0) }
-                    },
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(strings.resetAllAdjustments)
-                }
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }

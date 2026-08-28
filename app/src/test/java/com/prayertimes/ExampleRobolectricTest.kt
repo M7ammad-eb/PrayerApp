@@ -5,8 +5,11 @@ import androidx.test.core.app.ApplicationProvider
 import com.prayertimes.data.calculator.PrayerTimesCalculator
 import com.prayertimes.data.cities.CityDatabase
 import com.prayertimes.data.models.CalculationMethod
+import com.prayertimes.data.models.AppColorPreset
 import com.prayertimes.data.models.AppLanguage
+import com.prayertimes.data.models.AppThemeMode
 import com.prayertimes.data.models.JuristicMethod
+import com.prayertimes.data.models.PrayerType
 import com.prayertimes.data.preferences.PrayerPreferences
 import com.prayertimes.data.qibla.QiblaCalculator
 import kotlinx.coroutines.flow.first
@@ -203,6 +206,24 @@ class ExampleRobolectricTest {
 
     assertEquals(AppLanguage.ARABIC, preferences.settingsFlow.first().language)
     assertEquals(AppLanguage.ARABIC, PrayerPreferences.getInitialSettings(context).language)
+  }
+
+  @Test
+  fun `DataStore edits refresh the complete synchronous startup cache`() = kotlinx.coroutines.runBlocking {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val preferences = PrayerPreferences(context)
+
+    preferences.updateThemeMode(AppThemeMode.DARK)
+    preferences.updateColorPreset(AppColorPreset.ROSE_CLOVE)
+    preferences.updateIs24Hour(true)
+    preferences.updatePrayerAdjustment(PrayerType.ASR, 4)
+
+    val initial = PrayerPreferences.getInitialSettings(context)
+    assertEquals(AppThemeMode.DARK, initial.themeMode)
+    assertEquals(AppColorPreset.ROSE_CLOVE, initial.colorPreset)
+    assertEquals(false, initial.followSystemColors)
+    assertEquals(true, initial.is24HourFormat)
+    assertEquals(4, initial.adjustments.asr)
   }
 
   @Test

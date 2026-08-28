@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.os.LocaleList
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
@@ -308,7 +309,7 @@ class PrayerPreferences(private val context: Context) {
         fun notifPreReminder(prayer: PrayerType) = intPreferencesKey("notif_pre_${prayer.name}")
     }
 
-    val settingsFlow: Flow<AppPrayerSettings> = context.dataStore.data.map { prefs ->
+    private fun settingsFromDataStore(prefs: Preferences): AppPrayerSettings {
         val defaultLocation = CityDatabase.defaultLocation(context.resources)
         val locName = prefs[Keys.LOC_NAME] ?: defaultLocation.name
         val locCountry = prefs[Keys.LOC_COUNTRY] ?: defaultLocation.country
@@ -399,59 +400,7 @@ class PrayerPreferences(private val context: Context) {
             NotificationPrayerConfig(enabled, soundType, preMinutes)
         }
 
-        // Update fast cache for zero-latency instant startup
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit()
-            .putString(KEY_LANG, language.name)
-            .putString(KEY_THEME, themeMode.name)
-            .putString(KEY_COLOR_PRESET, colorPreset.name)
-            .putBoolean(KEY_FOLLOW_SYSTEM_COLORS, followSystemColors)
-            .putString(KEY_WIDGET_THEME, widgetSettings.themeMode.name)
-            .putBoolean(KEY_WIDGET_SHOW_BACKGROUND, widgetSettings.showBackground)
-            .remove(LEGACY_KEY_WIDGET_BG)
-            .putInt(KEY_WIDGET_OPACITY, widgetSettings.opacityPercent)
-            .putBoolean(KEY_WIDGET_SHOW_BORDER, widgetSettings.showBorder)
-            .putString(KEY_WIDGET_FONT, widgetSettings.fontSize.name)
-            .putString(KEY_WIDGET_TEXT_STYLE, widgetSettings.textStyle.name)
-            .putBoolean(KEY_WIDGET_SHOW_LOC, widgetSettings.showLocation)
-            .putBoolean(KEY_WIDGET_SHOW_HIJRI, widgetSettings.showHijriDate)
-            .putBoolean(KEY_WIDGET_SHOW_COUNTDOWN, widgetSettings.showCountdown)
-            .putBoolean(KEY_WIDGET_SHOW_SUNRISE, widgetSettings.showSunrise)
-            .putBoolean(KEY_WIDGET_SHOW_ALL, widgetSettings.showAllPrayersList)
-            .putBoolean(KEY_WIDGET_SHOW_HERO, widgetSettings.showHeroCard)
-            .putBoolean(KEY_24H, is24Hour)
-            .putString(KEY_LOC_NAME, location.name)
-            .putString(KEY_LOC_COUNTRY, location.country)
-            .putLong(KEY_LOC_LAT, java.lang.Double.doubleToRawLongBits(location.latitude))
-            .putLong(KEY_LOC_LON, java.lang.Double.doubleToRawLongBits(location.longitude))
-            .putString(KEY_LOC_TZ, location.timeZoneId)
-            .putBoolean(KEY_LOC_IS_GPS, location.isGps)
-            .let { editor ->
-                if (location.nearestPlaceDistanceKm != null) {
-                    editor.putLong(KEY_LOC_DISTANCE_KM, java.lang.Double.doubleToRawLongBits(location.nearestPlaceDistanceKm))
-                } else {
-                    editor.remove(KEY_LOC_DISTANCE_KM)
-                }
-            }
-            .putString(KEY_CALC_METHOD, calcMethod.name)
-            .putString(KEY_JURISTIC_METHOD, juristic.name)
-            .putString(KEY_HIGH_LAT_RULE, highLat.name)
-            .putInt(KEY_HIJRI_OFFSET, hijriOffset)
-            .putString(KEY_HIJRI_OFFSET_ANCHOR, hijriOffsetAnchor.orEmpty())
-            .putInt(KEY_ADJ_FAJR, adjustments.fajr)
-            .putInt(KEY_ADJ_SUNRISE, adjustments.sunrise)
-            .putInt(KEY_ADJ_DHUHR, adjustments.dhuhr)
-            .putInt(KEY_ADJ_ASR, adjustments.asr)
-            .putInt(KEY_ADJ_MAGHRIB, adjustments.maghrib)
-            .putInt(KEY_ADJ_ISHA, adjustments.isha)
-            .putString(KEY_AUDIO_STREAM, audioStream.name)
-            .putBoolean(KEY_WAKE_SCREEN, wakeScreenOnAlarm)
-            .putBoolean(KEY_ONBOARDING_COMPLETED, onboardingCompleted)
-            .putBoolean(KEY_LIVE_COUNTDOWN_ENABLED, liveCountdownEnabled)
-            .putInt(KEY_LIVE_COUNTDOWN_MINUTES, liveCountdownMinutes)
-            .apply()
-
-        AppPrayerSettings(
+        return AppPrayerSettings(
             location = location,
             calculationMethod = calcMethod,
             juristicMethod = juristic,
@@ -474,24 +423,71 @@ class PrayerPreferences(private val context: Context) {
         )
     }
 
-    suspend fun updateWidgetSettings(settings: WidgetCustomizationSettings) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit()
-            .putString(KEY_WIDGET_THEME, settings.themeMode.name)
-            .putBoolean(KEY_WIDGET_SHOW_BACKGROUND, settings.showBackground)
+    /** Mirrors the canonical DataStore snapshot needed by synchronous startup and receivers. */
+    private fun syncFastCache(settings: AppPrayerSettings) {
+        val location = settings.location
+        val widget = settings.widgetSettings
+        val adjustments = settings.adjustments
+        context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE).edit()
+            .putString(KEY_LANG, settings.language.name)
+            .putString(KEY_THEME, settings.themeMode.name)
+            .putString(KEY_COLOR_PRESET, settings.colorPreset.name)
+            .putBoolean(KEY_FOLLOW_SYSTEM_COLORS, settings.followSystemColors)
+            .putString(KEY_WIDGET_THEME, widget.themeMode.name)
+            .putBoolean(KEY_WIDGET_SHOW_BACKGROUND, widget.showBackground)
             .remove(LEGACY_KEY_WIDGET_BG)
-            .putInt(KEY_WIDGET_OPACITY, settings.opacityPercent)
-            .putBoolean(KEY_WIDGET_SHOW_BORDER, settings.showBorder)
-            .putString(KEY_WIDGET_FONT, settings.fontSize.name)
-            .putString(KEY_WIDGET_TEXT_STYLE, settings.textStyle.name)
-            .putBoolean(KEY_WIDGET_SHOW_LOC, settings.showLocation)
-            .putBoolean(KEY_WIDGET_SHOW_HIJRI, settings.showHijriDate)
-            .putBoolean(KEY_WIDGET_SHOW_COUNTDOWN, settings.showCountdown)
-            .putBoolean(KEY_WIDGET_SHOW_SUNRISE, settings.showSunrise)
-            .putBoolean(KEY_WIDGET_SHOW_ALL, settings.showAllPrayersList)
-            .putBoolean(KEY_WIDGET_SHOW_HERO, settings.showHeroCard)
+            .putInt(KEY_WIDGET_OPACITY, widget.opacityPercent)
+            .putBoolean(KEY_WIDGET_SHOW_BORDER, widget.showBorder)
+            .putString(KEY_WIDGET_FONT, widget.fontSize.name)
+            .putString(KEY_WIDGET_TEXT_STYLE, widget.textStyle.name)
+            .putBoolean(KEY_WIDGET_SHOW_LOC, widget.showLocation)
+            .putBoolean(KEY_WIDGET_SHOW_HIJRI, widget.showHijriDate)
+            .putBoolean(KEY_WIDGET_SHOW_COUNTDOWN, widget.showCountdown)
+            .putBoolean(KEY_WIDGET_SHOW_SUNRISE, widget.showSunrise)
+            .putBoolean(KEY_WIDGET_SHOW_ALL, widget.showAllPrayersList)
+            .putBoolean(KEY_WIDGET_SHOW_HERO, widget.showHeroCard)
+            .putBoolean(KEY_24H, settings.is24HourFormat)
+            .putString(KEY_LOC_NAME, location.name)
+            .putString(KEY_LOC_COUNTRY, location.country)
+            .putLong(KEY_LOC_LAT, java.lang.Double.doubleToRawLongBits(location.latitude))
+            .putLong(KEY_LOC_LON, java.lang.Double.doubleToRawLongBits(location.longitude))
+            .putString(KEY_LOC_TZ, location.timeZoneId)
+            .putBoolean(KEY_LOC_IS_GPS, location.isGps)
+            .let { editor ->
+                location.nearestPlaceDistanceKm?.let {
+                    editor.putLong(KEY_LOC_DISTANCE_KM, java.lang.Double.doubleToRawLongBits(it))
+                } ?: editor.remove(KEY_LOC_DISTANCE_KM)
+            }
+            .putString(KEY_CALC_METHOD, settings.calculationMethod.name)
+            .putString(KEY_JURISTIC_METHOD, settings.juristicMethod.name)
+            .putString(KEY_HIGH_LAT_RULE, settings.highLatitudeRule.name)
+            .putInt(KEY_HIJRI_OFFSET, settings.hijriAdjustmentDays)
+            .putString(KEY_HIJRI_OFFSET_ANCHOR, settings.hijriAdjustmentAnchorMonth.orEmpty())
+            .putInt(KEY_ADJ_FAJR, adjustments.fajr)
+            .putInt(KEY_ADJ_SUNRISE, adjustments.sunrise)
+            .putInt(KEY_ADJ_DHUHR, adjustments.dhuhr)
+            .putInt(KEY_ADJ_ASR, adjustments.asr)
+            .putInt(KEY_ADJ_MAGHRIB, adjustments.maghrib)
+            .putInt(KEY_ADJ_ISHA, adjustments.isha)
+            .putString(KEY_AUDIO_STREAM, settings.audioStream.name)
+            .putBoolean(KEY_WAKE_SCREEN, settings.wakeScreenOnAlarm)
+            .putBoolean(KEY_ONBOARDING_COMPLETED, settings.onboardingCompleted)
+            .putBoolean(KEY_LIVE_COUNTDOWN_ENABLED, settings.liveCountdownEnabled)
+            .putInt(KEY_LIVE_COUNTDOWN_MINUTES, settings.liveCountdownMinutesBefore)
             .apply()
-        context.dataStore.edit { prefs ->
+    }
+
+    private suspend fun editSettings(transform: (MutablePreferences) -> Unit) {
+        val updated = context.dataStore.edit(transform)
+        syncFastCache(settingsFromDataStore(updated))
+    }
+
+    val settingsFlow: Flow<AppPrayerSettings> = context.dataStore.data.map { prefs ->
+        settingsFromDataStore(prefs).also(::syncFastCache)
+    }
+
+    suspend fun updateWidgetSettings(settings: WidgetCustomizationSettings) {
+        editSettings { prefs ->
             prefs[Keys.WIDGET_THEME_MODE] = settings.themeMode.name
             prefs[Keys.WIDGET_SHOW_BACKGROUND] = settings.showBackground
             prefs.remove(Keys.LEGACY_WIDGET_BG_STYLE)
@@ -509,28 +505,19 @@ class PrayerPreferences(private val context: Context) {
     }
 
     suspend fun updateAudioStream(audioStream: AthanAudioStream) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putString(KEY_AUDIO_STREAM, audioStream.name).apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.AUDIO_STREAM] = audioStream.name
         }
     }
 
     suspend fun updateWakeScreenOnAlarm(enabled: Boolean) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putBoolean(KEY_WAKE_SCREEN, enabled).apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.WAKE_SCREEN_ON_ALARM] = enabled
         }
     }
 
     suspend fun updateLiveCountdownSettings(enabled: Boolean, minutesBefore: Int) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit()
-            .putBoolean(KEY_LIVE_COUNTDOWN_ENABLED, enabled)
-            .putInt(KEY_LIVE_COUNTDOWN_MINUTES, minutesBefore)
-            .apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.LIVE_COUNTDOWN_ENABLED] = enabled
             prefs[Keys.LIVE_COUNTDOWN_MINUTES] = minutesBefore
         }
@@ -538,23 +525,7 @@ class PrayerPreferences(private val context: Context) {
 
 
     suspend fun updateLocation(location: UserLocation) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit()
-            .putString(KEY_LOC_NAME, location.name)
-            .putString(KEY_LOC_COUNTRY, location.country)
-            .putLong(KEY_LOC_LAT, java.lang.Double.doubleToRawLongBits(location.latitude))
-            .putLong(KEY_LOC_LON, java.lang.Double.doubleToRawLongBits(location.longitude))
-            .putString(KEY_LOC_TZ, location.timeZoneId)
-            .putBoolean(KEY_LOC_IS_GPS, location.isGps)
-            .let { editor ->
-                if (location.nearestPlaceDistanceKm != null) {
-                    editor.putLong(KEY_LOC_DISTANCE_KM, java.lang.Double.doubleToRawLongBits(location.nearestPlaceDistanceKm))
-                } else {
-                    editor.remove(KEY_LOC_DISTANCE_KM)
-                }
-            }
-            .apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.LOC_NAME] = location.name
             prefs[Keys.LOC_COUNTRY] = location.country
             prefs[Keys.LOC_LAT] = location.latitude
@@ -570,25 +541,19 @@ class PrayerPreferences(private val context: Context) {
     }
 
     suspend fun updateCalculationMethod(method: CalculationMethod) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putString(KEY_CALC_METHOD, method.name).apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.CALC_METHOD] = method.name
         }
     }
 
     suspend fun updateJuristicMethod(method: JuristicMethod) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putString(KEY_JURISTIC_METHOD, method.name).apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.JURISTIC_METHOD] = method.name
         }
     }
 
     suspend fun updateHighLatitudeRule(rule: HighLatitudeRule) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putString(KEY_HIGH_LAT_RULE, rule.name).apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.HIGH_LAT_RULE] = rule.name
         }
     }
@@ -599,12 +564,7 @@ class PrayerPreferences(private val context: Context) {
     ) {
         val boundedOffset = offset.coerceIn(-2, 2)
         val storedAnchor = anchorMonth.takeIf { boundedOffset != 0 }
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit()
-            .putInt(KEY_HIJRI_OFFSET, boundedOffset)
-            .putString(KEY_HIJRI_OFFSET_ANCHOR, storedAnchor.orEmpty())
-            .apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.HIJRI_OFFSET] = boundedOffset
             if (storedAnchor == null) prefs.remove(Keys.HIJRI_OFFSET_ANCHOR)
             else prefs[Keys.HIJRI_OFFSET_ANCHOR] = storedAnchor
@@ -620,22 +580,17 @@ class PrayerPreferences(private val context: Context) {
     }
 
     suspend fun updateIs24Hour(is24: Boolean) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putBoolean(KEY_24H, is24).apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.IS_24_HOUR] = is24
         }
     }
 
     suspend fun updateLanguage(language: AppLanguage) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putString(KEY_LANG, language.name).apply()
-
         // Persist before touching LocaleManager. Assigning applicationLocales can recreate the
         // Activity immediately; when it happened first, that recreation cancelled this coroutine
         // before DataStore was updated. A fresh Arabic setup then reopened with SYSTEM/English
         // data while Android had already switched the window to RTL.
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.APP_LANGUAGE] = language.name
         }
 
@@ -654,17 +609,13 @@ class PrayerPreferences(private val context: Context) {
     }
 
     suspend fun updateThemeMode(themeMode: AppThemeMode) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putString(KEY_THEME, themeMode.name).apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.THEME_MODE] = themeMode.name
         }
     }
 
     suspend fun updateColorPreset(preset: AppColorPreset) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putString(KEY_COLOR_PRESET, preset.name).apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.COLOR_PRESET] = preset.name
             if (preset != AppColorPreset.SYSTEM_DYNAMIC) {
                 prefs[Keys.FOLLOW_SYSTEM_COLORS] = false
@@ -673,9 +624,7 @@ class PrayerPreferences(private val context: Context) {
     }
 
     suspend fun updateFollowSystemColors(follow: Boolean) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putBoolean(KEY_FOLLOW_SYSTEM_COLORS, follow).apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.FOLLOW_SYSTEM_COLORS] = follow
             if (follow) {
                 prefs[Keys.COLOR_PRESET] = AppColorPreset.SYSTEM_DYNAMIC.name
@@ -684,16 +633,7 @@ class PrayerPreferences(private val context: Context) {
     }
 
     suspend fun updatePrayerAdjustment(prayer: PrayerType, offsetMinutes: Int) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        when (prayer) {
-            PrayerType.FAJR -> fastPrefs.edit().putInt(KEY_ADJ_FAJR, offsetMinutes).apply()
-            PrayerType.SUNRISE -> fastPrefs.edit().putInt(KEY_ADJ_SUNRISE, offsetMinutes).apply()
-            PrayerType.DHUHR -> fastPrefs.edit().putInt(KEY_ADJ_DHUHR, offsetMinutes).apply()
-            PrayerType.ASR -> fastPrefs.edit().putInt(KEY_ADJ_ASR, offsetMinutes).apply()
-            PrayerType.MAGHRIB -> fastPrefs.edit().putInt(KEY_ADJ_MAGHRIB, offsetMinutes).apply()
-            PrayerType.ISHA -> fastPrefs.edit().putInt(KEY_ADJ_ISHA, offsetMinutes).apply()
-        }
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             when (prayer) {
                 PrayerType.FAJR -> prefs[Keys.ADJ_FAJR] = offsetMinutes
                 PrayerType.SUNRISE -> prefs[Keys.ADJ_SUNRISE] = offsetMinutes
@@ -711,7 +651,7 @@ class PrayerPreferences(private val context: Context) {
         soundType: NotificationSoundType,
         preReminderMinutes: Int
     ) {
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.notifEnabled(prayer)] = enabled
             prefs[Keys.notifSound(prayer)] = soundType.name
             prefs[Keys.notifPreReminder(prayer)] = preReminderMinutes
@@ -719,9 +659,7 @@ class PrayerPreferences(private val context: Context) {
     }
 
     suspend fun updateOnboardingCompleted(completed: Boolean) {
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        fastPrefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply()
-        context.dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.ONBOARDING_COMPLETED] = completed
         }
     }

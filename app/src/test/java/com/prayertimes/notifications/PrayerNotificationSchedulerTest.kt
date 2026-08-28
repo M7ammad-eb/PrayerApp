@@ -157,6 +157,7 @@ class PrayerNotificationSchedulerTest {
 
     @Test
     fun realPrayerAlarmUsesAlarmClockTier() {
+        ShadowAlarmManager.setCanScheduleExactAlarms(true)
         val settings = withFajrConfig(
             baseSettings(),
             NotificationPrayerConfig(enabled = true, soundType = NotificationSoundType.FULL_ATHAN)
@@ -172,7 +173,23 @@ class PrayerNotificationSchedulerTest {
     }
 
     @Test
-    fun preReminderIsExactButNotAlarmClockWhenPermissionIsGranted() {
+    fun realPrayerAlarmDegradesToInexactWhenExactAccessIsUnexpectedlyUnavailable() {
+        ShadowAlarmManager.setCanScheduleExactAlarms(false)
+        val settings = withFajrConfig(
+            baseSettings(),
+            NotificationPrayerConfig(enabled = true, soundType = NotificationSoundType.FULL_ATHAN)
+        )
+
+        PrayerNotificationScheduler.scheduleDailyAlarms(context, settings)
+
+        val scheduled = scheduledAlarmFor(existingPendingIntent(prayerRequestCode, PrayerAlarmReceiver.ACTION_PRAYER_ALARM))
+        assertNotNull("The Athan must still be scheduled when exact-alarm access is unavailable", scheduled)
+        assertNull("The fallback must not claim alarm-clock priority", scheduled!!.alarmClockInfo)
+        assertEquals("The fallback should be inexact rather than being dropped", -1L, scheduled.windowLengthMs)
+    }
+
+    @Test
+    fun preReminderIsExactButNotAlarmClockWhenAccessIsAvailable() {
         ShadowAlarmManager.setCanScheduleExactAlarms(true)
         val settings = withFajrConfig(
             baseSettings(),
@@ -183,7 +200,7 @@ class PrayerNotificationSchedulerTest {
         val scheduled = scheduledAlarmFor(existingPendingIntent(reminderRequestCode, PrayerAlarmReceiver.ACTION_PRAYER_ALARM))
         assertNotNull(scheduled)
         assertNull("Reminder should not claim alarm-clock priority", scheduled!!.alarmClockInfo)
-        assertEquals("Reminder should be exact when the user has granted exact-alarm access", 0L, scheduled.windowLengthMs)
+        assertEquals("Reminder should be exact when exact-alarm access is available", 0L, scheduled.windowLengthMs)
     }
 
     @Test

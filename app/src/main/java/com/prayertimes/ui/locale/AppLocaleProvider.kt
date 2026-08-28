@@ -215,6 +215,8 @@ class AppStrings(
     // Settings Screen
     val settingsTitle: String = s(R.string.settings_title)
     val themeSection: String = s(R.string.settings_theme_section)
+    val appearanceLanguageTitle: String = s(R.string.settings_appearance_language_title)
+    val prayerCalculationTimeTitle: String = s(R.string.settings_prayer_calculation_time_title)
     val themeModeTitle: String = s(R.string.settings_theme_mode_title)
     val systemThemeDesc: String = s(R.string.settings_system_theme_desc)
     val lightThemeDesc: String = s(R.string.settings_light_theme_desc)

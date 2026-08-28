@@ -191,6 +191,8 @@
 
     <!-- ===== Settings Screen ===== -->
     <string name="settings_title">الإعدادات والتفضيلات</string>
+    <string name="settings_appearance_language_title">المظهر واللغة</string>
+    <string name="settings_prayer_calculation_time_title">حساب أوقات الصلاة وضبطها</string>
     <string name="settings_theme_section">المظهر والألوان</string>
     <string name="settings_theme_mode_title">وضع المظهر (فاتح / داكن)</string>
     <string name="settings_system_theme_desc">متابعة إعدادات النظام تلقائياً</string>
@@ -369,7 +371,7 @@
     <string name="onboarding_use_gps_button">تحديد الموقع التلقائي (GPS)</string>
     <string name="onboarding_selected_location_label">الموقع المحدد:</string>
     <string name="onboarding_step_notifications_title">تنبيهات الأذان والإشعارات</string>
-    <string name="onboarding_step_notifications_desc">تفعيل إذن الإشعارات والمنبه الدقيق لضمان انطلاق صوت الأذان والتنبيهات في وقت الصلاة تماماً حتى عند قفل الهاتف.</string>
+    <string name="onboarding_step_notifications_desc">فعّل إذن الإشعارات ليصلك تنبيه الأذان في وقت الصلاة حتى عند قفل الهاتف أو إطفاء الشاشة.</string>
     <string name="onboarding_step_notifications_explanation">لماذا نحتاج هذا الإذن؟\n• إطلاق صوت الأذان الشريف مع دخول وقت الصلاة.\n• عرض كبسولة العد التنازلي التفاعلية (Dynamic Island).\n• تذكيرك بالسنن والأيام البيض.</string>
     <string name="onboarding_grant_notification_permission_btn">منح إذن الإشعارات</string>
     <string name="onboarding_open_app_settings_btn">فتح إعدادات التطبيق</string>

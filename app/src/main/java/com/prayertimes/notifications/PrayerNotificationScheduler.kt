@@ -228,9 +228,9 @@ object PrayerNotificationScheduler {
     // which affects Doze/power-management budget system-wide.
 
     // Tier 1: the real Athan/prayer alarm - the app's core exact-timing functionality, and the one
-    // case that justifies it. AlarmClockInfo is exempt from the Android 12+ exact-alarm permission
-    // restrictions entirely (it's the same mechanism alarm-clock apps use), so no permission check
-    // is needed here - only a narrow fallback for the rare OEM that rejects it outright.
+    // case that justifies alarm-clock priority. setAlarmClock() is still an exact-alarm API, so it
+    // must be guarded by canScheduleExactAlarms() even though USE_EXACT_ALARM is normally granted
+    // automatically. The check also protects sideloaded/OEM builds with unusual permission state.
     private fun setAlarmClockAlarm(
         context: Context,
         alarmManager: AlarmManager,
@@ -238,6 +238,11 @@ object PrayerNotificationScheduler {
         pendingIntent: PendingIntent,
         requestCode: Int
     ) {
+        if (!canScheduleExactAlarms(alarmManager)) {
+            setInexactAlarm(alarmManager, triggerAtMillis, pendingIntent, requestCode)
+            return
+        }
+
         try {
             val showAppIntent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -250,13 +255,18 @@ object PrayerNotificationScheduler {
             )
             val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, showPendingIntent)
             alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
-        } catch (e: Exception) {
-            setReminderAlarm(alarmManager, triggerAtMillis, pendingIntent, requestCode)
+        } catch (e: SecurityException) {
+            // Access can theoretically change between the check and API call. Never drop the
+            // Athan completely: retain an inexact alarm as the last-resort fallback.
+            setInexactAlarm(alarmManager, triggerAtMillis, pendingIntent, requestCode)
+        } catch (e: RuntimeException) {
+            // A few OEM AlarmManager implementations reject otherwise valid alarm-clock calls.
+            setInexactAlarm(alarmManager, triggerAtMillis, pendingIntent, requestCode)
         }
     }
 
-    // Tier 2: pre-reminders. Worth exact timing if the user has actually granted exact-alarm
-    // access, but not important enough to claim alarm-clock priority for - explicitly checking
+    // Tier 2: pre-reminders. Worth exact timing when exact-alarm access is available, but not
+    // important enough to claim alarm-clock priority for - explicitly checking
     // canScheduleExactAlarms() up front instead of only discovering the lack of permission via a
     // caught SecurityException keeps permission state out of exception-driven control flow.
     private fun setReminderAlarm(
@@ -265,12 +275,7 @@ object PrayerNotificationScheduler {
         pendingIntent: PendingIntent,
         requestCode: Int
     ) {
-        val canScheduleExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            alarmManager.canScheduleExactAlarms()
-        } else {
-            true
-        }
-        if (canScheduleExact) {
+        if (canScheduleExactAlarms(alarmManager)) {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
@@ -285,6 +290,9 @@ object PrayerNotificationScheduler {
         }
         setInexactAlarm(alarmManager, triggerAtMillis, pendingIntent, requestCode)
     }
+
+    private fun canScheduleExactAlarms(alarmManager: AlarmManager): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
 
     // Tier 3: cosmetic/background triggers (live countdown start). Never worth exact-alarm
     // permission or alarm-clock priority - a few minutes of slack here is invisible to the user.

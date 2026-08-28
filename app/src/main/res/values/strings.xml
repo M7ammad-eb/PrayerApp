@@ -191,6 +191,8 @@
 
     <!-- ===== Settings Screen ===== -->
     <string name="settings_title">Settings &amp; Preferences</string>
+    <string name="settings_appearance_language_title">Appearance &amp; Language</string>
+    <string name="settings_prayer_calculation_time_title">Prayer Calculation &amp; Time</string>
     <string name="settings_theme_section">Appearance &amp; Theme</string>
     <string name="settings_theme_mode_title">Theme Mode</string>
     <string name="settings_system_theme_desc">Follow system dark/light settings</string>
@@ -241,7 +243,7 @@
     <string name="settings_reschedule_7_days">Reschedule 7-Day Alarms</string>
     <string name="settings_notifications_disabled_warning">Prayer alerts &amp; Athan notifications are disabled in system settings. Please enable them to receive timely prayer alarms.</string>
     <string name="settings_enable_notifications_btn">Enable Notifications</string>
-    <string name="settings_notifications_status_active">Prayer notifications &amp; exact alarms are active and ready.</string>
+    <string name="settings_notifications_status_active">Prayer notifications are enabled and Athan alarms are ready.</string>
     <string name="settings_notif_count_active">%1$d prayers active</string>
     <string name="settings_adjustments_custom_active">Custom offsets active</string>
     <string name="settings_adjustments_standard">Standard (0 min)</string>
@@ -369,7 +371,7 @@
     <string name="onboarding_use_gps_button">Detect Location (GPS)</string>
     <string name="onboarding_selected_location_label">Selected Location:</string>
     <string name="onboarding_step_notifications_title">Athan Alerts &amp; Notifications</string>
-    <string name="onboarding_step_notifications_desc">Enable notifications and exact alarm permissions so the Athan sounds on time, even when your phone is locked or screen is off.</string>
+    <string name="onboarding_step_notifications_desc">Enable notifications so the Athan can alert you at prayer time, even when your phone is locked or the screen is off.</string>
     <string name="onboarding_step_notifications_explanation">Why are permissions needed?\n• Play the holy Athan recitation at exact prayer times.\n• Show interactive countdown activities before prayer.\n• Remind you of Sunnah fasting and White Days.</string>
     <string name="onboarding_grant_notification_permission_btn">Grant Notification Permission</string>
     <string name="onboarding_open_app_settings_btn">Open App Settings</string>
