@@ -162,6 +162,11 @@ class AppStrings(
 
     // Qibla Screen
     val qiblaTitle: String = s(R.string.qibla_title)
+    val qiblaFindDirection: String = s(R.string.qibla_find_direction)
+    val qiblaCompassInstruction: String = s(R.string.qibla_compass_instruction)
+    val qiblaAlignedShort: String = s(R.string.qibla_aligned_short)
+    val qiblaTurnRightShort: String = s(R.string.qibla_turn_right_short)
+    val qiblaTurnLeftShort: String = s(R.string.qibla_turn_left_short)
     val qiblaAlignedMessage: String = s(R.string.qibla_aligned_message)
     val qiblaRotatePrompt: String = s(R.string.qibla_rotate_prompt)
     val qiblaBearingLabel: String = s(R.string.qibla_bearing_label)

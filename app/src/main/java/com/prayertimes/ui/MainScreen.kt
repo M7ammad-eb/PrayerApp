@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -392,7 +391,7 @@ private fun ExpressiveTopHeader(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -405,11 +404,8 @@ private fun ExpressiveTopHeader(
                 Surface(
                     onClick = onLocationClick,
                     shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 2.dp,
-                    border = CardDefaults.outlinedCardBorder().copy(
-                        brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    ),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    tonalElevation = 0.dp,
                     modifier = Modifier.clip(RoundedCornerShape(24.dp))
                 ) {
                     Row(
@@ -449,7 +445,7 @@ private fun ExpressiveTopHeader(
 
                 Text(
                     text = strings.appBrandName,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -461,10 +457,10 @@ private fun ExpressiveTopHeader(
                         AppNavTab.MONTHLY -> strings.monthlyCalendarTitle
                         AppNavTab.SETTINGS -> strings.settingsTitle
                     },
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier.padding(vertical = 7.dp)
                 )
                 if (currentTab == AppNavTab.MONTHLY) {
                     CompactHijriAdjustmentControl(
@@ -526,25 +522,22 @@ private fun ExpressiveFloatingBottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.95f),
-            tonalElevation = 4.dp,
-            shadowElevation = 6.dp,
-            border = CardDefaults.outlinedCardBorder().copy(
-                brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-            ),
+            shape = RoundedCornerShape(26.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
             modifier = Modifier
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(26.dp))
                 .fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -572,12 +565,12 @@ private fun ExpressiveNavTabItem(
     modifier: Modifier = Modifier
 ) {
     val indicatorColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+        targetValue = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
         label = "TabIndicator"
     )
 
     val iconColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         label = "TabIcon"
     )
 
@@ -588,7 +581,7 @@ private fun ExpressiveNavTabItem(
 
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
             .padding(vertical = 4.dp)
             .testTag("nav_tab_${tab.name.lowercase()}"),
@@ -597,8 +590,8 @@ private fun ExpressiveNavTabItem(
     ) {
         Box(
             modifier = Modifier
-                .size(width = 54.dp, height = 28.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .size(width = 56.dp, height = 30.dp)
+                .clip(RoundedCornerShape(15.dp))
                 .background(indicatorColor),
             contentAlignment = Alignment.Center
         ) {

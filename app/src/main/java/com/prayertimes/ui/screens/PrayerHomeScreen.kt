@@ -7,7 +7,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,11 +41,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -76,7 +73,6 @@ import com.prayertimes.data.models.PrayerTimeItem
 import com.prayertimes.data.models.PrayerType
 import com.prayertimes.data.preferences.AppPrayerSettings
 import com.prayertimes.ui.locale.LocalAppStrings
-import com.prayertimes.ui.theme.BentoBorder
 import com.prayertimes.ui.viewmodel.CurrentPrayerInfo
 import java.time.Duration
 import java.time.LocalDate
@@ -319,10 +315,8 @@ private fun BentoCurrentPrayerHeroCard(
 ) {
     val prayerItem = currentPrayerInfo.prayerItem ?: return
     val prayerType = prayerItem.type
-    val isDark = isSystemInDarkTheme()
-
-    val cardBg = MaterialTheme.colorScheme.primaryContainer
-    val contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    val cardBg = MaterialTheme.colorScheme.primary
+    val contentColor = MaterialTheme.colorScheme.onPrimary
     val strings = LocalAppStrings.current
     val countdownText = remember(currentPrayerInfo.remainingSeconds, currentPrayerInfo.isPrayerTimeEnded, strings) {
         if (currentPrayerInfo.isPrayerTimeEnded) strings.fajrTimeEnded
@@ -335,13 +329,13 @@ private fun BentoCurrentPrayerHeroCard(
             .clip(RoundedCornerShape(26.dp))
             .clickable { onClick() }
             .testTag("current_prayer_hero_card"),
-        shape = RoundedCornerShape(26.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = cardBg)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(horizontal = 22.dp, vertical = 20.dp)
         ) {
             // Background watermark icon
             Box(
@@ -393,7 +387,7 @@ private fun BentoCurrentPrayerHeroCard(
                 // Bottom Athan time banner pill
                 Row(
                     modifier = Modifier
-                        .background(contentColor.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                        .background(contentColor.copy(alpha = 0.14f), RoundedCornerShape(50))
                         .padding(horizontal = 12.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -430,7 +424,7 @@ private fun BentoDateSelector(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(20.dp))
             .padding(horizontal = 6.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -517,24 +511,18 @@ private fun BentoPrayerTimesListCard(
     isToday: Boolean,
     onToggleNotification: (PrayerType, NotificationPrayerConfig) -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
-    val cardBorderColor = if (isDark) MaterialTheme.colorScheme.outline.copy(alpha = 0.25f) else BentoBorder
-
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, cardBorderColor, RoundedCornerShape(24.dp))
-            .clip(RoundedCornerShape(24.dp)),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Color.Transparent
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(6.dp)
+                .padding(0.dp)
         ) {
             prayerItems.forEachIndexed { index, item ->
                 BentoPrayerRow(
@@ -545,11 +533,7 @@ private fun BentoPrayerTimesListCard(
                     onToggleNotification = onToggleNotification
                 )
                 if (index < prayerItems.size - 1) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        thickness = 0.8.dp,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
+                    Spacer(Modifier.height(8.dp))
                 }
             }
         }
@@ -569,21 +553,30 @@ private fun BentoPrayerRow(
     val isNext = item.isNext && isToday
     var showMenu by remember { mutableStateOf(false) }
 
-    val rowBg = if (isNext) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent
+    val rowBg = if (isNext) {
+        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.78f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerLow
+    }
     val prayerTextColor = if (isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     val timeTextColor = if (isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(rowBg, RoundedCornerShape(14.dp))
+            .background(rowBg, RoundedCornerShape(18.dp))
+            .border(
+                width = if (isNext) 1.dp else 0.dp,
+                color = if (isNext) MaterialTheme.colorScheme.primary.copy(alpha = 0.28f) else Color.Transparent,
+                shape = RoundedCornerShape(18.dp)
+            )
             .clickable {
                 val now = ZonedDateTime.now(item.zonedDateTime.zone)
                 val diffSeconds = Duration.between(now, item.zonedDateTime).seconds
                 val statusText = if (diffSeconds > 0) strings.formatCountdown(diffSeconds) else strings.formatSince(-diffSeconds)
                 Toast.makeText(context, "${strings.prayerName(item.type)}: $statusText", Toast.LENGTH_SHORT).show()
             }
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp)
             .testTag("prayer_card_${item.type.name.lowercase()}"),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -594,7 +587,7 @@ private fun BentoPrayerRow(
                 modifier = Modifier
                     .size(34.dp)
                     .background(
-                        if (isNext) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        if (isNext) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceContainerHigh,
                         CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -682,15 +675,15 @@ private fun BentoExtraSunnahCard(
     onToggleExpand: () -> Unit
 ) {
     val strings = LocalAppStrings.current
-    OutlinedCard(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .clickable { onToggleExpand() }
             .testTag("extra_sunnah_times_card"),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

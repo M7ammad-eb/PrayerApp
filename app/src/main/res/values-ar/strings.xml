@@ -146,6 +146,11 @@
 
     <!-- ===== Qibla Screen ===== -->
     <string name="qibla_title">القبلة</string>
+    <string name="qibla_find_direction">تحديد القبلة</string>
+    <string name="qibla_compass_instruction">ضع الهاتف بشكل مسطح ثم استدر حتى تصل علامة الكعبة إلى أعلى الدائرة.</string>
+    <string name="qibla_aligned_short">أنت باتجاه القبلة</string>
+    <string name="qibla_turn_right_short">اتجه يميناً</string>
+    <string name="qibla_turn_left_short">اتجه يساراً</string>
     <string name="qibla_aligned_message">أنت الآن باتجاه الكعبة المشرفة بدقة!</string>
     <string name="qibla_rotate_prompt">قم بتدوير الهاتف حتى يتطابق المؤشر الذهبي مع الأعلى</string>
     <string name="qibla_bearing_label">زاوية القبلة:</string>
@@ -759,9 +764,12 @@
     <string name="hijri_calendar_adjustment_title">تعديل التاريخ الهجري</string>
     <string name="hijri_calendar_adjustment_reset_note">مؤقت • يُصفّر مع بداية الشهر الهجري القادم</string>
     <string name="hijri_calendar_view_prayer_times">عرض مواقيت الصلاة لهذا اليوم</string>
+    <string name="hijri_calendar_significant_dates">مناسبات الشهر</string>
+    <string name="hijri_calendar_no_significant_dates">لا توجد مناسبات محددة في هذا الشهر الهجري.</string>
     <string name="hijri_calendar_sunset_note">تُعرض تواريخ تقويم أم القرى. تبدأ المناسبات الإسلامية من مغرب الليلة السابقة بالتاريخ الميلادي، وقد يختلف الإعلان الرسمي لرؤية الهلال. يمكن ضبط تاريخ الشهر الحالي فقط من أزرار + و− أعلاه، ويُصفّر الضبط تلقائياً مع بداية الشهر الهجري التالي.</string>
     <string name="hijri_calendar_legend_eid">عيد</string>
     <string name="hijri_calendar_legend_fasting">صيام</string>
+    <string name="hijri_calendar_legend_selected">المحدد</string>
     <string name="hijri_calendar_legend_special">مناسبة</string>
     <string name="calendar_weekday_sun_short">الأحد</string>
     <string name="calendar_weekday_mon_short">الإثنين</string>

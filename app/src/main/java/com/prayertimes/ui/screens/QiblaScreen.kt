@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,11 +26,11 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CompassCalibration
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -39,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,16 +46,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -72,9 +70,7 @@ import com.prayertimes.ui.locale.LocalAppStrings
 import com.prayertimes.ui.theme.GoldAccent
 import com.prayertimes.ui.theme.KaabaBlack
 import kotlin.math.abs
-import kotlin.math.cos
 import kotlin.math.roundToInt
-import kotlin.math.sin
 
 private const val ALIGNMENT_THRESHOLD = 3.5f
 
@@ -84,7 +80,9 @@ fun QiblaScreen(
     compassState: CompassState,
     location: UserLocation
 ) {
+    val strings = LocalAppStrings.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val hapticFeedback = LocalHapticFeedback.current
 
     DisposableEffect(compassSensorManager, lifecycleOwner) {
         if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
@@ -105,12 +103,23 @@ fun QiblaScreen(
     }
 
     var showCalibrationDialog by remember { mutableStateOf(false) }
+    var wasAligned by remember { mutableStateOf(false) }
     val isAligned = abs(compassState.relativeQiblaAngle) <= ALIGNMENT_THRESHOLD
-    val animatedDialRotation by animateFloatAsState(
-        targetValue = -compassState.azimuthUnwrapped,
-        animationSpec = tween(durationMillis = 220),
-        label = "qibla_dial_rotation"
+    val hasClearlyLeftAlignment = abs(compassState.relativeQiblaAngle) >= 8f
+    val animatedPointerRotation by animateFloatAsState(
+        targetValue = compassState.qiblaBearing - compassState.azimuthUnwrapped,
+        animationSpec = tween(durationMillis = 180),
+        label = "qibla_pointer_rotation"
     )
+
+    LaunchedEffect(isAligned, hasClearlyLeftAlignment) {
+        if (isAligned && !wasAligned) {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            wasAligned = true
+        } else if (hasClearlyLeftAlignment) {
+            wasAligned = false
+        }
+    }
 
     if (showCalibrationDialog) {
         CalibrationDialog(onDismiss = { showCalibrationDialog = false })
@@ -123,17 +132,30 @@ fun QiblaScreen(
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .testTag("qibla_screen"),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        LocationSummary(location = location, distanceKm = compassState.distanceKm)
-
         if (compassState.isSensorAvailable) {
+            Text(
+                text = strings.qiblaFindDirection,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = strings.qiblaCompassInstruction,
+                modifier = Modifier.padding(horizontal = 20.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
             CompassHero(
                 compassState = compassState,
-                dialRotation = animatedDialRotation,
+                pointerRotation = animatedPointerRotation,
                 isAligned = isAligned
             )
-            AccuracyRow(
+            QiblaDetailsCard(
+                location = location,
+                distanceKm = compassState.distanceKm,
                 accuracy = compassState.accuracy,
                 onCalibrate = { showCalibrationDialog = true }
             )
@@ -146,322 +168,165 @@ fun QiblaScreen(
 }
 
 @Composable
-private fun LocationSummary(location: UserLocation, distanceKm: Double) {
-    val strings = LocalAppStrings.current
-    val resources = LocalContext.current.resources
-    val city = com.prayertimes.data.cities.CityDatabase.localizedName(resources, location)
-    val country = com.prayertimes.data.cities.CityDatabase.localizedCountry(resources, location)
-    val locationName = if (country.isNotEmpty() && !country.contains("°")) "$city, $country" else city
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(21.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = locationName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2
-                )
-                Text(
-                    text = "${strings.distanceToKaabaLabel} ${strings.formatNumber(distanceKm.roundToInt())} ${strings.kmUnit}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun CompassHero(
     compassState: CompassState,
-    dialRotation: Float,
+    pointerRotation: Float,
     isAligned: Boolean
 ) {
-    val strings = LocalAppStrings.current
-    val borderColor by animateColorAsState(
-        targetValue = if (isAligned) GoldAccent.copy(alpha = 0.75f)
-        else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f),
-        label = "qibla_hero_border"
-    )
-
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, borderColor, RoundedCornerShape(28.dp)),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            .padding(top = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .aspectRatio(1f),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                CompassDial(
-                    dialRotation = dialRotation,
-                    qiblaBearing = compassState.qiblaBearing,
-                    isAligned = isAligned
-                )
-                CardinalLabels(dialRotation = dialRotation)
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "${compassState.azimuth.roundToInt()}°",
-                        fontSize = 36.sp,
-                        lineHeight = 40.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = strings.cardinalDirection(compassState.azimuth.toDouble()),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            DirectionStatus(isAligned = isAligned, relativeAngle = compassState.relativeQiblaAngle)
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = strings.qiblaBearingLabel,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "${compassState.qiblaBearing.roundToInt()}° ${strings.cardinalDirection(compassState.qiblaBearing.toDouble())}",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = GoldAccent
-                )
-            }
+            MinimalQiblaCompass(pointerRotation = pointerRotation, isAligned = isAligned)
         }
+        DirectionStatus(isAligned = isAligned, relativeAngle = compassState.relativeQiblaAngle)
     }
 }
 
 @Composable
-private fun CompassDial(dialRotation: Float, qiblaBearing: Float, isAligned: Boolean) {
+private fun MinimalQiblaCompass(pointerRotation: Float, isAligned: Boolean) {
     val primary = MaterialTheme.colorScheme.primary
     val outline = MaterialTheme.colorScheme.outline
-    val surface = MaterialTheme.colorScheme.surface
-    val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
-    val alignedRingColor by animateColorAsState(
-        targetValue = if (isAligned) GoldAccent else outline.copy(alpha = 0.7f),
-        label = "qibla_alignment_ring"
+    val surface = MaterialTheme.colorScheme.surfaceContainerLowest
+    val ringColor by animateColorAsState(
+        targetValue = if (isAligned) primary else outline.copy(alpha = 0.28f),
+        label = "qibla_ring_color"
+    )
+    val pointerColor by animateColorAsState(
+        targetValue = if (isAligned) GoldAccent else primary,
+        label = "qibla_pointer_color"
     )
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         val center = Offset(size.width / 2f, size.height / 2f)
-        val radius = size.minDimension / 2f - 10.dp.toPx()
+        val radius = size.minDimension / 2f - 8.dp.toPx()
 
-        drawCircle(color = surfaceVariant.copy(alpha = 0.32f), radius = radius, center = center)
+        drawCircle(color = ringColor.copy(alpha = if (isAligned) 0.10f else 0.08f), radius = radius, center = center)
+        drawCircle(color = surface, radius = radius - 7.dp.toPx(), center = center)
         drawCircle(
-            color = alignedRingColor,
+            color = ringColor,
             radius = radius,
             center = center,
-            style = Stroke(width = if (isAligned) 3.dp.toPx() else 2.dp.toPx())
+            style = Stroke(width = if (isAligned) 4.dp.toPx() else 2.dp.toPx())
         )
         drawCircle(
-            color = outline.copy(alpha = 0.18f),
-            radius = radius * 0.68f,
+            color = outline.copy(alpha = 0.10f),
+            radius = radius - 8.dp.toPx(),
             center = center,
             style = Stroke(width = 1.dp.toPx())
         )
 
-        rotate(dialRotation, center) {
-            for (index in 0 until 72) {
-                val angle = Math.toRadians(index * 5.0)
-                val isCardinal = index % 18 == 0
-                val isMajor = index % 6 == 0
-                val tickLength = when {
-                    isCardinal -> 15.dp.toPx()
-                    isMajor -> 10.dp.toPx()
-                    else -> 5.dp.toPx()
-                }
-                val tickColor = when {
-                    index == 0 -> Color(0xFFE25555)
-                    isCardinal -> primary
-                    isMajor -> outline.copy(alpha = 0.7f)
-                    else -> outline.copy(alpha = 0.35f)
-                }
-                val strokeWidth = when {
-                    isCardinal -> 2.5.dp.toPx()
-                    isMajor -> 1.6.dp.toPx()
-                    else -> 1.dp.toPx()
-                }
-                val startRadius = radius - tickLength - 3.dp.toPx()
-                val endRadius = radius - 3.dp.toPx()
-
-                drawLine(
-                    color = tickColor,
-                    start = Offset(
-                        x = center.x + startRadius * sin(angle).toFloat(),
-                        y = center.y - startRadius * cos(angle).toFloat()
-                    ),
-                    end = Offset(
-                        x = center.x + endRadius * sin(angle).toFloat(),
-                        y = center.y - endRadius * cos(angle).toFloat()
-                    ),
-                    strokeWidth = strokeWidth,
-                    cap = StrokeCap.Round
-                )
-            }
-
-            rotate(qiblaBearing, center) {
-                val markerCenter = Offset(center.x, center.y - radius + 27.dp.toPx())
-
-                drawCircle(
-                    color = GoldAccent.copy(alpha = 0.18f),
-                    radius = 23.dp.toPx(),
-                    center = markerCenter
-                )
-                drawCircle(color = GoldAccent, radius = 17.dp.toPx(), center = markerCenter)
-
-                val kaabaWidth = 21.dp.toPx()
-                val kaabaHeight = 24.dp.toPx()
-                val kaabaTopLeft = Offset(
-                    markerCenter.x - kaabaWidth / 2f,
-                    markerCenter.y - kaabaHeight / 2f
-                )
-                drawRoundRect(
-                    color = KaabaBlack,
-                    topLeft = kaabaTopLeft,
-                    size = Size(kaabaWidth, kaabaHeight),
-                    cornerRadius = CornerRadius(3.dp.toPx())
-                )
-                drawRoundRect(
-                    color = GoldAccent,
-                    topLeft = Offset(kaabaTopLeft.x, kaabaTopLeft.y + 6.dp.toPx()),
-                    size = Size(kaabaWidth, 3.dp.toPx()),
-                    cornerRadius = CornerRadius(1.dp.toPx())
-                )
-            }
-        }
-
-        val pointerColor = if (isAligned) GoldAccent else primary
-        val fixedPointer = Path().apply {
-            moveTo(center.x, 1.dp.toPx())
-            lineTo(center.x - 8.dp.toPx(), 17.dp.toPx())
-            lineTo(center.x + 8.dp.toPx(), 17.dp.toPx())
+        val topGuide = Path().apply {
+            moveTo(center.x, 3.dp.toPx())
+            lineTo(center.x - 7.dp.toPx(), 16.dp.toPx())
+            lineTo(center.x + 7.dp.toPx(), 16.dp.toPx())
             close()
         }
-        drawPath(fixedPointer, color = pointerColor)
+        drawPath(topGuide, color = ringColor)
 
-        drawCircle(color = surface, radius = 54.dp.toPx(), center = center)
-        drawCircle(
-            color = if (isAligned) GoldAccent.copy(alpha = 0.55f) else primary.copy(alpha = 0.28f),
-            radius = 54.dp.toPx(),
-            center = center,
-            style = Stroke(width = 1.5.dp.toPx())
-        )
+        rotate(pointerRotation, center) {
+            val markerCenter = Offset(center.x, center.y - radius * 0.66f)
+            drawLine(
+                color = pointerColor,
+                start = center,
+                end = markerCenter,
+                strokeWidth = 4.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+            drawCircle(color = GoldAccent.copy(alpha = 0.18f), radius = 25.dp.toPx(), center = markerCenter)
+            drawCircle(color = GoldAccent, radius = 19.dp.toPx(), center = markerCenter)
+            rotate(-pointerRotation, markerCenter) {
+                drawRoundRect(
+                    color = KaabaBlack,
+                    topLeft = Offset(markerCenter.x - 11.dp.toPx(), markerCenter.y - 12.dp.toPx()),
+                    size = androidx.compose.ui.geometry.Size(22.dp.toPx(), 24.dp.toPx()),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx())
+                )
+                drawLine(
+                    color = GoldAccent,
+                    start = Offset(markerCenter.x - 11.dp.toPx(), markerCenter.y - 5.dp.toPx()),
+                    end = Offset(markerCenter.x + 11.dp.toPx(), markerCenter.y - 5.dp.toPx()),
+                    strokeWidth = 3.dp.toPx()
+                )
+            }
+        }
+
+        drawCircle(color = primary.copy(alpha = 0.10f), radius = 20.dp.toPx(), center = center)
+        drawCircle(color = primary, radius = 8.dp.toPx(), center = center)
     }
-}
-
-@Composable
-private fun CardinalLabels(dialRotation: Float) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(31.dp)
-            .rotate(dialRotation)
-    ) {
-        CardinalLabel("N", Color(0xFFE25555), Modifier.align(Alignment.TopCenter))
-        CardinalLabel("E", MaterialTheme.colorScheme.onSurfaceVariant, Modifier.align(Alignment.CenterEnd))
-        CardinalLabel("S", MaterialTheme.colorScheme.onSurfaceVariant, Modifier.align(Alignment.BottomCenter))
-        CardinalLabel("W", MaterialTheme.colorScheme.onSurfaceVariant, Modifier.align(Alignment.CenterStart))
-    }
-}
-
-@Composable
-private fun CardinalLabel(text: String, color: Color, modifier: Modifier) {
-    Text(
-        text = text,
-        modifier = modifier,
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.ExtraBold,
-        color = color
-    )
 }
 
 @Composable
 private fun DirectionStatus(isAligned: Boolean, relativeAngle: Float) {
     val strings = LocalAppStrings.current
+    val degrees = abs(relativeAngle).roundToInt()
     val containerColor by animateColorAsState(
-        targetValue = if (isAligned) GoldAccent.copy(alpha = 0.16f)
-        else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+        targetValue = if (isAligned) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.surfaceContainer,
         label = "qibla_status_container"
     )
-    val contentColor = if (isAligned) GoldAccent else MaterialTheme.colorScheme.primary
+    val contentColor = if (isAligned) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
 
-    Row(
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(22.dp))
             .background(containerColor)
-            .padding(horizontal = 16.dp, vertical = 13.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 28.dp, vertical = 14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Icon(
-            imageVector = if (isAligned) Icons.Default.CheckCircle else Icons.Default.Navigation,
-            contentDescription = null,
-            tint = contentColor,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(modifier = Modifier.width(9.dp))
-        Text(
-            text = when {
-                isAligned -> strings.qiblaAlignedMessage
-                relativeAngle > 0f -> strings.qiblaTurnRight(relativeAngle.roundToInt())
-                else -> strings.qiblaTurnLeft(-relativeAngle.roundToInt())
-            },
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = contentColor,
-            textAlign = TextAlign.Center
-        )
+        if (isAligned) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(28.dp)
+            )
+            Text(
+                text = strings.qiblaAlignedShort,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = contentColor
+            )
+        } else {
+            Text(
+                text = strings.formatNumber(degrees) + "°",
+                fontSize = 38.sp,
+                lineHeight = 42.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = contentColor
+            )
+            Text(
+                text = if (relativeAngle > 0f) strings.qiblaTurnRightShort else strings.qiblaTurnLeftShort,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
 @Composable
-private fun AccuracyRow(accuracy: CompassAccuracy, onCalibrate: () -> Unit) {
+private fun QiblaDetailsCard(
+    location: UserLocation,
+    distanceKm: Double,
+    accuracy: CompassAccuracy,
+    onCalibrate: () -> Unit
+) {
     val strings = LocalAppStrings.current
+    val resources = LocalContext.current.resources
+    val city = com.prayertimes.data.cities.CityDatabase.localizedName(resources, location)
+    val country = com.prayertimes.data.cities.CityDatabase.localizedCountry(resources, location)
+    val locationName = if (country.isNotEmpty() && !country.contains("°")) "$city, $country" else city
     val accuracyText = when (accuracy) {
         CompassAccuracy.HIGH -> strings.qiblaAccuracyHigh
         CompassAccuracy.MEDIUM -> strings.qiblaAccuracyMedium
@@ -476,29 +341,60 @@ private fun AccuracyRow(accuracy: CompassAccuracy, onCalibrate: () -> Unit) {
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
-        Row(
-            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 7.dp, bottom = 7.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
-            Box(modifier = Modifier.size(9.dp).background(accuracyColor, CircleShape))
-            Spacer(modifier = Modifier.width(9.dp))
-            Text(
-                text = "${strings.qiblaSensorLabel} $accuracyText",
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            TextButton(onClick = onCalibrate) {
+            Row(
+                modifier = Modifier.padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
-                    imageVector = Icons.Default.CompassCalibration,
+                    imageVector = Icons.Default.LocationOn,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(21.dp)
                 )
-                Spacer(modifier = Modifier.width(5.dp))
-                Text(strings.qiblaCalibrateButton)
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = locationName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "${strings.distanceToKaabaLabel} ${strings.formatNumber(distanceKm.roundToInt())} ${strings.kmUnit}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 5.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(9.dp).background(accuracyColor, CircleShape))
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "${strings.qiblaSensorLabel} $accuracyText",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                TextButton(onClick = onCalibrate) {
+                    Icon(
+                        imageVector = Icons.Default.CompassCalibration,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(strings.qiblaCalibrateButton)
+                }
             }
         }
     }

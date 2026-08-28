@@ -32,14 +32,19 @@ fun getPresetColorScheme(preset: AppColorPreset, isDark: Boolean): ColorScheme {
             onSecondaryContainer = Color(0xFFFFF8E1),
             tertiary = Color(0xFFF3D27C),
             onTertiary = Color.Black,
-            background = Color(0xFF0F1412),
+            background = Color(0xFF0F1513),
             onBackground = Color(0xFFE8EFEA),
-            surface = Color(0xFF161E1A),
+            surface = Color(0xFF151D1A),
             onSurface = Color(0xFFE8EFEA),
-            surfaceVariant = Color(0xFF222C26),
+            surfaceVariant = Color(0xFF222C29),
             onSurfaceVariant = Color(0xFFC0CEC5),
-            outline = Color(0xFF38463E),
-            outlineVariant = Color(0xFF28342D)
+            outline = Color(0xFF71807B),
+            outlineVariant = Color(0xFF34413D),
+            surfaceContainerLowest = Color(0xFF0A100E),
+            surfaceContainerLow = Color(0xFF131B18),
+            surfaceContainer = Color(0xFF18211E),
+            surfaceContainerHigh = Color(0xFF1E2824),
+            surfaceContainerHighest = Color(0xFF25302C)
         )
     } else {
         lightColorScheme(
@@ -53,14 +58,19 @@ fun getPresetColorScheme(preset: AppColorPreset, isDark: Boolean): ColorScheme {
             onSecondaryContainer = Color(0xFF3E2723),
             tertiary = Color(0xFFB8860B),
             onTertiary = Color.White,
-            background = Color(0xFFF8FAF9),
+            background = Color(0xFFF4FBF9),
             onBackground = Color(0xFF191C1B),
             surface = Color(0xFFFFFFFF),
             onSurface = Color(0xFF191C1B),
-            surfaceVariant = Color(0xFFEDF3F0),
+            surfaceVariant = Color(0xFFE8EFED),
             onSurfaceVariant = Color(0xFF434E48),
-            outline = Color(0xFFD0DDD6),
-            outlineVariant = Color(0xFFE4ECE8)
+            outline = Color(0xFF6E7977),
+            outlineVariant = Color(0xFFBEC9C6),
+            surfaceContainerLowest = Color(0xFFFFFFFF),
+            surfaceContainerLow = Color(0xFFEEF5F3),
+            surfaceContainer = Color(0xFFE8EFED),
+            surfaceContainerHigh = Color(0xFFE3EAE8),
+            surfaceContainerHighest = Color(0xFFDDE4E2)
         )
     }
 }
@@ -95,5 +105,10 @@ fun MyApplicationTheme(
         }
     }
 
-    MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = Typography,
+        shapes = SalatiShapes,
+        content = content
+    )
 }
