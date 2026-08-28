@@ -249,6 +249,8 @@
     <string name="settings_about_hub_subtitle">حسابات فلكية بدون إنترنت • الإصدار 1.0</string>
     <string name="about_data_attribution_title">بيانات الأماكن</string>
     <string name="about_data_attribution_body">أسماء المدن والأماكن مقدَّمة من GeoNames.org، مرخّصة بموجب رخصة المشاع الإبداعي - النسب 4.0 (CC BY 4.0).</string>
+    <string name="about_typeface_title">الخط والترخيص</string>
+    <string name="about_typeface_body">يستخدم التطبيق خط Zain من تصميم Boutros Fonts. حقوق النشر © 2024 لمؤلفي مشروع Zain، وهو مرخّص بموجب رخصة SIL Open Font License 1.1.</string>
     <string name="settings_rerun_setup_title">إعادة تشغيل معالج الإعداد الأولي</string>
     <string name="settings_rerun_setup_subtitle">إعادة تخصيص اللغة والموقع والأذان والتصميم</string>
     <string name="settings_juristic_standard_desc">ظل الشيء مثله (الشافعي، المالكي، الحنبلي)</string>

@@ -197,12 +197,10 @@ class CompassSensorManager(private val context: Context) : SensorEventListener {
         updateCalculatedState(smoothedAzimuth)
     }
 
-    // Raw sensor axes are fixed to the device's physical orientation, not the "up" direction the
-    // user is currently holding the screen at - without remapping, rotating the phone to landscape
-    // (this Activity isn't orientation-locked) would report an azimuth 90 degrees off from what's
-    // actually pointing at the top of the visible compass dial. DisplayManager (not
-    // Context.display, which throws on a non-UI context like the Application context this class is
-    // constructed with) works from any context.
+    // Raw sensor axes are fixed to the device's physical orientation, not the display's "up"
+    // direction. Keep remapping defensively for platform modes that can override the requested
+    // portrait orientation. DisplayManager (not Context.display, which throws on a non-UI context
+    // like the Application context this class is constructed with) works from any context.
     private fun remapForDisplayRotation(input: FloatArray, output: FloatArray) {
         val rotation = displayManager?.getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: Surface.ROTATION_0
         val (newX, newY) = when (rotation) {

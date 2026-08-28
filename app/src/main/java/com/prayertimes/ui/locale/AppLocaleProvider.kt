@@ -285,6 +285,8 @@ class AppStrings(
     val aboutHubSubtitle: String = s(R.string.settings_about_hub_subtitle)
     val aboutDataAttributionTitle: String = s(R.string.about_data_attribution_title)
     val aboutDataAttributionBody: String = s(R.string.about_data_attribution_body)
+    val aboutTypefaceTitle: String = s(R.string.about_typeface_title)
+    val aboutTypefaceBody: String = s(R.string.about_typeface_body)
     val rerunSetupTitle: String = s(R.string.settings_rerun_setup_title)
     val rerunSetupSubtitle: String = s(R.string.settings_rerun_setup_subtitle)
     val juristicStandardDesc: String = s(R.string.settings_juristic_standard_desc)

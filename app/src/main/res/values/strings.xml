@@ -249,6 +249,8 @@
     <string name="settings_about_hub_subtitle">Offline Astronomical Algorithms • v1.0</string>
     <string name="about_data_attribution_title">Place Data</string>
     <string name="about_data_attribution_body">City and place names are provided by GeoNames.org, licensed under Creative Commons Attribution 4.0 (CC BY 4.0).</string>
+    <string name="about_typeface_title">Typeface &amp; License</string>
+    <string name="about_typeface_body">Zain typeface by Boutros Fonts. Copyright 2024 The Zain Project Authors. Licensed under the SIL Open Font License 1.1.</string>
     <string name="settings_rerun_setup_title">Re-run Setup Wizard</string>
     <string name="settings_rerun_setup_subtitle">Re-configure language, location, athan &amp; style</string>
     <string name="settings_juristic_standard_desc">Shadow equals object length (Standard)</string>
