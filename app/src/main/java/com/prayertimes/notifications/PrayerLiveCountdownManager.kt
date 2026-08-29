@@ -22,6 +22,12 @@ object PrayerLiveCountdownManager {
     private const val NOTIFICATION_ID = 7777
 
     fun show(context: Context, prayerType: PrayerType, targetEpochMillis: Long, locationName: String, isArabic: Boolean) {
+        val remainingMillis = targetEpochMillis - System.currentTimeMillis()
+        if (remainingMillis <= 0L) {
+            dismiss(context)
+            return
+        }
+
         val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
         val localizedPrayerName = LocalizedStrings.prayerName(localizedRes, prayerType)
         val title = localizedRes.getString(R.string.live_countdown_notif_title, localizedPrayerName)
@@ -49,6 +55,9 @@ object PrayerLiveCountdownManager {
             .setWhen(targetEpochMillis)
             .setUsesChronometer(true)
             .setChronometerCountDown(true)
+            // Independent expiry: Android removes the countdown when it reaches zero even if a
+            // full-screen alarm path prevents the normal prayer-notification cleanup from running.
+            .setTimeoutAfter(remainingMillis)
             .setContentIntent(openAppPendingIntent)
 
         // Promotion to the system's Live Update surface (status bar chip / lock screen / AOD) is

@@ -106,7 +106,9 @@ fun SettingsWidgetSubScreen(
     val strings = LocalAppStrings.current
     val wSet = settings.widgetSettings
     var previewPreset by remember { mutableStateOf(WidgetPreviewPreset.LARGE_RIBBON) }
-    var isPreviewExpanded by remember { mutableStateOf(true) }
+    // Preview expansion is deliberately session-only: it starts collapsed whenever this page is
+    // entered and is discarded when the user leaves the widget settings screen.
+    var isPreviewExpanded by remember { mutableStateOf(false) }
     var advancedAppearanceExpanded by remember { mutableStateOf(false) }
 
     Column(
