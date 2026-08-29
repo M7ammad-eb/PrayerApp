@@ -312,6 +312,8 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     // separately before persistence so it cannot invalidate prayer schedules and alarms.
     private val cachedLocationMaxAgeMillis = 2 * 60 * 60 * 1000L
     private val cachedLocationMaxAccuracyMeters = 500f
+    private val explicitLocationMaxAgeMillis = 15 * 60 * 1000L
+    private val explicitLocationMaxAccuracyMeters = 250f
     private val meaningfulLocationChangeMeters = 5_000f
 
     @SuppressLint("MissingPermission")
@@ -321,10 +323,24 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         val language = settings.value.language
         val localizedRes = com.prayertimes.util.LocalizedStrings.forLanguage(context, language.resolveIsArabic(context))
 
-        // A button press is an explicit request for a new fix. Do not silently reuse the
-        // two-hour startup cache or discard a result merely because it is within 5 km.
+        // A button press must always persist/relocalize the selected location, but waiting for a
+        // brand-new high-accuracy satellite fix can take a long time indoors. Prefer Android's
+        // recent, reasonably accurate fused fix; fall back to a fresh fix only when it is stale.
         if (forceRefresh) {
-            requestFreshGpsFix(context, localizedRes, language, forcePersist = true)
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { cached: Location? ->
+                    val ageMillis = cached?.let { System.currentTimeMillis() - it.time } ?: Long.MAX_VALUE
+                    if (cached != null && ageMillis in 0..explicitLocationMaxAgeMillis && cached.accuracy <= explicitLocationMaxAccuracyMeters) {
+                        viewModelScope.launch(Dispatchers.IO) {
+                            resolveAndPersistGpsLocation(context, cached, localizedRes, language, forcePersist = true)
+                        }
+                    } else {
+                        requestFreshGpsFix(context, localizedRes, language, forcePersist = true)
+                    }
+                }
+                .addOnFailureListener {
+                    requestFreshGpsFix(context, localizedRes, language, forcePersist = true)
+                }
             return
         }
 

@@ -113,6 +113,20 @@ def main():
     )
     cur.execute("CREATE INDEX idx_places_lat ON places(latitude)")
     cur.execute("CREATE INDEX idx_places_lon ON places(longitude)")
+    cur.execute(
+        """
+        CREATE VIRTUAL TABLE places_fts USING fts4(
+            nameEn,
+            asciiName,
+            nameAr,
+            content='places',
+            tokenize=unicode61
+        )
+        """
+    )
+    cur.execute("INSERT INTO places_fts(places_fts) VALUES('rebuild')")
+    cur.execute("CREATE TABLE places_search_meta(version INTEGER NOT NULL)")
+    cur.execute("INSERT INTO places_search_meta(version) VALUES(1)")
     con.commit()
     cur.execute("VACUUM")
     con.close()

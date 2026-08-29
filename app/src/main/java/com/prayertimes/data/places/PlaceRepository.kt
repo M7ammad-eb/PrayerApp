@@ -1,6 +1,7 @@
 package com.prayertimes.data.places
 
 import android.content.Context
+import androidx.sqlite.db.SimpleSQLiteQuery
 import com.prayertimes.util.GeoUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -42,8 +43,45 @@ object PlaceRepository {
     suspend fun search(context: Context, query: String, limit: Int = 50): List<PlaceEntity> =
         withContext(Dispatchers.IO) {
             val trimmed = query.trim()
-            if (trimmed.isEmpty()) emptyList() else PlacesDatabase.getInstance(context).placeDao().search(trimmed, limit)
+            if (trimmed.isEmpty()) {
+                emptyList()
+            } else {
+                val searchQuery = buildSearchQuery(trimmed, limit)
+                if (searchQuery == null) emptyList()
+                else PlacesDatabase.getInstance(context).placeDao().search(searchQuery)
+            }
         }
+
+    internal fun buildSearchQuery(query: String, limit: Int = 50): SimpleSQLiteQuery? {
+        val trimmed = query.trim()
+        val matchQuery = buildFtsMatchQuery(trimmed)
+        if (matchQuery.isEmpty()) return null
+        return SimpleSQLiteQuery(
+                        """
+                        SELECT p.* FROM places AS p
+                        JOIN places_fts ON places_fts.docid = p.geonameId
+                        WHERE places_fts MATCH ?
+                        ORDER BY CASE
+                            WHEN lower(p.nameEn) = lower(?)
+                                OR lower(p.asciiName) = lower(?)
+                                OR p.nameAr = ? THEN 0
+                            WHEN lower(p.nameEn) LIKE lower(?) || '%'
+                                OR lower(p.asciiName) LIKE lower(?) || '%'
+                                OR p.nameAr LIKE ? || '%' THEN 1
+                            ELSE 2
+                        END, p.population DESC
+                        LIMIT ?
+                        """.trimIndent(),
+                        arrayOf<Any>(matchQuery, trimmed, trimmed, trimmed, trimmed, trimmed, trimmed, limit)
+                    )
+    }
+
+    /** Converts arbitrary Arabic/Latin input into a safe all-token FTS prefix query. */
+    internal fun buildFtsMatchQuery(query: String): String =
+        Regex("[\\p{L}\\p{N}]+")
+            .findAll(query)
+            .map { "${it.value}*" }
+            .joinToString(" ")
 
     // internal (not private) so relation-bucketing math can be unit-tested without spinning up Room.
     internal fun nearestOf(candidates: List<PlaceEntity>, lat: Double, lon: Double): NearestPlaceResult {

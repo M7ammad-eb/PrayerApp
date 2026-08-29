@@ -33,8 +33,11 @@ class PlacesAssetTest {
         assertTrue("expected candidates near Madinah", candidates.isNotEmpty())
         assertTrue(candidates.any { it.nameEn == "Madinah" && it.nameAr == "المدينة المنورة" })
 
-        val cairoSearch = db.placeDao().search("cairo")
+        val cairoSearch = db.placeDao().search(PlaceRepository.buildSearchQuery("cairo")!!)
         assertTrue(cairoSearch.any { it.nameAr == "القاهرة" })
+
+        val englishSearchWhileArabicCanDisplay = db.placeDao().search(PlaceRepository.buildSearchQuery("madinah")!!)
+        assertTrue(englishSearchWhileArabicCanDisplay.any { it.nameAr == "المدينة المنورة" })
 
         db.close()
     }

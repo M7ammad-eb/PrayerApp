@@ -303,6 +303,9 @@
     <string name="settings_location_details_desc">Coordinates and offline place information</string>
     <string name="settings_choose_another_city">Choose another city</string>
     <string name="settings_no_city_results">No matching cities found. Try another spelling.</string>
+    <string name="settings_search_hint">Search settings</string>
+    <string name="settings_search_no_results">No matching settings found.</string>
+    <string name="settings_search_result_in">In %1$s</string>
     <string name="settings_prayer_alerts_title">Prayer Alerts</string>
     <string name="settings_prayer_alerts_desc">Turn each prayer alert on or off and choose its sound.</string>
     <string name="settings_test_tools_title">Test Notifications</string>

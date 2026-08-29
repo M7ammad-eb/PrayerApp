@@ -2,6 +2,8 @@ package com.prayertimes.data.places
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.RawQuery
+import androidx.sqlite.db.SupportSQLiteQuery
 
 @Dao
 interface PlaceDao {
@@ -18,15 +20,6 @@ interface PlaceDao {
     @Query("SELECT * FROM places")
     suspend fun all(): List<PlaceEntity>
 
-    @Query(
-        """
-        SELECT * FROM places
-        WHERE nameEn LIKE '%' || :query || '%'
-        OR asciiName LIKE '%' || :query || '%'
-        OR nameAr LIKE '%' || :query || '%'
-        ORDER BY population DESC
-        LIMIT :limit
-        """
-    )
-    suspend fun search(query: String, limit: Int = 50): List<PlaceEntity>
+    @RawQuery
+    suspend fun search(query: SupportSQLiteQuery): List<PlaceEntity>
 }

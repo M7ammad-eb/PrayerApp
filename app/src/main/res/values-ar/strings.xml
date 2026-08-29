@@ -303,6 +303,9 @@
     <string name="settings_location_details_desc">الإحداثيات ومعلومات المكان المحفوظة دون إنترنت</string>
     <string name="settings_choose_another_city">اختيار مدينة أخرى</string>
     <string name="settings_no_city_results">لم نعثر على مدينة مطابقة. جرّب كتابة أخرى.</string>
+    <string name="settings_search_hint">البحث في الإعدادات</string>
+    <string name="settings_search_no_results">لم نعثر على إعداد مطابق.</string>
+    <string name="settings_search_result_in">ضمن %1$s</string>
     <string name="settings_prayer_alerts_title">تنبيهات الصلوات</string>
     <string name="settings_prayer_alerts_desc">فعّل تنبيه كل صلاة أو أوقفه واختر صوته.</string>
     <string name="settings_test_tools_title">اختبار التنبيهات</string>

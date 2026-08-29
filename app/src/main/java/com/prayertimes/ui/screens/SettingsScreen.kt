@@ -130,6 +130,14 @@ enum class SettingsSubScreen {
     ABOUT
 }
 
+private data class SettingsSearchEntry(
+    val title: String,
+    val section: String,
+    val keywords: String,
+    val icon: ImageVector,
+    val destination: SettingsSubScreen
+)
+
 @Composable
 fun SettingsScreen(
     resetKey: Any = Unit,
@@ -265,6 +273,7 @@ private fun SettingsMainHub(
 ) {
     val strings = LocalAppStrings.current
     var showResetConfirmation by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     if (showResetConfirmation) {
         AlertDialog(
@@ -297,8 +306,69 @@ private fun SettingsMainHub(
             .testTag("settings_screen"),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text(stringResource(R.string.settings_search_hint)) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = if (searchQuery.isNotEmpty()) {
+                {
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.settings_cancel))
+                    }
+                }
+            } else null,
+            singleLine = true,
+            shape = RoundedCornerShape(18.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("settings_search")
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+
         val locationHubName = com.prayertimes.data.cities.CityDatabase.localizedName(LocalContext.current.resources, settings.location)
         val locationHubCountry = com.prayertimes.data.cities.CityDatabase.localizedCountry(LocalContext.current.resources, settings.location)
+        val searchEntries = listOf(
+            SettingsSearchEntry(strings.currentLocationLabel, strings.locationSection, "${strings.useGps} ${strings.locationSearchHint} ${strings.locationSourceGps}", Icons.Default.LocationOn, SettingsSubScreen.LOCATION),
+            SettingsSearchEntry(strings.calcMethodSection, strings.prayerCalculationTimeTitle, strings.calcMethodName(settings.calculationMethod), Icons.Default.Calculate, SettingsSubScreen.CALCULATION),
+            SettingsSearchEntry(strings.juristicMethodTitle, strings.prayerCalculationTimeTitle, "${strings.standardJuristic} ${strings.hanafiJuristic}", Icons.Default.Calculate, SettingsSubScreen.CALCULATION),
+            SettingsSearchEntry(strings.timeFormatTitle, strings.prayerCalculationTimeTitle, "12 24 ${strings.minuteAdjustmentsTitle}", Icons.Default.Calculate, SettingsSubScreen.CALCULATION),
+            SettingsSearchEntry(strings.highLatitudeSection, strings.prayerCalculationTimeTitle, strings.minuteAdjustmentsTitle, Icons.Default.Calculate, SettingsSubScreen.CALCULATION),
+            SettingsSearchEntry(strings.audioStreamSectionTitle, strings.notifSectionTitle, "${strings.athanSound} ${strings.audioStreamAlarmTitle} ${strings.audioStreamMediaTitle}", Icons.Default.NotificationsActive, SettingsSubScreen.NOTIFICATIONS),
+            SettingsSearchEntry(stringResource(R.string.settings_prayer_alerts_title), strings.notifSectionTitle, "${strings.wakeScreenTitle} ${stringResource(R.string.live_countdown_section_title)}", Icons.Default.NotificationsActive, SettingsSubScreen.NOTIFICATIONS),
+            SettingsSearchEntry(strings.themeModeTitle, strings.appearanceLanguageTitle, "${strings.themeSection} ${strings.colorPaletteSection} ${strings.languageSection}", Icons.Default.Palette, SettingsSubScreen.APPEARANCE),
+            SettingsSearchEntry(strings.widgetsSection, strings.widgetsSection, "${strings.widgetAppearanceSectionTitle} ${strings.widgetFontSizeTitle}", Icons.Default.StayCurrentPortrait, SettingsSubScreen.WIDGETS),
+            SettingsSearchEntry(strings.aboutHubTitle, strings.aboutHubTitle, strings.aboutHubSubtitle, Icons.Default.Info, SettingsSubScreen.ABOUT)
+        )
+        val normalizedQuery = searchQuery.trim()
+
+        if (normalizedQuery.isNotEmpty()) {
+            val matches = searchEntries.filter { entry ->
+                listOf(entry.title, entry.section, entry.keywords)
+                    .any { it.contains(normalizedQuery, ignoreCase = true) }
+            }
+            if (matches.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.settings_search_no_results),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 20.dp)
+                )
+            } else {
+                matches.forEachIndexed { index, entry ->
+                    SettingsHubCategoryCard(
+                        title = entry.title,
+                        subtitle = stringResource(R.string.settings_search_result_in, entry.section),
+                        icon = entry.icon,
+                        testTag = "settings_search_result_$index",
+                        onClick = { onNavigateTo(entry.destination) }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(40.dp))
+            return@Column
+        }
+
         SettingsHubCategoryCard(
             title = strings.locationSection,
             subtitle = "$locationHubName${if (locationHubCountry.isNotEmpty()) ", $locationHubCountry" else ""}${if (settings.location.isGps) " • ${strings.locationSourceGps}" else ""}",

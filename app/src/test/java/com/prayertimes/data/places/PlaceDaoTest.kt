@@ -31,6 +31,7 @@ class PlaceDaoTest {
         db.openHelper.writableDatabase.execSQL(insertSql(1, "Madinah", "المدينة المنورة", madinahLat, madinahLon, "Asia/Riyadh"))
         db.openHelper.writableDatabase.execSQL(insertSql(2, "Far Away", null, madinahLat, madinahLon + 3.0, "UTC"))
         db.openHelper.writableDatabase.execSQL(insertSql(3, "Cairo", "القاهرة", 30.0444, 31.2357, "Africa/Cairo"))
+        PlacesDatabase.ensureSearchIndex(db.openHelper.writableDatabase)
     }
 
     @After
@@ -58,18 +59,18 @@ class PlaceDaoTest {
 
     @Test
     fun `search matches English name`() = runTest {
-        val results = dao.search("madinah")
+        val results = dao.search(PlaceRepository.buildSearchQuery("madinah")!!)
         assertTrue(results.any { it.nameEn == "Madinah" })
     }
 
     @Test
     fun `search matches Arabic name`() = runTest {
-        val results = dao.search("القاهرة")
+        val results = dao.search(PlaceRepository.buildSearchQuery("القاهرة")!!)
         assertTrue(results.any { it.nameEn == "Cairo" })
     }
 
     @Test
     fun `search finds nothing for an unmatched query`() = runTest {
-        assertTrue(dao.search("Nonexistent").isEmpty())
+        assertTrue(dao.search(PlaceRepository.buildSearchQuery("Nonexistent")!!).isEmpty())
     }
 }
