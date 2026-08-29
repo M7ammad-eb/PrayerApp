@@ -5,13 +5,18 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.SideEffect
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.luminance
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import com.prayertimes.data.preferences.PrayerPreferences
 import com.prayertimes.ui.MainScreen
 import com.prayertimes.ui.theme.MyApplicationTheme
@@ -41,7 +46,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            )
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
         (application as PrayerApplication).prewarmUserCaches()
 
         requestAppPermissionsIfNeeded()
@@ -53,6 +70,18 @@ class MainActivity : ComponentActivity() {
                 colorPreset = settings.colorPreset,
                 followSystemColors = settings.followSystemColors
             ) {
+                val useDarkSystemBarIcons = MaterialTheme.colorScheme.background.luminance() > 0.5f
+                SideEffect {
+                    WindowCompat.getInsetsController(window, window.decorView).apply {
+                        isAppearanceLightStatusBars = useDarkSystemBarIcons
+                        isAppearanceLightNavigationBars = useDarkSystemBarIcons
+                    }
+                    window.statusBarColor = android.graphics.Color.TRANSPARENT
+                    window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        window.isNavigationBarContrastEnforced = false
+                    }
+                }
                 MainScreen(
                     viewModel = prayerViewModel,
                     onRequestLocationPermission = { requestLocationPermission() },

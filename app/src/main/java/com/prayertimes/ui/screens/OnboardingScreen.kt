@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -104,6 +105,7 @@ import com.prayertimes.data.places.PlaceEntity
 import com.prayertimes.data.places.PlaceRepository
 import com.prayertimes.data.preferences.AppPrayerSettings
 import com.prayertimes.ui.locale.LocalAppStrings
+import com.prayertimes.ui.theme.ExpressiveMotion
 import kotlinx.coroutines.delay
 import java.util.Locale
 
@@ -217,14 +219,18 @@ fun OnboardingScreen(
         bottomBar = {
             // Bottom Action Navigation Bar (Back & Next / Finish)
             Surface(
-                tonalElevation = 8.dp,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .navigationBarsPadding(),
+                shape = MaterialTheme.shapes.extraLarge,
+                tonalElevation = 3.dp,
                 shadowElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface
+                color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -237,7 +243,7 @@ fun OnboardingScreen(
                                     currentStep = OnboardingStep.values()[prevOrdinal]
                                 }
                             },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.extraLarge,
                             modifier = Modifier.testTag("onboarding_prev_button")
                         ) {
                             Icon(
@@ -258,7 +264,7 @@ fun OnboardingScreen(
                                 AthanAudioEngine.stop()
                                 onCompleteOnboarding()
                             },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.extraLarge,
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             modifier = Modifier.testTag("onboarding_finish_button")
                         ) {
@@ -279,7 +285,7 @@ fun OnboardingScreen(
                                     currentStep = OnboardingStep.values()[nextOrdinal]
                                 }
                             },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.extraLarge,
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             modifier = Modifier.testTag("onboarding_next_button")
                         ) {
@@ -326,7 +332,7 @@ fun OnboardingScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(6.dp)
+                                .height(8.dp)
                                 .clip(CircleShape)
                                 .background(
                                     when {
@@ -363,12 +369,12 @@ fun OnboardingScreen(
                 targetState = currentStep,
                 transitionSpec = {
                     if (targetState.ordinal > initialState.ordinal) {
-                        (slideInHorizontally { width -> if (strings.isArabic) -width else width } + fadeIn()).togetherWith(
-                            slideOutHorizontally { width -> if (strings.isArabic) width else -width } + fadeOut()
+                        (slideInHorizontally(animationSpec = ExpressiveMotion.emphasized()) { width -> if (strings.isArabic) -width else width } + fadeIn(animationSpec = ExpressiveMotion.standard())).togetherWith(
+                            slideOutHorizontally(animationSpec = ExpressiveMotion.emphasized()) { width -> if (strings.isArabic) width else -width } + fadeOut(animationSpec = ExpressiveMotion.standard())
                         )
                     } else {
-                        (slideInHorizontally { width -> if (strings.isArabic) width else -width } + fadeIn()).togetherWith(
-                            slideOutHorizontally { width -> if (strings.isArabic) -width else width } + fadeOut()
+                        (slideInHorizontally(animationSpec = ExpressiveMotion.emphasized()) { width -> if (strings.isArabic) width else -width } + fadeIn(animationSpec = ExpressiveMotion.standard())).togetherWith(
+                            slideOutHorizontally(animationSpec = ExpressiveMotion.emphasized()) { width -> if (strings.isArabic) -width else width } + fadeOut(animationSpec = ExpressiveMotion.standard())
                         )
                     }
                 },
@@ -468,7 +474,7 @@ private fun OnboardingLanguageStep(
         // Hero Icon & Titles
         Box(
             modifier = Modifier
-                .size(60.dp)
+                .size(72.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
@@ -477,7 +483,7 @@ private fun OnboardingLanguageStep(
                 imageVector = Icons.Default.Language,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(36.dp)
             )
         }
 
@@ -542,9 +548,9 @@ private fun LanguageOptionCard(
 ) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow
         ),
         border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
         modifier = Modifier.fillMaxWidth()

@@ -2,18 +2,13 @@ package com.prayertimes.ui.screens
 
 import android.content.Intent
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.prayertimes.R
+import com.prayertimes.ui.components.LightweightPageEntry
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -176,22 +171,8 @@ fun SettingsScreen(
         currentSubScreen = SettingsSubScreen.MAIN
     }
 
-    AnimatedContent(
-        targetState = currentSubScreen,
-        transitionSpec = {
-            if (targetState != SettingsSubScreen.MAIN) {
-                (slideInHorizontally { width -> if (strings.isArabic) -width else width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> if (strings.isArabic) width else -width } + fadeOut()
-                )
-            } else {
-                (slideInHorizontally { width -> if (strings.isArabic) width else -width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> if (strings.isArabic) -width else width } + fadeOut()
-                )
-            }
-        },
-        label = "SettingsSubScreenAnimation"
-    ) { screen ->
-        when (screen) {
+    LightweightPageEntry(animationKey = currentSubScreen) {
+        when (currentSubScreen) {
             SettingsSubScreen.MAIN -> {
                 SettingsMainHub(
                     settings = settings,
@@ -319,7 +300,7 @@ private fun SettingsMainHub(
                 }
             } else null,
             singleLine = true,
-            shape = RoundedCornerShape(18.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("settings_search")
@@ -365,7 +346,7 @@ private fun SettingsMainHub(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(112.dp))
             return@Column
         }
 
@@ -450,7 +431,7 @@ private fun SettingsMainHub(
             }
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(112.dp))
     }
 }
 
@@ -464,7 +445,7 @@ private fun SettingsHubCategoryCard(
 ) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(18.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
@@ -476,7 +457,7 @@ private fun SettingsHubCategoryCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 18.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -486,7 +467,7 @@ private fun SettingsHubCategoryCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                .size(44.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.secondaryContainer),
                     contentAlignment = Alignment.Center
@@ -495,11 +476,11 @@ private fun SettingsHubCategoryCard(
                         imageVector = icon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(14.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
                 Column {
                     Text(
@@ -577,7 +558,7 @@ private fun <T> SettingsDropdownSelector(
         Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedButton(
                 onClick = { expanded = true },
-                shape = RoundedCornerShape(14.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
             ) {
@@ -636,7 +617,7 @@ private fun AdvancedSettingsSection(
     content: @Composable () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(18.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -711,7 +692,8 @@ private fun SettingsAppearanceSubScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             Text(
@@ -893,6 +875,7 @@ private fun SettingsCalculationSubScreen(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
@@ -1347,6 +1330,7 @@ private fun SettingsLocationSubScreen(
             }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 112.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(searchResults, key = { it.geonameId }) { place ->
@@ -1473,6 +1457,7 @@ private fun SettingsNotificationsSubScreen(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Notification Permission Status Banner
@@ -2042,7 +2027,8 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Card(

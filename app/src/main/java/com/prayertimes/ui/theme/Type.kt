@@ -32,13 +32,13 @@ private fun salatiText(
 
 /** A complete type scale shared by Arabic and Latin UI. */
 val Typography = Typography(
-    displayLarge = salatiText(52.sp, 60.sp, FontWeight.Bold, (-0.25).sp),
-    displayMedium = salatiText(42.sp, 50.sp, FontWeight.Bold),
-    displaySmall = salatiText(34.sp, 42.sp, FontWeight.SemiBold),
-    headlineLarge = salatiText(30.sp, 38.sp, FontWeight.SemiBold),
-    headlineMedium = salatiText(26.sp, 34.sp, FontWeight.SemiBold),
-    headlineSmall = salatiText(23.sp, 30.sp, FontWeight.SemiBold),
-    titleLarge = salatiText(21.sp, 28.sp, FontWeight.SemiBold),
+    displayLarge = salatiText(57.sp, 64.sp, FontWeight.ExtraBold, (-0.25).sp),
+    displayMedium = salatiText(45.sp, 52.sp, FontWeight.Bold),
+    displaySmall = salatiText(36.sp, 44.sp, FontWeight.Bold),
+    headlineLarge = salatiText(32.sp, 40.sp, FontWeight.Bold),
+    headlineMedium = salatiText(28.sp, 36.sp, FontWeight.Bold),
+    headlineSmall = salatiText(24.sp, 32.sp, FontWeight.SemiBold),
+    titleLarge = salatiText(22.sp, 28.sp, FontWeight.Bold),
     titleMedium = salatiText(16.sp, 23.sp, FontWeight.SemiBold, 0.1.sp),
     titleSmall = salatiText(14.sp, 20.sp, FontWeight.SemiBold, 0.1.sp),
     bodyLarge = salatiText(16.sp, 24.sp, FontWeight.Normal, 0.25.sp),
@@ -51,8 +51,8 @@ val Typography = Typography(
 
 val SalatiShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(28.dp)
+    small = RoundedCornerShape(14.dp),
+    medium = RoundedCornerShape(20.dp),
+    large = RoundedCornerShape(28.dp),
+    extraLarge = RoundedCornerShape(36.dp)
 )

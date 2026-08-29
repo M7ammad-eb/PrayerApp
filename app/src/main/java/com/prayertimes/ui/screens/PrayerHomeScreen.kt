@@ -175,7 +175,7 @@ fun PrayerHomeScreen(
             // Warning Banner if OS Notifications are disabled
             if (!notificationsEnabled && !isWarningDismissed) {
                 Card(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -223,7 +223,7 @@ fun PrayerHomeScreen(
                                     // Ignore
                                 }
                             },
-                            shape = RoundedCornerShape(8.dp),
+                            shape = MaterialTheme.shapes.small,
                             colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -318,7 +318,7 @@ fun PrayerHomeScreen(
             }
 
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(112.dp))
             }
         }
     }
@@ -343,16 +343,16 @@ private fun BentoCurrentPrayerHeroCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(26.dp))
+            .clip(MaterialTheme.shapes.extraLarge)
             .clickable { onClick() }
             .testTag("current_prayer_hero_card"),
-        shape = RoundedCornerShape(28.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = cardBg)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 22.dp, vertical = 20.dp)
+                .padding(horizontal = 24.dp, vertical = 22.dp)
         ) {
             // Background watermark icon
             Box(
@@ -441,7 +441,7 @@ private fun BentoDateSelector(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium)
             .padding(horizontal = 6.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -461,7 +461,7 @@ private fun BentoDateSelector(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
+                .clip(MaterialTheme.shapes.small)
                 .clickable { onPickDate() }
                 .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
@@ -580,7 +580,7 @@ private fun BentoPrayerRow(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("prayer_card_${item.type.name.lowercase()}"),
-        shape = RoundedCornerShape(18.dp),
+        shape = MaterialTheme.shapes.medium,
         color = rowBg,
         border = if (isNext) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)) else null
     ) {
@@ -689,10 +689,10 @@ private fun BentoExtraSunnahCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(MaterialTheme.shapes.medium)
             .clickable { onToggleExpand() }
             .testTag("extra_sunnah_times_card"),
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )

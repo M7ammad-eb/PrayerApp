@@ -6,13 +6,18 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,14 +54,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.prayertimes.ui.components.CityPickerDialog
+import com.prayertimes.ui.components.LightweightPageEntry
 import com.prayertimes.ui.locale.LocalAppStrings
 import com.prayertimes.ui.locale.ProvideAppLocale
 import com.prayertimes.ui.screens.MonthlyCalendarScreen
@@ -64,6 +72,7 @@ import com.prayertimes.ui.screens.PrayerHomeScreen
 import com.prayertimes.ui.screens.QiblaScreen
 import com.prayertimes.ui.screens.SettingsScreen
 import com.prayertimes.ui.viewmodel.PrayerViewModel
+import com.prayertimes.ui.theme.ExpressiveMotion
 import kotlinx.coroutines.launch
 
 enum class AppNavTab(val icon: ImageVector) {
@@ -217,36 +226,33 @@ fun MainScreen(
             Box(modifier = Modifier.fillMaxSize()) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-                containerColor = MaterialTheme.colorScheme.background,
-                topBar = {
-                    // Expressive Floating Header Toolbar
-                    ExpressiveTopHeader(
-                        currentTab = AppNavTab.values()[selectedTab],
-                        settings = settings,
-                        strings = strings,
-                        onLocationClick = { showCityPickerFromHeader = true },
-                        onUpdateHijriAdjustment = { viewModel.updateHijriOffset(it) }
-                    )
-                },
-                bottomBar = {
-                    // Expressive Floating Bottom Navigation Bar
-                    ExpressiveFloatingBottomBar(
-                        selectedTab = selectedTab,
-                        onSelectTab = { tab ->
-                            if (tab == AppNavTab.SETTINGS.ordinal) settingsResetKey++
-                            selectedTab = tab
-                        },
-                        tabTitle = { tabTitle(it) }
-                    )
-                }
-            ) { innerPadding ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                    when (AppNavTab.values()[selectedTab]) {
+                    snackbarHost = {
+                        SnackbarHost(
+                            hostState = snackbarHostState,
+                            modifier = Modifier
+                                .navigationBarsPadding()
+                                .padding(bottom = 92.dp)
+                        )
+                    },
+                    containerColor = MaterialTheme.colorScheme.background,
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    topBar = {
+                        ExpressiveTopHeader(
+                            currentTab = AppNavTab.values()[selectedTab],
+                            settings = settings,
+                            strings = strings,
+                            onLocationClick = { showCityPickerFromHeader = true },
+                            onUpdateHijriAdjustment = { viewModel.updateHijriOffset(it) }
+                        )
+                    }
+                ) { innerPadding ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    ) {
+                        LightweightPageEntry(animationKey = selectedTab) {
+                            when (AppNavTab.values()[selectedTab]) {
                         AppNavTab.PRAYER_TIMES -> {
                             val selectedDate by viewModel.selectedDate.collectAsState()
                             val dailySchedule by viewModel.dailySchedule.collectAsState()
@@ -378,12 +384,26 @@ fun MainScreen(
                                 }
                             )
                         }
+                            }
+                        }
                     }
                 }
+
+                // Overlay the navigation pill instead of using Scaffold.bottomBar. This keeps
+                // the screen visible around and beneath the floating bar, while the pill still
+                // respects the device navigation inset.
+                ExpressiveFloatingBottomBar(
+                    selectedTab = selectedTab,
+                    onSelectTab = { tab ->
+                        if (tab == AppNavTab.SETTINGS.ordinal) settingsResetKey++
+                        selectedTab = tab
+                    },
+                    tabTitle = { tabTitle(it) },
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
             }
         }
     }
-}
 }
 
 // ============================================================================
@@ -414,10 +434,10 @@ private fun ExpressiveTopHeader(
                 // separate sibling below so SpaceBetween places it on the opposite side.
                 Surface(
                     onClick = onLocationClick,
-                    shape = RoundedCornerShape(24.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                     color = MaterialTheme.colorScheme.surfaceContainerLow,
                     tonalElevation = 0.dp,
-                    modifier = Modifier.clip(RoundedCornerShape(24.dp))
+                    modifier = Modifier.clip(MaterialTheme.shapes.extraLarge)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -527,28 +547,30 @@ private fun CompactHijriAdjustmentControl(
 private fun ExpressiveFloatingBottomBar(
     selectedTab: Int,
     onSelectTab: (Int) -> Unit,
-    tabTitle: (AppNavTab) -> String
+    tabTitle: (AppNavTab) -> String,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 5.dp),
+            .padding(horizontal = 28.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            shape = RoundedCornerShape(26.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
-            tonalElevation = 0.dp,
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            tonalElevation = 3.dp,
             shadowElevation = 0.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
             modifier = Modifier
-                .clip(RoundedCornerShape(26.dp))
                 .fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                    .padding(horizontal = 5.dp, vertical = 3.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -589,20 +611,34 @@ private fun ExpressiveNavTabItem(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         label = "TabText"
     )
+    val indicatorWidth by animateDpAsState(
+        targetValue = if (isSelected) 64.dp else 44.dp,
+        animationSpec = ExpressiveMotion.emphasized(),
+        label = "TabIndicatorWidth"
+    )
+    val iconScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.08f else 1f,
+        animationSpec = ExpressiveMotion.emphasized(),
+        label = "TabIconScale"
+    )
 
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp)
+            .clip(MaterialTheme.shapes.large)
+            .selectable(
+                selected = isSelected,
+                onClick = onClick,
+                role = Role.Tab
+            )
+            .padding(vertical = 3.dp)
             .testTag("nav_tab_${tab.name.lowercase()}"),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Box(
             modifier = Modifier
-                .size(width = 56.dp, height = 30.dp)
-                .clip(RoundedCornerShape(15.dp))
+                .size(width = indicatorWidth, height = 30.dp)
+                .clip(MaterialTheme.shapes.extraLarge)
                 .background(indicatorColor),
             contentAlignment = Alignment.Center
         ) {
@@ -610,7 +646,12 @@ private fun ExpressiveNavTabItem(
                 imageVector = tab.icon,
                 contentDescription = title,
                 tint = iconColor,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier
+                    .size(21.dp)
+                    .graphicsLayer {
+                        scaleX = iconScale
+                        scaleY = iconScale
+                    }
             )
         }
 
@@ -618,7 +659,7 @@ private fun ExpressiveNavTabItem(
 
         Text(
             text = title,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             color = textColor,
             maxLines = 1

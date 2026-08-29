@@ -122,7 +122,7 @@ fun MonthlyCalendarScreen(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
+            shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
@@ -153,7 +153,7 @@ fun MonthlyCalendarScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            contentPadding = PaddingValues(top = 10.dp, bottom = 20.dp),
+            contentPadding = PaddingValues(top = 10.dp, bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item {
@@ -249,7 +249,7 @@ private fun HijriMonthHeader(
                 Spacer(Modifier.width(6.dp))
                 Surface(
                     onClick = onToday,
-                    shape = RoundedCornerShape(50),
+                    shape = MaterialTheme.shapes.extraLarge,
                     color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f)
                 ) {
                     Text(
@@ -370,8 +370,8 @@ private fun HijriDayCell(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(background, RoundedCornerShape(11.dp))
-                    .border(if (today && !selected) 1.dp else 0.dp, outline, RoundedCornerShape(11.dp))
+                    .background(background, MaterialTheme.shapes.small)
+                    .border(if (today && !selected) 1.dp else 0.dp, outline, MaterialTheme.shapes.small)
                     .padding(vertical = 2.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -444,7 +444,7 @@ private fun CalendarGridLegend() {
 private fun CalendarSourceNote() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Row(
@@ -486,7 +486,7 @@ private fun SelectedHijriDayCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f))
     ) {
         Column(
@@ -517,7 +517,7 @@ private fun SelectedHijriDayCard(
                 Spacer(Modifier.width(10.dp))
                 Button(
                     onClick = onViewPrayerTimes,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.small,
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 9.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {

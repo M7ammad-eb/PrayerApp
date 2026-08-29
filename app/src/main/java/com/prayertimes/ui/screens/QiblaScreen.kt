@@ -70,6 +70,7 @@ import com.prayertimes.data.qibla.CompassSensorManager
 import com.prayertimes.data.qibla.CompassState
 import com.prayertimes.ui.locale.LocalAppStrings
 import com.prayertimes.ui.theme.GoldAccent
+import com.prayertimes.ui.theme.ExpressiveMotion
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -136,7 +137,7 @@ fun QiblaScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 104.dp)
             .testTag("qibla_screen"),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -222,10 +223,12 @@ private fun MinimalQiblaCompass(pointerRotation: Float, ringRotation: Float, isA
     val ringLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val badgeColor by animateColorAsState(
         targetValue = if (isAligned) GoldAccent else primary,
+        animationSpec = ExpressiveMotion.standard(),
         label = "qibla_badge_color"
     )
     val glowAlpha by animateFloatAsState(
         targetValue = if (isAligned) 0.45f else 0.26f,
+        animationSpec = ExpressiveMotion.standard(),
         label = "qibla_glow_alpha"
     )
     val labelStyle = remember(ringLabelColor) {
@@ -414,6 +417,7 @@ private fun DirectionStatus(isAligned: Boolean, relativeAngle: Float) {
     val containerColor by animateColorAsState(
         targetValue = if (isAligned) MaterialTheme.colorScheme.primary
         else MaterialTheme.colorScheme.surfaceContainer,
+        animationSpec = ExpressiveMotion.emphasized(),
         label = "qibla_status_container"
     )
     val contentColor = if (isAligned) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
@@ -424,7 +428,7 @@ private fun DirectionStatus(isAligned: Boolean, relativeAngle: Float) {
     Column(
         modifier = Modifier
             .height(104.dp)
-            .clip(RoundedCornerShape(22.dp))
+            .clip(MaterialTheme.shapes.large)
             .background(containerColor)
             .padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -487,7 +491,7 @@ private fun QiblaDetailsCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Column(
@@ -552,7 +556,7 @@ private fun SensorUnavailableCard() {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
     ) {
         Column(

@@ -178,9 +178,9 @@ fun ManualCoordinatesDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(MaterialTheme.shapes.extraLarge)
                 .testTag("manual_coordinates_dialog"),
-            shape = RoundedCornerShape(24.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp
         ) {
@@ -308,7 +308,7 @@ fun ManualCoordinatesDialog(
                                 imeAction = ImeAction.Next
                             ),
                             singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = MaterialTheme.shapes.medium,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("latitude_input_field")
@@ -336,7 +336,7 @@ fun ManualCoordinatesDialog(
                                 imeAction = ImeAction.Next
                             ),
                             singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = MaterialTheme.shapes.medium,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("longitude_input_field")
@@ -364,7 +364,7 @@ fun ManualCoordinatesDialog(
                         Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("location_name_input_field")
@@ -388,7 +388,7 @@ fun ManualCoordinatesDialog(
                                 .clip(RoundedCornerShape(14.dp))
                                 .clickable { showTimeZoneDropdown = true }
                                 .testTag("timezone_selector_button"),
-                            shape = RoundedCornerShape(14.dp),
+                            shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                         ) {
@@ -459,7 +459,7 @@ fun ManualCoordinatesDialog(
                 if (nearestPlaceResult != null || qiblaBearing != null) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = MaterialTheme.shapes.medium,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
                     ) {
                         Column(
@@ -534,7 +534,7 @@ fun ManualCoordinatesDialog(
                         modifier = Modifier
                             .weight(1f)
                             .testTag("cancel_coordinates_button"),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.small
                     ) {
                         Text(strings.cancel)
                     }
@@ -565,7 +565,7 @@ fun ManualCoordinatesDialog(
                         modifier = Modifier
                             .weight(1f)
                             .testTag("save_coordinates_button"),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = MaterialTheme.shapes.small,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Text(strings.applyCoordinates)

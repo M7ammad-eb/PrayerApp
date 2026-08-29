@@ -185,7 +185,8 @@ fun SettingsWidgetSubScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // ===== Appearance: theme, background, opacity, font size, text color =====
@@ -281,7 +282,7 @@ fun SettingsWidgetSubScreen(
 
                         Surface(
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
+                            shape = MaterialTheme.shapes.small
                         ) {
                             Text(
                                 text = "${wSet.opacityPercent}%",
@@ -421,7 +422,7 @@ fun SettingsWidgetSubScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -438,7 +439,7 @@ private fun WidgetThemeSelector(
     Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedCard(
             onClick = { expanded = true },
-            shape = RoundedCornerShape(14.dp),
+            shape = MaterialTheme.shapes.medium,
             modifier = Modifier.fillMaxWidth()
         ) {
             WidgetThemeOptionRow(currentTheme, showArrow = true)
@@ -539,7 +540,7 @@ private fun <T> WidgetOptionChipRow(
                     .weight(1f)
                     .heightIn(min = 52.dp),
                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.small,
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -590,7 +591,7 @@ private fun WidgetToggleRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(MaterialTheme.shapes.small)
             .clickable(enabled = enabled) { onCheckedChange(!checked) }
             .padding(vertical = 8.dp)
             .alpha(if (enabled) 1f else 0.4f),
@@ -645,10 +646,10 @@ private fun WidgetSettingsSectionCard(
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        shape = MaterialTheme.shapes.large,
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -657,7 +658,7 @@ private fun WidgetSettingsSectionCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = MaterialTheme.shapes.small
                 ) {
                     Icon(
                         imageVector = icon,

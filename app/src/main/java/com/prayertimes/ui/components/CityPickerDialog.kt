@@ -66,7 +66,7 @@ fun CityPickerDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp,
             modifier = Modifier.fillMaxWidth()
@@ -103,7 +103,7 @@ fun CityPickerDialog(
                     placeholder = { Text(strings.locationSearchHint) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -150,7 +150,7 @@ private fun PlaceRow(place: PlaceEntity, isSelected: Boolean, isArabic: Boolean,
     val countryName = Locale("", place.countryCode).getDisplayCountry(if (isArabic) Locale("ar") else Locale.ENGLISH)
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ),

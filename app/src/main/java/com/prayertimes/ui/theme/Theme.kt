@@ -17,8 +17,7 @@ import com.prayertimes.data.models.AppThemeMode
 fun getPresetColorScheme(preset: AppColorPreset, isDark: Boolean): ColorScheme {
     val primary = Color(if (isDark) preset.primaryDark else preset.primaryLight)
     val secondary = Color(if (isDark) preset.secondaryDark else preset.secondaryLight)
-    val containerPrimary = if (isDark) primary.copy(alpha = 0.25f) else primary.copy(alpha = 0.12f)
-    val onContainerPrimary = if (isDark) primary else primary
+    val containerPrimary = if (isDark) primary.copy(alpha = 0.28f) else primary.copy(alpha = 0.14f)
 
     return if (isDark) {
         darkColorScheme(
@@ -32,6 +31,12 @@ fun getPresetColorScheme(preset: AppColorPreset, isDark: Boolean): ColorScheme {
             onSecondaryContainer = Color(0xFFFFF8E1),
             tertiary = Color(0xFFF3D27C),
             onTertiary = Color.Black,
+            tertiaryContainer = Color(0xFF493B0C),
+            onTertiaryContainer = Color(0xFFFFE08A),
+            error = Color(0xFFFFB4AB),
+            onError = Color(0xFF690005),
+            errorContainer = Color(0xFF93000A),
+            onErrorContainer = Color(0xFFFFDAD6),
             background = Color(0xFF0F1513),
             onBackground = Color(0xFFE8EFEA),
             surface = Color(0xFF151D1A),
@@ -40,6 +45,10 @@ fun getPresetColorScheme(preset: AppColorPreset, isDark: Boolean): ColorScheme {
             onSurfaceVariant = Color(0xFFC0CEC5),
             outline = Color(0xFF71807B),
             outlineVariant = Color(0xFF34413D),
+            inverseSurface = Color(0xFFDDE5E0),
+            inverseOnSurface = Color(0xFF2A322F),
+            inversePrimary = Color(if (preset.primaryLight != 0L) preset.primaryLight else 0xFF165B33),
+            surfaceTint = primary,
             surfaceContainerLowest = Color(0xFF0A100E),
             surfaceContainerLow = Color(0xFF131B18),
             surfaceContainer = Color(0xFF18211E),
@@ -58,14 +67,24 @@ fun getPresetColorScheme(preset: AppColorPreset, isDark: Boolean): ColorScheme {
             onSecondaryContainer = Color(0xFF3E2723),
             tertiary = Color(0xFFB8860B),
             onTertiary = Color.White,
-            background = Color(0xFFF4FBF9),
+            tertiaryContainer = Color(0xFFFFE08A),
+            onTertiaryContainer = Color(0xFF3A2F00),
+            error = Color(0xFFBA1A1A),
+            onError = Color.White,
+            errorContainer = Color(0xFFFFDAD6),
+            onErrorContainer = Color(0xFF410002),
+            background = Color(0xFFF7FAF7),
             onBackground = Color(0xFF191C1B),
             surface = Color(0xFFFFFFFF),
             onSurface = Color(0xFF191C1B),
-            surfaceVariant = Color(0xFFE8EFED),
+            surfaceVariant = Color(0xFFE1E9E5),
             onSurfaceVariant = Color(0xFF434E48),
             outline = Color(0xFF6E7977),
-            outlineVariant = Color(0xFFBEC9C6),
+            outlineVariant = Color(0xFFC3CCC7),
+            inverseSurface = Color(0xFF2D312F),
+            inverseOnSurface = Color(0xFFF0F1EE),
+            inversePrimary = Color(if (preset.primaryDark != 0L) preset.primaryDark else 0xFF4ADE80),
+            surfaceTint = primary,
             surfaceContainerLowest = Color(0xFFFFFFFF),
             surfaceContainerLow = Color(0xFFEEF5F3),
             surfaceContainer = Color(0xFFE8EFED),

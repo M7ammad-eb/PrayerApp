@@ -131,7 +131,7 @@ fun PrayerAlarmScreen(
                 modifier = Modifier.padding(top = 16.dp)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(32.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                     color = Color.White.copy(alpha = 0.15f),
                     modifier = Modifier.padding(bottom = 12.dp)
                 ) {
@@ -196,7 +196,7 @@ fun PrayerAlarmScreen(
 
             // Center Area: Adhan Audio Status & Progress
             Card(
-                shape = RoundedCornerShape(24.dp),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
                     containerColor = Color.Black.copy(alpha = 0.55f)
                 ),
@@ -262,7 +262,7 @@ fun PrayerAlarmScreen(
                 // Big Dismiss / Stop Athan Button
                 Button(
                     onClick = onStopAthan,
-                    shape = RoundedCornerShape(24.dp),
+                    shape = MaterialTheme.shapes.large,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFE53935),
                         contentColor = Color.White
@@ -294,7 +294,7 @@ fun PrayerAlarmScreen(
                 ) {
                     FilledTonalButton(
                         onClick = onSnooze,
-                        shape = RoundedCornerShape(18.dp),
+                        shape = MaterialTheme.shapes.medium,
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = Color.White.copy(alpha = 0.2f),
                             contentColor = Color.White
@@ -315,7 +315,7 @@ fun PrayerAlarmScreen(
 
                     FilledTonalButton(
                         onClick = { showDuaSheet = true },
-                        shape = RoundedCornerShape(18.dp),
+                        shape = MaterialTheme.shapes.medium,
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = Color.White.copy(alpha = 0.2f),
                             contentColor = Color.White
@@ -341,7 +341,7 @@ fun PrayerAlarmScreen(
                 // Open App Link Button
                 OutlinedButton(
                     onClick = onOpenApp,
-                    shape = RoundedCornerShape(18.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -392,7 +392,7 @@ fun PrayerAlarmScreen(
                 }
 
                 Card(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -434,7 +434,7 @@ fun PrayerAlarmScreen(
                 Button(
                     onClick = { showDuaSheet = false },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = MaterialTheme.shapes.medium
                 ) {
                     Text(strings.close)
                 }
