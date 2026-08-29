@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -44,6 +45,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -54,7 +56,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -157,16 +158,22 @@ fun PrayerHomeScreen(
         )
     }
 
-    LazyColumn(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .testTag("prayer_home_screen"),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .testTag("prayer_home_screen")
     ) {
-        // Warning Banner if OS Notifications are disabled
-        if (!notificationsEnabled && !isWarningDismissed) {
-            item {
+        // Fixed section: stays pinned above the scrolling list below. The next-prayer hero card
+        // is always relative to the actual current time, so keeping it out of the scroll keeps it
+        // visible regardless of which day is being browsed via the date navigator further down.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Warning Banner if OS Notifications are disabled
+            if (!notificationsEnabled && !isWarningDismissed) {
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -230,11 +237,8 @@ fun PrayerHomeScreen(
                     }
                 }
             }
-        }
 
-        // 1. Next Prayer Hero Card - always relative to the actual current time, so it stays
-        // visible regardless of which day is being browsed below via the date navigator.
-        item {
+            // Next Prayer Hero Card
             if (currentPrayerInfo.prayerItem != null) {
                 Spacer(modifier = Modifier.height(2.dp))
                 BentoCurrentPrayerHeroCard(
@@ -245,64 +249,77 @@ fun PrayerHomeScreen(
             }
         }
 
-        // 2. Date Navigation Selector (Gregorian & Umm al-Qura Hijri)
-        item {
-            BentoDateSelector(
-                selectedDate = selectedDate,
-                hijriDate = currentHijriDate,
-                isToday = isToday,
-                onPreviousDay = onPreviousDay,
-                onNextDay = onNextDay,
-                onSelectToday = onSelectToday,
-                onPickDate = {
-                    val dialog = DatePickerDialog(
-                        context,
-                        { _, year, month, dayOfMonth ->
-                            onDatePicked(LocalDate.of(year, month + 1, dayOfMonth))
-                        },
-                        selectedDate.year,
-                        selectedDate.monthValue - 1,
-                        selectedDate.dayOfMonth
-                    )
-                    dialog.show()
-                }
-            )
-        }
+        // Fixed buffer so scrolled content disappears into empty space below the hero's rounded
+        // corners instead of being clipped flush against them.
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // 3. Daily Prayer Times List Card (All 6 Times)
-        item {
-            if (dailySchedule != null) {
-                BentoPrayerTimesListCard(
-                    prayerItems = dailySchedule.prayerItems,
-                    prayerConfigs = settings.prayerConfigs,
-                    timeFormatter = timeFormatter,
+        // Scrolling section: date navigator, daily prayer list, and sunnah times.
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Date Navigation Selector (Gregorian & Umm al-Qura Hijri)
+            item {
+                BentoDateSelector(
+                    selectedDate = selectedDate,
+                    hijriDate = currentHijriDate,
                     isToday = isToday,
-                    onToggleNotification = { prayerType, newConfig ->
-                        onUpdateNotificationConfig(
-                            prayerType,
-                            newConfig.enabled,
-                            newConfig.soundType,
-                            newConfig.preReminderMinutes
+                    onPreviousDay = onPreviousDay,
+                    onNextDay = onNextDay,
+                    onSelectToday = onSelectToday,
+                    onPickDate = {
+                        val dialog = DatePickerDialog(
+                            context,
+                            { _, year, month, dayOfMonth ->
+                                onDatePicked(LocalDate.of(year, month + 1, dayOfMonth))
+                            },
+                            selectedDate.year,
+                            selectedDate.monthValue - 1,
+                            selectedDate.dayOfMonth
                         )
+                        dialog.show()
                     }
                 )
             }
-        }
 
-        // 4. Sunnah & Night Times Calculation Card (Duha, Midnight, Qiyam)
-        item {
-            if (dailySchedule != null) {
-                BentoExtraSunnahCard(
-                    schedule = dailySchedule,
-                    timeFormatter = timeFormatter,
-                    expanded = showExtraTimes,
-                    onToggleExpand = { showExtraTimes = !showExtraTimes }
-                )
+            // Daily Prayer Times List Card (All 6 Times)
+            item {
+                if (dailySchedule != null) {
+                    BentoPrayerTimesListCard(
+                        prayerItems = dailySchedule.prayerItems,
+                        prayerConfigs = settings.prayerConfigs,
+                        timeFormatter = timeFormatter,
+                        isToday = isToday,
+                        onToggleNotification = { prayerType, newConfig ->
+                            onUpdateNotificationConfig(
+                                prayerType,
+                                newConfig.enabled,
+                                newConfig.soundType,
+                                newConfig.preReminderMinutes
+                            )
+                        }
+                    )
+                }
             }
-        }
 
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
+            // Sunnah & Night Times Calculation Card (Duha, Midnight, Qiyam)
+            item {
+                if (dailySchedule != null) {
+                    BentoExtraSunnahCard(
+                        schedule = dailySchedule,
+                        timeFormatter = timeFormatter,
+                        expanded = showExtraTimes,
+                        onToggleExpand = { showExtraTimes = !showExtraTimes }
+                    )
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }
@@ -511,30 +528,22 @@ private fun BentoPrayerTimesListCard(
     isToday: Boolean,
     onToggleNotification: (PrayerType, NotificationPrayerConfig) -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    // Plain Column, not a Card - this group has no fill/elevation of its own, and a Card would
+    // clip its content to its own (larger) corner radius, chipping the first/last row's own
+    // corners since they sit flush against its edges.
+    Column(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(0.dp)
-        ) {
-            prayerItems.forEachIndexed { index, item ->
-                BentoPrayerRow(
-                    item = item,
-                    config = prayerConfigs[item.type] ?: NotificationPrayerConfig(),
-                    timeFormatter = timeFormatter,
-                    isToday = isToday,
-                    onToggleNotification = onToggleNotification
-                )
-                if (index < prayerItems.size - 1) {
-                    Spacer(Modifier.height(8.dp))
-                }
+        prayerItems.forEachIndexed { index, item ->
+            BentoPrayerRow(
+                item = item,
+                config = prayerConfigs[item.type] ?: NotificationPrayerConfig(),
+                timeFormatter = timeFormatter,
+                isToday = isToday,
+                onToggleNotification = onToggleNotification
+            )
+            if (index < prayerItems.size - 1) {
+                Spacer(Modifier.height(8.dp))
             }
         }
     }
@@ -561,99 +570,100 @@ private fun BentoPrayerRow(
     val prayerTextColor = if (isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     val timeTextColor = if (isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
 
-    Row(
+    Surface(
+        onClick = {
+            val now = ZonedDateTime.now(item.zonedDateTime.zone)
+            val diffSeconds = Duration.between(now, item.zonedDateTime).seconds
+            val statusText = if (diffSeconds > 0) strings.formatCountdown(diffSeconds) else strings.formatSince(-diffSeconds)
+            Toast.makeText(context, "${strings.prayerName(item.type)}: $statusText", Toast.LENGTH_SHORT).show()
+        },
         modifier = Modifier
             .fillMaxWidth()
-            .background(rowBg, RoundedCornerShape(18.dp))
-            .border(
-                width = if (isNext) 1.dp else 0.dp,
-                color = if (isNext) MaterialTheme.colorScheme.primary.copy(alpha = 0.28f) else Color.Transparent,
-                shape = RoundedCornerShape(18.dp)
-            )
-            .clickable {
-                val now = ZonedDateTime.now(item.zonedDateTime.zone)
-                val diffSeconds = Duration.between(now, item.zonedDateTime).seconds
-                val statusText = if (diffSeconds > 0) strings.formatCountdown(diffSeconds) else strings.formatSince(-diffSeconds)
-                Toast.makeText(context, "${strings.prayerName(item.type)}: $statusText", Toast.LENGTH_SHORT).show()
-            }
-            .padding(horizontal = 14.dp, vertical = 12.dp)
             .testTag("prayer_card_${item.type.name.lowercase()}"),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        shape = RoundedCornerShape(18.dp),
+        color = rowBg,
+        border = if (isNext) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)) else null
     ) {
-        // Left: Icon + Localized Name + Subtitle
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .background(
-                        if (isNext) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceContainerHigh,
-                        CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = getPrayerIcon(item.type),
-                    contentDescription = strings.prayerName(item.type),
-                    tint = if (isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column {
-                Text(
-                    text = strings.prayerName(item.type),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (isNext) FontWeight.ExtraBold else FontWeight.SemiBold,
-                    color = prayerTextColor
-                )
-            }
-        }
-
-        // Right: Time + Notification Mode Icon
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = item.time.format(timeFormatter),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = timeTextColor
-            )
-
-            Spacer(modifier = Modifier.width(6.dp))
-
-            Box {
-                IconButton(
-                    onClick = { showMenu = true },
-                    modifier = Modifier.size(32.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left: Icon + Localized Name + Subtitle
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .background(
+                            if (isNext) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = when {
-                            !config.enabled -> Icons.Default.NotificationsOff
-                            config.soundType.isFullAthan -> Icons.Default.NotificationsActive
-                            config.soundType == NotificationSoundType.SILENT -> Icons.Default.NotificationsOff
-                            else -> Icons.Default.Notifications
-                        },
-                        contentDescription = strings.notifSectionTitle,
-                        tint = if (config.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                        imageVector = getPrayerIcon(item.type),
+                        contentDescription = strings.prayerName(item.type),
+                        tint = if (isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                 }
 
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    NotificationSoundType.selectableValues(strings.isArabic).forEach { sound ->
-                        DropdownMenuItem(
-                            text = { Text(strings.soundTypeName(sound)) },
-                            onClick = {
-                                val isEnabled = sound != NotificationSoundType.SILENT
-                                onToggleNotification(item.type, config.copy(enabled = isEnabled, soundType = sound))
-                                showMenu = false
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = strings.prayerName(item.type),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (isNext) FontWeight.ExtraBold else FontWeight.SemiBold,
+                        color = prayerTextColor
+                    )
+                }
+            }
+
+            // Right: Time + Notification Mode Icon
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = item.time.format(timeFormatter),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = timeTextColor
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = when {
+                                !config.enabled -> Icons.Default.NotificationsOff
+                                config.soundType.isFullAthan -> Icons.Default.NotificationsActive
+                                config.soundType == NotificationSoundType.SILENT -> Icons.Default.NotificationsOff
+                                else -> Icons.Default.Notifications
                             },
-                            leadingIcon = {
+                            contentDescription = strings.notifSectionTitle,
+                            tint = if (config.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        NotificationSoundType.selectableValues(strings.isArabic).forEach { sound ->
+                            DropdownMenuItem(
+                                text = { Text(strings.soundTypeName(sound)) },
+                                onClick = {
+                                    val isEnabled = sound != NotificationSoundType.SILENT
+                                    onToggleNotification(item.type, config.copy(enabled = isEnabled, soundType = sound))
+                                    showMenu = false
+                                },
+                                leadingIcon = {
                                 Icon(
                                     imageVector = if (sound == NotificationSoundType.SILENT) Icons.Default.NotificationsOff else Icons.Default.VolumeUp,
                                     contentDescription = null
@@ -665,6 +675,7 @@ private fun BentoPrayerRow(
             }
         }
     }
+}
 }
 
 @Composable

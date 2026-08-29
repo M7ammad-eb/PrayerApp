@@ -10,17 +10,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CompassCalibration
@@ -128,7 +125,6 @@ fun QiblaScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .testTag("qibla_screen"),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -149,6 +145,7 @@ fun QiblaScreen(
                 textAlign = TextAlign.Center
             )
             CompassHero(
+                modifier = Modifier.weight(1f),
                 compassState = compassState,
                 pointerRotation = animatedPointerRotation,
                 isAligned = isAligned
@@ -162,31 +159,38 @@ fun QiblaScreen(
         } else {
             SensorUnavailableCard()
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
 @Composable
 private fun CompassHero(
+    modifier: Modifier = Modifier,
     compassState: CompassState,
     pointerRotation: Float,
     isAligned: Boolean
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(top = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Fills whatever vertical space is left between the header and the footer - the circle
+        // itself is drawn from size.minDimension, so it naturally shrinks to fit short screens
+        // instead of forcing the page to scroll.
         Box(
             modifier = Modifier
-                .fillMaxWidth(0.88f)
-                .aspectRatio(1f),
+                .weight(1f)
+                .fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
-            MinimalQiblaCompass(pointerRotation = pointerRotation, isAligned = isAligned)
+            Box(
+                modifier = Modifier.fillMaxSize(0.88f),
+                contentAlignment = Alignment.Center
+            ) {
+                MinimalQiblaCompass(pointerRotation = pointerRotation, isAligned = isAligned)
+            }
         }
         DirectionStatus(isAligned = isAligned, relativeAngle = compassState.relativeQiblaAngle)
     }
