@@ -319,73 +319,91 @@ private fun MinimalQiblaCompass(pointerRotation: Float, ringRotation: Float, isA
         drawCircle(color = faceColor, radius = badgeRadius + 3.dp.toPx(), center = badgeCenter)
         drawCircle(color = badgeColor, radius = badgeRadius, center = badgeCenter)
 
-        // Upright isometric cube inside the badge - a "corner" view of the Kaaba (three visible
-        // faces meeting at the near corner), scaled to the badge's own radius. badgeCenter is
+        // Upright three-quarter Kaaba silhouette with a broad wall, shallow roof, kiswah belt,
+        // and door, scaled to the badge's own radius. badgeCenter is
         // already an absolute position (from cos/sin), not the result of a rotate() transform,
         // so the icon itself must be drawn plain here - wrapping it in
         // rotate(-pointerRotation, ...) would spin it as the badge orbits instead of keeping it
         // upright.
         val cx = badgeCenter.x
         val cy = badgeCenter.y
-        val iconScale = badgeRadius / 24.dp.toPx()
-        // Silhouette: a short flat top cap, then a much taller body that narrows to a near-point
-        // at the bottom - not a regular hexagon. The body itself is left unfilled (the badge's
-        // own dark background already shows through), matching the reference's solid-cube style
-        // without needing a separate fill or seam line.
-        val w = 12.dp.toPx() * iconScale
-        val topY = cy - 11.dp.toPx() * iconScale
-        val shoulderY = cy - 6.dp.toPx() * iconScale
-        val nearY = cy - 4.dp.toPx() * iconScale
-        val lowerShoulderY = cy + 7.dp.toPx() * iconScale
-        val bottomY = cy + 9.dp.toPx() * iconScale
+        val iconScale = badgeRadius / 21.5.dp.toPx()
+        fun point(x: Float, y: Float) = Offset(
+            cx + x.dp.toPx() * iconScale,
+            cy + y.dp.toPx() * iconScale
+        )
 
-        val top = Offset(cx, topY)
-        val upperRight = Offset(cx + w, shoulderY)
-        val lowerRight = Offset(cx + w, lowerShoulderY)
-        val bottom = Offset(cx, bottomY)
-        val lowerLeft = Offset(cx - w, lowerShoulderY)
-        val upperLeft = Offset(cx - w, shoulderY)
-        val near = Offset(cx, nearY)
+        val roofLeft = point(-10f, -6f)
+        val roofBack = point(-2f, -10f)
+        val roofRight = point(10f, -6f)
+        val roofFront = point(2f, -2f)
+        val leftBottom = point(-10f, 7f)
+        val frontBottom = point(2f, 11f)
+        val rightBottom = point(10f, 7f)
 
-        val outlinePath = Path().apply {
-            moveTo(top.x, top.y)
-            lineTo(upperRight.x, upperRight.y)
-            lineTo(lowerRight.x, lowerRight.y)
-            lineTo(bottom.x, bottom.y)
-            lineTo(lowerLeft.x, lowerLeft.y)
-            lineTo(upperLeft.x, upperLeft.y)
+        val roofPath = Path().apply {
+            moveTo(roofLeft.x, roofLeft.y)
+            lineTo(roofBack.x, roofBack.y)
+            lineTo(roofRight.x, roofRight.y)
+            lineTo(roofFront.x, roofFront.y)
             close()
         }
-        val lineWidth = 1.4.dp.toPx() * iconScale
-        drawPath(path = outlinePath, color = onPrimary, style = Stroke(width = lineWidth))
-
-        // Flat top face, dipping down slightly to its near vertex like the reference's kite shape
-        val topFacePath = Path().apply {
-            moveTo(top.x, top.y)
-            lineTo(upperRight.x, upperRight.y)
-            lineTo(near.x, near.y)
-            lineTo(upperLeft.x, upperLeft.y)
+        val leftWallPath = Path().apply {
+            moveTo(roofLeft.x, roofLeft.y)
+            lineTo(roofFront.x, roofFront.y)
+            lineTo(frontBottom.x, frontBottom.y)
+            lineTo(leftBottom.x, leftBottom.y)
             close()
         }
-        drawPath(path = topFacePath, color = onPrimary)
-
-        // Belt bands wrapping the body, each bowing down slightly at the center seam
-        fun lerp(a: Offset, b: Offset, t: Float) = Offset(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
-        fun chevron(frac: Float, bow: Float, width: Float) {
-            val left = lerp(upperLeft, lowerLeft, frac)
-            val right = lerp(upperRight, lowerRight, frac)
-            val dip = Offset(cx, ((left.y + right.y) / 2f) + bow)
-            val path = Path().apply {
-                moveTo(left.x, left.y)
-                lineTo(dip.x, dip.y)
-                lineTo(right.x, right.y)
-            }
-            drawPath(path = path, color = onPrimary, style = Stroke(width = width))
+        val rightWallPath = Path().apply {
+            moveTo(roofFront.x, roofFront.y)
+            lineTo(roofRight.x, roofRight.y)
+            lineTo(rightBottom.x, rightBottom.y)
+            lineTo(frontBottom.x, frontBottom.y)
+            close()
         }
-        val bow = 1.6.dp.toPx() * iconScale
-        chevron(frac = 0.42f, bow = bow, width = lineWidth * 1.3f)
-        chevron(frac = 0.78f, bow = bow * 0.7f, width = lineWidth)
-        chevron(frac = 0.87f, bow = bow * 0.6f, width = lineWidth)
+        drawPath(leftWallPath, onPrimary)
+        drawPath(rightWallPath, onPrimary.copy(alpha = 0.82f))
+        drawPath(roofPath, onPrimary.copy(alpha = 0.68f))
+
+        val beltColor = badgeColor.copy(alpha = 0.95f)
+        val beltLeft = Path().apply {
+            val a = point(-10f, -1.7f)
+            val b = point(2f, 2.1f)
+            val c = point(2f, 4.5f)
+            val d = point(-10f, 0.8f)
+            moveTo(a.x, a.y)
+            lineTo(b.x, b.y)
+            lineTo(c.x, c.y)
+            lineTo(d.x, d.y)
+            close()
+        }
+        val beltRight = Path().apply {
+            val a = point(2f, 2.1f)
+            val b = point(10f, -1.7f)
+            val c = point(10f, 0.8f)
+            val d = point(2f, 4.5f)
+            moveTo(a.x, a.y)
+            lineTo(b.x, b.y)
+            lineTo(c.x, c.y)
+            lineTo(d.x, d.y)
+            close()
+        }
+        drawPath(beltLeft, beltColor)
+        drawPath(beltRight, beltColor)
+
+        val door = Path().apply {
+            val a = point(5.2f, 4.2f)
+            val b = point(8.1f, 3f)
+            val c = point(8.1f, 7.1f)
+            val d = point(5.2f, 8.3f)
+            moveTo(a.x, a.y)
+            lineTo(b.x, b.y)
+            lineTo(c.x, c.y)
+            lineTo(d.x, d.y)
+            close()
+        }
+        drawPath(door, beltColor)
     }
 }
 
