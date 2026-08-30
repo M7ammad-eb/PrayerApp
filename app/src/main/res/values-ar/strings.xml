@@ -214,6 +214,8 @@
     <string name="color_preset_system_dynamic">ألوان النظام التلقائية (ماتيريال يو)</string>
     <string name="color_preset_custom">مخصص</string>
     <string name="custom_color_title">اختر لونك</string>
+    <string name="custom_color_hue">اللون</string>
+    <string name="custom_color_brightness">السطوع</string>
     <string name="color_preset_emerald_gold">الزمرد والذهب (التقليدي)</string>
     <string name="color_preset_royal_amber">العنبر الصحراوي</string>
     <string name="color_preset_sapphire_night">الياقوت الأزرق الليلي</string>

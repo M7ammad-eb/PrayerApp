@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -427,7 +426,7 @@ private fun BentoNextPrayerHeroCard(
                 // Bottom Athan time banner pill
                 Row(
                     modifier = Modifier
-                        .background(contentColor.copy(alpha = 0.14f), RoundedCornerShape(50))
+                        .background(contentColor.copy(alpha = 0.14f), CircleShape)
                         .padding(horizontal = 12.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

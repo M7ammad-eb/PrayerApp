@@ -28,7 +28,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -689,6 +688,9 @@ private fun SettingsAppearanceSubScreen(
     var customHue by remember(settings.customColorSeed) {
         mutableStateOf(hueFromColor(settings.customColorSeed))
     }
+    var customBrightness by remember(settings.customColorSeed) {
+        mutableStateOf(brightnessFromColor(settings.customColorSeed))
+    }
 
     Column(
         modifier = Modifier
@@ -761,7 +763,7 @@ private fun SettingsAppearanceSubScreen(
                         settings.customColorSeed
                     } else if (darkPalette) preset.primaryDark else preset.primaryLight
                     val secondary = if (preset == com.prayertimes.data.models.AppColorPreset.CUSTOM) {
-                        colorFromHue((customHue + 24f) % 360f)
+                        colorFromHueAndBrightness((customHue + 24f) % 360f, customBrightness)
                     } else if (darkPalette) preset.secondaryDark else preset.secondaryLight
                     Box(
                         modifier = Modifier
@@ -782,58 +784,28 @@ private fun SettingsAppearanceSubScreen(
             )
 
             AnimatedVisibility(visible = selectedPalette == com.prayertimes.data.models.AppColorPreset.CUSTOM) {
-                val selectedColor = androidx.compose.ui.graphics.Color(colorFromHue(customHue))
+                val selectedColor = androidx.compose.ui.graphics.Color(
+                    colorFromHueAndBrightness(customHue, customBrightness)
+                )
+                val saveCustomColor = {
+                    onUpdateCustomColorSeed(colorFromHueAndBrightness(customHue, customBrightness))
+                }
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
                     color = MaterialTheme.colorScheme.surfaceContainerLow
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
-                        Text(
-                            text = stringResource(R.string.custom_color_title),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(40.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(10.dp)
-                                        .clip(CircleShape)
-                                        .background(
-                                            Brush.horizontalGradient(
-                                                listOf(
-                                                    androidx.compose.ui.graphics.Color.Red,
-                                                    androidx.compose.ui.graphics.Color.Yellow,
-                                                    androidx.compose.ui.graphics.Color.Green,
-                                                    androidx.compose.ui.graphics.Color.Cyan,
-                                                    androidx.compose.ui.graphics.Color.Blue,
-                                                    androidx.compose.ui.graphics.Color.Magenta,
-                                                    androidx.compose.ui.graphics.Color.Red
-                                                )
-                                            )
-                                        )
-                                )
-                                Slider(
-                                    value = customHue,
-                                    onValueChange = { customHue = it },
-                                    onValueChangeFinished = { onUpdateCustomColorSeed(colorFromHue(customHue)) },
-                                    valueRange = 0f..360f,
-                                    colors = SliderDefaults.colors(
-                                        thumbColor = selectedColor,
-                                        activeTrackColor = androidx.compose.ui.graphics.Color.Transparent,
-                                        inactiveTrackColor = androidx.compose.ui.graphics.Color.Transparent
-                                    )
-                                )
-                            }
-                            Spacer(Modifier.width(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.custom_color_title),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
@@ -842,6 +814,76 @@ private fun SettingsAppearanceSubScreen(
                                     .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
                             )
                         }
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = stringResource(R.string.custom_color_hue),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp)
+                                .height(8.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(
+                                            androidx.compose.ui.graphics.Color.Red,
+                                            androidx.compose.ui.graphics.Color.Yellow,
+                                            androidx.compose.ui.graphics.Color.Green,
+                                            androidx.compose.ui.graphics.Color.Cyan,
+                                            androidx.compose.ui.graphics.Color.Blue,
+                                            androidx.compose.ui.graphics.Color.Magenta,
+                                            androidx.compose.ui.graphics.Color.Red
+                                        )
+                                    )
+                                )
+                        )
+                        Slider(
+                            value = customHue,
+                            onValueChange = { customHue = it },
+                            onValueChangeFinished = saveCustomColor,
+                            valueRange = 0f..360f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = selectedColor,
+                                activeTrackColor = selectedColor,
+                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                            )
+                        )
+                        Text(
+                            text = stringResource(R.string.custom_color_brightness),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp)
+                                .height(8.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(
+                                            androidx.compose.ui.graphics.Color.Black,
+                                            androidx.compose.ui.graphics.Color(
+                                                colorFromHueAndBrightness(customHue, 1f)
+                                            )
+                                        )
+                                    )
+                                )
+                        )
+                        Slider(
+                            value = customBrightness,
+                            onValueChange = { customBrightness = it },
+                            onValueChangeFinished = saveCustomColor,
+                            valueRange = 0.2f..1f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = selectedColor,
+                                activeTrackColor = selectedColor,
+                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                            )
+                        )
                     }
                 }
             }
@@ -857,8 +899,16 @@ private fun hueFromColor(color: Long): Float {
     return hsv[0]
 }
 
-private fun colorFromHue(hue: Float): Long =
-    android.graphics.Color.HSVToColor(floatArrayOf(hue, 0.72f, 0.72f)).toLong() and 0xFFFFFFFFL
+private fun brightnessFromColor(color: Long): Float {
+    val hsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(color.toInt(), hsv)
+    return hsv[2].coerceIn(0.2f, 1f)
+}
+
+private fun colorFromHueAndBrightness(hue: Float, brightness: Float): Long =
+    android.graphics.Color.HSVToColor(
+        floatArrayOf(hue, 0.72f, brightness.coerceIn(0.2f, 1f))
+    ).toLong() and 0xFFFFFFFFL
 
 @Composable
 private fun ThemeSelectionCard(
@@ -870,7 +920,7 @@ private fun ThemeSelectionCard(
 ) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
@@ -984,14 +1034,14 @@ private fun SettingsCalculationSubScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Card(
-                    shape = RoundedCornerShape(18.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(8.dp)) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(MaterialTheme.shapes.small)
                                 .clickable { onUpdateJuristicMethod(JuristicMethod.STANDARD) }
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -1020,7 +1070,7 @@ private fun SettingsCalculationSubScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(MaterialTheme.shapes.small)
                                 .clickable { onUpdateJuristicMethod(JuristicMethod.HANAFI) }
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -1051,7 +1101,7 @@ private fun SettingsCalculationSubScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 Spacer(modifier = Modifier.height(10.dp))
                 Card(
-                    shape = RoundedCornerShape(18.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -1128,7 +1178,7 @@ private fun SettingsCalculationSubScreen(
                     }
                     OutlinedButton(
                         onClick = { PrayerType.values().forEach { onUpdatePrayerAdjustment(it, 0) } },
-                        shape = RoundedCornerShape(14.dp),
+                        shape = MaterialTheme.shapes.small,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -1137,7 +1187,7 @@ private fun SettingsCalculationSubScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Card(
-                        shape = RoundedCornerShape(18.dp),
+                        shape = MaterialTheme.shapes.medium,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -1171,7 +1221,7 @@ private fun PrayerAdjustmentCard(
     onIncrease: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -1256,7 +1306,7 @@ private fun SettingsLocationSubScreen(
         // visible regardless of the search field's transient state, unlike relying on a search
         // result row happening to be on screen with a checkmark.
         Card(
-            shape = RoundedCornerShape(20.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
             modifier = Modifier.fillMaxWidth().testTag("current_location_card")
         ) {
@@ -1304,7 +1354,7 @@ private fun SettingsLocationSubScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(MaterialTheme.shapes.extraSmall)
                                 .clickable { locationDetailsExpanded = !locationDetailsExpanded }
                                 .padding(vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -1345,7 +1395,7 @@ private fun SettingsLocationSubScreen(
 
         // GPS Action Button
         Card(
-            shape = RoundedCornerShape(18.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -1372,7 +1422,7 @@ private fun SettingsLocationSubScreen(
                 Button(
                     onClick = onRequestGps,
                     enabled = !isGpsLoading,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = MaterialTheme.shapes.small
                 ) {
                     if (isGpsLoading) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
@@ -1400,7 +1450,7 @@ private fun SettingsLocationSubScreen(
             placeholder = { Text(strings.locationSearchHint) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.medium,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -1440,7 +1490,7 @@ private fun SettingsLocationSubScreen(
                                 )
                             )
                         },
-                        shape = RoundedCornerShape(14.dp),
+                        shape = MaterialTheme.shapes.small,
                         colors = CardDefaults.cardColors(
                             containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
                         ),
@@ -1551,7 +1601,7 @@ private fun SettingsNotificationsSubScreen(
             item {
                 if (!notificationsEnabled) {
                     Card(
-                        shape = RoundedCornerShape(16.dp),
+                        shape = MaterialTheme.shapes.medium,
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer
                         ),
@@ -1588,7 +1638,7 @@ private fun SettingsNotificationsSubScreen(
                                         // Ignore
                                     }
                                 },
-                                shape = RoundedCornerShape(10.dp),
+                                shape = MaterialTheme.shapes.extraSmall,
                                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.error
                                 ),
@@ -1604,7 +1654,7 @@ private fun SettingsNotificationsSubScreen(
                     }
                 } else {
                     Card(
-                        shape = RoundedCornerShape(14.dp),
+                        shape = MaterialTheme.shapes.small,
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                         ),
@@ -1633,7 +1683,7 @@ private fun SettingsNotificationsSubScreen(
             // Audio Stream Output Selection Card (Follows System Volume)
             item {
                 Card(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -1676,7 +1726,7 @@ private fun SettingsNotificationsSubScreen(
 
                             Card(
                                 onClick = { onUpdateAudioStream(stream) },
-                                shape = RoundedCornerShape(14.dp),
+                                shape = MaterialTheme.shapes.small,
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
                                     else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
@@ -1741,7 +1791,7 @@ private fun SettingsNotificationsSubScreen(
             // Wake Screen & Full-Screen Alarm Artwork Card
             if (advancedExpanded) item {
                 Card(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
                     ),
@@ -1818,7 +1868,7 @@ private fun SettingsNotificationsSubScreen(
                                 val isSelected = previewPrayerArtwork == p
                                 FilledTonalButton(
                                     onClick = { previewPrayerArtwork = p },
-                                    shape = RoundedCornerShape(10.dp),
+                                    shape = MaterialTheme.shapes.extraSmall,
                                     colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                                         containerColor = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surface
                                     ),
@@ -1841,7 +1891,7 @@ private fun SettingsNotificationsSubScreen(
 
                         Button(
                             onClick = { onPreviewFullScreenAlarm(previewPrayerArtwork) },
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.small,
                             colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.secondary
                             ),
@@ -1862,7 +1912,7 @@ private fun SettingsNotificationsSubScreen(
             // Live Athan Countdown Card (standard Android Live Update notification)
             if (advancedExpanded) item {
                 Card(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -1927,7 +1977,7 @@ private fun SettingsNotificationsSubScreen(
                                     val isSelected = settings.liveCountdownMinutesBefore == mins
                                     FilledTonalButton(
                                         onClick = { onUpdateLiveCountdownSettings(true, mins) },
-                                        shape = RoundedCornerShape(10.dp),
+                                        shape = MaterialTheme.shapes.extraSmall,
                                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
                                         colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                                             containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
@@ -1950,7 +2000,7 @@ private fun SettingsNotificationsSubScreen(
                         Spacer(modifier = Modifier.height(10.dp))
                         OutlinedButton(
                             onClick = onTestLiveCountdown,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = MaterialTheme.shapes.small,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(imageVector = Icons.Default.Timer, contentDescription = null)
@@ -1978,7 +2028,7 @@ private fun SettingsNotificationsSubScreen(
             items(PrayerType.values()) { prayer ->
                 val cfg = settings.prayerConfigs[prayer] ?: NotificationPrayerConfig()
                 Card(
-                    shape = RoundedCornerShape(18.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -1986,7 +2036,7 @@ private fun SettingsNotificationsSubScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(MaterialTheme.shapes.extraSmall)
                                 .clickable {
                                     onUpdateNotificationConfig(prayer, !cfg.enabled, cfg.soundType, cfg.preReminderMinutes)
                                 }
@@ -2013,7 +2063,7 @@ private fun SettingsNotificationsSubScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(MaterialTheme.shapes.extraSmall)
                                     .clickable { activeSoundDialogPrayer = prayer }
                                     .padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -2035,7 +2085,7 @@ private fun SettingsNotificationsSubScreen(
 
                                 FilledTonalButton(
                                     onClick = { activeSoundDialogPrayer = prayer },
-                                    shape = RoundedCornerShape(10.dp)
+                                    shape = MaterialTheme.shapes.extraSmall
                                 ) {
                                     Text(strings.change, style = MaterialTheme.typography.labelSmall)
                                 }
@@ -2051,7 +2101,7 @@ private fun SettingsNotificationsSubScreen(
                 // Test instant notification
                 Button(
                     onClick = { onTestNotification(PrayerType.DHUHR, NotificationSoundType.FULL_ATHAN) },
-                    shape = RoundedCornerShape(14.dp),
+                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(imageVector = Icons.Default.NotificationsActive, contentDescription = null)
@@ -2067,7 +2117,7 @@ private fun SettingsNotificationsSubScreen(
                         onTestAlarmInSeconds(PrayerType.DHUHR, NotificationSoundType.FULL_ATHAN, 5)
                         testAlarmScheduledText = context.getString(R.string.settings_test_alarm_scheduled)
                     },
-                    shape = RoundedCornerShape(14.dp),
+                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(imageVector = Icons.Default.Timer, contentDescription = null)
@@ -2119,7 +2169,7 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Card(
-                shape = RoundedCornerShape(20.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -2149,7 +2199,7 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
             }
 
             Card(
-                shape = RoundedCornerShape(18.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -2170,7 +2220,7 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
             }
 
             Card(
-                shape = RoundedCornerShape(18.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -2191,7 +2241,7 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
             }
 
             Card(
-                shape = RoundedCornerShape(18.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -2241,7 +2291,7 @@ fun SoundPickerDialog(
 
     Dialog(onDismissRequest = stopAndDismiss) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp,
             modifier = Modifier.fillMaxWidth()
@@ -2268,7 +2318,7 @@ fun SoundPickerDialog(
                         val isSelected = sound == currentSound
                         Card(
                             onClick = { stopAndSelect(sound) },
-                            shape = RoundedCornerShape(14.dp),
+                            shape = MaterialTheme.shapes.small,
                             colors = CardDefaults.cardColors(
                                 containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                             ),

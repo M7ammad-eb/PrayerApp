@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -267,14 +266,14 @@ fun ManualCoordinatesDialog(
                     presetCoordinates.forEach { preset ->
                         Surface(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(MaterialTheme.shapes.extraSmall)
                                 .clickable {
                                     latText = String.format(Locale.US, "%.4f", preset.lat)
                                     lonText = String.format(Locale.US, "%.4f", preset.lon)
                                     locationNameText = preset.name
                                     selectedTimeZone = preset.tz
                                 },
-                            shape = RoundedCornerShape(10.dp),
+                            shape = MaterialTheme.shapes.extraSmall,
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                         ) {
                             Text(
@@ -385,7 +384,7 @@ fun ManualCoordinatesDialog(
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(MaterialTheme.shapes.small)
                                 .clickable { showTimeZoneDropdown = true }
                                 .testTag("timezone_selector_button"),
                             shape = MaterialTheme.shapes.medium,

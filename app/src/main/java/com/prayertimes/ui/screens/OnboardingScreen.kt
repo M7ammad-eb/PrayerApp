@@ -35,7 +35,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -639,7 +638,7 @@ private fun OnboardingLocationStep(
 
         // Privacy Guarantee Card
         Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -678,7 +677,7 @@ private fun OnboardingLocationStep(
 
         // Current Selection Banner
         Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -730,7 +729,7 @@ private fun OnboardingLocationStep(
                 Button(
                     onClick = onRequestGps,
                     enabled = !isGpsLoading,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.small,
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     if (isGpsLoading) {
@@ -764,7 +763,7 @@ private fun OnboardingLocationStep(
                 }
             },
             singleLine = true,
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.medium,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -796,7 +795,7 @@ private fun OnboardingLocationStep(
                                 )
                             )
                         },
-                        shape = RoundedCornerShape(14.dp),
+                        shape = MaterialTheme.shapes.small,
                         colors = CardDefaults.cardColors(
                             containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
                         ),
@@ -873,7 +872,7 @@ private fun OnboardingCalculationMethodStep(
         // Suggestion banner - not everyone knows which method applies to them, so this makes the
         // pre-selected choice (already applied to selectedMethod) visible and explained.
         Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -907,7 +906,7 @@ private fun OnboardingCalculationMethodStep(
                 val isSelected = selectedMethod == method
                 Card(
                     onClick = { onSelectMethod(method) },
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(
                         containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
                     ),
@@ -982,7 +981,7 @@ private fun OnboardingNotificationStep(
 
         // Status Card
         Card(
-            shape = RoundedCornerShape(20.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(
                 containerColor = if (hasPermission) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ),
@@ -1024,7 +1023,7 @@ private fun OnboardingNotificationStep(
                     if (canRequestDirectly) {
                         Button(
                             onClick = onRequestPermission,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = MaterialTheme.shapes.small,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -1042,7 +1041,7 @@ private fun OnboardingNotificationStep(
                         )
                         OutlinedButton(
                             onClick = onOpenAppSettings,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = MaterialTheme.shapes.small,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -1058,7 +1057,7 @@ private fun OnboardingNotificationStep(
 
         // Detailed Explanation of Why Permissions Are Essential
         Card(
-            shape = RoundedCornerShape(18.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             border = CardDefaults.outlinedCardBorder(),
             modifier = Modifier.fillMaxWidth()
@@ -1134,7 +1133,7 @@ private fun OnboardingAthanStep(
         // Countdown" card, surfaced here too since most people don't know it exists until they
         // stumble into Settings; fixed at 15 minutes here, adjustable later in Settings.
         Card(
-            shape = RoundedCornerShape(18.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             border = CardDefaults.outlinedCardBorder(),
             modifier = Modifier.fillMaxWidth()
@@ -1177,7 +1176,7 @@ private fun OnboardingAthanStep(
                 val config = settings.prayerConfigs[prayer] ?: NotificationPrayerConfig()
                 Card(
                     onClick = { selectedPrayerForDialog = prayer },
-                    shape = RoundedCornerShape(18.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = CardDefaults.outlinedCardBorder(),
                     modifier = Modifier.fillMaxWidth()
@@ -1225,7 +1224,7 @@ private fun OnboardingAthanStep(
 
                         OutlinedButton(
                             onClick = { selectedPrayerForDialog = prayer },
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.small,
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text(text = strings.change, style = MaterialTheme.typography.labelMedium)
@@ -1326,7 +1325,7 @@ private fun OnboardingStyleStep(
         item {
             Card(
                 onClick = { onUpdateFollowSystemColors(!settings.followSystemColors) },
-                shape = RoundedCornerShape(18.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(
                     containerColor = if (settings.followSystemColors) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
                 ),
@@ -1396,7 +1395,7 @@ private fun OnboardingStyleStep(
                     }
                     onUpdateColorPreset(preset)
                 },
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(
                     containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
                 ),
@@ -1472,7 +1471,7 @@ private fun ThemeMiniCard(
 ) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
         ),

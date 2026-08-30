@@ -11,6 +11,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import com.prayertimes.data.models.AppColorPreset
 import com.prayertimes.data.models.AppThemeMode
@@ -40,15 +41,21 @@ fun getPresetColorScheme(
     val containerSecondary = secondary
         .copy(alpha = if (isDark) 0.20f else 0.15f)
         .compositeOver(schemeBackground)
+    val onPrimary = if (preset == AppColorPreset.CUSTOM) {
+        if (primary.luminance() > 0.42f) Color.Black else Color.White
+    } else if (isDark) Color.Black else Color.White
+    val onSecondary = if (preset == AppColorPreset.CUSTOM) {
+        if (secondary.luminance() > 0.42f) Color.Black else Color.White
+    } else if (isDark) Color.Black else Color.White
 
     return if (isDark) {
         darkColorScheme(
             primary = primary,
-            onPrimary = Color.Black,
+            onPrimary = onPrimary,
             primaryContainer = containerPrimary,
             onPrimaryContainer = Color(0xFFE8F5E9),
             secondary = secondary,
-            onSecondary = Color.Black,
+            onSecondary = onSecondary,
             secondaryContainer = containerSecondary,
             onSecondaryContainer = Color(0xFFFFF8E1),
             tertiary = Color(0xFFF3D27C),
@@ -80,11 +87,11 @@ fun getPresetColorScheme(
     } else {
         lightColorScheme(
             primary = primary,
-            onPrimary = Color.White,
+            onPrimary = onPrimary,
             primaryContainer = containerPrimary,
             onPrimaryContainer = primary,
             secondary = secondary,
-            onSecondary = Color.White,
+            onSecondary = onSecondary,
             secondaryContainer = containerSecondary,
             onSecondaryContainer = Color(0xFF3E2723),
             tertiary = Color(0xFFB8860B),
@@ -163,8 +170,16 @@ private fun customTonalColor(
 ): Color {
     val hsv = FloatArray(3)
     android.graphics.Color.colorToHSV(seed.toInt(), hsv)
+    val selectedBrightness = hsv[2].coerceIn(0.2f, 1f)
     hsv[0] = (hsv[0] + hueOffset) % 360f
     hsv[1] = (hsv[1].coerceAtLeast(0.45f) * saturationFactor).coerceIn(0.28f, 0.78f)
-    hsv[2] = if (isDark) 0.86f else 0.48f
+    // Preserve the user's brightness choice while keeping each theme variant in a
+    // readable tonal range. Dark mode needs the accent lifted; light mode needs it
+    // deep enough to carry white/black content with useful contrast.
+    hsv[2] = if (isDark) {
+        0.50f + (selectedBrightness * 0.45f)
+    } else {
+        0.24f + (selectedBrightness * 0.38f)
+    }
     return Color(android.graphics.Color.HSVToColor(hsv))
 }

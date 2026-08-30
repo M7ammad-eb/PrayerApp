@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Explore
@@ -208,6 +207,22 @@ fun MainScreen(
             if (showCityPickerFromHeader) {
                 CityPickerDialog(
                     currentLocation = settings.location,
+                    onRequestGps = {
+                        showCityPickerFromHeader = false
+                        if (onRequestLocationPermission != null) {
+                            onRequestLocationPermission()
+                        } else {
+                            val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                            val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                            if (fine || coarse) {
+                                viewModel.requestGpsLocation(context)
+                            } else {
+                                locationPermissionLauncher.launch(
+                                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+                                )
+                            }
+                        }
+                    },
                     onSelectCity = {
                         viewModel.selectCity(it)
                         showCityPickerFromHeader = false

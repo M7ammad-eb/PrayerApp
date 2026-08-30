@@ -12,14 +12,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -47,6 +48,7 @@ import java.util.Locale
 @Composable
 fun CityPickerDialog(
     currentLocation: UserLocation,
+    onRequestGps: () -> Unit,
     onSelectCity: (UserLocation) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -96,6 +98,18 @@ fun CityPickerDialog(
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
+
+                FilledTonalButton(
+                    onClick = onRequestGps,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Icon(Icons.Default.MyLocation, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(strings.useGpsButton)
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 OutlinedTextField(
                     value = searchQuery,

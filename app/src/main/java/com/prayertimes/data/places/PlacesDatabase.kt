@@ -4,9 +4,10 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [PlaceEntity::class], version = 1, exportSchema = false)
+@Database(entities = [PlaceEntity::class], version = 2, exportSchema = false)
 abstract class PlacesDatabase : RoomDatabase() {
     abstract fun placeDao(): PlaceDao
 
@@ -21,6 +22,7 @@ abstract class PlacesDatabase : RoomDatabase() {
                     PlacesDatabase::class.java,
                     "places.db"
                 ).createFromAsset("places.db")
+                    .addMigrations(MIGRATION_1_2)
                     .addCallback(searchIndexCallback)
                     .build()
                     .also { instance = it }
@@ -30,6 +32,20 @@ abstract class PlacesDatabase : RoomDatabase() {
             override fun onOpen(db: SupportSQLiteDatabase) {
                 super.onOpen(db)
                 ensureSearchIndex(db)
+            }
+        }
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    INSERT OR REPLACE INTO places
+                        (geonameId, nameEn, nameAr, asciiName, countryCode, latitude, longitude, timeZoneId, population)
+                    VALUES
+                        (-1000001, 'Qomhane', 'قمحانة', 'Qomhane', 'SY', 35.195792, 36.732304, 'Asia/Damascus', 0)
+                    """.trimIndent()
+                )
+                db.execSQL("INSERT INTO places_fts(places_fts) VALUES('rebuild')")
             }
         }
 

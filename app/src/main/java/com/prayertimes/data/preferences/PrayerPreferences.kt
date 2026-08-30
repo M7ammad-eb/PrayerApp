@@ -1,8 +1,6 @@
 package com.prayertimes.data.preferences
 
 import android.content.Context
-import android.os.Build
-import android.os.LocaleList
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
@@ -595,25 +593,11 @@ class PrayerPreferences(private val context: Context) {
     }
 
     suspend fun updateLanguage(language: AppLanguage) {
-        // Persist before touching LocaleManager. Assigning applicationLocales can recreate the
-        // Activity immediately; when it happened first, that recreation cancelled this coroutine
-        // before DataStore was updated. A fresh Arabic setup then reopened with SYSTEM/English
-        // data while Android had already switched the window to RTL.
+        // The Compose locale provider owns language/resources/layout direction. Do not also set
+        // LocaleManager.applicationLocales here: Android recreates the Activity for that API,
+        // producing a visible second language transition and unnecessary screen flicker.
         editSettings { prefs ->
             prefs[Keys.APP_LANGUAGE] = language.name
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            try {
-                val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
-                when (language) {
-                    AppLanguage.SYSTEM -> localeManager?.applicationLocales = LocaleList.getEmptyLocaleList()
-                    AppLanguage.ARABIC -> localeManager?.applicationLocales = LocaleList.forLanguageTags("ar")
-                    AppLanguage.ENGLISH -> localeManager?.applicationLocales = LocaleList.forLanguageTags("en")
-                }
-            } catch (e: Exception) {
-                // ignore
-            }
         }
     }
 

@@ -6,6 +6,7 @@ import android.content.Context
 import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.prayertimes.PrayerApplication
 import com.prayertimes.R
 import com.prayertimes.audio.AthanAudioEngine
 import com.prayertimes.data.calculator.PrayerTimesCalculator
@@ -180,6 +181,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _isPrayerTabVisible = MutableStateFlow(false)
 
     private var cachedBoundary: NextPrayerBoundary? = null
+    private var languageLocationJob: Job? = null
 
     fun setForeground(foreground: Boolean) {
         _isForeground.value = foreground
@@ -193,6 +195,11 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     init {
         viewModelScope.launch { prefs.clearExpiredHijriOffset() }
         val initialSettings = settings.value
+        // Repair a GPS display name that an earlier broken places migration persisted as the
+        // coordinates fallback. This is asynchronous and never delays first render.
+        if (initialSettings.location.isGps && initialSettings.location.nearestPlaceDistanceKm == null) {
+            relocalizeGpsLocationInBackground(initialSettings.location, initialSettings.language)
+        }
         compassManager.setLocation(initialSettings.location.latitude, initialSettings.location.longitude)
         recalculateSchedules(initialSettings, _selectedDate.value)
         updateNextPrayerCountdown(initialSettings, ZonedDateTime.now(initialSettings.zoneId()))
@@ -524,33 +531,43 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun updateLanguage(language: com.prayertimes.data.models.AppLanguage) {
+        val currentLocation = settings.value.location
+        if (currentLocation.isGps) relocalizeGpsLocationInBackground(currentLocation, language)
+
         viewModelScope.launch {
-            val currentLocation = settings.value.location
-            if (currentLocation.isGps) {
-                val localizedRes = com.prayertimes.util.LocalizedStrings.forLanguage(
-                    getApplication(),
-                    language.resolveIsArabic(getApplication())
-                )
-                val relocalized = withContext(Dispatchers.IO) {
-                    runCatching {
-                        resolveGpsLocation(
-                            context = getApplication(),
-                            latitude = currentLocation.latitude,
-                            longitude = currentLocation.longitude,
-                            language = language,
-                            localizedRes = localizedRes
-                        )
-                    }.getOrElse {
-                        gpsFallbackLocation(
-                            currentLocation.latitude,
-                            currentLocation.longitude,
-                            localizedRes
-                        )
-                    }
-                }
-                prefs.updateLocation(relocalized)
-            }
             prefs.updateLanguage(language)
+        }
+    }
+
+    /**
+     * Localizing a GPS place opens/queries the large offline places database. Keep it off the
+     * language-switch critical path and in the process scope so it can finish independently of
+     * the current screen lifecycle.
+     */
+    private fun relocalizeGpsLocationInBackground(currentLocation: UserLocation, language: AppLanguage) {
+        val application = getApplication<Application>()
+        languageLocationJob?.cancel()
+        languageLocationJob = PrayerApplication.instance.applicationScope.launch(Dispatchers.IO) {
+            val localizedRes = com.prayertimes.util.LocalizedStrings.forLanguage(
+                application,
+                language.resolveIsArabic(application)
+            )
+            val relocalized = runCatching {
+                resolveGpsLocation(
+                    context = application,
+                    latitude = currentLocation.latitude,
+                    longitude = currentLocation.longitude,
+                    language = language,
+                    localizedRes = localizedRes
+                )
+            }.getOrElse {
+                gpsFallbackLocation(
+                    currentLocation.latitude,
+                    currentLocation.longitude,
+                    localizedRes
+                )
+            }
+            PrayerPreferences(application).updateLocation(relocalized)
         }
     }
 

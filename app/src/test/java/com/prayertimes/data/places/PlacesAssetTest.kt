@@ -39,6 +39,13 @@ class PlacesAssetTest {
         val englishSearchWhileArabicCanDisplay = db.placeDao().search(PlaceRepository.buildSearchQuery("madinah")!!)
         assertTrue(englishSearchWhileArabicCanDisplay.any { it.nameAr == "المدينة المنورة" })
 
+        val qomhaneEnglish = db.placeDao().search(PlaceRepository.buildSearchQuery("qomhane")!!)
+        assertTrue(qomhaneEnglish.any {
+            it.nameAr == "قمحانة" && it.latitude == 35.195792 && it.longitude == 36.732304
+        })
+        val qomhaneArabic = db.placeDao().search(PlaceRepository.buildSearchQuery("قمحانة")!!)
+        assertTrue(qomhaneArabic.any { it.nameEn == "Qomhane" })
+
         db.close()
     }
 }

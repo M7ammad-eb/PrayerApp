@@ -18,6 +18,12 @@ import zipfile
 
 CITIES_COLUMNS = 19  # geonameid..modification date, per GeoNames cities5000.txt format
 
+# Small places intentionally included by the app even when they fall below GeoNames cities5000's
+# population threshold. Negative ids cannot collide with upstream GeoNames identifiers.
+MANUAL_PLACES = {
+    -1000001: ("Qomhane", "قمحانة", "Qomhane", "SY", 35.195792, 36.732304, "Asia/Damascus", 0),
+}
+
 
 def load_cities(cities_zip_path):
     """Returns {geonameid: (nameEn, asciiName, countryCode, lat, lon, timeZoneId, population)}."""
@@ -103,6 +109,11 @@ def main():
         )
         for geonameid, (name_en, ascii_name, country_code, lat, lon, timezone, population) in places.items()
     ]
+    rows.extend(
+        (geonameid, name_en, name_ar, ascii_name, country_code, lat, lon, timezone, population)
+        for geonameid, (name_en, name_ar, ascii_name, country_code, lat, lon, timezone, population)
+        in MANUAL_PLACES.items()
+    )
     cur.executemany(
         """
         INSERT INTO places

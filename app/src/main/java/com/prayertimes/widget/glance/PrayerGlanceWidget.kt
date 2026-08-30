@@ -64,7 +64,6 @@ import com.prayertimes.R
 import com.prayertimes.data.calculator.PrayerTimesCalculator
 import com.prayertimes.data.calculator.NextPrayerResolver
 import com.prayertimes.data.cities.CityDatabase
-import com.prayertimes.data.models.AppLanguage
 import com.prayertimes.data.models.PrayerType
 import com.prayertimes.data.models.WidgetCustomizationSettings
 import com.prayertimes.data.preferences.AppPrayerSettings
@@ -252,7 +251,7 @@ class PrayerGlanceWidget : GlanceAppWidget() {
                 islamicDateHasAdvanced && (type == PrayerType.FAJR || type == PrayerType.SUNRISE)
             ) tomorrowPrayerMap[type] else prayerMap[type]
             return MiniSlot(
-                name = prayerName(type, settings.language),
+                name = prayerName(type, isArabic),
                 time = item?.time?.format(timeFormatter) ?: "--:--",
                 isActive = type == nextPeriod.prayerItem.type
             )
@@ -268,7 +267,7 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         val mediumSlots = listOf(PrayerType.DHUHR, PrayerType.ASR, PrayerType.MAGHRIB).map(::slot)
 
         return GlanceWidgetData(
-            prayerName = prayerName(nextPeriod.prayerItem.type, settings.language),
+            prayerName = prayerName(nextPeriod.prayerItem.type, isArabic),
             prayerTime = nextPeriod.prayerItem.zonedDateTime.format(timeFormatter),
             countdown = remainingText(context, remainingSeconds, isArabic),
             locationText = CityDatabase.localizedName(localizedRes, settings.location)
@@ -297,14 +296,12 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         )
     }
 
-    private fun prayerName(type: PrayerType, language: AppLanguage): String {
+    private fun prayerName(type: PrayerType, isArabic: Boolean): String {
         val arabicNames = mapOf(
             PrayerType.FAJR to "الفجر", PrayerType.SUNRISE to "الشروق", PrayerType.DHUHR to "الظهر",
             PrayerType.ASR to "العصر", PrayerType.MAGHRIB to "المغرب", PrayerType.ISHA to "العشاء"
         )
-        val useArabic = language == AppLanguage.ARABIC ||
-            (language == AppLanguage.SYSTEM && Locale.getDefault().language.equals("ar", ignoreCase = true))
-        return if (useArabic) arabicNames.getValue(type) else type.title
+        return if (isArabic) arabicNames.getValue(type) else type.title
     }
 
     private fun remainingText(context: Context, seconds: Long, isArabic: Boolean): String {

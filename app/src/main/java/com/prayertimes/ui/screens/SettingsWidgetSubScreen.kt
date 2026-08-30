@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -225,7 +224,7 @@ fun SettingsWidgetSubScreen(
                 Card(
                     onClick = { advancedAppearanceExpanded = !advancedAppearanceExpanded },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -727,7 +726,7 @@ private fun WidgetPreviewPanel(
                 OutlinedCard(
                     onClick = { menuExpanded = true },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = MaterialTheme.shapes.small
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
@@ -800,7 +799,7 @@ private fun WidgetCanvasPreview(settings: AppPrayerSettings, preset: WidgetPrevi
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(MaterialTheme.shapes.large)
             .drawWithCache {
                 val brightTriangle = Path().apply {
                     moveTo(0f, 0f)

@@ -1,6 +1,7 @@
 package com.prayertimes.data.places
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -8,7 +9,13 @@ import androidx.room.PrimaryKey
  * app/src/main/assets/places.db by tools/geonames/build_places_db.py. nameAr comes from
  * GeoNames' alternateNamesV2 dump filtered to Arabic entries for the same geonameId.
  */
-@Entity(tableName = "places")
+@Entity(
+    tableName = "places",
+    indices = [
+        Index(value = ["latitude"], name = "idx_places_lat"),
+        Index(value = ["longitude"], name = "idx_places_lon")
+    ]
+)
 data class PlaceEntity(
     @PrimaryKey val geonameId: Long,
     val nameEn: String,

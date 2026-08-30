@@ -2,15 +2,13 @@ package com.prayertimes.ui.locale
 
 import android.content.res.Configuration
 import android.content.res.Resources
-import android.os.Build
-import android.os.LocaleList
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.LayoutDirection
 import com.prayertimes.PrayerApplication
 import com.prayertimes.R
@@ -498,25 +496,8 @@ fun ProvideAppLocale(
     val context = LocalContext.current
     val isArabic = appLanguage.resolveIsArabic(context)
 
-    // Repair a stale explicit override left by older builds. Without this, SYSTEM can remain
-    // visually Arabic after an update even though both preferences and the device language are
-    // English. A non-empty override is never valid while SYSTEM is selected.
-    LaunchedEffect(appLanguage) {
-        if (appLanguage == AppLanguage.SYSTEM && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            runCatching {
-                val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
-                if (localeManager != null && !localeManager.applicationLocales.isEmpty) {
-                    localeManager.applicationLocales = LocaleList.getEmptyLocaleList()
-                }
-            }
-        }
-    }
-
-    // The app's chosen language can differ from the actual system/Activity locale (there's no
-    // AppCompatDelegate.setApplicationLocales adoption, and the raw LocaleManager override in
-    // PrayerPreferences only works on API 33+), so string resources are resolved against an
-    // explicitly-locale-pinned Resources instance rather than trusting context.resources to
-    // already reflect isArabic.
+    // The app's chosen language can differ from the Activity locale, so resolve resources against
+    // an explicitly pinned configuration instead of recreating the Activity through LocaleManager.
     val localizedResources = remember(isArabic) {
         val locale = Locale(if (isArabic) "ar" else "en")
         val config = Configuration(context.resources.configuration).apply { setLocale(locale) }
@@ -530,7 +511,10 @@ fun ProvideAppLocale(
 
     CompositionLocalProvider(
         LocalAppStrings provides appStrings,
-        LocalLayoutDirection provides layoutDirection
+        LocalLayoutDirection provides layoutDirection,
+        // Make ordinary stringResource(...) calls use the same language as AppStrings. Without
+        // this, screens containing both APIs render a mixture after an in-place language change.
+        LocalResources provides localizedResources
     ) {
         content()
     }
