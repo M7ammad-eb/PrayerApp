@@ -81,8 +81,8 @@ enum class WidgetTextStyle(@StringRes val titleRes: Int) {
 data class WidgetCustomizationSettings(
     val themeMode: WidgetThemeMode = WidgetThemeMode.APP_THEME,
     val showBackground: Boolean = true,
-    val opacityPercent: Int = 85,
-    val showBorder: Boolean = true,
+    val opacityPercent: Int = 100,
+    val showBorder: Boolean = false,
     val fontSize: WidgetFontSize = WidgetFontSize.STANDARD,
     val textStyle: WidgetTextStyle = WidgetTextStyle.AUTO,
     val showLocation: Boolean = true,

@@ -60,29 +60,46 @@ import com.prayertimes.data.calendar.HijriCalendar
 import com.prayertimes.data.calendar.HijriCalendarDay
 import com.prayertimes.data.calendar.HijriCalendarMonth
 import com.prayertimes.data.calendar.HijriYearMonth
+import com.prayertimes.data.calculator.PrayerTimesCalculator
 import com.prayertimes.data.models.IslamicObservance
+import com.prayertimes.data.models.PrayerType
+import com.prayertimes.data.preferences.AppPrayerSettings
 import com.prayertimes.ui.locale.LocalAppStrings
+import java.time.Duration
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @Composable
 fun MonthlyCalendarScreen(
     selectedDate: LocalDate,
+    settings: AppPrayerSettings,
     hijriAdjustmentDays: Int,
     onViewPrayerTimes: (LocalDate) -> Unit
 ) {
     val strings = LocalAppStrings.current
-    val today = LocalDate.now()
+    val prayerZone = remember(settings.location.timeZoneId) {
+        runCatching { ZoneId.of(settings.location.timeZoneId) }.getOrDefault(ZoneId.systemDefault())
+    }
+    var islamicToday by remember(settings) {
+        mutableStateOf(resolveCurrentHijriCivilDate(settings, prayerZone, ZonedDateTime.now(prayerZone)).first)
+    }
+    var previousIslamicToday by remember { mutableStateOf(islamicToday) }
     val pagerOrigin = remember { HijriYearMonth(1300, 1) }
-    val initialMonth = remember { HijriCalendar.monthContaining(selectedDate, hijriAdjustmentDays) }
+    val locationCivilToday = ZonedDateTime.now(prayerZone).toLocalDate()
+    val initialSelectedDate = if (selectedDate == locationCivilToday) islamicToday else selectedDate
+    val initialMonth = remember { HijriCalendar.monthContaining(initialSelectedDate, hijriAdjustmentDays) }
     val initialPage = (initialMonth.year - pagerOrigin.year) * 12 + initialMonth.month - pagerOrigin.month
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { 3600 })
     val coroutineScope = rememberCoroutineScope()
     val visibleMonth = pagerOrigin.plusMonths(pagerState.settledPage)
-    var selectedGregorianDate by remember { mutableStateOf(selectedDate) }
+    var selectedGregorianDate by remember { mutableStateOf(initialSelectedDate) }
     val month = remember(visibleMonth, hijriAdjustmentDays) {
         HijriCalendar.generate(visibleMonth, hijriAdjustmentDays)
     }
@@ -90,6 +107,27 @@ fun MonthlyCalendarScreen(
         month.days.chunked(7).count { week -> week.any { it.isInDisplayedMonth } }
     }
     val calendarHeight = if (visibleWeekCount >= 6) 374.dp else 324.dp
+
+    // A Hijri date changes at Maghrib. Sleep until that exact boundary rather than running a
+    // calendar timer continuously; when it arrives, advance the live day and its selected cell.
+    LaunchedEffect(settings, prayerZone) {
+        while (isActive) {
+            val now = ZonedDateTime.now(prayerZone)
+            val (currentDate, nextMaghrib) = resolveCurrentHijriCivilDate(settings, prayerZone, now)
+            islamicToday = currentDate
+            delay(Duration.between(now, nextMaghrib).toMillis().coerceAtLeast(1_000L) + 500L)
+        }
+    }
+
+    LaunchedEffect(islamicToday) {
+        if (islamicToday != previousIslamicToday && selectedGregorianDate == previousIslamicToday) {
+            selectedGregorianDate = islamicToday
+            val todayMonth = HijriCalendar.monthContaining(islamicToday, hijriAdjustmentDays)
+            val todayPage = (todayMonth.year - pagerOrigin.year) * 12 + todayMonth.month - pagerOrigin.month
+            pagerState.scrollToPage(todayPage)
+        }
+        previousIslamicToday = islamicToday
+    }
 
     LaunchedEffect(visibleMonth, hijriAdjustmentDays) {
         if (selectedGregorianDate !in month.firstGregorianDate..month.lastGregorianDate) {
@@ -113,10 +151,10 @@ fun MonthlyCalendarScreen(
                 coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
             },
             onToday = {
-                val todayMonth = HijriCalendar.monthContaining(today, hijriAdjustmentDays)
+                val todayMonth = HijriCalendar.monthContaining(islamicToday, hijriAdjustmentDays)
                 val todayPage = (todayMonth.year - pagerOrigin.year) * 12 + todayMonth.month - pagerOrigin.month
                 coroutineScope.launch { pagerState.animateScrollToPage(todayPage) }
-                selectedGregorianDate = today
+                selectedGregorianDate = islamicToday
             }
         )
 
@@ -142,7 +180,7 @@ fun MonthlyCalendarScreen(
                 HijriMonthGrid(
                     month = pageMonth,
                     selectedDate = selectedGregorianDate,
-                    today = today,
+                    today = islamicToday,
                     onSelectDate = { selectedGregorianDate = it },
                     modifier = Modifier.fillMaxSize()
                 )
@@ -267,6 +305,33 @@ private fun HijriMonthHeader(
                 contentDescription = stringResource(R.string.next_month)
             )
         }
+    }
+}
+
+private fun resolveCurrentHijriCivilDate(
+    settings: AppPrayerSettings,
+    zoneId: ZoneId,
+    now: ZonedDateTime
+): Pair<LocalDate, ZonedDateTime> {
+    fun maghribFor(date: LocalDate): ZonedDateTime = PrayerTimesCalculator.calculateDailySchedule(
+        date = date,
+        latitude = settings.location.latitude,
+        longitude = settings.location.longitude,
+        zoneId = zoneId,
+        method = settings.calculationMethod,
+        juristicMethod = settings.juristicMethod,
+        highLatitudeRule = settings.highLatitudeRule,
+        adjustments = settings.adjustments,
+        hijriAdjustmentDays = settings.hijriAdjustmentDays,
+        now = now
+    ).prayerItems.first { it.type == PrayerType.MAGHRIB }.zonedDateTime
+
+    val civilToday = now.toLocalDate()
+    val todayMaghrib = maghribFor(civilToday)
+    return if (now.isBefore(todayMaghrib)) {
+        civilToday to todayMaghrib
+    } else {
+        civilToday.plusDays(1) to maghribFor(civilToday.plusDays(1))
     }
 }
 
@@ -447,22 +512,46 @@ private fun CalendarSourceNote() {
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Icon(
-                Icons.Default.CalendarMonth,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
+        Column(modifier = Modifier.padding(14.dp)) {
+            CalendarNoteRow(
+                title = stringResource(R.string.hijri_calendar_day_boundary_title),
+                description = stringResource(R.string.hijri_calendar_day_boundary_note),
+                icon = Icons.Default.Star
             )
-            Spacer(Modifier.width(10.dp))
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 12.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+            )
+            CalendarNoteRow(
+                title = stringResource(R.string.hijri_calendar_source_title),
+                description = stringResource(R.string.hijri_calendar_source_note),
+                icon = Icons.Default.CalendarMonth
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarNoteRow(
+    title: String,
+    description: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    Row(verticalAlignment = Alignment.Top) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.hijri_calendar_sunset_note),
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = description,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

@@ -256,10 +256,10 @@ fun MainScreen(
                         AppNavTab.PRAYER_TIMES -> {
                             val selectedDate by viewModel.selectedDate.collectAsState()
                             val dailySchedule by viewModel.dailySchedule.collectAsState()
-                            val currentPrayerInfo by viewModel.currentPrayerInfo.collectAsState()
+                            val nextPrayerInfo by viewModel.nextPrayerInfo.collectAsState()
                             PrayerHomeScreen(
                                 dailySchedule = dailySchedule,
-                                currentPrayerInfo = currentPrayerInfo,
+                                nextPrayerInfo = nextPrayerInfo,
                                 settings = settings,
                                 selectedDate = selectedDate,
                                 onPreviousDay = { viewModel.previousDay() },
@@ -291,6 +291,7 @@ fun MainScreen(
                             val selectedDate by viewModel.selectedDate.collectAsState()
                             MonthlyCalendarScreen(
                                 selectedDate = selectedDate,
+                                settings = settings,
                                 hijriAdjustmentDays = settings.hijriAdjustmentDays,
                                 onViewPrayerTimes = { date ->
                                     viewModel.setSelectedDate(date)
@@ -329,6 +330,7 @@ fun MainScreen(
                                 onUpdateLanguage = { viewModel.updateLanguage(it) },
                                 onUpdateThemeMode = { viewModel.updateThemeMode(it) },
                                 onUpdateColorPreset = { viewModel.updateColorPreset(it) },
+                                onUpdateCustomColorSeed = { viewModel.updateCustomColorSeed(it) },
                                 onUpdateFollowSystemColors = { viewModel.updateFollowSystemColors(it) },
                                 onUpdateWidgetSettings = { viewModel.updateWidgetSettings(it) },
                                 onUpdatePrayerAdjustment = { prayer, mins ->

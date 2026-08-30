@@ -1381,7 +1381,9 @@ private fun OnboardingStyleStep(
         }
 
         // Color Presets
-        items(AppColorPreset.values().filter { it != AppColorPreset.SYSTEM_DYNAMIC }) { preset ->
+        items(AppColorPreset.values().filter {
+            it != AppColorPreset.SYSTEM_DYNAMIC && it != AppColorPreset.CUSTOM
+        }) { preset ->
             val isSelected = !settings.followSystemColors && settings.colorPreset == preset
             val isDark = settings.themeMode == AppThemeMode.DARK || (settings.themeMode == AppThemeMode.SYSTEM && isSystemInDarkTheme())
             val primaryColorLong = if (isDark) preset.primaryDark else preset.primaryLight

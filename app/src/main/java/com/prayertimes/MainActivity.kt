@@ -68,7 +68,8 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme(
                 themeMode = settings.themeMode,
                 colorPreset = settings.colorPreset,
-                followSystemColors = settings.followSystemColors
+                followSystemColors = settings.followSystemColors,
+                customColorSeed = settings.customColorSeed
             ) {
                 val useDarkSystemBarIcons = MaterialTheme.colorScheme.background.luminance() > 0.5f
                 SideEffect {

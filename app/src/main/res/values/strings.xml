@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Salati</string>
-    <string name="widget_description">Displays the current prayer and its remaining time on your home screen.</string>
+    <string name="widget_description">Displays the next prayer time and countdown on your home screen.</string>
 
     <!-- ===== App Branding ===== -->
     <string name="app_brand_name">Salati</string>
@@ -67,7 +67,7 @@
     <string name="widget_settings_behavior_section_title">Behavior</string>
     <string name="widget_settings_behavior_section_subtitle">How the hero countdown behaves</string>
     <string name="widget_settings_content_section_subtitle">Choose what shows on the widget</string>
-    <string name="widget_settings_toggle_show_hero_desc">Big card with the current prayer and remaining time</string>
+    <string name="widget_settings_toggle_show_hero_desc">Big card with the next prayer time and countdown</string>
     <string name="widget_settings_toggle_show_countdown_desc">Time remaining, shown on the hero card</string>
     <string name="widget_settings_toggle_show_all_prayers_desc">Row of all six prayer times</string>
     <string name="widget_settings_toggle_show_sunrise_desc">Include Sunrise in the prayer row</string>
@@ -76,11 +76,13 @@
 
     <!-- ===== Next Prayer / Hero ===== -->
     <string name="hero_current_prayer_label">CURRENT PRAYER</string>
+    <string name="hero_next_prayer_label">NEXT PRAYER</string>
     <string name="hero_prayer_time_ended_label">PRAYER TIME ENDED</string>
     <string name="hero_fajr_time_ended">Fajr time has ended</string>
     <string name="hero_next_label_prefix">NEXT:</string>
     <string name="hero_athan_alert">Athan Alert</string>
     <string name="hero_athan_at">Athan at</string>
+    <string name="hero_sunrise_at">Sunrise at</string>
     <string name="hero_stop_audio">Stop Audio</string>
     <string name="hero_listen_athan">Listen to Athan</string>
     <string name="hero_hijri_calendar_details">Hijri Calendar Details</string>
@@ -210,6 +212,8 @@
     <string name="settings_preset_colors_desc">Select a curated color palette for the app interface</string>
 
     <string name="color_preset_system_dynamic">System Dynamic (Material You)</string>
+    <string name="color_preset_custom">Custom</string>
+    <string name="custom_color_title">Choose your color</string>
     <string name="color_preset_emerald_gold">Emerald &amp; Gold</string>
     <string name="color_preset_royal_amber">Desert Amber</string>
     <string name="color_preset_sapphire_night">Midnight Sapphire</string>
@@ -492,7 +496,7 @@
     <!-- ===== Widget Customization Screen ===== -->
     <string name="widget_settings_intro_banner">Customize how the widget looks on your home screen to perfectly fit any grid layout (from 1-column slim to full max expanded).</string>
     <string name="widget_settings_hero_section_title">Hero card</string>
-    <string name="widget_settings_hero_section_subtitle">Show the current prayer and time remaining</string>
+    <string name="widget_settings_hero_section_subtitle">Show the next prayer time and countdown</string>
     <string name="widget_settings_schedule_section_title">Schedule &amp; header</string>
     <string name="widget_settings_schedule_section_subtitle">Choose prayer rows, location, and Hijri date</string>
     <string name="widget_settings_opacity_transparent">Transparent (0%)</string>
@@ -502,7 +506,7 @@
     <string name="widget_settings_toggle_show_hijri">Show Hijri Date</string>
     <string name="widget_settings_toggle_show_countdown">Show Countdown Timer</string>
     <string name="widget_settings_toggle_show_sunrise">Show Sunrise in Schedule</string>
-    <string name="widget_settings_toggle_show_hero">Show Current Prayer Hero Card</string>
+    <string name="widget_settings_toggle_show_hero">Show Next Prayer Hero Card</string>
     <string name="widget_settings_toggle_show_all_prayers">Show All Prayers Schedule</string>
 
     <string name="widget_theme_app_theme">Match App Theme</string>
@@ -794,7 +798,10 @@
     <string name="hijri_calendar_adjustment_title">Hijri date adjustment</string>
     <string name="hijri_calendar_adjustment_reset_note">Temporary • resets next Hijri month</string>
     <string name="hijri_calendar_view_prayer_times">View prayer times for this day</string>
-    <string name="hijri_calendar_sunset_note">Umm al-Qura dates are shown. Islamic occasions begin at sunset on the preceding Gregorian evening and official moon-sighting announcements may differ. The current month can be adjusted with the + and − controls above; the adjustment resets automatically when the next Hijri month begins.</string>
+    <string name="hijri_calendar_day_boundary_title">The Hijri day starts at Maghrib</string>
+    <string name="hijri_calendar_day_boundary_note">The Hijri date changes at Maghrib (sunset), not at midnight.</string>
+    <string name="hijri_calendar_source_title">Umm al-Qura calendar</string>
+    <string name="hijri_calendar_source_note">Dates follow Umm al-Qura and may differ from official moon-sighting announcements. Adjust the current month with the + and − controls above; the adjustment resets when the next Hijri month begins.</string>
     <string name="hijri_calendar_legend_eid">Eid</string>
     <string name="hijri_calendar_legend_fasting">Fasting</string>
     <string name="hijri_calendar_legend_selected">Selected</string>

@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.prayertimes.data.calendar.HijriCalendar
@@ -56,6 +57,7 @@ data class AppPrayerSettings(
     val language: AppLanguage = AppLanguage.SYSTEM,
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     val colorPreset: AppColorPreset = AppColorPreset.SYSTEM_DYNAMIC,
+    val customColorSeed: Long = 0xFF6750A4,
     val followSystemColors: Boolean = true,
     val widgetSettings: WidgetCustomizationSettings = WidgetCustomizationSettings(),
     val audioStream: AthanAudioStream = AthanAudioStream.ALARM,
@@ -84,6 +86,7 @@ class PrayerPreferences(private val context: Context) {
         private const val KEY_LANG = "cached_language"
         private const val KEY_THEME = "cached_theme"
         private const val KEY_COLOR_PRESET = "cached_color_preset"
+        private const val KEY_CUSTOM_COLOR_SEED = "cached_custom_color_seed"
         private const val KEY_FOLLOW_SYSTEM_COLORS = "cached_follow_system_colors"
         private const val KEY_24H = "cached_24h"
 
@@ -182,6 +185,7 @@ class PrayerPreferences(private val context: Context) {
             val lang = parseEnumOrDefault(fastPrefs.getString(KEY_LANG, null), AppLanguage.SYSTEM)
             val theme = parseEnumOrDefault(fastPrefs.getString(KEY_THEME, null), AppThemeMode.SYSTEM)
             val color = parseEnumOrDefault(fastPrefs.getString(KEY_COLOR_PRESET, null), AppColorPreset.SYSTEM_DYNAMIC)
+            val customColorSeed = fastPrefs.getLong(KEY_CUSTOM_COLOR_SEED, 0xFF6750A4)
 
             val followSys = fastPrefs.getBoolean(KEY_FOLLOW_SYSTEM_COLORS, true)
             val is24h = fastPrefs.getBoolean(KEY_24H, false)
@@ -201,11 +205,11 @@ class PrayerPreferences(private val context: Context) {
             } else {
                 legacyWidgetBackgroundWasEnabled(rawWBg)
             }
-            val wOpacity = fastPrefs.getInt(KEY_WIDGET_OPACITY, 85)
+            val wOpacity = fastPrefs.getInt(KEY_WIDGET_OPACITY, 100)
             val wShowBorder = if (fastPrefs.contains(KEY_WIDGET_SHOW_BORDER)) {
-                fastPrefs.getBoolean(KEY_WIDGET_SHOW_BORDER, true)
+                fastPrefs.getBoolean(KEY_WIDGET_SHOW_BORDER, false)
             } else {
-                true
+                false
             }
             val wFont = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_FONT, null), WidgetFontSize.STANDARD)
             val wTextStyle = parseEnumOrDefault(fastPrefs.getString(KEY_WIDGET_TEXT_STYLE, null), WidgetTextStyle.AUTO)
@@ -243,6 +247,7 @@ class PrayerPreferences(private val context: Context) {
                 language = lang,
                 themeMode = theme,
                 colorPreset = color,
+                customColorSeed = customColorSeed,
                 followSystemColors = followSys,
                 widgetSettings = widgetSettings,
                 audioStream = audioStream,
@@ -273,6 +278,7 @@ class PrayerPreferences(private val context: Context) {
         val APP_LANGUAGE = stringPreferencesKey("app_language")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val COLOR_PRESET = stringPreferencesKey("color_preset")
+        val CUSTOM_COLOR_SEED = longPreferencesKey("custom_color_seed")
         val FOLLOW_SYSTEM_COLORS = booleanPreferencesKey("follow_system_colors")
         val AUDIO_STREAM = stringPreferencesKey("audio_stream")
         val WAKE_SCREEN_ON_ALARM = booleanPreferencesKey("wake_screen_on_alarm")
@@ -333,6 +339,7 @@ class PrayerPreferences(private val context: Context) {
         val language = parseEnumOrDefault(prefs[Keys.APP_LANGUAGE], AppLanguage.SYSTEM)
         val themeMode = parseEnumOrDefault(prefs[Keys.THEME_MODE], AppThemeMode.SYSTEM)
         val colorPreset = parseEnumOrDefault(prefs[Keys.COLOR_PRESET], AppColorPreset.SYSTEM_DYNAMIC)
+        val customColorSeed = prefs[Keys.CUSTOM_COLOR_SEED] ?: 0xFF6750A4
 
         val followSystemColors = prefs[Keys.FOLLOW_SYSTEM_COLORS] ?: (colorPreset == AppColorPreset.SYSTEM_DYNAMIC)
 
@@ -341,9 +348,9 @@ class PrayerPreferences(private val context: Context) {
         val rawWBg = prefs[Keys.LEGACY_WIDGET_BG_STYLE]
         val wShowBackground = prefs[Keys.WIDGET_SHOW_BACKGROUND]
             ?: legacyWidgetBackgroundWasEnabled(rawWBg)
-        val wOpacity = prefs[Keys.WIDGET_OPACITY] ?: 85
+        val wOpacity = prefs[Keys.WIDGET_OPACITY] ?: 100
         val wShowBorder = prefs[Keys.WIDGET_SHOW_BORDER]
-            ?: true
+            ?: false
         val wFont = parseEnumOrDefault(prefs[Keys.WIDGET_FONT_SIZE], WidgetFontSize.STANDARD)
         val wTextStyle = parseEnumOrDefault(prefs[Keys.WIDGET_TEXT_STYLE], WidgetTextStyle.AUTO)
 
@@ -411,6 +418,7 @@ class PrayerPreferences(private val context: Context) {
             language = language,
             themeMode = themeMode,
             colorPreset = colorPreset,
+            customColorSeed = customColorSeed,
             followSystemColors = followSystemColors,
             widgetSettings = widgetSettings,
             audioStream = audioStream,
@@ -432,6 +440,7 @@ class PrayerPreferences(private val context: Context) {
             .putString(KEY_LANG, settings.language.name)
             .putString(KEY_THEME, settings.themeMode.name)
             .putString(KEY_COLOR_PRESET, settings.colorPreset.name)
+            .putLong(KEY_CUSTOM_COLOR_SEED, settings.customColorSeed)
             .putBoolean(KEY_FOLLOW_SYSTEM_COLORS, settings.followSystemColors)
             .putString(KEY_WIDGET_THEME, widget.themeMode.name)
             .putBoolean(KEY_WIDGET_SHOW_BACKGROUND, widget.showBackground)
@@ -620,6 +629,14 @@ class PrayerPreferences(private val context: Context) {
             if (preset != AppColorPreset.SYSTEM_DYNAMIC) {
                 prefs[Keys.FOLLOW_SYSTEM_COLORS] = false
             }
+        }
+    }
+
+    suspend fun updateCustomColorSeed(seed: Long) {
+        editSettings { prefs ->
+            prefs[Keys.CUSTOM_COLOR_SEED] = seed
+            prefs[Keys.COLOR_PRESET] = AppColorPreset.CUSTOM.name
+            prefs[Keys.FOLLOW_SYSTEM_COLORS] = false
         }
     }
 

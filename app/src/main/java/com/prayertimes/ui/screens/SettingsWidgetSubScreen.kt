@@ -339,7 +339,7 @@ fun SettingsWidgetSubScreen(
                 }
             }
 
-            // Hero controls: current prayer display and its remaining-time countdown.
+            // Hero controls: next prayer display and its remaining-time countdown.
             WidgetSettingsSectionCard(
                 icon = Icons.Default.Schedule,
                 title = stringResource(R.string.widget_settings_hero_section_title),

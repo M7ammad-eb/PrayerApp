@@ -2,8 +2,6 @@ package com.prayertimes.widget.glance
 
 import android.widget.FrameLayout
 import android.widget.RemoteViews
-import android.view.View
-import android.view.ViewGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -55,14 +53,7 @@ fun LiveGlanceWidgetPreview(settings: AppPrayerSettings, size: DpSize, modifier:
                 factory = { ctx -> FrameLayout(ctx) },
                 update = { container ->
                     container.removeAllViews()
-                    // WidgetContent already performs explicit RTL child ordering because launcher
-                    // RemoteViews do not reliably mirror Glance rows. Inside this Arabic Compose
-                    // screen, however, AndroidView makes the inflated hierarchy inherit RTL and
-                    // mirrors it a second time. Pin the preview hierarchy to LTR so it exercises
-                    // the same explicit ordering as the actual launcher widget.
-                    container.layoutDirection = View.LAYOUT_DIRECTION_LTR
                     val inflated = rv.apply(context, container)
-                    forceLayoutDirectionLtr(inflated)
                     container.addView(inflated)
                 }
             )
@@ -78,12 +69,5 @@ fun LiveGlanceWidgetPreview(settings: AppPrayerSettings, size: DpSize, modifier:
                     }
             )
         }
-    }
-}
-
-private fun forceLayoutDirectionLtr(view: View) {
-    view.layoutDirection = View.LAYOUT_DIRECTION_LTR
-    if (view is ViewGroup) {
-        for (index in 0 until view.childCount) forceLayoutDirectionLtr(view.getChildAt(index))
     }
 }

@@ -151,9 +151,9 @@ internal object WidgetColorResolver {
 
         val preset = settings.colorPreset.takeUnless { it == AppColorPreset.SYSTEM_DYNAMIC }
             ?: AppColorPreset.EMERALD_GOLD
-        val scheme = getPresetColorScheme(preset, dark)
+        val scheme = getPresetColorScheme(preset, dark, settings.customColorSeed)
         return Palette(
-            accent = (if (dark) preset.primaryDark else preset.primaryLight).toInt(),
+            accent = scheme.primary.toArgb(),
             background = scheme.surfaceColorAtElevation(8.dp).toArgb(),
             primaryText = scheme.onSurface.toArgb(),
             secondaryText = scheme.onSurfaceVariant.toArgb()

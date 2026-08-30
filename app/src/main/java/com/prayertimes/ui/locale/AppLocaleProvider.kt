@@ -76,11 +76,13 @@ class AppStrings(
 
     // Next Prayer / Hero
     val currentPrayerLabel: String = s(R.string.hero_current_prayer_label)
+    val nextPrayerLabel: String = s(R.string.hero_next_prayer_label)
     val prayerTimeEndedLabel: String = s(R.string.hero_prayer_time_ended_label)
     val fajrTimeEnded: String = s(R.string.hero_fajr_time_ended)
     val nextLabelPrefix: String = s(R.string.hero_next_label_prefix)
     val athanAlert: String = s(R.string.hero_athan_alert)
     val athanAt: String = s(R.string.hero_athan_at)
+    val sunriseAt: String = s(R.string.hero_sunrise_at)
     val stopAudio: String = s(R.string.hero_stop_audio)
     val listenAthan: String = s(R.string.hero_listen_athan)
     val hijriCalendarDetails: String = s(R.string.hero_hijri_calendar_details)
@@ -237,6 +239,7 @@ class AppStrings(
 
     private val colorPresetNameRes: Map<AppColorPreset, Int> = mapOf(
         AppColorPreset.SYSTEM_DYNAMIC to R.string.color_preset_system_dynamic,
+        AppColorPreset.CUSTOM to R.string.color_preset_custom,
         AppColorPreset.EMERALD_GOLD to R.string.color_preset_emerald_gold,
         AppColorPreset.ROYAL_AMBER to R.string.color_preset_royal_amber,
         AppColorPreset.SAPPHIRE_NIGHT to R.string.color_preset_sapphire_night,

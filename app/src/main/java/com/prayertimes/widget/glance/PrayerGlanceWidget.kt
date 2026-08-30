@@ -2,12 +2,17 @@ package com.prayertimes.widget.glance
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
+import android.os.Build
+import android.provider.Settings
+import android.text.TextUtils
+import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,7 +62,7 @@ import com.prayertimes.MainActivity
 import com.prayertimes.PrayerApplication
 import com.prayertimes.R
 import com.prayertimes.data.calculator.PrayerTimesCalculator
-import com.prayertimes.data.calculator.CurrentPrayerResolver
+import com.prayertimes.data.calculator.NextPrayerResolver
 import com.prayertimes.data.cities.CityDatabase
 import com.prayertimes.data.models.AppLanguage
 import com.prayertimes.data.models.PrayerType
@@ -224,9 +229,8 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         val yesterdaySchedule = schedule(today.minusDays(1))
         val todaySchedule = schedule(today)
         val tomorrowSchedule = schedule(today.plusDays(1))
-        val currentPeriod = CurrentPrayerResolver.resolve(now, yesterdaySchedule, todaySchedule, tomorrowSchedule)
-        val remainingSeconds = if (currentPeriod.isPrayerTimeEnded) 0L
-        else Duration.between(now, currentPeriod.endsAt).seconds.coerceAtLeast(0)
+        val nextPeriod = NextPrayerResolver.resolve(now, yesterdaySchedule, todaySchedule, tomorrowSchedule)
+        val remainingSeconds = Duration.between(now, nextPeriod.prayerItem.zonedDateTime).seconds.coerceAtLeast(0)
 
         val timeFormatter = if (settings.is24HourFormat) {
             DateTimeFormatter.ofPattern("HH:mm")
@@ -236,12 +240,23 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         val widgetSettings = settings.widgetSettings
         val colors = WidgetColorResolver.resolve(context, settings)
         val prayerMap = todaySchedule.prayerItems.associateBy { it.type }
+        val tomorrowPrayerMap = tomorrowSchedule.prayerItems.associateBy { it.type }
+        val maghribToday = prayerMap.getValue(PrayerType.MAGHRIB).zonedDateTime
+        val islamicDateHasAdvanced = !now.isBefore(maghribToday)
 
-        fun slot(type: PrayerType) = MiniSlot(
-            name = prayerName(type, settings.language),
-            time = prayerMap[type]?.time?.format(timeFormatter) ?: "--:--",
-            isActive = !currentPeriod.isPrayerTimeEnded && type == currentPeriod.prayerItem.type
-        )
+        fun slot(type: PrayerType): MiniSlot {
+            // At Maghrib the Islamic date advances. Start carrying tomorrow's Fajr and Sunrise in
+            // the schedule immediately, so after Isha the highlighted Fajr has its actual next-day
+            // time rather than today's already-passed value.
+            val item = if (
+                islamicDateHasAdvanced && (type == PrayerType.FAJR || type == PrayerType.SUNRISE)
+            ) tomorrowPrayerMap[type] else prayerMap[type]
+            return MiniSlot(
+                name = prayerName(type, settings.language),
+                time = item?.time?.format(timeFormatter) ?: "--:--",
+                isActive = type == nextPeriod.prayerItem.type
+            )
+        }
 
         // All six prayers (Sunrise optionally hidden) - matches populatePrayerRibbon /
         // buildVerticalWidget's own bindRow calls for every PrayerType, not a truncated subset.
@@ -253,19 +268,17 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         val mediumSlots = listOf(PrayerType.DHUHR, PrayerType.ASR, PrayerType.MAGHRIB).map(::slot)
 
         return GlanceWidgetData(
-            prayerName = prayerName(currentPeriod.prayerItem.type, settings.language),
-            prayerTime = currentPeriod.prayerItem.zonedDateTime.format(timeFormatter),
-            countdown = if (currentPeriod.isPrayerTimeEnded) {
-                localizedRes.getString(R.string.widget_fajr_time_ended)
-            } else {
-                remainingText(context, remainingSeconds, isArabic)
-            },
+            prayerName = prayerName(nextPeriod.prayerItem.type, settings.language),
+            prayerTime = nextPeriod.prayerItem.zonedDateTime.format(timeFormatter),
+            countdown = remainingText(context, remainingSeconds, isArabic),
             locationText = CityDatabase.localizedName(localizedRes, settings.location)
                 .ifBlank { CityDatabase.localizedCountry(localizedRes, settings.location) },
             hijriText = if (isArabic) {
-                todaySchedule.hijriDate?.formattedAr ?: todaySchedule.hijriDateString
+                val schedule = if (islamicDateHasAdvanced) tomorrowSchedule else todaySchedule
+                schedule.hijriDate?.formattedAr ?: schedule.hijriDateString
             } else {
-                todaySchedule.hijriDate?.formattedEn ?: todaySchedule.hijriDateString
+                val schedule = if (islamicDateHasAdvanced) tomorrowSchedule else todaySchedule
+                schedule.hijriDate?.formattedEn ?: schedule.hijriDateString
             },
             allSlots = allSlots,
             mediumSlots = mediumSlots,
@@ -345,6 +358,29 @@ private fun scaledSp(baseSp: Float, data: GlanceWidgetData): TextUnit = (baseSp 
 
 private data class TimeParts(val clock: String, val suffix: String?)
 
+/**
+ * Returns the phone's real layout direction, independent of the app-specific locale. Some OEMs
+ * keep Resources.getSystem() on the previous language after a live language switch, while the
+ * system_locales setting and persist.sys.locale already contain the active device language.
+ */
+private fun systemUsesRtl(context: Context): Boolean {
+    val storedSystemLocale = runCatching {
+        Settings.System.getString(context.contentResolver, "system_locales")
+            ?.substringBefore(',')
+            ?.let(Locale::forLanguageTag)
+    }.getOrNull()
+    val managerLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val locales = context.getSystemService(android.app.LocaleManager::class.java)?.systemLocales
+        if (locales != null && !locales.isEmpty) locales[0] else null
+    } else {
+        null
+    }
+    val resourceLocales = Resources.getSystem().configuration.locales
+    val resourceLocale = if (!resourceLocales.isEmpty) resourceLocales[0] else null
+    val systemLocale = storedSystemLocale ?: managerLocale ?: resourceLocale ?: Locale.getDefault()
+    return TextUtils.getLayoutDirectionFromLocale(systemLocale) == View.LAYOUT_DIRECTION_RTL
+}
+
 private fun splitTime(text: String): TimeParts {
     val separator = text.lastIndexOf(' ')
     if (separator <= 0 || separator == text.lastIndex) return TimeParts(text, null)
@@ -372,6 +408,11 @@ private fun TimeText(
     suffixScale: Float = 0.72f
 ) {
     val parts = splitTime(text)
+    val systemIsRtl = systemUsesRtl(LocalContext.current)
+    // Arabic periods belong physically to the left of the clock (the end in RTL reading order),
+    // while AM/PM belong to the right. RemoteViews reverses Row children on RTL hosts, so declare
+    // the suffix first only when the widget language and host direction differ.
+    val suffixFirst = data.isRtl.xor(systemIsRtl)
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         val clockText = @Composable {
             Text(
@@ -396,9 +437,7 @@ private fun TimeText(
             )
         }
         val suffix = parts.suffix
-        if (suffix == "ص" || suffix == "م") {
-            // Glance Rows keep physical LTR child order. The Arabic suffix belongs visually on
-            // the left of the clock (after it in RTL reading order).
+        if (suffix != null && suffixFirst) {
             suffixText(suffix)
             Spacer(GlanceModifier.width(3.dp))
             clockText()
@@ -420,10 +459,11 @@ internal fun WidgetContent(data: GlanceWidgetData) {
     // The saved option is deliberately relative: adaptive sizing remains the baseline and the
     // user's preference nudges every layout up or down from that device-appropriate result.
     val fittedData = data.copy(fontScale = layout.fontScale * data.fontScale)
-    // Glance doesn't mirror Row child order for RTL locales the way native RemoteViews/View
-    // layoutDirection does. Use the app/widget language carried with the data rather than the
-    // RemoteViews host context: the launcher or preview host may remain LTR while the app is Arabic.
-    val isRtl = data.isRtl
+    // The launcher applies the phone's system direction to RemoteViews. Compensate exactly once
+    // when the app/widget language uses the opposite direction. Resources.getSystem() is crucial:
+    // LocalContext carries the app-specific locale and cannot tell us the phone's real direction.
+    val systemIsRtl = systemUsesRtl(LocalContext.current)
+    val manuallyReverseRows = data.isRtl.xor(systemIsRtl)
 
     CardSurface(
         rootBg = fittedData.rootBg,
@@ -433,12 +473,12 @@ internal fun WidgetContent(data: GlanceWidgetData) {
     ) {
         when (layout.family) {
             LayoutFamily.MINIMAL -> MicroContent(fittedData)
-            LayoutFamily.HORIZONTAL -> SlimContent(fittedData, isRtl, layout)
-            LayoutFamily.VERTICAL_SCHEDULE -> VerticalContent(fittedData, isRtl, layout)
-            LayoutFamily.COMPACT -> SmallContent(fittedData, isRtl, layout)
-            LayoutFamily.TWO_COLUMN -> MediumContent(fittedData, isRtl, layout)
-            LayoutFamily.LARGE_RIBBON -> LargeRibbonContent(fittedData, isRtl, layout)
-            LayoutFamily.SCHEDULE -> LargeContent(fittedData, isRtl, layout)
+            LayoutFamily.HORIZONTAL -> SlimContent(fittedData, manuallyReverseRows, layout)
+            LayoutFamily.VERTICAL_SCHEDULE -> VerticalContent(fittedData, manuallyReverseRows, layout)
+            LayoutFamily.COMPACT -> SmallContent(fittedData, manuallyReverseRows, layout)
+            LayoutFamily.TWO_COLUMN -> MediumContent(fittedData, manuallyReverseRows, layout)
+            LayoutFamily.LARGE_RIBBON -> LargeRibbonContent(fittedData, manuallyReverseRows, layout)
+            LayoutFamily.SCHEDULE -> LargeContent(fittedData, manuallyReverseRows, layout)
         }
     }
 }
@@ -619,8 +659,8 @@ private fun fittedScheduleSlots(data: GlanceWidgetData, layout: AdaptiveLayout):
         data.widgetSettings.showLocation && data.widgetSettings.showHijriDate
     val headerHeight = when {
         !hasHeader -> 0f
-        stackedHeader -> 40f
-        else -> 40f
+        stackedHeader -> 38f
+        else -> 26f
     }
     val heroHeight = when {
         !data.widgetSettings.showHeroCard -> 0f
@@ -644,9 +684,16 @@ private fun fittedScheduleSlots(data: GlanceWidgetData, layout: AdaptiveLayout):
     return List(visibleCount) { offset -> slots[(firstUpcoming + offset) % slots.size] }
 }
 
+private fun GlanceModifier.adaptiveContentPadding(layout: AdaptiveLayout): GlanceModifier = padding(
+    start = layout.paddingDp.dp,
+    top = (layout.paddingDp * 0.5f).coerceAtLeast(3f).dp,
+    end = layout.paddingDp.dp,
+    bottom = layout.paddingDp.dp
+)
+
 @Composable
 private fun VerticalContent(data: GlanceWidgetData, isRtl: Boolean, layout: AdaptiveLayout) {
-    Column(GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(GlanceModifier.fillMaxSize().adaptiveContentPadding(layout), horizontalAlignment = Alignment.CenterHorizontally) {
         if (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate) {
             LocationHeader(data, isRtl, showHijri = true, stacked = layout.stackHeader)
         }
@@ -678,7 +725,7 @@ private fun VerticalContent(data: GlanceWidgetData, isRtl: Boolean, layout: Adap
 
 @Composable
 private fun SmallContent(data: GlanceWidgetData, isRtl: Boolean, layout: AdaptiveLayout) {
-    Column(GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp)) {
+    Column(GlanceModifier.fillMaxSize().adaptiveContentPadding(layout)) {
         if (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate) {
             LocationHeader(data, isRtl, showHijri = true, stacked = layout.stackHeader)
         }
@@ -693,7 +740,7 @@ private fun SmallContent(data: GlanceWidgetData, isRtl: Boolean, layout: Adaptiv
 
 @Composable
 private fun MediumContent(data: GlanceWidgetData, isRtl: Boolean, layout: AdaptiveLayout) {
-    Row(GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(GlanceModifier.fillMaxSize().adaptiveContentPadding(layout), verticalAlignment = Alignment.CenterVertically) {
         if (data.widgetSettings.showHeroCard) {
             Box(GlanceModifier.defaultWeight()) {
                 HeroCard(data, compact = true, isRtl = isRtl, fillAvailable = true)
@@ -718,7 +765,7 @@ private fun MediumContent(data: GlanceWidgetData, isRtl: Boolean, layout: Adapti
 
 @Composable
 private fun LargeRibbonContent(data: GlanceWidgetData, isRtl: Boolean, layout: AdaptiveLayout) {
-    Column(GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp)) {
+    Column(GlanceModifier.fillMaxSize().adaptiveContentPadding(layout)) {
         if (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate) {
             LocationHeader(data, isRtl, showHijri = true, stacked = layout.stackHeader)
         }
@@ -748,7 +795,7 @@ private fun LargeRibbonContent(data: GlanceWidgetData, isRtl: Boolean, layout: A
 
 @Composable
 private fun LargeContent(data: GlanceWidgetData, isRtl: Boolean, layout: AdaptiveLayout) {
-    Column(GlanceModifier.fillMaxSize().padding(layout.paddingDp.dp)) {
+    Column(GlanceModifier.fillMaxSize().adaptiveContentPadding(layout)) {
         if (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate) {
             LocationHeader(data, isRtl, showHijri = true, stacked = layout.stackHeader)
         }
@@ -809,6 +856,9 @@ private fun LocationHeader(
     showHijri: Boolean = false,
     stacked: Boolean = false
 ) {
+    val usesStackedHeader = stacked && data.widgetSettings.showLocation &&
+        showHijri && data.widgetSettings.showHijriDate
+    val headerHeight = if (usesStackedHeader) 38.dp else 26.dp
     val label = buildString {
         if (data.widgetSettings.showLocation) append(data.locationText)
         if (showHijri && data.widgetSettings.showHijriDate) {
@@ -829,7 +879,7 @@ private fun LocationHeader(
         )
     }
 
-    if (stacked && data.widgetSettings.showLocation && showHijri && data.widgetSettings.showHijriDate) {
+    if (usesStackedHeader) {
         val stackedLabels = @Composable { modifier: GlanceModifier ->
             Column(modifier) {
                 Text(
@@ -855,7 +905,7 @@ private fun LocationHeader(
             }
         }
         Row(
-            GlanceModifier.fillMaxWidth().height(20.dp).clickable(actionRunCallback<RefreshGlanceWidgetAction>()),
+            GlanceModifier.fillMaxWidth().height(headerHeight).clickable(actionRunCallback<RefreshGlanceWidgetAction>()),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (isRtl) {
@@ -870,7 +920,7 @@ private fun LocationHeader(
         }
     } else {
         Row(
-            GlanceModifier.fillMaxWidth().height(20.dp).clickable(actionRunCallback<RefreshGlanceWidgetAction>()),
+            GlanceModifier.fillMaxWidth().height(headerHeight).clickable(actionRunCallback<RefreshGlanceWidgetAction>()),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (isRtl) {

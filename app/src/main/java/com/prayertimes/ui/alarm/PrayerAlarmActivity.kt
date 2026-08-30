@@ -76,7 +76,8 @@ class PrayerAlarmActivity : ComponentActivity() {
             MyApplicationTheme(
                 themeMode = settings?.themeMode ?: com.prayertimes.data.models.AppThemeMode.SYSTEM,
                 colorPreset = settings?.colorPreset ?: com.prayertimes.data.models.AppColorPreset.SYSTEM_DYNAMIC,
-                followSystemColors = settings?.followSystemColors ?: true
+                followSystemColors = settings?.followSystemColors ?: true,
+                customColorSeed = settings?.customColorSeed ?: com.prayertimes.data.models.AppColorPreset.CUSTOM.previewColor
             ) {
                 val playbackState by AthanAudioEngine.playbackState.collectAsState()
 

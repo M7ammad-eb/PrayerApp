@@ -10,8 +10,8 @@ import com.prayertimes.R
 import com.prayertimes.audio.AthanAudioEngine
 import com.prayertimes.data.calculator.PrayerTimesCalculator
 import com.prayertimes.data.calculator.PrayerSchedulePrewarmer
-import com.prayertimes.data.calculator.CurrentPrayerPeriod
-import com.prayertimes.data.calculator.CurrentPrayerResolver
+import com.prayertimes.data.calculator.NextPrayerPeriod
+import com.prayertimes.data.calculator.NextPrayerResolver
 import com.prayertimes.data.calendar.HijriCalendar
 import com.prayertimes.data.models.AppColorPreset
 import com.prayertimes.data.models.AppLanguage
@@ -60,11 +60,13 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.Locale
 
-data class CurrentPrayerInfo(
+data class NextPrayerInfo(
     val prayerItem: PrayerTimeItem? = null,
+    val tomorrowFajr: PrayerTimeItem? = null,
+    val tomorrowSunrise: PrayerTimeItem? = null,
     val remainingSeconds: Long = 0,
     val progressPercent: Float = 0f,
-    val isPrayerTimeEnded: Boolean = false
+    val isNextDayFajr: Boolean = false
 )
 
 // Narrow projections of AppPrayerSettings, one per side effect - collecting these instead of the
@@ -94,6 +96,7 @@ private data class WidgetInputs(
     val language: AppLanguage,
     val themeMode: AppThemeMode,
     val colorPreset: AppColorPreset,
+    val customColorSeed: Long,
     val followSystemColors: Boolean,
     val widgetSettings: WidgetCustomizationSettings
 )
@@ -107,14 +110,16 @@ private fun AppPrayerSettings.notificationInputs() = NotificationInputs(
 )
 
 private fun AppPrayerSettings.widgetInputs() = WidgetInputs(
-    calculationInputs(), is24HourFormat, language, themeMode, colorPreset, followSystemColors, widgetSettings
+    calculationInputs(), is24HourFormat, language, themeMode, colorPreset, customColorSeed, followSystemColors, widgetSettings
 )
 
 // Cached next-prayer boundary so the 1Hz countdown tick only subtracts a Duration instead of
 // re-running the full astronomical calculation every second - recomputed only when the boundary
 // is actually crossed or the inputs it depends on change.
-private data class CurrentPrayerBoundary(
-    val period: CurrentPrayerPeriod,
+private data class NextPrayerBoundary(
+    val period: NextPrayerPeriod,
+    val tomorrowFajr: PrayerTimeItem,
+    val tomorrowSunrise: PrayerTimeItem,
     val computedForSettings: AppPrayerSettings
 )
 
@@ -138,8 +143,8 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _dailySchedule = MutableStateFlow<DailyPrayerSchedule?>(null)
     val dailySchedule: StateFlow<DailyPrayerSchedule?> = _dailySchedule.asStateFlow()
 
-    private val _currentPrayerInfo = MutableStateFlow(CurrentPrayerInfo())
-    val currentPrayerInfo: StateFlow<CurrentPrayerInfo> = _currentPrayerInfo.asStateFlow()
+    private val _nextPrayerInfo = MutableStateFlow(NextPrayerInfo())
+    val nextPrayerInfo: StateFlow<NextPrayerInfo> = _nextPrayerInfo.asStateFlow()
 
     val compassState: StateFlow<CompassState> = compassManager.compassState
 
@@ -174,7 +179,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _isForeground = MutableStateFlow(true)
     private val _isPrayerTabVisible = MutableStateFlow(false)
 
-    private var cachedBoundary: CurrentPrayerBoundary? = null
+    private var cachedBoundary: NextPrayerBoundary? = null
 
     fun setForeground(foreground: Boolean) {
         _isForeground.value = foreground
@@ -190,7 +195,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         val initialSettings = settings.value
         compassManager.setLocation(initialSettings.location.latitude, initialSettings.location.longitude)
         recalculateSchedules(initialSettings, _selectedDate.value)
-        updateCurrentPrayerCountdown(initialSettings, ZonedDateTime.now(initialSettings.zoneId()))
+        updateNextPrayerCountdown(initialSettings, ZonedDateTime.now(initialSettings.zoneId()))
 
         // Split by concern (see the *Inputs projections above): a settings emission only triggers
         // the side effects whose actual inputs changed, instead of every emission rebuilding the
@@ -229,7 +234,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 countdownActive.first { it }
                 val currentSettings = settings.value
                 val now = ZonedDateTime.now(currentSettings.zoneId())
-                updateCurrentPrayerCountdown(currentSettings, now)
+                    updateNextPrayerCountdown(currentSettings, now)
                 delay(1000)
             }
         }
@@ -261,44 +266,42 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     }
 
-    private fun computeCurrentPrayerBoundary(currentSettings: AppPrayerSettings, now: ZonedDateTime): CurrentPrayerBoundary {
+    private fun computeNextPrayerBoundary(currentSettings: AppPrayerSettings, now: ZonedDateTime): NextPrayerBoundary {
         val zoneId = currentSettings.zoneId()
         val today = now.toLocalDate()
         val yesterdaySchedule = scheduleFor(currentSettings, today.minusDays(1), zoneId, now)
         val todaySchedule = scheduleFor(currentSettings, today, zoneId, now)
         val tomorrowSchedule = scheduleFor(currentSettings, today.plusDays(1), zoneId, now)
-        return CurrentPrayerBoundary(
-            period = CurrentPrayerResolver.resolve(now, yesterdaySchedule, todaySchedule, tomorrowSchedule),
+        return NextPrayerBoundary(
+            period = NextPrayerResolver.resolve(now, yesterdaySchedule, todaySchedule, tomorrowSchedule),
+            tomorrowFajr = tomorrowSchedule.prayerItems.first { it.type == PrayerType.FAJR },
+            tomorrowSunrise = tomorrowSchedule.prayerItems.first { it.type == PrayerType.SUNRISE },
             computedForSettings = currentSettings
         )
     }
 
-    private fun updateCurrentPrayerCountdown(currentSettings: AppPrayerSettings, now: ZonedDateTime) {
+    private fun updateNextPrayerCountdown(currentSettings: AppPrayerSettings, now: ZonedDateTime) {
         // Only re-run the astronomical calculation when the boundary was actually crossed or the
         // inputs it depends on changed - every other tick just subtracts a Duration.
         val existing = cachedBoundary
-        val boundary = if (existing != null && existing.computedForSettings == currentSettings && now.isBefore(existing.period.changesAt)) {
+        val boundary = if (existing != null && existing.computedForSettings == currentSettings && now.isBefore(existing.period.prayerItem.zonedDateTime)) {
             existing
         } else {
-            computeCurrentPrayerBoundary(currentSettings, now).also { cachedBoundary = it }
+            computeNextPrayerBoundary(currentSettings, now).also { cachedBoundary = it }
         }
 
         val period = boundary.period
-        val diffSeconds = if (period.isPrayerTimeEnded) {
-            0L
-        } else {
-            Duration.between(now, period.endsAt).seconds.coerceAtLeast(0)
-        }
-        val totalSpanSeconds = Duration.between(period.prayerItem.zonedDateTime, period.endsAt).seconds.coerceAtLeast(1)
-        val elapsed = totalSpanSeconds - diffSeconds
-        val progress = if (period.isPrayerTimeEnded) 1f
-        else (elapsed.toFloat() / totalSpanSeconds).coerceIn(0f, 1f)
+        val diffSeconds = Duration.between(now, period.prayerItem.zonedDateTime).seconds.coerceAtLeast(0)
+        val elapsed = period.totalSpanSeconds - diffSeconds
+        val progress = (elapsed.toFloat() / period.totalSpanSeconds).coerceIn(0f, 1f)
 
-        _currentPrayerInfo.value = CurrentPrayerInfo(
+        _nextPrayerInfo.value = NextPrayerInfo(
             prayerItem = period.prayerItem,
+            tomorrowFajr = boundary.tomorrowFajr,
+            tomorrowSunrise = boundary.tomorrowSunrise,
             remainingSeconds = diffSeconds,
             progressPercent = progress,
-            isPrayerTimeEnded = period.isPrayerTimeEnded
+            isNextDayFajr = period.isNextDayFajr
         )
     }
 
@@ -560,6 +563,12 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     fun updateColorPreset(preset: com.prayertimes.data.models.AppColorPreset) {
         viewModelScope.launch {
             prefs.updateColorPreset(preset)
+        }
+    }
+
+    fun updateCustomColorSeed(seed: Long) {
+        viewModelScope.launch {
+            prefs.updateCustomColorSeed(seed)
         }
     }
 

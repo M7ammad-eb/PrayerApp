@@ -74,16 +74,17 @@ import com.prayertimes.data.models.PrayerTimeItem
 import com.prayertimes.data.models.PrayerType
 import com.prayertimes.data.preferences.AppPrayerSettings
 import com.prayertimes.ui.locale.LocalAppStrings
-import com.prayertimes.ui.viewmodel.CurrentPrayerInfo
+import com.prayertimes.ui.viewmodel.NextPrayerInfo
 import java.time.Duration
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun PrayerHomeScreen(
     dailySchedule: DailyPrayerSchedule?,
-    currentPrayerInfo: CurrentPrayerInfo,
+    nextPrayerInfo: NextPrayerInfo,
     settings: AppPrayerSettings,
     selectedDate: LocalDate,
     onPreviousDay: () -> Unit,
@@ -129,10 +130,32 @@ fun PrayerHomeScreen(
     }
     val strings = LocalAppStrings.current
 
-    val isToday = selectedDate == LocalDate.now()
+    val prayerZone = remember(settings.location.timeZoneId) {
+        runCatching { ZoneId.of(settings.location.timeZoneId) }.getOrDefault(ZoneId.systemDefault())
+    }
+    val nowAtLocation = ZonedDateTime.now(prayerZone)
+    val isToday = selectedDate == nowAtLocation.toLocalDate()
+    val todayMaghrib = dailySchedule?.prayerItems?.firstOrNull { it.type == PrayerType.MAGHRIB }?.zonedDateTime
+    val islamicDateHasAdvanced = isToday && todayMaghrib != null && !nowAtLocation.isBefore(todayMaghrib)
+    val displayedHijriCivilDate = if (islamicDateHasAdvanced) selectedDate.plusDays(1) else selectedDate
 
-    val currentHijriDate = remember(selectedDate, settings.hijriAdjustmentDays, dailySchedule?.hijriDate) {
-        dailySchedule?.hijriDate ?: HijriDateCalculator.convertToHijri(selectedDate, settings.hijriAdjustmentDays)
+    val currentHijriDate = remember(displayedHijriCivilDate, settings.hijriAdjustmentDays) {
+        HijriDateCalculator.convertToHijri(displayedHijriCivilDate, settings.hijriAdjustmentDays)
+    }
+    val displayedPrayerItems = remember(
+        dailySchedule?.prayerItems,
+        nextPrayerInfo.tomorrowFajr,
+        nextPrayerInfo.tomorrowSunrise,
+        islamicDateHasAdvanced
+    ) {
+        val items = dailySchedule?.prayerItems.orEmpty()
+        if (!islamicDateHasAdvanced) items else items.map { item ->
+            when (item.type) {
+                PrayerType.FAJR -> nextPrayerInfo.tomorrowFajr ?: item
+                PrayerType.SUNRISE -> nextPrayerInfo.tomorrowSunrise ?: item
+                else -> item
+            }
+        }
     }
 
     val timeFormatter = remember(settings.is24HourFormat) {
@@ -239,12 +262,12 @@ fun PrayerHomeScreen(
             }
 
             // Next Prayer Hero Card
-            if (currentPrayerInfo.prayerItem != null) {
+            if (nextPrayerInfo.prayerItem != null) {
                 Spacer(modifier = Modifier.height(2.dp))
-                BentoCurrentPrayerHeroCard(
-                    currentPrayerInfo = currentPrayerInfo,
+                BentoNextPrayerHeroCard(
+                    nextPrayerInfo = nextPrayerInfo,
                     timeFormatter = timeFormatter,
-                    onClick = { soundPickerPrayerType = currentPrayerInfo.prayerItem.type }
+                    onClick = { soundPickerPrayerType = nextPrayerInfo.prayerItem.type }
                 )
             }
         }
@@ -289,10 +312,11 @@ fun PrayerHomeScreen(
             item {
                 if (dailySchedule != null) {
                     BentoPrayerTimesListCard(
-                        prayerItems = dailySchedule.prayerItems,
+                        prayerItems = displayedPrayerItems,
                         prayerConfigs = settings.prayerConfigs,
                         timeFormatter = timeFormatter,
                         isToday = isToday,
+                        nextPrayerType = nextPrayerInfo.prayerItem?.type,
                         onToggleNotification = { prayerType, newConfig ->
                             onUpdateNotificationConfig(
                                 prayerType,
@@ -325,19 +349,18 @@ fun PrayerHomeScreen(
 }
 
 @Composable
-private fun BentoCurrentPrayerHeroCard(
-    currentPrayerInfo: CurrentPrayerInfo,
+private fun BentoNextPrayerHeroCard(
+    nextPrayerInfo: NextPrayerInfo,
     timeFormatter: DateTimeFormatter,
     onClick: () -> Unit
 ) {
-    val prayerItem = currentPrayerInfo.prayerItem ?: return
+    val prayerItem = nextPrayerInfo.prayerItem ?: return
     val prayerType = prayerItem.type
     val cardBg = MaterialTheme.colorScheme.primary
     val contentColor = MaterialTheme.colorScheme.onPrimary
     val strings = LocalAppStrings.current
-    val countdownText = remember(currentPrayerInfo.remainingSeconds, currentPrayerInfo.isPrayerTimeEnded, strings) {
-        if (currentPrayerInfo.isPrayerTimeEnded) strings.fajrTimeEnded
-        else strings.formatCountdown(currentPrayerInfo.remainingSeconds)
+    val countdownText = remember(nextPrayerInfo.remainingSeconds, strings) {
+        strings.formatCountdown(nextPrayerInfo.remainingSeconds)
     }
 
     Card(
@@ -345,7 +368,7 @@ private fun BentoCurrentPrayerHeroCard(
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.extraLarge)
             .clickable { onClick() }
-            .testTag("current_prayer_hero_card"),
+            .testTag("next_prayer_hero_card"),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = cardBg)
     ) {
@@ -372,7 +395,7 @@ private fun BentoCurrentPrayerHeroCard(
             Column(modifier = Modifier.fillMaxWidth()) {
                 // Tracking label
                 Text(
-                    text = if (currentPrayerInfo.isPrayerTimeEnded) strings.prayerTimeEndedLabel else strings.currentPrayerLabel,
+                    text = strings.nextPrayerLabel,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = contentColor.copy(alpha = 0.75f),
@@ -409,14 +432,14 @@ private fun BentoCurrentPrayerHeroCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.VolumeUp,
+                        imageVector = if (prayerType == PrayerType.SUNRISE) getPrayerIcon(prayerType) else Icons.Default.VolumeUp,
                         contentDescription = null,
                         tint = contentColor,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "${strings.athanAt} ${prayerItem.time.format(timeFormatter)}",
+                        text = "${if (prayerType == PrayerType.SUNRISE) strings.sunriseAt else strings.athanAt} ${prayerItem.time.format(timeFormatter)}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = contentColor
@@ -526,6 +549,7 @@ private fun BentoPrayerTimesListCard(
     prayerConfigs: Map<PrayerType, NotificationPrayerConfig>,
     timeFormatter: DateTimeFormatter,
     isToday: Boolean,
+    nextPrayerType: PrayerType?,
     onToggleNotification: (PrayerType, NotificationPrayerConfig) -> Unit
 ) {
     // Plain Column, not a Card - this group has no fill/elevation of its own, and a Card would
@@ -540,6 +564,7 @@ private fun BentoPrayerTimesListCard(
                 config = prayerConfigs[item.type] ?: NotificationPrayerConfig(),
                 timeFormatter = timeFormatter,
                 isToday = isToday,
+                nextPrayerType = nextPrayerType,
                 onToggleNotification = onToggleNotification
             )
             if (index < prayerItems.size - 1) {
@@ -555,11 +580,12 @@ private fun BentoPrayerRow(
     config: NotificationPrayerConfig,
     timeFormatter: DateTimeFormatter,
     isToday: Boolean,
+    nextPrayerType: PrayerType?,
     onToggleNotification: (PrayerType, NotificationPrayerConfig) -> Unit
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
-    val isNext = item.isNext && isToday
+    val isNext = isToday && item.type == nextPrayerType
     var showMenu by remember { mutableStateOf(false) }
 
     val rowBg = if (isNext) {

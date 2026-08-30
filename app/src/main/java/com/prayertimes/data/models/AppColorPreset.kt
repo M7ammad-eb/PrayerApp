@@ -18,6 +18,15 @@ enum class AppColorPreset(
         secondaryDark = 0xFFE6C687,
         previewColor = 0xFF4CAF50
     ),
+    CUSTOM(
+        title = "Custom",
+        arabicTitle = "مخصص",
+        primaryLight = 0xFF6750A4,
+        primaryDark = 0xFFD0BCFF,
+        secondaryLight = 0xFF625B71,
+        secondaryDark = 0xFFCCC2DC,
+        previewColor = 0xFF6750A4
+    ),
     EMERALD_GOLD(
         title = "Emerald & Gold",
         arabicTitle = "الزمرد والذهب (التقليدي)",

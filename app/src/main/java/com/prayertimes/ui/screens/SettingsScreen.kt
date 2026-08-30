@@ -76,6 +76,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -90,6 +92,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -147,6 +150,7 @@ fun SettingsScreen(
     onUpdateLanguage: (AppLanguage) -> Unit,
     onUpdateThemeMode: (AppThemeMode) -> Unit,
     onUpdateColorPreset: (com.prayertimes.data.models.AppColorPreset) -> Unit = {},
+    onUpdateCustomColorSeed: (Long) -> Unit = {},
     onUpdateFollowSystemColors: (Boolean) -> Unit = {},
     onUpdateWidgetSettings: (com.prayertimes.data.models.WidgetCustomizationSettings) -> Unit = {},
     onUpdatePrayerAdjustment: (PrayerType, Int) -> Unit,
@@ -186,6 +190,7 @@ fun SettingsScreen(
                     onUpdateLanguage = onUpdateLanguage,
                     onUpdateThemeMode = onUpdateThemeMode,
                     onUpdateColorPreset = onUpdateColorPreset,
+                    onUpdateCustomColorSeed = onUpdateCustomColorSeed,
                     onUpdateFollowSystemColors = onUpdateFollowSystemColors,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
@@ -669,6 +674,7 @@ private fun SettingsAppearanceSubScreen(
     onUpdateLanguage: (AppLanguage) -> Unit,
     onUpdateThemeMode: (AppThemeMode) -> Unit,
     onUpdateColorPreset: (com.prayertimes.data.models.AppColorPreset) -> Unit,
+    onUpdateCustomColorSeed: (Long) -> Unit,
     onUpdateFollowSystemColors: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
@@ -680,6 +686,9 @@ private fun SettingsAppearanceSubScreen(
     }
     val darkPalette = settings.themeMode == AppThemeMode.DARK ||
         (settings.themeMode == AppThemeMode.SYSTEM && androidx.compose.foundation.isSystemInDarkTheme())
+    var customHue by remember(settings.customColorSeed) {
+        mutableStateOf(hueFromColor(settings.customColorSeed))
+    }
 
     Column(
         modifier = Modifier
@@ -748,8 +757,12 @@ private fun SettingsAppearanceSubScreen(
                     }
                 },
                 leading = { preset ->
-                    val primary = if (darkPalette) preset.primaryDark else preset.primaryLight
-                    val secondary = if (darkPalette) preset.secondaryDark else preset.secondaryLight
+                    val primary = if (preset == com.prayertimes.data.models.AppColorPreset.CUSTOM) {
+                        settings.customColorSeed
+                    } else if (darkPalette) preset.primaryDark else preset.primaryLight
+                    val secondary = if (preset == com.prayertimes.data.models.AppColorPreset.CUSTOM) {
+                        colorFromHue((customHue + 24f) % 360f)
+                    } else if (darkPalette) preset.secondaryDark else preset.secondaryLight
                     Box(
                         modifier = Modifier
                             .size(30.dp)
@@ -768,10 +781,84 @@ private fun SettingsAppearanceSubScreen(
                 }
             )
 
+            AnimatedVisibility(visible = selectedPalette == com.prayertimes.data.models.AppColorPreset.CUSTOM) {
+                val selectedColor = androidx.compose.ui.graphics.Color(colorFromHue(customHue))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceContainerLow
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+                        Text(
+                            text = stringResource(R.string.custom_color_title),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(40.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(10.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                listOf(
+                                                    androidx.compose.ui.graphics.Color.Red,
+                                                    androidx.compose.ui.graphics.Color.Yellow,
+                                                    androidx.compose.ui.graphics.Color.Green,
+                                                    androidx.compose.ui.graphics.Color.Cyan,
+                                                    androidx.compose.ui.graphics.Color.Blue,
+                                                    androidx.compose.ui.graphics.Color.Magenta,
+                                                    androidx.compose.ui.graphics.Color.Red
+                                                )
+                                            )
+                                        )
+                                )
+                                Slider(
+                                    value = customHue,
+                                    onValueChange = { customHue = it },
+                                    onValueChangeFinished = { onUpdateCustomColorSeed(colorFromHue(customHue)) },
+                                    valueRange = 0f..360f,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = selectedColor,
+                                        activeTrackColor = androidx.compose.ui.graphics.Color.Transparent,
+                                        inactiveTrackColor = androidx.compose.ui.graphics.Color.Transparent
+                                    )
+                                )
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(selectedColor)
+                                    .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(30.dp))
         }
     }
 }
+
+private fun hueFromColor(color: Long): Float {
+    val hsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(color.toInt(), hsv)
+    return hsv[0]
+}
+
+private fun colorFromHue(hue: Float): Long =
+    android.graphics.Color.HSVToColor(floatArrayOf(hue, 0.72f, 0.72f)).toLong() and 0xFFFFFFFFL
 
 @Composable
 private fun ThemeSelectionCard(

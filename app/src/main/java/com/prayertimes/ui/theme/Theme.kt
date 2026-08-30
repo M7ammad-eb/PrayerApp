@@ -10,14 +10,36 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import com.prayertimes.data.models.AppColorPreset
 import com.prayertimes.data.models.AppThemeMode
 
-fun getPresetColorScheme(preset: AppColorPreset, isDark: Boolean): ColorScheme {
-    val primary = Color(if (isDark) preset.primaryDark else preset.primaryLight)
-    val secondary = Color(if (isDark) preset.secondaryDark else preset.secondaryLight)
-    val containerPrimary = if (isDark) primary.copy(alpha = 0.28f) else primary.copy(alpha = 0.14f)
+fun getPresetColorScheme(
+    preset: AppColorPreset,
+    isDark: Boolean,
+    customColorSeed: Long = AppColorPreset.CUSTOM.previewColor
+): ColorScheme {
+    val primary = if (preset == AppColorPreset.CUSTOM) {
+        customTonalColor(customColorSeed, isDark, hueOffset = 0f, saturationFactor = 1f)
+    } else {
+        Color(if (isDark) preset.primaryDark else preset.primaryLight)
+    }
+    val secondary = if (preset == AppColorPreset.CUSTOM) {
+        customTonalColor(customColorSeed, isDark, hueOffset = 24f, saturationFactor = 0.72f)
+    } else {
+        Color(if (isDark) preset.secondaryDark else preset.secondaryLight)
+    }
+    val schemeBackground = if (isDark) Color(0xFF0F1513) else Color(0xFFF7FAF7)
+    // Material container roles are opaque tonal colors. Keeping an accent's alpha here caused
+    // callers using copy(alpha = …) to replace the intended tint strength and produce harsh,
+    // saturated selections. Composite once at the scheme boundary, like dynamic color does.
+    val containerPrimary = primary
+        .copy(alpha = if (isDark) 0.28f else 0.14f)
+        .compositeOver(schemeBackground)
+    val containerSecondary = secondary
+        .copy(alpha = if (isDark) 0.20f else 0.15f)
+        .compositeOver(schemeBackground)
 
     return if (isDark) {
         darkColorScheme(
@@ -27,7 +49,7 @@ fun getPresetColorScheme(preset: AppColorPreset, isDark: Boolean): ColorScheme {
             onPrimaryContainer = Color(0xFFE8F5E9),
             secondary = secondary,
             onSecondary = Color.Black,
-            secondaryContainer = secondary.copy(alpha = 0.2f),
+            secondaryContainer = containerSecondary,
             onSecondaryContainer = Color(0xFFFFF8E1),
             tertiary = Color(0xFFF3D27C),
             onTertiary = Color.Black,
@@ -37,7 +59,7 @@ fun getPresetColorScheme(preset: AppColorPreset, isDark: Boolean): ColorScheme {
             onError = Color(0xFF690005),
             errorContainer = Color(0xFF93000A),
             onErrorContainer = Color(0xFFFFDAD6),
-            background = Color(0xFF0F1513),
+            background = schemeBackground,
             onBackground = Color(0xFFE8EFEA),
             surface = Color(0xFF151D1A),
             onSurface = Color(0xFFE8EFEA),
@@ -63,7 +85,7 @@ fun getPresetColorScheme(preset: AppColorPreset, isDark: Boolean): ColorScheme {
             onPrimaryContainer = primary,
             secondary = secondary,
             onSecondary = Color.White,
-            secondaryContainer = secondary.copy(alpha = 0.15f),
+            secondaryContainer = containerSecondary,
             onSecondaryContainer = Color(0xFF3E2723),
             tertiary = Color(0xFFB8860B),
             onTertiary = Color.White,
@@ -73,7 +95,7 @@ fun getPresetColorScheme(preset: AppColorPreset, isDark: Boolean): ColorScheme {
             onError = Color.White,
             errorContainer = Color(0xFFFFDAD6),
             onErrorContainer = Color(0xFF410002),
-            background = Color(0xFFF7FAF7),
+            background = schemeBackground,
             onBackground = Color(0xFF191C1B),
             surface = Color(0xFFFFFFFF),
             onSurface = Color(0xFF191C1B),
@@ -99,6 +121,7 @@ fun MyApplicationTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     colorPreset: AppColorPreset = AppColorPreset.SYSTEM_DYNAMIC,
     followSystemColors: Boolean = true,
+    customColorSeed: Long = AppColorPreset.CUSTOM.previewColor,
     content: @Composable () -> Unit,
 ) {
     val isDark = when (themeMode) {
@@ -120,7 +143,7 @@ fun MyApplicationTheme(
             getPresetColorScheme(AppColorPreset.EMERALD_GOLD, isDark)
         }
         else -> {
-            getPresetColorScheme(colorPreset, isDark)
+            getPresetColorScheme(colorPreset, isDark, customColorSeed)
         }
     }
 
@@ -130,4 +153,18 @@ fun MyApplicationTheme(
         shapes = SalatiShapes,
         content = content
     )
+}
+
+private fun customTonalColor(
+    seed: Long,
+    isDark: Boolean,
+    hueOffset: Float,
+    saturationFactor: Float
+): Color {
+    val hsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(seed.toInt(), hsv)
+    hsv[0] = (hsv[0] + hueOffset) % 360f
+    hsv[1] = (hsv[1].coerceAtLeast(0.45f) * saturationFactor).coerceIn(0.28f, 0.78f)
+    hsv[2] = if (isDark) 0.86f else 0.48f
+    return Color(android.graphics.Color.HSVToColor(hsv))
 }
