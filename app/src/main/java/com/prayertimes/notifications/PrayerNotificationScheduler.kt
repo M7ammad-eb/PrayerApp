@@ -66,6 +66,36 @@ object PrayerNotificationScheduler {
                 val requestCode = dayOffset * 100 + prayerType.ordinal
                 val reminderRequestCode = 1000 + dayOffset * 100 + prayerType.ordinal
                 val countdownRequestCode = 4000 + dayOffset * 100 + prayerType.ordinal
+                val widgetBoundaryRequestCode = 6000 + dayOffset * 100 + prayerType.ordinal
+
+                // Independent widget boundary. Every calculated period is represented, including
+                // Sunrise, regardless of whether its Athan notification (or all notifications) is
+                // disabled. A separate action and request-code range prevent any PendingIntent
+                // collision with Athan, reminder, countdown, or maintenance alarms.
+                if (prayerZonedTime.isAfter(now)) {
+                    val widgetBoundaryIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
+                        action = PrayerAlarmReceiver.ACTION_WIDGET_PRAYER_BOUNDARY
+                    }
+                    val widgetBoundaryPendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        widgetBoundaryRequestCode,
+                        widgetBoundaryIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    setExactAlarmWithFallback(
+                        alarmManager,
+                        prayerEpochMillis,
+                        widgetBoundaryPendingIntent,
+                        widgetBoundaryRequestCode
+                    )
+                } else {
+                    cancelAlarm(
+                        context,
+                        alarmManager,
+                        widgetBoundaryRequestCode,
+                        PrayerAlarmReceiver.ACTION_WIDGET_PRAYER_BOUNDARY
+                    )
+                }
 
                 // 1. Exact Prayer Time Alarm (Athan). Every branch here is declarative - cancel
                 // whatever shouldn't exist rather than just skipping creation - so that disabling a
@@ -129,6 +159,10 @@ object PrayerNotificationScheduler {
                             action = PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN
                             putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
                             putExtra(PrayerAlarmReceiver.EXTRA_TARGET_MILLIS, prayerEpochMillis)
+                            putExtra(
+                                PrayerAlarmReceiver.EXTRA_INTENDED_TRIGGER_MILLIS,
+                                countdownStartTime.toInstant().toEpochMilli()
+                            )
                             putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, settings.location.name)
                         }
                         val countdownPendingIntent = PendingIntent.getBroadcast(
@@ -137,7 +171,12 @@ object PrayerNotificationScheduler {
                             countdownIntent,
                             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                         )
-                        setInexactAlarm(alarmManager, countdownStartTime.toInstant().toEpochMilli(), countdownPendingIntent, countdownRequestCode)
+                        setExactAlarmWithFallback(
+                            alarmManager,
+                            countdownStartTime.toInstant().toEpochMilli(),
+                            countdownPendingIntent,
+                            countdownRequestCode
+                        )
                     } else if (dayOffset == 0 && prayerZonedTime.isAfter(now)) {
                         // Already inside the countdown window right now (e.g. the feature was just
                         // turned on, or the app restarted mid-window) - show it immediately instead
@@ -146,6 +185,8 @@ object PrayerNotificationScheduler {
                             context = context,
                             prayerType = prayerType,
                             targetEpochMillis = prayerEpochMillis,
+                            countdownStartEpochMillis = countdownStartTime.toInstant().toEpochMilli(),
+                            receiverExecutionEpochMillis = System.currentTimeMillis(),
                             locationName = settings.location.name,
                             isArabic = settings.language.resolveIsArabic(context)
                         )
@@ -265,11 +306,19 @@ object PrayerNotificationScheduler {
         }
     }
 
-    // Tier 2: pre-reminders. Worth exact timing when exact-alarm access is available, but not
-    // important enough to claim alarm-clock priority for - explicitly checking
-    // canScheduleExactAlarms() up front instead of only discovering the lack of permission via a
-    // caught SecurityException keeps permission state out of exception-driven control flow.
+    // Tier 2: pre-reminders, widget boundaries, and Live Countdown starts. They need exact timing
+    // when access is available but do not claim alarm-clock priority. If access is absent or an
+    // OEM rejects the call, retain an inexact allow-while-idle alarm rather than dropping it.
     private fun setReminderAlarm(
+        alarmManager: AlarmManager,
+        triggerAtMillis: Long,
+        pendingIntent: PendingIntent,
+        requestCode: Int
+    ) {
+        setExactAlarmWithFallback(alarmManager, triggerAtMillis, pendingIntent, requestCode)
+    }
+
+    private fun setExactAlarmWithFallback(
         alarmManager: AlarmManager,
         triggerAtMillis: Long,
         pendingIntent: PendingIntent,
@@ -286,6 +335,9 @@ object PrayerNotificationScheduler {
             } catch (e: SecurityException) {
                 // Permission revoked between the check and the call (or an OEM quirk) - degrade to
                 // inexact rather than dropping the reminder entirely.
+            } catch (e: RuntimeException) {
+                // Gracefully handle OEM AlarmManager implementations that reject an otherwise
+                // valid exact alarm.
             }
         }
         setInexactAlarm(alarmManager, triggerAtMillis, pendingIntent, requestCode)
@@ -294,8 +346,7 @@ object PrayerNotificationScheduler {
     private fun canScheduleExactAlarms(alarmManager: AlarmManager): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
 
-    // Tier 3: cosmetic/background triggers (live countdown start). Never worth exact-alarm
-    // permission or alarm-clock priority - a few minutes of slack here is invisible to the user.
+    // Tier 3: non-critical maintenance and the exact-alarm fallback path.
     private fun setInexactAlarm(
         alarmManager: AlarmManager,
         triggerAtMillis: Long,
@@ -332,6 +383,8 @@ object PrayerNotificationScheduler {
             context = context,
             prayerType = PrayerType.DHUHR,
             targetEpochMillis = targetMillis,
+            countdownStartEpochMillis = System.currentTimeMillis(),
+            receiverExecutionEpochMillis = System.currentTimeMillis(),
             locationName = "Live Countdown Test",
             isArabic = isArabic
         )

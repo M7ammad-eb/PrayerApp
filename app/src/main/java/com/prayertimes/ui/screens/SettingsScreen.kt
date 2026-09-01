@@ -1,6 +1,7 @@
 package com.prayertimes.ui.screens
 
 import android.content.Intent
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.runtime.collectAsState
@@ -109,6 +110,7 @@ import com.prayertimes.data.models.JuristicMethod
 import com.prayertimes.data.models.NotificationPrayerConfig
 import com.prayertimes.data.models.NotificationSoundType
 import com.prayertimes.data.models.PrayerType
+import com.prayertimes.notifications.PrayerLiveCountdownManager
 import com.prayertimes.data.models.UserLocation
 import com.prayertimes.data.places.PlaceEntity
 import com.prayertimes.data.places.PlaceRepository
@@ -1557,11 +1559,19 @@ private fun SettingsNotificationsSubScreen(
     var notificationsEnabled by remember {
         mutableStateOf(androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled())
     }
+    var canPostPromotedNotifications by remember {
+        mutableStateOf(PrayerLiveCountdownManager.canPostPromotedNotifications(context))
+    }
+    val promotionSettingsIntent = remember(context) {
+        PrayerLiveCountdownManager.promotionSettingsIntent(context)
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 notificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+                canPostPromotedNotifications =
+                    PrayerLiveCountdownManager.canPostPromotedNotifications(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -1994,6 +2004,37 @@ private fun SettingsNotificationsSubScreen(
                                 }
                               }
                               Spacer(modifier = Modifier.height(6.dp))
+                            }
+
+                            if (Build.VERSION.SDK_INT >= 36 && !canPostPromotedNotifications) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Surface(
+                                    shape = MaterialTheme.shapes.small,
+                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text(
+                                            text = stringResource(R.string.live_countdown_promotion_hint),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                        if (PrayerLiveCountdownManager.isSamsungDevice()) {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = stringResource(R.string.live_countdown_samsung_hint),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                            )
+                                        }
+                                        if (promotionSettingsIntent != null) {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            TextButton(onClick = { context.startActivity(promotionSettingsIntent) }) {
+                                                Text(stringResource(R.string.live_countdown_enable_live_updates))
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 

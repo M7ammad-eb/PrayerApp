@@ -66,6 +66,7 @@
                 <action android:name="android.intent.action.DATE_CHANGED" />
                 <action android:name="com.prayertimes.ACTION_PRAYER_ALARM" />
                 <action android:name="com.prayertimes.ACTION_LIVE_COUNTDOWN" />
+                <action android:name="com.prayertimes.ACTION_WIDGET_PRAYER_BOUNDARY" />
                 <action android:name="com.salati.prayertimes.ACTION_SCHEDULE_MAINTENANCE" />
             </intent-filter>
         </receiver>

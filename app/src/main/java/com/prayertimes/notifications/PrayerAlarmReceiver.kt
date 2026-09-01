@@ -28,6 +28,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_PRAYER_ALARM = "com.prayertimes.ACTION_PRAYER_ALARM"
         const val ACTION_LIVE_COUNTDOWN = "com.prayertimes.ACTION_LIVE_COUNTDOWN"
+        const val ACTION_WIDGET_PRAYER_BOUNDARY = "com.prayertimes.ACTION_WIDGET_PRAYER_BOUNDARY"
         // Self-scheduled, explicit-component daily trigger that replenishes the rolling 7-day
         // alarm window - see PrayerNotificationScheduler.scheduleMaintenanceAlarm() for why this
         // exists instead of relying solely on ACTION_DATE_CHANGED.
@@ -39,6 +40,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         const val EXTRA_IS_PRE_REMINDER = "extra_is_pre_reminder"
         const val EXTRA_LOCATION_NAME = "extra_location_name"
         const val EXTRA_TARGET_MILLIS = "extra_target_millis"
+        const val EXTRA_INTENDED_TRIGGER_MILLIS = "extra_intended_trigger_millis"
     }
 
     // Android 14+ can revoke an app's full-screen-intent capability regardless of the manifest
@@ -94,9 +96,26 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                 PrayerType.FAJR
             }
             val targetMillis = intent.getLongExtra(EXTRA_TARGET_MILLIS, System.currentTimeMillis())
+            val intendedTriggerMillis = intent.getLongExtra(EXTRA_INTENDED_TRIGGER_MILLIS, System.currentTimeMillis())
             val locationName = intent.getStringExtra(EXTRA_LOCATION_NAME) ?: ""
             val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic(context)
-            PrayerLiveCountdownManager.show(context, prayerType, targetMillis, locationName, isArabic)
+            PrayerLiveCountdownManager.show(
+                context = context,
+                prayerType = prayerType,
+                targetEpochMillis = targetMillis,
+                countdownStartEpochMillis = intendedTriggerMillis,
+                receiverExecutionEpochMillis = System.currentTimeMillis(),
+                locationName = locationName,
+                isArabic = isArabic
+            )
+            return
+        }
+
+        if (action == ACTION_WIDGET_PRAYER_BOUNDARY) {
+            // Independent of every Athan/notification preference. The launcher Chronometer ticks
+            // on its own; this exact boundary event only replaces the completed prayer with the
+            // following one and supplies its new elapsed-realtime base.
+            com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(context)
             return
         }
 

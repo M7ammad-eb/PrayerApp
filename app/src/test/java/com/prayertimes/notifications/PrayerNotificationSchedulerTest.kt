@@ -40,6 +40,7 @@ class PrayerNotificationSchedulerTest {
     private val prayerRequestCode = dayOffset * 100 + PrayerType.FAJR.ordinal
     private val reminderRequestCode = 1000 + dayOffset * 100 + PrayerType.FAJR.ordinal
     private val countdownRequestCode = 4000 + dayOffset * 100 + PrayerType.FAJR.ordinal
+    private val widgetBoundaryRequestCode = 6000 + dayOffset * 100 + PrayerType.FAJR.ordinal
 
     private fun baseSettings(): AppPrayerSettings = AppPrayerSettings(
         location = UserLocation(
@@ -222,9 +223,7 @@ class PrayerNotificationSchedulerTest {
     }
 
     @Test
-    fun liveCountdownTriggerIsNeverExactOrAlarmClock() {
-        // Exact-alarm permission granted or not shouldn't matter - the countdown trigger is
-        // cosmetic and should never even ask for exact timing.
+    fun liveCountdownTriggerIsExactButNotAlarmClockWhenAccessIsAvailable() {
         ShadowAlarmManager.setCanScheduleExactAlarms(true)
         val settings = baseSettings().copy(liveCountdownEnabled = true, liveCountdownMinutesBefore = 15)
         PrayerNotificationScheduler.scheduleDailyAlarms(context, settings)
@@ -232,7 +231,67 @@ class PrayerNotificationSchedulerTest {
         val scheduled = scheduledAlarmFor(existingPendingIntent(countdownRequestCode, PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN))
         assertNotNull(scheduled)
         assertNull("Countdown trigger should never claim alarm-clock priority", scheduled!!.alarmClockInfo)
-        assertEquals("Countdown trigger should be inexact, not exact", -1L, scheduled.windowLengthMs)
+        assertEquals("Countdown trigger should be exact", 0L, scheduled.windowLengthMs)
+    }
+
+    @Test
+    fun liveCountdownTriggerDegradesToInexactWithoutExactAccess() {
+        ShadowAlarmManager.setCanScheduleExactAlarms(false)
+        val settings = baseSettings().copy(liveCountdownEnabled = true, liveCountdownMinutesBefore = 15)
+        PrayerNotificationScheduler.scheduleDailyAlarms(context, settings)
+
+        val scheduled = scheduledAlarmFor(existingPendingIntent(countdownRequestCode, PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN))
+        assertNotNull(scheduled)
+        assertNull(scheduled!!.alarmClockInfo)
+        assertEquals(-1L, scheduled.windowLengthMs)
+    }
+
+    @Test
+    fun widgetBoundaryExistsWhenEveryPrayerNotificationIsDisabled() {
+        ShadowAlarmManager.setCanScheduleExactAlarms(true)
+        val disabledConfigs = PrayerType.entries.associateWith {
+            NotificationPrayerConfig(enabled = false, soundType = NotificationSoundType.SILENT)
+        }
+        PrayerNotificationScheduler.scheduleDailyAlarms(
+            context,
+            baseSettings().copy(prayerConfigs = disabledConfigs)
+        )
+
+        assertNull(existingPendingIntent(prayerRequestCode, PrayerAlarmReceiver.ACTION_PRAYER_ALARM))
+        val boundary = existingPendingIntent(
+            widgetBoundaryRequestCode,
+            PrayerAlarmReceiver.ACTION_WIDGET_PRAYER_BOUNDARY
+        )
+        assertNotNull("Widget boundary must not depend on notification configuration", boundary)
+        val scheduled = scheduledAlarmFor(boundary)
+        assertNotNull(scheduled)
+        assertNull(scheduled!!.alarmClockInfo)
+        assertEquals(0L, scheduled.windowLengthMs)
+    }
+
+    @Test
+    fun sunriseAndNextDayFajrBothReceiveWidgetBoundaries() {
+        ShadowAlarmManager.setCanScheduleExactAlarms(true)
+        PrayerNotificationScheduler.scheduleDailyAlarms(context, baseSettings())
+
+        val sunriseCode = 6000 + dayOffset * 100 + PrayerType.SUNRISE.ordinal
+        val nextDayFajrCode = 6000 + (dayOffset + 1) * 100 + PrayerType.FAJR.ordinal
+        assertNotNull(existingPendingIntent(sunriseCode, PrayerAlarmReceiver.ACTION_WIDGET_PRAYER_BOUNDARY))
+        assertNotNull(existingPendingIntent(nextDayFajrCode, PrayerAlarmReceiver.ACTION_WIDGET_PRAYER_BOUNDARY))
+    }
+
+    @Test
+    fun widgetBoundaryDegradesToInexactWithoutExactAccess() {
+        ShadowAlarmManager.setCanScheduleExactAlarms(false)
+        PrayerNotificationScheduler.scheduleDailyAlarms(context, baseSettings())
+
+        val boundary = existingPendingIntent(
+            widgetBoundaryRequestCode,
+            PrayerAlarmReceiver.ACTION_WIDGET_PRAYER_BOUNDARY
+        )
+        val scheduled = scheduledAlarmFor(boundary)
+        assertNotNull(scheduled)
+        assertEquals(-1L, scheduled!!.windowLengthMs)
     }
 
     // --- Daily maintenance: ACTION_DATE_CHANGED isn't guaranteed for manifest receivers on modern
