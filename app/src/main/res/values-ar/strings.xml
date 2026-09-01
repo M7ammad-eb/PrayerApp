@@ -491,6 +491,7 @@
     <string name="widget_countdown_minutes_only">خلال %1$dد</string>
     <string name="widget_countdown_less_than_min">أقل من دقيقة</string>
     <string name="widget_time_ending_now">ينتهي الوقت الآن</string>
+    <string name="widget_countdown_chronometer_format">متبقي %s</string>
     <string name="widget_remaining_hours_minutes">متبقٍ %1$dس و %2$dد</string>
     <string name="widget_remaining_minutes_only">متبقٍ %1$dد</string>
     <string name="widget_remaining_less_than_min">متبقي أقل من دقيقة</string>

@@ -8,6 +8,9 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.prayertimes.data.calendar.HijriCalendar
 import com.prayertimes.data.calculator.PrayerSchedulePrewarmer
 import com.prayertimes.data.preferences.PrayerPreferences
@@ -17,7 +20,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
-class PrayerApplication : Application() {
+class PrayerApplication : Application(), DefaultLifecycleObserver {
 
     companion object {
         const val CHANNEL_ATHAN_ID = "prayer_athan_channel_v2"
@@ -41,10 +44,20 @@ class PrayerApplication : Application() {
     }
 
     override fun onCreate() {
-        super.onCreate()
+        super<Application>.onCreate()
         instance = this
         createNotificationChannels()
         lastNightModeBit = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+    }
+
+    /**
+     * One self-healing widget refresh per process foreground transition. ProcessLifecycleOwner
+     * deliberately coalesces activity changes/configuration changes, so navigating between app
+     * screens cannot cause duplicate widget updates.
+     */
+    override fun onStart(owner: LifecycleOwner) {
+        com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(this)
     }
 
     fun prewarmUserCaches() {

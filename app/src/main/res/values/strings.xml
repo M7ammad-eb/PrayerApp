@@ -487,6 +487,7 @@
     <string name="widget_countdown_minutes_only">In %1$dm</string>
     <string name="widget_countdown_less_than_min">In &lt; 1 min</string>
     <string name="widget_time_ending_now">Time ending now</string>
+    <string name="widget_countdown_chronometer_format">%s Remaining</string>
     <string name="widget_remaining_hours_minutes">%1$dh %2$dm remaining</string>
     <string name="widget_remaining_minutes_only">%1$dm remaining</string>
     <string name="widget_remaining_less_than_min">Less than 1 minute remaining</string>

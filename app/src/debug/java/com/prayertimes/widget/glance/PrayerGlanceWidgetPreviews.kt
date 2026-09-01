@@ -2,6 +2,7 @@
 
 package com.prayertimes.widget.glance
 
+import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.glance.preview.Preview
@@ -32,7 +33,9 @@ private class SampleColors {
 private fun sampleData(showAllPrayersList: Boolean = true) = GlanceWidgetData(
     prayerName = "العصر",
     prayerTime = "3:47 PM",
-    countdown = "In 1h 12m",
+    nextPrayerTargetEpochMillis = System.currentTimeMillis() + 4_320_000L,
+    countdownBaseElapsedRealtime = SystemClock.elapsedRealtime() + 4_320_000L,
+    countdownFormat = "متبقي %s",
     locationText = "Al Madinah",
     hijriText = "10 Rabi' I 1448",
     allSlots = listOf(

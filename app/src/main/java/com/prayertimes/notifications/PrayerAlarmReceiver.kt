@@ -75,6 +75,10 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             PrayerApplication.instance.applicationScope.launch {
                 try {
                     PrayerNotificationScheduler.rescheduleAll(context)
+                    // Chronometer bases use elapsed realtime, which resets on reboot. Rebuilding
+                    // the widget here also corrects its target immediately after wall-clock or
+                    // timezone changes instead of waiting for the 30-minute host fallback.
+                    com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(context)
                 } finally {
                     pendingResult.finish()
                 }

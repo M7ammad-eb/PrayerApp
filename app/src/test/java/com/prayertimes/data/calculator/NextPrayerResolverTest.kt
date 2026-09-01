@@ -48,6 +48,16 @@ class NextPrayerResolverTest {
     }
 
     @Test
+    fun exactlyAtPrayerBoundaryRollsToFollowingPrayer() {
+        val dhuhr = item(PrayerType.DHUHR)
+        val period = NextPrayerResolver.resolve(
+            dhuhr.zonedDateTime, yesterday, today, tomorrow
+        )
+
+        assertEquals(PrayerType.ASR, period.prayerItem.type)
+    }
+
+    @Test
     fun afterIshaTomorrowFajrIsNext() {
         val isha = item(PrayerType.ISHA)
         val tomorrowFajr = tomorrow.prayerItems.first { it.type == PrayerType.FAJR }

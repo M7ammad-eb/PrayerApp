@@ -10,9 +10,12 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.os.Build
+import android.os.SystemClock
 import android.provider.Settings
 import android.text.TextUtils
+import android.util.TypedValue
 import android.view.View
+import android.widget.RemoteViews
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,6 +35,7 @@ import androidx.glance.LocalSize
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
@@ -229,7 +233,14 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         val todaySchedule = schedule(today)
         val tomorrowSchedule = schedule(today.plusDays(1))
         val nextPeriod = NextPrayerResolver.resolve(now, yesterdaySchedule, todaySchedule, tomorrowSchedule)
-        val remainingSeconds = Duration.between(now, nextPeriod.prayerItem.zonedDateTime).seconds.coerceAtLeast(0)
+        val nextPrayerTarget = nextPeriod.prayerItem.zonedDateTime
+        val remainingMillis = Duration.between(now.toInstant(), nextPrayerTarget.toInstant())
+            .toMillis()
+            .coerceAtLeast(0L)
+        val countdownBaseElapsedRealtime = chronometerBaseElapsedRealtime(
+            elapsedRealtimeMillis = SystemClock.elapsedRealtime(),
+            remainingMillis = remainingMillis
+        )
 
         val timeFormatter = if (settings.is24HourFormat) {
             DateTimeFormatter.ofPattern("HH:mm")
@@ -269,7 +280,9 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         return GlanceWidgetData(
             prayerName = prayerName(nextPeriod.prayerItem.type, isArabic),
             prayerTime = nextPeriod.prayerItem.zonedDateTime.format(timeFormatter),
-            countdown = remainingText(context, remainingSeconds, isArabic),
+            nextPrayerTargetEpochMillis = nextPrayerTarget.toInstant().toEpochMilli(),
+            countdownBaseElapsedRealtime = countdownBaseElapsedRealtime,
+            countdownFormat = localizedRes.getString(R.string.widget_countdown_chronometer_format),
             locationText = CityDatabase.localizedName(localizedRes, settings.location)
                 .ifBlank { CityDatabase.localizedCountry(localizedRes, settings.location) },
             hijriText = if (isArabic) {
@@ -304,16 +317,18 @@ class PrayerGlanceWidget : GlanceAppWidget() {
         return if (isArabic) arabicNames.getValue(type) else type.title
     }
 
-    private fun remainingText(context: Context, seconds: Long, isArabic: Boolean): String {
-        val res = LocalizedStrings.forLanguage(context, isArabic)
-        val hours = seconds / 3600
-        val minutes = (seconds % 3600) / 60
-        return when {
-            seconds <= 0 -> res.getString(R.string.widget_time_ending_now)
-            hours > 0 -> res.getString(R.string.widget_remaining_hours_minutes, hours, minutes)
-            minutes > 0 -> res.getString(R.string.widget_remaining_minutes_only, minutes)
-            else -> res.getString(R.string.widget_remaining_less_than_min)
-        }
+}
+
+/** Converts a wall-clock duration to the elapsed-realtime time base required by Chronometer. */
+internal fun chronometerBaseElapsedRealtime(
+    elapsedRealtimeMillis: Long,
+    remainingMillis: Long
+): Long {
+    val safeRemaining = remainingMillis.coerceAtLeast(0L)
+    return if (safeRemaining > Long.MAX_VALUE - elapsedRealtimeMillis) {
+        Long.MAX_VALUE
+    } else {
+        elapsedRealtimeMillis + safeRemaining
     }
 }
 
@@ -332,7 +347,12 @@ internal data class MiniSlot(val name: String, val time: String, val isActive: B
 internal data class GlanceWidgetData(
     val prayerName: String,
     val prayerTime: String,
-    val countdown: String,
+    /** Exact wall-clock target retained for diagnostics and boundary verification. */
+    val nextPrayerTargetEpochMillis: Long,
+    /** Android Chronometer base; always uses SystemClock.elapsedRealtime(), never epoch time. */
+    val countdownBaseElapsedRealtime: Long,
+    /** Localized format whose %s token is continuously replaced by the launcher host. */
+    val countdownFormat: String,
     val locationText: String,
     val hijriText: String,
     val allSlots: List<MiniSlot>,
@@ -603,13 +623,13 @@ private fun SlimContent(data: GlanceWidgetData, isRtl: Boolean, layout: Adaptive
             }
         }
         if (isRtl) {
-            if (data.widgetSettings.showCountdown && layout.showBarCountdown) CountdownPill(data.countdown, data)
+            if (data.widgetSettings.showCountdown && layout.showBarCountdown) CountdownPill(data)
             Spacer(GlanceModifier.width(layout.gapDp.dp))
             heroText()
         } else {
             heroText()
             Spacer(GlanceModifier.width(layout.gapDp.dp))
-            if (data.widgetSettings.showCountdown && layout.showBarCountdown) CountdownPill(data.countdown, data)
+            if (data.widgetSettings.showCountdown && layout.showBarCountdown) CountdownPill(data)
         }
         if (layout.showBarMetadata && (data.widgetSettings.showLocation || data.widgetSettings.showHijriDate)) {
             Spacer(GlanceModifier.width(layout.gapDp.dp))
@@ -975,7 +995,7 @@ private fun HeroCard(
                 TimeText(data.prayerTime, 17f, data, data.textPrimary, FontWeight.Bold, suffixScale = 0.68f)
                 if (data.widgetSettings.showCountdown) {
                     Spacer(GlanceModifier.height(2.dp))
-                    CountdownPill(data.countdown, data)
+                    CountdownPill(data)
                 }
             }
         }
@@ -1006,26 +1026,49 @@ private fun HeroCard(
             }
         }
         if (isRtl) {
-            if (data.widgetSettings.showCountdown) CountdownPill(data.countdown, data)
+            if (data.widgetSettings.showCountdown) CountdownPill(data)
             Spacer(GlanceModifier.width(6.dp))
             nameAndTime()
         } else {
             nameAndTime()
             Spacer(GlanceModifier.width(6.dp))
-            if (data.widgetSettings.showCountdown) CountdownPill(data.countdown, data)
+            if (data.widgetSettings.showCountdown) CountdownPill(data)
         }
     }
 }
 
 @Composable
-private fun CountdownPill(text: String, data: GlanceWidgetData) {
+private fun CountdownPill(data: GlanceWidgetData) {
+    val context = LocalContext.current
+    val remoteViews = remember(
+        data.countdownBaseElapsedRealtime,
+        data.countdownFormat,
+        data.textOnAccent,
+        data.fontScale
+    ) {
+        RemoteViews(context.packageName, R.layout.widget_countdown_chronometer).apply {
+            setChronometer(
+                R.id.widget_countdown_chronometer,
+                data.countdownBaseElapsedRealtime,
+                data.countdownFormat,
+                true
+            )
+            setChronometerCountDown(R.id.widget_countdown_chronometer, true)
+            setTextColor(R.id.widget_countdown_chronometer, data.textOnAccent.toArgb())
+            setTextViewTextSize(
+                R.id.widget_countdown_chronometer,
+                TypedValue.COMPLEX_UNIT_SP,
+                10f * data.fontScale
+            )
+        }
+    }
     Box(
         modifier = GlanceModifier
             .background(ColorProvider(data.activePrayerBg))
             .cornerRadius(10.dp)
             .padding(horizontal = 6.dp, vertical = 2.dp)
     ) {
-        Text(text, style = TextStyle(color = ColorProvider(data.textOnAccent), fontSize = scaledSp(10f, data), fontWeight = FontWeight.Medium), maxLines = 1)
+        AndroidRemoteViews(remoteViews)
     }
 }
 
