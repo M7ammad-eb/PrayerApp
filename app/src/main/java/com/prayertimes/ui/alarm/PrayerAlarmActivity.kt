@@ -1,10 +1,14 @@
 package com.prayertimes.ui.alarm
 
 import android.app.KeyguardManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,6 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.lifecycleScope
+import androidx.core.content.ContextCompat
 import com.prayertimes.MainActivity
 import com.prayertimes.audio.AthanAudioEngine
 import com.prayertimes.audio.AthanAudioService
@@ -21,6 +26,7 @@ import com.prayertimes.data.models.NotificationSoundType
 import com.prayertimes.data.models.PrayerType
 import com.prayertimes.data.preferences.PrayerPreferences
 import com.prayertimes.notifications.PrayerNotificationScheduler
+import com.prayertimes.notifications.PrayerAlarmReceiver
 import com.prayertimes.ui.theme.MyApplicationTheme
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -32,6 +38,7 @@ class PrayerAlarmActivity : ComponentActivity() {
         const val EXTRA_PRAYER_TIME = "extra_prayer_time"
         const val EXTRA_LOCATION_NAME = "extra_location_name"
         const val EXTRA_SOUND_TYPE = "extra_sound_type"
+        internal const val KEEP_SCREEN_ON_MAX_MILLIS = 5L * 60L * 1000L
 
         fun createIntent(
             context: Context,
@@ -56,6 +63,18 @@ class PrayerAlarmActivity : ComponentActivity() {
     private var prayerTime: String = ""
     private var locationName: String = ""
     private var soundType: NotificationSoundType = NotificationSoundType.FULL_ATHAN
+    private val screenTimeoutHandler = Handler(Looper.getMainLooper())
+    private val clearKeepScreenOn = Runnable {
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+    private val prayerBoundaryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val boundaryPrayer = intent?.getStringExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME)
+            // A boundary for the same prayer can race its newly launched alarm activity. Only a
+            // different (or legacy unspecified) boundary makes the currently shown prayer stale.
+            if (boundaryPrayer == null || boundaryPrayer != prayerType.name) finish()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,6 +84,13 @@ class PrayerAlarmActivity : ComponentActivity() {
         turnScreenOnAndShowWhenLocked()
 
         parseIntentExtras(intent)
+        armKeepScreenOnTimeout()
+        ContextCompat.registerReceiver(
+            this,
+            prayerBoundaryReceiver,
+            IntentFilter(PrayerAlarmReceiver.ACTION_PRAYER_BOUNDARY_REACHED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
 
         // If audio isn't already playing from background service, ensure it plays according to user's sound & stream preferences
         ensureAudioPlaying()
@@ -120,9 +146,13 @@ class PrayerAlarmActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        val previousPrayerType = prayerType
         setIntent(intent)
         parseIntentExtras(intent)
-        turnScreenOnAndShowWhenLocked()
+        if (prayerType != previousPrayerType) {
+            turnScreenOnAndShowWhenLocked()
+            armKeepScreenOnTimeout()
+        }
     }
 
     private fun parseIntentExtras(intent: Intent?) {
@@ -179,20 +209,34 @@ class PrayerAlarmActivity : ComponentActivity() {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
             val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
-            keyguardManager?.requestDismissKeyguard(this, null)
+            keyguardManager?.requestDismissKeyguard(
+                this,
+                object : KeyguardManager.KeyguardDismissCallback() {}
+            )
         } else {
             @Suppress("DEPRECATION")
             window.addFlags(
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
                         WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
             )
         }
+    }
+
+    private fun armKeepScreenOnTimeout() {
+        screenTimeoutHandler.removeCallbacks(clearKeepScreenOn)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        screenTimeoutHandler.postDelayed(clearKeepScreenOn, KEEP_SCREEN_ON_MAX_MILLIS)
     }
 
     override fun onDestroy() {
+        screenTimeoutHandler.removeCallbacks(clearKeepScreenOn)
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        try {
+            unregisterReceiver(prayerBoundaryReceiver)
+        } catch (_: IllegalArgumentException) {
+            // Defensive only: registration can fail if Activity creation was interrupted.
+        }
         super.onDestroy()
     }
 }

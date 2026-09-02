@@ -83,14 +83,6 @@ private data class CalculationInputs(
     val adjustments: PrayerTimeAdjustments
 )
 
-private data class NotificationInputs(
-    val calc: CalculationInputs,
-    val is24HourFormat: Boolean,
-    val prayerConfigs: Map<PrayerType, NotificationPrayerConfig>,
-    val liveCountdownEnabled: Boolean,
-    val liveCountdownMinutesBefore: Int
-)
-
 private data class WidgetInputs(
     val calc: CalculationInputs,
     val is24HourFormat: Boolean,
@@ -104,10 +96,6 @@ private data class WidgetInputs(
 
 private fun AppPrayerSettings.calculationInputs() = CalculationInputs(
     location, calculationMethod, juristicMethod, highLatitudeRule, hijriAdjustmentDays, adjustments
-)
-
-private fun AppPrayerSettings.notificationInputs() = NotificationInputs(
-    calculationInputs(), is24HourFormat, prayerConfigs, liveCountdownEnabled, liveCountdownMinutesBefore
 )
 
 private fun AppPrayerSettings.widgetInputs() = WidgetInputs(
@@ -219,11 +207,8 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 recalculateSchedules(currentSettings, _selectedDate.value)
             }
         }
-        viewModelScope.launch(Dispatchers.Default) {
-            settings.map { it.notificationInputs() }.distinctUntilChanged().collect {
-                PrayerNotificationScheduler.scheduleDailyAlarms(getApplication(), settings.value)
-            }
-        }
+        // PrayerApplication owns alarm scheduling so it remains correct even when no Compose
+        // screen or PrayerViewModel exists. This ViewModel only owns visible UI state.
         viewModelScope.launch {
             // Widget settings can emit rapidly (especially opacity). One projection owns all
             // automatic refreshes and coalesces a burst into a single RemoteViews rebuild.
@@ -241,7 +226,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 countdownActive.first { it }
                 val currentSettings = settings.value
                 val now = ZonedDateTime.now(currentSettings.zoneId())
-                    updateNextPrayerCountdown(currentSettings, now)
+                updateNextPrayerCountdown(currentSettings, now)
                 delay(1000)
             }
         }
@@ -660,8 +645,14 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         PrayerNotificationScheduler.triggerTestLiveCountdown(getApplication())
     }
 
+    fun testScheduledLiveCountdown() {
+        PrayerNotificationScheduler.triggerTestScheduledLiveCountdown(getApplication())
+    }
+
     fun rescheduleAllAlarms() {
-        PrayerNotificationScheduler.scheduleDailyAlarms(getApplication(), settings.value)
+        viewModelScope.launch(Dispatchers.Default) {
+            PrayerNotificationScheduler.scheduleDailyAlarms(getApplication(), settings.value)
+        }
     }
 
     fun completeOnboarding() {

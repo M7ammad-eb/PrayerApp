@@ -2,8 +2,10 @@ package com.prayertimes.notifications
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import com.prayertimes.data.models.NotificationPrayerConfig
 import com.prayertimes.data.models.NotificationSoundType
@@ -149,6 +151,37 @@ class PrayerNotificationSchedulerTest {
         )
     }
 
+    @Test
+    fun changingLiveCountdownDurationUpdatesTheExistingAlarm() {
+        PrayerNotificationScheduler.scheduleDailyAlarms(
+            context,
+            baseSettings().copy(liveCountdownEnabled = true, liveCountdownMinutesBefore = 15)
+        )
+        val firstPendingIntent = existingPendingIntent(
+            countdownRequestCode,
+            PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN
+        )!!
+        val firstStart = shadowOf(firstPendingIntent).savedIntent.getLongExtra(
+            PrayerAlarmReceiver.EXTRA_INTENDED_TRIGGER_MILLIS,
+            -1L
+        )
+
+        PrayerNotificationScheduler.scheduleDailyAlarms(
+            context,
+            baseSettings().copy(liveCountdownEnabled = true, liveCountdownMinutesBefore = 30)
+        )
+        val updatedPendingIntent = existingPendingIntent(
+            countdownRequestCode,
+            PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN
+        )!!
+        val updatedStart = shadowOf(updatedPendingIntent).savedIntent.getLongExtra(
+            PrayerAlarmReceiver.EXTRA_INTENDED_TRIGGER_MILLIS,
+            -1L
+        )
+
+        assertEquals("Changing 15 to 30 minutes must move the trigger 15 minutes earlier", 15 * 60_000L, firstStart - updatedStart)
+    }
+
     // --- Alarm-priority tiering: not every alarm should claim alarm-clock priority. ---
 
     private fun scheduledAlarmFor(pendingIntent: PendingIntent?): ShadowAlarmManager.ScheduledAlarm? {
@@ -263,6 +296,10 @@ class PrayerNotificationSchedulerTest {
             PrayerAlarmReceiver.ACTION_WIDGET_PRAYER_BOUNDARY
         )
         assertNotNull("Widget boundary must not depend on notification configuration", boundary)
+        assertEquals(
+            PrayerType.FAJR.name,
+            shadowOf(boundary).savedIntent.getStringExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME)
+        )
         val scheduled = scheduledAlarmFor(boundary)
         assertNotNull(scheduled)
         assertNull(scheduled!!.alarmClockInfo)
@@ -292,6 +329,34 @@ class PrayerNotificationSchedulerTest {
         val scheduled = scheduledAlarmFor(boundary)
         assertNotNull(scheduled)
         assertEquals(-1L, scheduled!!.windowLengthMs)
+    }
+
+    @Test
+    fun scheduledLiveCountdownDebugProbeUsesRealAlarmManagerPath() {
+        ShadowAlarmManager.setCanScheduleExactAlarms(true)
+        val before = System.currentTimeMillis()
+
+        PrayerNotificationScheduler.triggerTestScheduledLiveCountdown(context, delayMillis = 60_000L)
+
+        val pendingIntent = existingPendingIntent(
+            PrayerNotificationScheduler.DEBUG_COUNTDOWN_REQUEST_CODE,
+            PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN
+        )
+        val scheduled = scheduledAlarmFor(pendingIntent)
+        assertNotNull("Debug probe must create a real AlarmManager PendingIntent", pendingIntent)
+        assertNotNull("Debug probe must be present in AlarmManager", scheduled)
+        assertEquals("API 36 with exact access must use an exact alarm", 0L, scheduled!!.windowLengthMs)
+        assertTrue(scheduled.triggerAtMs in (before + 60_000L)..(System.currentTimeMillis() + 60_000L))
+
+        // Deliver the exact PendingIntent through BroadcastReceiver, rather than calling show().
+        scheduled.operation!!.send()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertNotNull(
+            "AlarmManager delivery should reach the receiver and post the countdown",
+            shadowOf(context.getSystemService(NotificationManager::class.java))
+                .getNotification(PrayerLiveCountdownManager.NOTIFICATION_ID)
+        )
+        PrayerLiveCountdownManager.dismiss(context)
     }
 
     // --- Daily maintenance: ACTION_DATE_CHANGED isn't guaranteed for manifest receivers on modern

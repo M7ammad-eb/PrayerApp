@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.PowerManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.prayertimes.MainActivity
@@ -29,6 +30,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         const val ACTION_PRAYER_ALARM = "com.prayertimes.ACTION_PRAYER_ALARM"
         const val ACTION_LIVE_COUNTDOWN = "com.prayertimes.ACTION_LIVE_COUNTDOWN"
         const val ACTION_WIDGET_PRAYER_BOUNDARY = "com.prayertimes.ACTION_WIDGET_PRAYER_BOUNDARY"
+        const val ACTION_PRAYER_BOUNDARY_REACHED = "com.salati.prayertimes.ACTION_PRAYER_BOUNDARY_REACHED"
         // Self-scheduled, explicit-component daily trigger that replenishes the rolling 7-day
         // alarm window - see PrayerNotificationScheduler.scheduleMaintenanceAlarm() for why this
         // exists instead of relying solely on ACTION_DATE_CHANGED.
@@ -89,6 +91,17 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         }
 
         if (action == ACTION_LIVE_COUNTDOWN) {
+            val receiverExecutionMillis = System.currentTimeMillis()
+            val intendedTriggerForLog = intent.getLongExtra(EXTRA_INTENDED_TRIGGER_MILLIS, -1L)
+            val prayerTargetForLog = intent.getLongExtra(EXTRA_TARGET_MILLIS, -1L)
+            if (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+                Log.d(
+                    "SalatiAlarmSchedule",
+                    "receiver action=ACTION_LIVE_COUNTDOWN actual=$receiverExecutionMillis " +
+                        "intended=$intendedTriggerForLog target=$prayerTargetForLog " +
+                        "latenessMs=${if (intendedTriggerForLog >= 0L) receiverExecutionMillis - intendedTriggerForLog else -1L}"
+                )
+            }
             val prayerName = intent.getStringExtra(EXTRA_PRAYER_NAME) ?: "Prayer"
             val prayerType = try {
                 PrayerType.valueOf(prayerName.uppercase())
@@ -96,7 +109,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                 PrayerType.FAJR
             }
             val targetMillis = intent.getLongExtra(EXTRA_TARGET_MILLIS, System.currentTimeMillis())
-            val intendedTriggerMillis = intent.getLongExtra(EXTRA_INTENDED_TRIGGER_MILLIS, System.currentTimeMillis())
+            val intendedTriggerMillis = intent.getLongExtra(EXTRA_INTENDED_TRIGGER_MILLIS, receiverExecutionMillis)
             val locationName = intent.getStringExtra(EXTRA_LOCATION_NAME) ?: ""
             val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic(context)
             PrayerLiveCountdownManager.show(
@@ -104,7 +117,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                 prayerType = prayerType,
                 targetEpochMillis = targetMillis,
                 countdownStartEpochMillis = intendedTriggerMillis,
-                receiverExecutionEpochMillis = System.currentTimeMillis(),
+                receiverExecutionEpochMillis = receiverExecutionMillis,
                 locationName = locationName,
                 isArabic = isArabic
             )
@@ -112,10 +125,17 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         }
 
         if (action == ACTION_WIDGET_PRAYER_BOUNDARY) {
-            // Independent of every Athan/notification preference. The launcher Chronometer ticks
-            // on its own; this exact boundary event only replaces the completed prayer with the
-            // following one and supplies its new elapsed-realtime base.
+            // Independent of every Athan/notification preference. One shared boundary event both
+            // refreshes the widget and closes a stale full-screen prayer UI; no duplicate set of
+            // six alarms is needed.
             com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(context)
+            val boundaryPrayerName = intent.getStringExtra(EXTRA_PRAYER_NAME)
+            context.sendBroadcast(
+                Intent(ACTION_PRAYER_BOUNDARY_REACHED).apply {
+                    setPackage(context.packageName)
+                    putExtra(EXTRA_PRAYER_NAME, boundaryPrayerName)
+                }
+            )
             return
         }
 

@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import com.prayertimes.MainActivity
 import com.prayertimes.data.calculator.PrayerTimesCalculator
 import com.prayertimes.data.models.NotificationSoundType
@@ -18,6 +19,17 @@ import java.time.format.DateTimeFormatter
 
 object PrayerNotificationScheduler {
 
+    private const val TAG = "SalatiAlarmSchedule"
+    internal const val DEBUG_COUNTDOWN_REQUEST_CODE = 9801
+
+    private enum class AlarmApi(val logName: String) {
+        EXACT_ALLOW_IDLE("setExactAndAllowWhileIdle"),
+        EXACT("setExact"),
+        INEXACT_ALLOW_IDLE("setAndAllowWhileIdle"),
+        INEXACT("set"),
+        FAILED("failed")
+    }
+
     // Suspend rather than launching its own detached scope - callers (notably
     // PrayerAlarmReceiver's boot/time-change handling) need to run this inside their own
     // goAsync()-backed coroutine so the work is guaranteed to finish before the receiver's
@@ -28,6 +40,7 @@ object PrayerNotificationScheduler {
         scheduleDailyAlarms(context, settings)
     }
 
+    @Synchronized
     fun scheduleDailyAlarms(context: Context, settings: AppPrayerSettings) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         cancelStaleDynamicIslandAlarms(context, alarmManager)
@@ -75,6 +88,7 @@ object PrayerNotificationScheduler {
                 if (prayerZonedTime.isAfter(now)) {
                     val widgetBoundaryIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
                         action = PrayerAlarmReceiver.ACTION_WIDGET_PRAYER_BOUNDARY
+                        putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
                     }
                     val widgetBoundaryPendingIntent = PendingIntent.getBroadcast(
                         context,
@@ -151,31 +165,30 @@ object PrayerNotificationScheduler {
                 }
 
                 // 3. Live Athan countdown trigger (standard Android Live Update notification)
+                val configuredLeadMinutes = settings.liveCountdownMinutesBefore.coerceIn(1, 180)
+                val configuredCountdownStart = prayerZonedTime.minusMinutes(configuredLeadMinutes.toLong())
+                debugCountdownLog(
+                    context,
+                    "evaluate prayer=$prayerType now=${System.currentTimeMillis()} " +
+                        "target=$prayerEpochMillis leadMinutes=$configuredLeadMinutes " +
+                        "countdownStart=${configuredCountdownStart.toInstant().toEpochMilli()} " +
+                        "requestCode=$countdownRequestCode enabled=${settings.liveCountdownEnabled} " +
+                        "canScheduleExact=${canScheduleExactAlarms(alarmManager)}"
+                )
                 if (settings.liveCountdownEnabled && prayerType != PrayerType.SUNRISE) {
-                    val leadMinutes = settings.liveCountdownMinutesBefore.coerceIn(1, 180)
+                    val leadMinutes = configuredLeadMinutes
                     val countdownStartTime = prayerZonedTime.minusMinutes(leadMinutes.toLong())
                     if (countdownStartTime.isAfter(now)) {
-                        val countdownIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
-                            action = PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN
-                            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
-                            putExtra(PrayerAlarmReceiver.EXTRA_TARGET_MILLIS, prayerEpochMillis)
-                            putExtra(
-                                PrayerAlarmReceiver.EXTRA_INTENDED_TRIGGER_MILLIS,
-                                countdownStartTime.toInstant().toEpochMilli()
-                            )
-                            putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, settings.location.name)
-                        }
-                        val countdownPendingIntent = PendingIntent.getBroadcast(
-                            context,
-                            countdownRequestCode,
-                            countdownIntent,
-                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                        )
-                        setExactAlarmWithFallback(
-                            alarmManager,
-                            countdownStartTime.toInstant().toEpochMilli(),
-                            countdownPendingIntent,
-                            countdownRequestCode
+                        scheduleLiveCountdownAlarm(
+                            context = context,
+                            alarmManager = alarmManager,
+                            prayerType = prayerType,
+                            prayerTargetEpochMillis = prayerEpochMillis,
+                            countdownStartEpochMillis = countdownStartTime.toInstant().toEpochMilli(),
+                            requestCode = countdownRequestCode,
+                            locationName = settings.location.name,
+                            liveCountdownEnabled = settings.liveCountdownEnabled,
+                            leadMinutes = leadMinutes
                         )
                     } else if (dayOffset == 0 && prayerZonedTime.isAfter(now)) {
                         // Already inside the countdown window right now (e.g. the feature was just
@@ -191,6 +204,13 @@ object PrayerNotificationScheduler {
                             isArabic = settings.language.resolveIsArabic(context)
                         )
                         cancelAlarm(context, alarmManager, countdownRequestCode, PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN)
+                        debugCountdownLog(
+                            context,
+                            "selfHeal prayer=$prayerType now=${System.currentTimeMillis()} " +
+                                "target=$prayerEpochMillis leadMinutes=$leadMinutes " +
+                                "countdownStart=${countdownStartTime.toInstant().toEpochMilli()} " +
+                                "requestCode=$countdownRequestCode enabled=${settings.liveCountdownEnabled}"
+                        )
                     } else {
                         cancelAlarm(context, alarmManager, countdownRequestCode, PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN)
                     }
@@ -323,15 +343,16 @@ object PrayerNotificationScheduler {
         triggerAtMillis: Long,
         pendingIntent: PendingIntent,
         requestCode: Int
-    ) {
+    ): AlarmApi {
         if (canScheduleExactAlarms(alarmManager)) {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                    return AlarmApi.EXACT_ALLOW_IDLE
                 } else {
                     alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                    return AlarmApi.EXACT
                 }
-                return
             } catch (e: SecurityException) {
                 // Permission revoked between the check and the call (or an OEM quirk) - degrade to
                 // inexact rather than dropping the reminder entirely.
@@ -340,7 +361,7 @@ object PrayerNotificationScheduler {
                 // valid exact alarm.
             }
         }
-        setInexactAlarm(alarmManager, triggerAtMillis, pendingIntent, requestCode)
+        return setInexactAlarm(alarmManager, triggerAtMillis, pendingIntent, requestCode)
     }
 
     private fun canScheduleExactAlarms(alarmManager: AlarmManager): Boolean =
@@ -352,17 +373,99 @@ object PrayerNotificationScheduler {
         triggerAtMillis: Long,
         pendingIntent: PendingIntent,
         requestCode: Int
-    ) {
+    ): AlarmApi {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                return AlarmApi.INEXACT_ALLOW_IDLE
             } else {
                 alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                return AlarmApi.INEXACT
             }
         } catch (e: Exception) {
-            android.util.Log.e("PrayerNotifScheduler", "Failed to schedule alarm (requestCode=$requestCode) after exhausting all fallbacks", e)
+            Log.e("PrayerNotifScheduler", "Failed to schedule alarm (requestCode=$requestCode) after exhausting all fallbacks", e)
+            return AlarmApi.FAILED
         }
     }
+
+    private fun scheduleLiveCountdownAlarm(
+        context: Context,
+        alarmManager: AlarmManager,
+        prayerType: PrayerType,
+        prayerTargetEpochMillis: Long,
+        countdownStartEpochMillis: Long,
+        requestCode: Int,
+        locationName: String,
+        liveCountdownEnabled: Boolean,
+        leadMinutes: Int
+    ) {
+        val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
+            action = PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN
+            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
+            putExtra(PrayerAlarmReceiver.EXTRA_TARGET_MILLIS, prayerTargetEpochMillis)
+            putExtra(PrayerAlarmReceiver.EXTRA_INTENDED_TRIGGER_MILLIS, countdownStartEpochMillis)
+            putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, locationName)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val canScheduleExact = canScheduleExactAlarms(alarmManager)
+        val api = setExactAlarmWithFallback(
+            alarmManager,
+            countdownStartEpochMillis,
+            pendingIntent,
+            requestCode
+        )
+        val lookupIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
+            action = PrayerAlarmReceiver.ACTION_LIVE_COUNTDOWN
+        }
+        val existsAfterScheduling = PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            lookupIntent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        ) != null
+        // nextAlarmClock only reports alarms scheduled with setAlarmClock(); countdown starts are
+        // deliberately ordinary exact alarms, so this is diagnostic context rather than proof.
+        val nextAlarmClockEpoch = alarmManager.nextAlarmClock?.triggerTime
+        debugCountdownLog(
+            context,
+            "scheduled prayer=$prayerType now=${System.currentTimeMillis()} " +
+                "target=$prayerTargetEpochMillis leadMinutes=$leadMinutes " +
+                "countdownStart=$countdownStartEpochMillis requestCode=$requestCode " +
+                "enabled=$liveCountdownEnabled canScheduleExact=$canScheduleExact " +
+                "api=${api.logName} pendingIntentExists=$existsAfterScheduling " +
+                "nextAlarmClock=$nextAlarmClockEpoch (countdown is not an alarm-clock alarm)"
+        )
+    }
+
+    /** Debug-only end-to-end probe: AlarmManager -> receiver -> live countdown notification. */
+    fun triggerTestScheduledLiveCountdown(context: Context, delayMillis: Long = 60_000L) {
+        if (!context.isDebuggable()) return
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val now = System.currentTimeMillis()
+        scheduleLiveCountdownAlarm(
+            context = context,
+            alarmManager = alarmManager,
+            prayerType = PrayerType.DHUHR,
+            prayerTargetEpochMillis = now + delayMillis + 2 * 60_000L,
+            countdownStartEpochMillis = now + delayMillis,
+            requestCode = DEBUG_COUNTDOWN_REQUEST_CODE,
+            locationName = "Scheduled Live Countdown Test",
+            liveCountdownEnabled = true,
+            leadMinutes = 2
+        )
+    }
+
+    private fun debugCountdownLog(context: Context, message: String) {
+        if (context.isDebuggable()) Log.d(TAG, message)
+    }
+
+    private fun Context.isDebuggable(): Boolean =
+        applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
 
     fun triggerTestNotification(context: Context, prayerType: PrayerType, soundType: NotificationSoundType) {
         val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {

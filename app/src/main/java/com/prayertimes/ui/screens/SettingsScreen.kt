@@ -165,6 +165,7 @@ fun SettingsScreen(
     onUpdateWakeScreen: (Boolean) -> Unit = {},
     onUpdateLiveCountdownSettings: (Boolean, Int) -> Unit = { _, _ -> },
     onTestLiveCountdown: () -> Unit = {},
+    onTestScheduledLiveCountdown: () -> Unit = {},
     onPreviewFullScreenAlarm: (PrayerType) -> Unit = {},
     onResetOnboarding: () -> Unit = {}
 ) {
@@ -236,6 +237,7 @@ fun SettingsScreen(
                     onUpdateWakeScreen = onUpdateWakeScreen,
                     onUpdateLiveCountdownSettings = onUpdateLiveCountdownSettings,
                     onTestLiveCountdown = onTestLiveCountdown,
+                    onTestScheduledLiveCountdown = onTestScheduledLiveCountdown,
                     onPreviewFullScreenAlarm = onPreviewFullScreenAlarm,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
@@ -1546,6 +1548,7 @@ private fun SettingsNotificationsSubScreen(
     onUpdateWakeScreen: (Boolean) -> Unit,
     onUpdateLiveCountdownSettings: (Boolean, Int) -> Unit,
     onTestLiveCountdown: () -> Unit,
+    onTestScheduledLiveCountdown: () -> Unit,
     onPreviewFullScreenAlarm: (PrayerType) -> Unit,
     onBack: () -> Unit
 ) {
@@ -2047,6 +2050,21 @@ private fun SettingsNotificationsSubScreen(
                             Icon(imageVector = Icons.Default.Timer, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.live_countdown_test_btn), fontWeight = FontWeight.Bold)
+                        }
+                        if (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = onTestScheduledLiveCountdown,
+                                shape = MaterialTheme.shapes.small,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(imageVector = Icons.Default.Alarm, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    stringResource(R.string.live_countdown_scheduled_test_btn),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }

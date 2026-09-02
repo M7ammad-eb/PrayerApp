@@ -191,7 +191,11 @@ object PrayerLiveCountdownManager {
         } else {
             null
         }
-        val channelImportance = channel?.importance
+        val channelImportance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            channel?.importance
+        } else {
+            null
+        }
         val channelBlocked = channelImportance == NotificationManager.IMPORTANCE_NONE
         val compatCanPromote = if (Build.VERSION.SDK_INT >= 36) {
             runCatching { compatManager.canPostPromotedNotifications() }

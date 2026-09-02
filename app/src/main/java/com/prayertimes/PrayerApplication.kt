@@ -14,10 +14,13 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.prayertimes.data.calendar.HijriCalendar
 import com.prayertimes.data.calculator.PrayerSchedulePrewarmer
 import com.prayertimes.data.preferences.PrayerPreferences
+import com.prayertimes.data.preferences.AppPrayerSettings
+import com.prayertimes.notifications.PrayerNotificationScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import java.time.LocalDate
 
 class PrayerApplication : Application(), DefaultLifecycleObserver {
@@ -43,12 +46,34 @@ class PrayerApplication : Application(), DefaultLifecycleObserver {
         com.prayertimes.widget.glance.PrayerGlanceWidget.refreshAll(this)
     }
 
+    private fun AppPrayerSettings.alarmSchedulingSignature(): List<Any?> = listOf(
+        location,
+        calculationMethod,
+        juristicMethod,
+        highLatitudeRule,
+        adjustments,
+        is24HourFormat,
+        prayerConfigs,
+        liveCountdownEnabled,
+        liveCountdownMinutesBefore
+    )
+
     override fun onCreate() {
         super<Application>.onCreate()
         instance = this
         createNotificationChannels()
         lastNightModeBit = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+
+        // Alarm correctness belongs to the application process, not a Compose screen or
+        // ViewModel. The first DataStore emission guarantees scheduling after a clean launch or
+        // process restart; later relevant setting changes replace the same PendingIntents. Theme,
+        // language, and widget-only changes are filtered out so they cannot rebuild the alarm set.
+        applicationScope.launch {
+            PrayerPreferences(this@PrayerApplication).settingsFlow
+                .distinctUntilChangedBy { it.alarmSchedulingSignature() }
+                .collect { PrayerNotificationScheduler.scheduleDailyAlarms(this@PrayerApplication, it) }
+        }
     }
 
     /**

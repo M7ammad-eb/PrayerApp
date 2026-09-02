@@ -292,6 +292,7 @@
     <string name="live_countdown_minutes_chip">%dد</string>
     <string name="live_countdown_notif_title">اقترب أذان %1$s</string>
     <string name="live_countdown_test_btn">جرّب العد التنازلي الآن</string>
+    <string name="live_countdown_scheduled_test_btn">اختبار العد التنازلي المجدول (60 ث)</string>
     <string name="live_countdown_promotion_hint">سيعمل العداد كإشعار مستمر عادي. فعّل التحديثات المباشرة للسماح أيضاً بظهوره على شاشة القفل وشريط الحالة في الأجهزة المدعومة.</string>
     <string name="live_countdown_enable_live_updates">تفعيل التحديثات المباشرة</string>
     <string name="live_countdown_samsung_hint">في أجهزة سامسونج، اسمح أيضاً لتطبيق صلاتي من الإعدادات ← شاشة القفل وAOD ← Now bar ← الإشعارات المباشرة، وتأكد من تفعيل إشعارات شاشة القفل.</string>

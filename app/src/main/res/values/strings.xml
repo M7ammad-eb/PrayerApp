@@ -292,6 +292,7 @@
     <string name="live_countdown_minutes_chip">%dm</string>
     <string name="live_countdown_notif_title">%1$s Athan is approaching</string>
     <string name="live_countdown_test_btn">Test Live Countdown Now</string>
+    <string name="live_countdown_scheduled_test_btn">Test Scheduled Live Countdown (60 s)</string>
     <string name="live_countdown_promotion_hint">The countdown will work as a normal ongoing notification. Enable Live Updates to also allow supported lock-screen and status-chip surfaces.</string>
     <string name="live_countdown_enable_live_updates">Enable Live Updates</string>
     <string name="live_countdown_samsung_hint">On Samsung, also allow Salati under Settings › Lock screen and AOD › Now bar › Live notifications, and ensure lock-screen notifications are enabled.</string>

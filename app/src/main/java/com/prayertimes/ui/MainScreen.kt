@@ -385,6 +385,9 @@ fun MainScreen(
                                 onTestLiveCountdown = {
                                     viewModel.testLiveCountdown()
                                 },
+                                onTestScheduledLiveCountdown = {
+                                    viewModel.testScheduledLiveCountdown()
+                                },
                                 onPreviewFullScreenAlarm = { prayer ->
                                     val intent = com.prayertimes.ui.alarm.PrayerAlarmActivity.createIntent(
                                         context = context,
