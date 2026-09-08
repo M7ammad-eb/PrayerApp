@@ -316,8 +316,13 @@
     <string name="settings_search_hint">البحث في الإعدادات</string>
     <string name="settings_search_no_results">لم نعثر على إعداد مطابق.</string>
     <string name="settings_search_result_in">ضمن %1$s</string>
+    <string name="settings_group_essentials">الأساسيات</string>
+    <string name="settings_group_personalization">التخصيص</string>
+    <string name="settings_group_advanced">متقدم</string>
+    <string name="settings_group_information">المعلومات</string>
     <string name="settings_prayer_alerts_title">تنبيهات الصلوات</string>
     <string name="settings_prayer_alerts_desc">فعّل تنبيه كل صلاة أو أوقفه واختر صوته.</string>
+    <string name="settings_off">متوقف</string>
     <string name="settings_test_tools_title">اختبار التنبيهات</string>
     <string name="settings_test_tools_desc">استخدمها فقط للتأكد من عمل التنبيهات بصورة صحيحة.</string>
     <string name="settings_test_alarm_scheduled">تم ضبط تنبيه تجريبي بعد 5 ثوانٍ.</string>
@@ -510,6 +515,7 @@
     <string name="widget_settings_hero_section_subtitle">عرض موعد الصلاة القادمة والعد التنازلي</string>
     <string name="widget_settings_schedule_section_title">الجدول والترويسة</string>
     <string name="widget_settings_schedule_section_subtitle">اختر صفوف الصلوات والموقع والتاريخ الهجري</string>
+    <string name="widget_settings_content_section_title">محتوى التطبيق المصغر</string>
     <string name="widget_settings_opacity_transparent">شفاف (0%)</string>
     <string name="widget_settings_opacity_solid">معتم كامل (100%)</string>
     <string name="widget_settings_text_color_title">لون النص</string>

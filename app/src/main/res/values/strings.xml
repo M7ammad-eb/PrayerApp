@@ -316,8 +316,13 @@
     <string name="settings_search_hint">Search settings</string>
     <string name="settings_search_no_results">No matching settings found.</string>
     <string name="settings_search_result_in">In %1$s</string>
+    <string name="settings_group_essentials">Essentials</string>
+    <string name="settings_group_personalization">Personalization</string>
+    <string name="settings_group_advanced">Advanced</string>
+    <string name="settings_group_information">Information</string>
     <string name="settings_prayer_alerts_title">Prayer Alerts</string>
     <string name="settings_prayer_alerts_desc">Turn each prayer alert on or off and choose its sound.</string>
+    <string name="settings_off">Off</string>
     <string name="settings_test_tools_title">Test Notifications</string>
     <string name="settings_test_tools_desc">Use these only to check that alerts work correctly.</string>
     <string name="settings_test_alarm_scheduled">Test alarm scheduled for 5 seconds from now.</string>
@@ -506,6 +511,7 @@
     <string name="widget_settings_hero_section_subtitle">Show the next prayer time and countdown</string>
     <string name="widget_settings_schedule_section_title">Schedule &amp; header</string>
     <string name="widget_settings_schedule_section_subtitle">Choose prayer rows, location, and Hijri date</string>
+    <string name="widget_settings_content_section_title">Widget content</string>
     <string name="widget_settings_opacity_transparent">Transparent (0%)</string>
     <string name="widget_settings_opacity_solid">Solid (100%)</string>
     <string name="widget_settings_text_color_title">Text Color</string>

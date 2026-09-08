@@ -136,21 +136,13 @@ fun SettingsWidgetSubScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = strings.widgetsSection,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = stringResource(R.string.widget_settings_intro_banner),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Text(
+                    text = strings.widgetsSection,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             IconButton(
@@ -179,14 +171,14 @@ fun SettingsWidgetSubScreen(
             onExpandedChange = { isPreviewExpanded = it }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 112.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             // ===== Appearance: theme, background, opacity, font size, text color =====
             WidgetSettingsSectionCard(
@@ -232,7 +224,11 @@ fun SettingsWidgetSubScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.widget_settings_advanced_title), fontWeight = FontWeight.Bold)
+                            Text(
+                                stringResource(R.string.widget_settings_advanced_title),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
                             Text(
                                 stringResource(R.string.widget_settings_advanced_desc),
                                 style = MaterialTheme.typography.bodySmall,
@@ -274,8 +270,8 @@ fun SettingsWidgetSubScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = strings.widgetOpacityTitle,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
                             )
                         }
 
@@ -287,7 +283,7 @@ fun SettingsWidgetSubScreen(
                                 text = "${wSet.opacityPercent}%",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -338,11 +334,11 @@ fun SettingsWidgetSubScreen(
                 }
             }
 
-            // Hero controls: next prayer display and its remaining-time countdown.
+            // All choices about what appears in the widget live in one predictable group.
             WidgetSettingsSectionCard(
                 icon = Icons.Default.Schedule,
-                title = stringResource(R.string.widget_settings_hero_section_title),
-                subtitle = stringResource(R.string.widget_settings_hero_section_subtitle)
+                title = stringResource(R.string.widget_settings_content_section_title),
+                subtitle = stringResource(R.string.widget_settings_content_section_subtitle)
             ) {
                 WidgetToggleRow(
                     icon = Icons.Default.Layers,
@@ -366,15 +362,7 @@ fun SettingsWidgetSubScreen(
                         }
                     )
                 }
-
-            }
-
-            // Schedule and header metadata form the second independent content group.
-            WidgetSettingsSectionCard(
-                icon = Icons.Default.Tune,
-                title = stringResource(R.string.widget_settings_schedule_section_title),
-                subtitle = stringResource(R.string.widget_settings_schedule_section_subtitle)
-            ) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 WidgetToggleRow(
                     icon = Icons.Default.FormatListBulleted,
                     title = stringResource(R.string.widget_settings_toggle_show_all_prayers),
@@ -420,8 +408,6 @@ fun SettingsWidgetSubScreen(
                     }
                 )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -480,8 +466,8 @@ private fun WidgetThemeOptionRow(mode: WidgetThemeMode, showArrow: Boolean) {
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = stringResource(mode.titleRes),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -537,8 +523,8 @@ private fun <T> WidgetOptionChipRow(
                 onClick = { onSelect(option) },
                 modifier = Modifier
                     .weight(1f)
-                    .heightIn(min = 52.dp),
-                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+                    .heightIn(min = 44.dp),
+                contentPadding = PaddingValues(horizontal = 5.dp, vertical = 6.dp),
                 shape = MaterialTheme.shapes.small,
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
@@ -548,7 +534,7 @@ private fun <T> WidgetOptionChipRow(
                 Text(
                     text = stringResource(label(option)),
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -592,7 +578,7 @@ private fun WidgetToggleRow(
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
             .clickable(enabled = enabled) { onCheckedChange(!checked) }
-            .padding(vertical = 8.dp)
+            .padding(vertical = 5.dp)
             .alpha(if (enabled) 1f else 0.4f),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -646,13 +632,13 @@ private fun WidgetSettingsSectionCard(
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        shape = MaterialTheme.shapes.large,
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
@@ -672,8 +658,8 @@ private fun WidgetSettingsSectionCard(
                 Column {
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
@@ -692,9 +678,9 @@ private fun WidgetSettingsSectionCard(
 private fun WidgetSettingsSubLabel(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onSurface
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Medium,
+        color = MaterialTheme.colorScheme.primary
     )
 }
 
@@ -712,31 +698,52 @@ private fun WidgetPreviewPanel(
     var menuExpanded by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = stringResource(R.string.widget_settings_preview_size_title),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Card(
+            onClick = { onExpandedChange(!expanded) },
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Box(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.widget_settings_preview_size_title),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = stringResource(preset.labelRes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = stringResource(
+                        if (expanded) R.string.widget_preview_collapse else R.string.widget_preview_expand
+                    )
+                )
+            }
+        }
+
+        if (expanded) {
+            Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedCard(
                     onClick = { menuExpanded = true },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.small
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = stringResource(preset.labelRes),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
                         )
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                     }
@@ -751,29 +758,18 @@ private fun WidgetPreviewPanel(
                             onClick = {
                                 menuExpanded = false
                                 onPresetChange(option)
-                                onExpandedChange(true)
                             }
                         )
                     }
                 }
             }
-            IconButton(onClick = { onExpandedChange(!expanded) }) {
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = stringResource(
-                        if (expanded) R.string.widget_preview_collapse else R.string.widget_preview_expand
-                    )
-                )
-            }
+            Text(
+                text = stringResource(R.string.widget_settings_preview_size_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            WidgetCanvasPreview(settings, preset)
         }
-
-        Text(
-            text = stringResource(R.string.widget_settings_preview_size_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        if (expanded) WidgetCanvasPreview(settings, preset)
     }
 }
 

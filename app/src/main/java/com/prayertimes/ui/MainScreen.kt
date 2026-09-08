@@ -28,11 +28,11 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -75,10 +75,10 @@ import com.prayertimes.ui.theme.ExpressiveMotion
 import kotlinx.coroutines.launch
 
 enum class AppNavTab(val icon: ImageVector) {
-    PRAYER_TIMES(Icons.Default.Schedule),
-    QIBLA(Icons.Default.Explore),
-    MONTHLY(Icons.Default.CalendarMonth),
-    SETTINGS(Icons.Default.Settings)
+    PRAYER_TIMES(Icons.Outlined.Schedule),
+    QIBLA(Icons.Outlined.Explore),
+    MONTHLY(Icons.Outlined.CalendarMonth),
+    SETTINGS(Icons.Outlined.Settings)
 }
 
 @Composable
@@ -500,15 +500,15 @@ private fun ExpressiveTopHeader(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-            } else {
+            } else if (currentTab != AppNavTab.SETTINGS) {
                 Text(
                     text = when (currentTab) {
                         AppNavTab.PRAYER_TIMES -> strings.appTitle
                         AppNavTab.QIBLA -> strings.qiblaTitle
                         AppNavTab.MONTHLY -> strings.monthlyCalendarTitle
-                        AppNavTab.SETTINGS -> strings.settingsTitle
+                        AppNavTab.SETTINGS -> strings.navSettings
                     },
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(vertical = 7.dp)

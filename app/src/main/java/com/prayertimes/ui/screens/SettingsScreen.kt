@@ -16,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -95,6 +96,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -182,8 +184,7 @@ fun SettingsScreen(
             SettingsSubScreen.MAIN -> {
                 SettingsMainHub(
                     settings = settings,
-                    onNavigateTo = { currentSubScreen = it },
-                    onResetOnboarding = onResetOnboarding
+                    onNavigateTo = { currentSubScreen = it }
                 )
             }
             SettingsSubScreen.APPEARANCE -> {
@@ -244,6 +245,7 @@ fun SettingsScreen(
             }
             SettingsSubScreen.ABOUT -> {
                 SettingsAboutSubScreen(
+                    onResetOnboarding = onResetOnboarding,
                     onBack = { currentSubScreen = SettingsSubScreen.MAIN }
                 )
             }
@@ -257,35 +259,11 @@ fun SettingsScreen(
 @Composable
 private fun SettingsMainHub(
     settings: AppPrayerSettings,
-    onNavigateTo: (SettingsSubScreen) -> Unit,
-    onResetOnboarding: () -> Unit
+    onNavigateTo: (SettingsSubScreen) -> Unit
 ) {
     val strings = LocalAppStrings.current
-    var showResetConfirmation by remember { mutableStateOf(false) }
+    var searchExpanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-
-    if (showResetConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showResetConfirmation = false },
-            title = { Text(stringResource(R.string.settings_reset_confirm_title)) },
-            text = { Text(stringResource(R.string.settings_reset_confirm_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showResetConfirmation = false
-                        onResetOnboarding()
-                    }
-                ) {
-                    Text(stringResource(R.string.settings_reset_confirm_action))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showResetConfirmation = false }) {
-                    Text(stringResource(R.string.settings_cancel))
-                }
-            }
-        )
-    }
 
     Column(
         modifier = Modifier
@@ -293,27 +271,62 @@ private fun SettingsMainHub(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .testTag("settings_screen"),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.Top
     ) {
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = { Text(stringResource(R.string.settings_search_hint)) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            trailingIcon = if (searchQuery.isNotEmpty()) {
-                {
-                    IconButton(onClick = { searchQuery = "" }) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.settings_cancel))
-                    }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = strings.navSettings,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Surface(
+                onClick = {
+                    if (searchExpanded) searchQuery = ""
+                    searchExpanded = !searchExpanded
+                },
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (searchExpanded) Icons.Default.Close else Icons.Default.Search,
+                        contentDescription = stringResource(
+                            if (searchExpanded) R.string.settings_cancel else R.string.settings_search_hint
+                        ),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(21.dp)
+                    )
                 }
-            } else null,
-            singleLine = true,
-            shape = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("settings_search")
-        )
-        Spacer(modifier = Modifier.height(4.dp))
+            }
+        }
+
+        AnimatedVisibility(visible = searchExpanded) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text(stringResource(R.string.settings_search_hint)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = if (searchQuery.isNotEmpty()) {
+                    {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.settings_cancel))
+                        }
+                    }
+                } else null,
+                singleLine = true,
+                shape = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .testTag("settings_search")
+            )
+        }
 
         val locationHubName = com.prayertimes.data.cities.CityDatabase.localizedName(LocalContext.current.resources, settings.location)
         val locationHubCountry = com.prayertimes.data.cities.CityDatabase.localizedCountry(LocalContext.current.resources, settings.location)
@@ -344,99 +357,82 @@ private fun SettingsMainHub(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 20.dp)
                 )
             } else {
-                matches.forEachIndexed { index, entry ->
-                    SettingsHubCategoryCard(
-                        title = entry.title,
-                        subtitle = stringResource(R.string.settings_search_result_in, entry.section),
-                        icon = entry.icon,
-                        testTag = "settings_search_result_$index",
-                        onClick = { onNavigateTo(entry.destination) }
-                    )
+                SettingsHubGroup {
+                    matches.forEachIndexed { index, entry ->
+                        SettingsHubRow(
+                            title = entry.title,
+                            subtitle = stringResource(R.string.settings_search_result_in, entry.section),
+                            icon = entry.icon,
+                            testTag = "settings_search_result_$index",
+                            showDivider = index > 0,
+                            onClick = { onNavigateTo(entry.destination) }
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(112.dp))
             return@Column
         }
 
-        SettingsHubCategoryCard(
-            title = strings.locationSection,
-            subtitle = "$locationHubName${if (locationHubCountry.isNotEmpty()) ", $locationHubCountry" else ""}${if (settings.location.isGps) " • ${strings.locationSourceGps}" else ""}",
-            icon = Icons.Default.LocationOn,
-            testTag = "settings_cat_location",
-            onClick = { onNavigateTo(SettingsSubScreen.LOCATION) }
-        )
-
-        val hasAdjustments = settings.adjustments.let { it.fajr != 0 || it.sunrise != 0 || it.dhuhr != 0 || it.asr != 0 || it.maghrib != 0 || it.isha != 0 }
-        SettingsHubCategoryCard(
-            title = strings.prayerCalculationTimeTitle,
-            subtitle = "${strings.calcMethodName(settings.calculationMethod)} • ${stringResource(if (settings.is24HourFormat) R.string.time_format_24_summary else R.string.time_format_12_summary)} • ${if (hasAdjustments) strings.adjustmentsCustomActive else strings.adjustmentsStandard}",
-            icon = Icons.Default.Calculate,
-            testTag = "settings_cat_calc",
-            onClick = { onNavigateTo(SettingsSubScreen.CALCULATION) }
-        )
-
         val enabledNotifsCount = settings.prayerConfigs.values.count { it.enabled }
-        SettingsHubCategoryCard(
-            title = strings.notifSectionTitle,
-            subtitle = strings.notifCountActive(enabledNotifsCount),
-            icon = Icons.Default.NotificationsActive,
-            testTag = "settings_cat_notifications",
-            onClick = { onNavigateTo(SettingsSubScreen.NOTIFICATIONS) }
-        )
+        SettingsHubSectionLabel(stringResource(R.string.settings_group_essentials))
+        SettingsHubGroup {
+            SettingsHubRow(
+                title = strings.locationSection,
+                subtitle = "$locationHubName${if (settings.location.isGps) " • ${strings.locationSourceGps}" else if (locationHubCountry.isNotEmpty()) " • $locationHubCountry" else ""}",
+                icon = Icons.Default.LocationOn,
+                testTag = "settings_cat_location",
+                onClick = { onNavigateTo(SettingsSubScreen.LOCATION) }
+            )
+            SettingsHubRow(
+                title = strings.notifSectionTitle,
+                subtitle = strings.notifCountActive(enabledNotifsCount),
+                icon = Icons.Default.NotificationsActive,
+                testTag = "settings_cat_notifications",
+                showDivider = true,
+                onClick = { onNavigateTo(SettingsSubScreen.NOTIFICATIONS) }
+            )
+        }
 
-        SettingsHubCategoryCard(
-            title = strings.appearanceLanguageTitle,
-            subtitle = "${settings.language.getDisplayName(strings.isArabic)} • ${strings.themeModeName(settings.themeMode)} • ${strings.colorPresetName(if (settings.followSystemColors) com.prayertimes.data.models.AppColorPreset.SYSTEM_DYNAMIC else settings.colorPreset)}",
-            icon = Icons.Default.Palette,
-            testTag = "settings_cat_appearance",
-            onClick = { onNavigateTo(SettingsSubScreen.APPEARANCE) }
-        )
+        SettingsHubSectionLabel(stringResource(R.string.settings_group_personalization))
+        SettingsHubGroup {
+            SettingsHubRow(
+                title = strings.appearanceLanguageTitle,
+                subtitle = "${strings.themeModeName(settings.themeMode)} • ${settings.language.getDisplayName(strings.isArabic)}",
+                icon = Icons.Default.Palette,
+                testTag = "settings_cat_appearance",
+                onClick = { onNavigateTo(SettingsSubScreen.APPEARANCE) }
+            )
+            SettingsHubRow(
+                title = strings.widgetsSection,
+                subtitle = stringResource(settings.widgetSettings.themeMode.titleRes),
+                icon = Icons.Default.StayCurrentPortrait,
+                testTag = "settings_cat_widgets",
+                showDivider = true,
+                onClick = { onNavigateTo(SettingsSubScreen.WIDGETS) }
+            )
+        }
 
-        SettingsHubCategoryCard(
-            title = strings.widgetsSection,
-            subtitle = stringResource(
-                R.string.settings_widget_subtitle_format,
-                stringResource(settings.widgetSettings.themeMode.titleRes),
-                settings.widgetSettings.opacityPercent
-            ),
-            icon = Icons.Default.StayCurrentPortrait,
-            testTag = "settings_cat_widgets",
-            onClick = { onNavigateTo(SettingsSubScreen.WIDGETS) }
-        )
+        SettingsHubSectionLabel(stringResource(R.string.settings_group_advanced))
+        SettingsHubGroup {
+            SettingsHubRow(
+                title = strings.prayerCalculationTimeTitle,
+                subtitle = "${strings.calcMethodName(settings.calculationMethod)} • ${if (settings.juristicMethod == JuristicMethod.HANAFI) strings.hanafiJuristic else strings.standardJuristic}",
+                icon = Icons.Default.Calculate,
+                testTag = "settings_cat_calc",
+                onClick = { onNavigateTo(SettingsSubScreen.CALCULATION) }
+            )
+        }
 
-        SettingsHubCategoryCard(
-            title = strings.aboutHubTitle,
-            subtitle = strings.aboutHubSubtitle,
-            icon = Icons.Default.Info,
-            testTag = "settings_cat_about",
-            onClick = { onNavigateTo(SettingsSubScreen.ABOUT) }
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 8.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        TextButton(
-            onClick = { showResetConfirmation = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("settings_cat_rerun_setup")
-        ) {
-            Icon(Icons.Default.AutoAwesome, contentDescription = null)
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.settings_help_reset_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = stringResource(R.string.settings_help_reset_subtitle),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        SettingsHubSectionLabel(stringResource(R.string.settings_group_information))
+        SettingsHubGroup {
+            SettingsHubRow(
+                title = strings.aboutHubTitle,
+                subtitle = strings.aboutHubSubtitle,
+                icon = Icons.Default.Info,
+                testTag = "settings_cat_about",
+                onClick = { onNavigateTo(SettingsSubScreen.ABOUT) }
+            )
         }
 
         Spacer(modifier = Modifier.height(112.dp))
@@ -444,76 +440,88 @@ private fun SettingsMainHub(
 }
 
 @Composable
-private fun SettingsHubCategoryCard(
+private fun SettingsHubSectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 16.dp, bottom = 6.dp)
+    )
+}
+
+@Composable
+private fun SettingsHubGroup(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(content = content)
+    }
+}
+
+@Composable
+private fun SettingsHubRow(
     title: String,
     subtitle: String,
     icon: ImageVector,
     testTag: String,
+    showDivider: Boolean = false,
     onClick: () -> Unit
 ) {
-    Card(
-        onClick = onClick,
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    if (showDivider) {
+        HorizontalDivider(
+            modifier = Modifier.padding(start = 64.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+        )
+    }
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag(testTag)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .testTag(testTag),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .size(38.dp)
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Box(
-                    modifier = Modifier
-                .size(44.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.secondaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2
-                    )
-                }
-            }
-
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                modifier = Modifier.size(22.dp)
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(20.dp)
             )
         }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 
@@ -540,7 +548,7 @@ private fun SubScreenHeader(
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary
         )
     }
@@ -559,16 +567,16 @@ private fun <T> SettingsDropdownSelector(
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 4.dp)
         )
         Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedButton(
                 onClick = { expanded = true },
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 leading?.let {
                     it(selected)
@@ -577,7 +585,6 @@ private fun <T> SettingsDropdownSelector(
                 Text(
                     text = optionLabel(selected),
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
@@ -634,15 +641,15 @@ private fun AdvancedSettingsSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onExpandedChange(!expanded) }
-                    .padding(16.dp),
+                    .padding(horizontal = 14.dp, vertical = 11.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.settings_advanced_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
                     )
                     Text(
                         text = description,
@@ -660,8 +667,8 @@ private fun AdvancedSettingsSection(
             }
             AnimatedVisibility(visible = expanded) {
                 Column(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     content()
@@ -709,38 +716,41 @@ private fun SettingsAppearanceSubScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 112.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = strings.themeModeTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp)
             )
 
-            ThemeSelectionCard(
-                title = strings.themeModeName(AppThemeMode.SYSTEM),
-                description = strings.systemThemeDesc,
-                icon = Icons.Default.BrightnessAuto,
-                isSelected = settings.themeMode == AppThemeMode.SYSTEM,
-                onClick = { onUpdateThemeMode(AppThemeMode.SYSTEM) }
-            )
-            ThemeSelectionCard(
-                title = strings.themeModeName(AppThemeMode.LIGHT),
-                description = strings.lightThemeDesc,
-                icon = Icons.Default.LightMode,
-                isSelected = settings.themeMode == AppThemeMode.LIGHT,
-                onClick = { onUpdateThemeMode(AppThemeMode.LIGHT) }
-            )
-            ThemeSelectionCard(
-                title = strings.themeModeName(AppThemeMode.DARK),
-                description = strings.darkThemeDesc,
-                icon = Icons.Default.DarkMode,
-                isSelected = settings.themeMode == AppThemeMode.DARK,
-                onClick = { onUpdateThemeMode(AppThemeMode.DARK) }
-            )
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ThemeSelectionCard(
+                    title = strings.themeModeName(AppThemeMode.SYSTEM),
+                    icon = Icons.Default.BrightnessAuto,
+                    isSelected = settings.themeMode == AppThemeMode.SYSTEM,
+                    onClick = { onUpdateThemeMode(AppThemeMode.SYSTEM) },
+                    modifier = Modifier.weight(1f)
+                )
+                ThemeSelectionCard(
+                    title = strings.themeModeName(AppThemeMode.LIGHT),
+                    icon = Icons.Default.LightMode,
+                    isSelected = settings.themeMode == AppThemeMode.LIGHT,
+                    onClick = { onUpdateThemeMode(AppThemeMode.LIGHT) },
+                    modifier = Modifier.weight(1f)
+                )
+                ThemeSelectionCard(
+                    title = strings.themeModeName(AppThemeMode.DARK),
+                    icon = Icons.Default.DarkMode,
+                    isSelected = settings.themeMode == AppThemeMode.DARK,
+                    onClick = { onUpdateThemeMode(AppThemeMode.DARK) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             SettingsDropdownSelector(
                 title = strings.appLanguage,
@@ -799,7 +809,7 @@ private fun SettingsAppearanceSubScreen(
                     shape = MaterialTheme.shapes.medium,
                     color = MaterialTheme.colorScheme.surfaceContainerLow
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -808,7 +818,7 @@ private fun SettingsAppearanceSubScreen(
                             Text(
                                 text = stringResource(R.string.custom_color_title),
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Medium
                             )
                             Box(
                                 modifier = Modifier
@@ -818,7 +828,7 @@ private fun SettingsAppearanceSubScreen(
                                     .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
                             )
                         }
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(8.dp))
                         Text(
                             text = stringResource(R.string.custom_color_hue),
                             style = MaterialTheme.typography.labelMedium,
@@ -917,10 +927,10 @@ private fun colorFromHueAndBrightness(hue: Float, brightness: Float): Long =
 @Composable
 private fun ThemeSelectionCard(
     title: String,
-    description: String,
     icon: ImageVector,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
         onClick = onClick,
@@ -939,54 +949,51 @@ private fun ThemeSelectionCard(
         } else {
             null
         },
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.height(108.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 8.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (isSelected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Column {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(19.dp)
+                )
             }
-            RadioButton(selected = isSelected, onClick = onClick)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            } else {
+                Spacer(modifier = Modifier.height(18.dp))
+            }
         }
     }
 }
@@ -1004,6 +1011,7 @@ private fun SettingsCalculationSubScreen(
 ) {
     val strings = LocalAppStrings.current
     var advancedExpanded by remember { mutableStateOf(false) }
+    var calculationMethodExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -1017,37 +1025,92 @@ private fun SettingsCalculationSubScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 112.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item {
-                SettingsDropdownSelector(
-                    title = strings.calcMethodSection,
-                    selected = settings.calculationMethod,
-                    options = CalculationMethod.values().toList(),
-                    optionLabel = strings::calcMethodName,
-                    onSelected = onUpdateCalculationMethod
+                Text(
+                    text = strings.calcMethodSection,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
                 )
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        onClick = { calculationMethodExpanded = true },
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Calculate,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = strings.calcMethodName(settings.calculationMethod),
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
+                        }
+                    }
+                    DropdownMenu(
+                        expanded = calculationMethodExpanded,
+                        onDismissRequest = { calculationMethodExpanded = false },
+                        modifier = Modifier.fillMaxWidth(0.92f)
+                    ) {
+                        CalculationMethod.values().forEach { method ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = strings.calcMethodName(method),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                },
+                                trailingIcon = {
+                                    if (method == settings.calculationMethod) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    calculationMethodExpanded = false
+                                    if (method != settings.calculationMethod) onUpdateCalculationMethod(method)
+                                }
+                            )
+                        }
+                    }
+                }
             }
 
             item {
                 Text(
                     text = strings.juristicMethodTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Card(
                     shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
-                    Column(modifier = Modifier.padding(8.dp)) {
+                    Column {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(MaterialTheme.shapes.small)
                                 .clickable { onUpdateJuristicMethod(JuristicMethod.STANDARD) }
-                                .padding(12.dp),
+                                .padding(horizontal = 14.dp, vertical = 9.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
@@ -1055,7 +1118,7 @@ private fun SettingsCalculationSubScreen(
                                 Text(
                                     text = strings.standardJuristic,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.Medium
                                 )
                                 Text(
                                     text = strings.juristicStandardDesc,
@@ -1069,14 +1132,16 @@ private fun SettingsCalculationSubScreen(
                             )
                         }
 
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 14.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                        )
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(MaterialTheme.shapes.small)
                                 .clickable { onUpdateJuristicMethod(JuristicMethod.HANAFI) }
-                                .padding(12.dp),
+                                .padding(horizontal = 14.dp, vertical = 9.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
@@ -1084,7 +1149,7 @@ private fun SettingsCalculationSubScreen(
                                 Text(
                                     text = strings.hanafiJuristic,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.Medium
                                 )
                                 Text(
                                     text = strings.juristicHanafiDesc,
@@ -1102,26 +1167,24 @@ private fun SettingsCalculationSubScreen(
             }
 
             item {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                Spacer(modifier = Modifier.height(10.dp))
                 Card(
                     shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onToggle24Hour() }
-                            .padding(16.dp),
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = strings.timeFormatTitle,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
                             )
                             Text(
                                 text = stringResource(if (settings.is24HourFormat) R.string.time_format_24_summary else R.string.time_format_12_summary),
@@ -1150,11 +1213,10 @@ private fun SettingsCalculationSubScreen(
                         optionLabel = strings::highLatitudeName,
                         onSelected = onUpdateHighLatitudeRule
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = strings.minuteAdjustmentsTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
@@ -1162,7 +1224,7 @@ private fun SettingsCalculationSubScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     PrayerType.values().forEach { prayer ->
                         val currentOffset = when (prayer) {
                             PrayerType.FAJR -> settings.adjustments.fajr
@@ -1178,7 +1240,7 @@ private fun SettingsCalculationSubScreen(
                             onDecrease = { onUpdatePrayerAdjustment(prayer, currentOffset - 1) },
                             onIncrease = { onUpdatePrayerAdjustment(prayer, currentOffset + 1) }
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
                     OutlinedButton(
                         onClick = { PrayerType.values().forEach { onUpdatePrayerAdjustment(it, 0) } },
@@ -1188,27 +1250,6 @@ private fun SettingsCalculationSubScreen(
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(strings.resetAllAdjustments)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Card(
-                        shape = MaterialTheme.shapes.medium,
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                      Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = strings.aboutUmmAlQuraTitle,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = strings.aboutUmmAlQuraDesc,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                      }
                     }
                 }
             }
@@ -1225,44 +1266,44 @@ private fun PrayerAdjustmentCard(
     onIncrease: () -> Unit
 ) {
     Card(
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = MaterialTheme.shapes.small,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 12.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = prayerName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 FilledTonalButton(
                     onClick = onDecrease,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(36.dp),
                     contentPadding = PaddingValues(0.dp)
                 ) {
-                    Text("−", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("−", fontSize = 18.sp)
                 }
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.settings_minute_value, currentOffset),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
                     color = if (currentOffset != 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 FilledTonalButton(
                     onClick = onIncrease,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(36.dp),
                     contentPadding = PaddingValues(0.dp)
                 ) {
-                    Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("+", fontSize = 18.sp)
                 }
             }
         }
@@ -1311,83 +1352,94 @@ private fun SettingsLocationSubScreen(
         // result row happening to be on screen with a checkmark.
         Card(
             shape = MaterialTheme.shapes.medium,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             modifier = Modifier.fillMaxWidth().testTag("current_location_card")
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                Icon(
-                    imageVector = if (settings.location.isGps) Icons.Default.MyLocation else Icons.Default.LocationCity,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = strings.currentLocationLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (settings.location.isGps) Icons.Default.MyLocation else Icons.Default.LocationCity,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
                     )
-                    Text(
-                        text = settings.location.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    if (settings.location.country.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = settings.location.country,
-                            style = MaterialTheme.typography.bodySmall,
+                            text = strings.currentLocationLabel,
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Text(
+                            text = settings.location.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = listOfNotNull(
+                                settings.location.country.takeIf { it.isNotEmpty() },
+                                (if (settings.location.isGps) strings.locationSourceGps else strings.locationSourceManual)
+                            ).joinToString(" • "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = if (settings.location.isGps) strings.locationSourceGps else strings.locationSourceManual,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    if (settings.location.isGps) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(MaterialTheme.shapes.extraSmall)
-                                .clickable { locationDetailsExpanded = !locationDetailsExpanded }
-                                .padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.settings_location_details),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.weight(1f)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = onRequestGps,
+                        enabled = !isGpsLoading,
+                        shape = MaterialTheme.shapes.small,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        if (isGpsLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
                             )
-                            Icon(
-                                imageVector = if (locationDetailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                contentDescription = stringResource(if (locationDetailsExpanded) R.string.settings_hide_advanced else R.string.settings_show_advanced)
-                            )
+                        } else {
+                            Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(17.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(strings.gpsButtonLabel, style = MaterialTheme.typography.labelLarge)
                         }
-                        AnimatedVisibility(visible = locationDetailsExpanded) {
-                            Column {
+                    }
+                }
+                if (settings.location.isGps) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { locationDetailsExpanded = !locationDetailsExpanded }
+                            .padding(top = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_location_details),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = if (locationDetailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = stringResource(if (locationDetailsExpanded) R.string.settings_hide_advanced else R.string.settings_show_advanced),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    AnimatedVisibility(visible = locationDetailsExpanded) {
+                        Column(modifier = Modifier.padding(top = 4.dp)) {
+                            Text(
+                                text = String.format(Locale.US, "%.4f°, %.4f°", settings.location.latitude, settings.location.longitude),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (settings.location.nearestPlaceDistanceKm != null) {
                                 Text(
-                                    text = String.format(Locale.US, "%.4f°, %.4f°", settings.location.latitude, settings.location.longitude),
+                                    text = strings.gpsLocationDisclaimer,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                if (settings.location.nearestPlaceDistanceKm != null) {
-                                    Text(
-                                        text = strings.gpsLocationDisclaimer,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
                             }
                         }
                     }
@@ -1395,58 +1447,15 @@ private fun SettingsLocationSubScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // GPS Action Button
-        Card(
-            shape = MaterialTheme.shapes.medium,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = strings.useGps,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = strings.gpsTapToDetect,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Button(
-                    onClick = onRequestGps,
-                    enabled = !isGpsLoading,
-                    shape = MaterialTheme.shapes.small
-                ) {
-                    if (isGpsLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
-                    } else {
-                        Icon(imageVector = Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = strings.gpsButtonLabel)
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = stringResource(R.string.settings_choose_another_city),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 4.dp)
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         OutlinedTextField(
             value = searchQuery,
@@ -1458,7 +1467,7 @@ private fun SettingsLocationSubScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         if (searchQuery.isNotBlank()) {
             if (searchCompleted && searchResults.isEmpty()) {
@@ -1496,7 +1505,8 @@ private fun SettingsLocationSubScreen(
                         },
                         shape = MaterialTheme.shapes.small,
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                            else MaterialTheme.colorScheme.surfaceContainerLow
                         ),
                         border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)) else null,
                         modifier = Modifier.fillMaxWidth()
@@ -1504,7 +1514,7 @@ private fun SettingsLocationSubScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = 14.dp, vertical = 9.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
@@ -1512,7 +1522,7 @@ private fun SettingsLocationSubScreen(
                                 Text(
                                     text = placeName,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
@@ -1558,6 +1568,7 @@ private fun SettingsNotificationsSubScreen(
     var testAlarmScheduledText by remember { mutableStateOf<String?>(null) }
     var previewPrayerArtwork by remember { mutableStateOf(PrayerType.FAJR) }
     var advancedExpanded by remember { mutableStateOf(false) }
+    var audioStreamExpanded by remember { mutableStateOf(false) }
 
     var notificationsEnabled by remember {
         mutableStateOf(androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled())
@@ -1608,7 +1619,7 @@ private fun SettingsNotificationsSubScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 112.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Notification Permission Status Banner
             item {
@@ -1665,128 +1676,155 @@ private fun SettingsNotificationsSubScreen(
                             }
                         }
                     }
-                } else {
+                }
+            }
+
+            // Keep this first: it determines which physical volume control affects Athan.
+            item {
+                Text(
+                    text = strings.audioStreamSectionTitle,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+                )
+                Text(
+                    text = strings.audioStreamDesc,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
+                Box(modifier = Modifier.fillMaxWidth()) {
                     Card(
-                        shape = MaterialTheme.shapes.small,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                        ),
+                        onClick = { audioStreamExpanded = true },
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.NotificationsActive,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = strings.notificationsStatusActive,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            Icon(Icons.Default.VolumeUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = when (settings.audioStream) {
+                                        AthanAudioStream.ALARM -> strings.audioStreamAlarmTitle
+                                        AthanAudioStream.MEDIA -> strings.audioStreamMediaTitle
+                                        AthanAudioStream.RINGTONE -> strings.audioStreamRingtoneTitle
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = when (settings.audioStream) {
+                                        AthanAudioStream.ALARM -> strings.audioStreamAlarmDesc
+                                        AthanAudioStream.MEDIA -> strings.audioStreamMediaDesc
+                                        AthanAudioStream.RINGTONE -> strings.audioStreamRingtoneDesc
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
+                        }
+                    }
+                    DropdownMenu(
+                        expanded = audioStreamExpanded,
+                        onDismissRequest = { audioStreamExpanded = false },
+                        modifier = Modifier.fillMaxWidth(0.9f)
+                    ) {
+                        listOf(
+                            AthanAudioStream.ALARM to strings.audioStreamAlarmTitle,
+                            AthanAudioStream.MEDIA to strings.audioStreamMediaTitle,
+                            AthanAudioStream.RINGTONE to strings.audioStreamRingtoneTitle
+                        ).forEach { (stream, title) ->
+                            DropdownMenuItem(
+                                text = { Text(title) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = when (stream) {
+                                            AthanAudioStream.ALARM -> Icons.Default.Alarm
+                                            AthanAudioStream.MEDIA -> Icons.Default.MusicNote
+                                            AthanAudioStream.RINGTONE -> Icons.Default.PhoneInTalk
+                                        },
+                                        contentDescription = null
+                                    )
+                                },
+                                trailingIcon = {
+                                    if (settings.audioStream == stream) {
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                },
+                                onClick = {
+                                    audioStreamExpanded = false
+                                    onUpdateAudioStream(stream)
+                                }
                             )
                         }
                     }
                 }
             }
 
-            // Audio Stream Output Selection Card (Follows System Volume)
             item {
+                Text(
+                    text = stringResource(R.string.settings_prayer_alerts_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, top = 6.dp)
+                )
+                Text(
+                    text = stringResource(R.string.settings_prayer_alerts_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
                 Card(
                     shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.VolumeUp,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = strings.audioStreamSectionTitle,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = strings.audioStreamDesc,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        listOf(
-                            Triple(AthanAudioStream.ALARM, strings.audioStreamAlarmTitle, strings.audioStreamAlarmDesc),
-                            Triple(AthanAudioStream.MEDIA, strings.audioStreamMediaTitle, strings.audioStreamMediaDesc),
-                            Triple(AthanAudioStream.RINGTONE, strings.audioStreamRingtoneTitle, strings.audioStreamRingtoneDesc)
-                        ).forEach { (stream, title, desc) ->
-                            val isSelected = settings.audioStream == stream
-                            val streamIcon = when (stream) {
-                                AthanAudioStream.ALARM -> Icons.Default.Alarm
-                                AthanAudioStream.MEDIA -> Icons.Default.MusicNote
-                                AthanAudioStream.RINGTONE -> Icons.Default.PhoneInTalk
-                            }
-
-                            Card(
-                                onClick = { onUpdateAudioStream(stream) },
-                                shape = MaterialTheme.shapes.small,
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                ),
-                                border = if (isSelected) CardDefaults.outlinedCardBorder().copy(
-                                    brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
-                                ) else null,
+                    Column {
+                        PrayerType.values().forEachIndexed { index, prayer ->
+                            val cfg = settings.prayerConfigs[prayer] ?: NotificationPrayerConfig()
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
+                                    .clickable(enabled = cfg.enabled) { activeSoundDialogPrayer = prayer }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Icon(
-                                            imageVector = streamIcon,
-                                            contentDescription = null,
-                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Column {
-                                            Text(
-                                                text = title,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = desc,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                    RadioButton(
-                                        selected = isSelected,
-                                        onClick = null
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = strings.prayerName(prayer),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        text = if (cfg.enabled) strings.soundTypeName(cfg.soundType)
+                                        else stringResource(R.string.settings_off),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
+                                if (cfg.enabled) {
+                                    TextButton(onClick = { activeSoundDialogPrayer = prayer }) {
+                                        Text(strings.change, style = MaterialTheme.typography.labelMedium)
+                                    }
+                                }
+                                Switch(
+                                    checked = cfg.enabled,
+                                    onCheckedChange = {
+                                        onUpdateNotificationConfig(prayer, it, cfg.soundType, cfg.preReminderMinutes)
+                                    }
+                                )
+                            }
+                            if (index != PrayerType.values().lastIndex) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 14.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                                )
                             }
                         }
                     }
@@ -2070,90 +2108,6 @@ private fun SettingsNotificationsSubScreen(
                 }
             }
 
-            item {
-                Text(
-                    text = stringResource(R.string.settings_prayer_alerts_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = stringResource(R.string.settings_prayer_alerts_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            items(PrayerType.values()) { prayer ->
-                val cfg = settings.prayerConfigs[prayer] ?: NotificationPrayerConfig()
-                Card(
-                    shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(MaterialTheme.shapes.extraSmall)
-                                .clickable {
-                                    onUpdateNotificationConfig(prayer, !cfg.enabled, cfg.soundType, cfg.preReminderMinutes)
-                                }
-                                .padding(vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = strings.prayerName(prayer),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Switch(
-                                checked = cfg.enabled,
-                                onCheckedChange = null
-                            )
-                        }
-
-                        if (cfg.enabled) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(MaterialTheme.shapes.extraSmall)
-                                    .clickable { activeSoundDialogPrayer = prayer }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = strings.athanSound,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = strings.soundTypeName(cfg.soundType),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-
-                                FilledTonalButton(
-                                    onClick = { activeSoundDialogPrayer = prayer },
-                                    shape = MaterialTheme.shapes.extraSmall
-                                ) {
-                                    Text(strings.change, style = MaterialTheme.typography.labelSmall)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             if (advancedExpanded) item {
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -2201,11 +2155,38 @@ private fun SettingsNotificationsSubScreen(
 
 // 8. ABOUT
 @Composable
-private fun SettingsAboutSubScreen(onBack: () -> Unit) {
+private fun SettingsAboutSubScreen(
+    onResetOnboarding: () -> Unit,
+    onBack: () -> Unit
+) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
+    var showResetConfirmation by remember { mutableStateOf(false) }
     val versionName = remember(context) {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty()
+    }
+
+    if (showResetConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showResetConfirmation = false },
+            title = { Text(stringResource(R.string.settings_reset_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_reset_confirm_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showResetConfirmation = false
+                        onResetOnboarding()
+                    }
+                ) {
+                    Text(stringResource(R.string.settings_reset_confirm_action))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetConfirmation = false }) {
+                    Text(stringResource(R.string.settings_cancel))
+                }
+            }
+        )
     }
 
     Column(
@@ -2314,6 +2295,28 @@ private fun SettingsAboutSubScreen(onBack: () -> Unit) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = strings.aboutTypefaceBody,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            TextButton(
+                onClick = { showResetConfirmation = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("settings_cat_rerun_setup")
+            ) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_help_reset_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_help_reset_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
