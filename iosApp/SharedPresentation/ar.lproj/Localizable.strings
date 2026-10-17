@@ -63,6 +63,7 @@
 "Local moon sighting may differ. Hijri adjustments apply only to the selected current month." = "قد تختلف الرؤية المحلية للهلال. يسري تعديل التاريخ الهجري على الشهر الحالي المحدد فقط.";
 "Local notifications use a short excerpt under 30 seconds. Full recordings can be played here while the app is open. Full-length automatic AlarmKit playback requires physical-device validation and is not guaranteed." = "تستخدم الإشعارات مقطعًا أقصر من 30 ثانية. يمكن تشغيل التسجيل كاملًا هنا أثناء فتح التطبيق. تشغيل الأذان كاملًا تلقائيًا عبر AlarmKit غير مضمون ويحتاج إلى اختبار على جهاز فعلي.";
 "Location" = "الموقع";
+"Location access is unavailable. Choose a city or enter coordinates." = "الوصول إلى الموقع غير متاح. اختر مدينة أو أدخل الإحداثيات.";
 "Location name" = "اسم الموقع";
 "Longitude" = "خط الطول";
 "MAGHRIB" = "المغرب";
@@ -77,8 +78,10 @@
 "No account or subscription" = "دون حساب أو اشتراك";
 "No special observance" = "لا توجد مناسبة خاصة";
 "Notification" = "إشعار";
+"Notifications allowed" = "تم السماح بالإشعارات";
 "Notifications and adhan" = "الإشعارات والأذان";
 "Notifications follow your system settings. System alarms require separate permission. No alerts are enabled by granting permission alone." = "تتبع الإشعارات إعدادات النظام. تتطلب المنبهات إذنًا مستقلًا. منح الإذن وحده لا يفعّل التنبيهات.";
+"Notifications were not allowed. You can change this in iOS Settings." = "لم يُسمح بالإشعارات. يمكنك تغيير ذلك من إعدادات iOS.";
 "OK" = "حسنًا";
 "ONE_SEVENTH" = "سُبع الليل";
 "Off" = "إيقاف";
@@ -116,6 +119,8 @@
 "Sunrise" = "الشروق";
 "System" = "النظام";
 "System alarm" = "منبه النظام";
+"System alarms allowed" = "تم السماح بمنبهات النظام";
+"System alarms were not allowed. You can change this in iOS Settings." = "لم يُسمح بمنبهات النظام. يمكنك تغيير ذلك من إعدادات iOS.";
 "System sound" = "صوت النظام";
 "TARWIYAH" = "يوم التروية";
 "TASHREEQ" = "أيام التشريق";
@@ -124,12 +129,14 @@
 "TURKEY" = "رئاسة الشؤون الدينية التركية (ديانت)";
 "The countdown uses system rendering. Open Salati regularly to refresh changing prayer schedules." = "يعرض النظام العد التنازلي. افتح صلاتي بانتظام لتحديث المواقيت المتغيرة.";
 "The night" = "الليل";
+"This device has no compass. The Qibla bearing is still available." = "لا توجد بوصلة في هذا الجهاز. لا تزال زاوية القبلة متاحة.";
 "Time until next prayer" = "الوقت المتبقي للصلاة القادمة";
 "Time zone" = "المنطقة الزمنية";
 "Today" = "اليوم";
 "UMM_AL_QURA" = "جامعة أم القرى (مكة المكرمة)";
 "Umm al-Qura calendar" = "تقويم أم القرى";
 "Unable to update" = "تعذر التحديث";
+"Up next" = "الموعد القادم";
 "Up to six days are prepared. Open Salati regularly to replenish the schedule; background refresh is best effort." = "تُجهز مواقيت ستة أيام. افتح صلاتي بانتظام لتجديد الجدول؛ التحديث في الخلفية غير مضمون.";
 "Use current location" = "استخدام الموقع الحالي";
 "WHITE_DAY" = "يوم من الأيام البيض";

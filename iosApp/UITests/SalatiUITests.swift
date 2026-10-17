@@ -28,6 +28,8 @@ final class SalatiUITests:XCTestCase {
         let text=app.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator:" ")
         XCTAssertNil(text.range(of:"[٠-٩۰-۹]",options:.regularExpression),"Western digits must remain independent of Arabic UI")
         app.tabBars.buttons["التقويم"].tap();capture("Arabic dark Hijri calendar")
+        app.tabBars.buttons["القبلة"].tap();capture("Arabic dark Qibla")
+        app.tabBars.buttons["الإعدادات"].tap();capture("Arabic dark Settings")
     }
     func capture(_ name:String) {let attachment=XCTAttachment(screenshot:XCUIApplication().screenshot());attachment.name=name;attachment.lifetime = .keepAlways;add(attachment)}
 }

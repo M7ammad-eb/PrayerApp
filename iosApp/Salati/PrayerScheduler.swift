@@ -91,8 +91,16 @@ struct ScheduledAlert: Equatable {
         }
         if plan.isEmpty && failures.isEmpty {return ""}
         let unique=Array(Set(failures)).sorted().joined(separator:" ")
-        let horizon=lastScheduled.map {DateFormatter.localizedString(from:$0,dateStyle:.medium,timeStyle:.short)} ?? "—"
+        let horizon=lastScheduled.map {Self.formattedHorizon($0,settings:settings)} ?? "—"
         return settings.language == "ar" ? "تم تجهيز \(scheduled) تنبيهًا حتى \(horizon). \(unique)" : "\(scheduled) alerts prepared through \(horizon). \(unique)"
+    }
+    static func formattedHorizon(_ date:Date,settings:Settings) -> String {
+        let formatter=DateFormatter()
+        formatter.locale=Locale(identifier:settings.language == "ar" ? "ar_SA@numbers=latn" : "en_US@numbers=latn")
+        formatter.calendar=Calendar(identifier:.gregorian)
+        formatter.timeZone=TimeZone(identifier:settings.location?.zone ?? "UTC") ?? .gmt
+        formatter.dateFormat=settings.use24Hour ? "d MMM yyyy, HH:mm" : "d MMM yyyy, h:mm a"
+        return formatter.string(from:date)
     }
     func reconcileLiveActivities(next:PrayerEvent,city:String) async {
         let date=Date(timeIntervalSince1970:next.epochSeconds)

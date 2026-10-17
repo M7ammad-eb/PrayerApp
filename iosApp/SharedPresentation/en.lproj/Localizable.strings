@@ -63,6 +63,7 @@
 "Local moon sighting may differ. Hijri adjustments apply only to the selected current month." = "Local moon sighting may differ. Hijri adjustments apply only to the selected current month.";
 "Local notifications use a short excerpt under 30 seconds. Full recordings can be played here while the app is open. Full-length automatic AlarmKit playback requires physical-device validation and is not guaranteed." = "Local notifications use a short excerpt under 30 seconds. Full recordings can be played here while the app is open. Full-length automatic AlarmKit playback requires physical-device validation and is not guaranteed.";
 "Location" = "Location";
+"Location access is unavailable. Choose a city or enter coordinates." = "Location access is unavailable. Choose a city or enter coordinates.";
 "Location name" = "Location name";
 "Longitude" = "Longitude";
 "MAGHRIB" = "Maghrib";
@@ -77,8 +78,10 @@
 "No account or subscription" = "No account or subscription";
 "No special observance" = "No special observance";
 "Notification" = "Notification";
+"Notifications allowed" = "Notifications allowed";
 "Notifications and adhan" = "Notifications and adhan";
 "Notifications follow your system settings. System alarms require separate permission. No alerts are enabled by granting permission alone." = "Notifications follow your system settings. System alarms require separate permission. No alerts are enabled by granting permission alone.";
+"Notifications were not allowed. You can change this in iOS Settings." = "Notifications were not allowed. You can change this in iOS Settings.";
 "OK" = "OK";
 "ONE_SEVENTH" = "One Seventh of Night";
 "Off" = "Off";
@@ -116,6 +119,8 @@
 "Sunrise" = "Sunrise";
 "System" = "System";
 "System alarm" = "System alarm";
+"System alarms allowed" = "System alarms allowed";
+"System alarms were not allowed. You can change this in iOS Settings." = "System alarms were not allowed. You can change this in iOS Settings.";
 "System sound" = "System sound";
 "TARWIYAH" = "Day of Tarwiyah";
 "TASHREEQ" = "Days of Tashreeq";
@@ -124,12 +129,14 @@
 "TURKEY" = "Presidency of Religious Affairs, Turkey (Diyanet)";
 "The countdown uses system rendering. Open Salati regularly to refresh changing prayer schedules." = "The countdown uses system rendering. Open Salati regularly to refresh changing prayer schedules.";
 "The night" = "The night";
+"This device has no compass. The Qibla bearing is still available." = "This device has no compass. The Qibla bearing is still available.";
 "Time until next prayer" = "Time until next prayer";
 "Time zone" = "Time zone";
 "Today" = "Today";
 "UMM_AL_QURA" = "Umm Al-Qura University, Makkah";
 "Umm al-Qura calendar" = "Umm al-Qura calendar";
 "Unable to update" = "Unable to update";
+"Up next" = "Up next";
 "Up to six days are prepared. Open Salati regularly to replenish the schedule; background refresh is best effort." = "Up to six days are prepared. Open Salati regularly to replenish the schedule; background refresh is best effort.";
 "Use current location" = "Use current location";
 "WHITE_DAY" = "White Day";

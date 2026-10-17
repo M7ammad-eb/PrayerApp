@@ -10,7 +10,7 @@ struct HomeView: View {
             if let day=model.day {
                 Section {
                     VStack(alignment:.leading,spacing:16) {
-                        Label("Next prayer",systemImage:"sparkle").font(.subheadline).foregroundStyle(.secondary)
+                        Label("Up next",systemImage:"sparkle").font(.subheadline).foregroundStyle(.secondary)
                         ViewThatFits(in:.horizontal) {
                             HStack(alignment:.firstTextBaseline) { Text(model.title(day.next)).font(.largeTitle.weight(.semibold)); Spacer(); Text(model.time(day.next.epochSeconds)).font(.title.weight(.medium)).monospacedDigit() }
                             VStack(alignment:.leading) { Text(model.title(day.next)).font(.largeTitle.weight(.semibold)); Text(model.time(day.next.epochSeconds)).font(.title).monospacedDigit() }
@@ -60,7 +60,7 @@ struct HomeView: View {
         .navigationTitle("Salati")
         .toolbar {
             if audio.isPlaying {ToolbarItem(placement:.topBarLeading) {Button("Stop playback",systemImage:"stop.fill") {audio.stop()}}}
-            ToolbarItem(placement:.topBarTrailing) { Button {showPlaces=true} label: { Label(model.settings.location.map { model.arabic ? ($0.arabicName ?? $0.name) : $0.name } ?? (model.arabic ? "الموقع" : "Location"),systemImage:"location") } }
+            ToolbarItem(placement:.topBarTrailing) { Button {showPlaces=true} label: { Label(model.settings.location.map { model.arabic ? ($0.arabicName ?? $0.name) : $0.name } ?? (model.arabic ? "الموقع" : "Location"),systemImage:"location").labelStyle(.titleAndIcon) } }
         }
         .sheet(isPresented:$showPlaces) { NavigationStack { PlacesView() } }
         .task(id:model.day?.next.epochSeconds) {

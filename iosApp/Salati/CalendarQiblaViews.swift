@@ -88,9 +88,11 @@ struct QiblaContent: View {
                     Text(String(format:"%.0f°",locale:Locale(identifier:"en_US_POSIX"),bearing)).font(.system(.largeTitle,design:.rounded)).monospacedDigit()
                     Text("Qibla from true north").foregroundStyle(.secondary)
                     Text(String(format:"%.0f km",locale:Locale(identifier:"en_US_POSIX"),distance)).font(.title3).monospacedDigit()
-                    if service.heading == nil { Label("Compass unavailable. Use the true-north bearing above.",systemImage:"info.circle") }
+                    if service.heading == nil {
+                        Label {Text(LocalizedStringKey(service.message ?? "Compass unavailable. Use the true-north bearing above."))} icon: {Image(systemName:"info.circle")}
+                    }
                     else if (service.accuracy ?? 180)>20 { Label("Compass accuracy is low. Move away from metal and calibrate your device.",systemImage:"exclamationmark.triangle") }
-                    if let message=service.message {Text(message).font(.footnote)}
+                    if let message=service.message,service.heading != nil {Text(LocalizedStringKey(message)).font(.footnote)}
                     Text("Keep your phone flat and away from magnets. Confirm direction with a reliable local reference.").font(.footnote).foregroundStyle(.secondary)
                 } else { ContentUnavailableView("Choose your location",systemImage:"location") }
             }.padding(24).frame(maxWidth:560)

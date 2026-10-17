@@ -49,7 +49,7 @@ struct NotificationSettingsView: View {
             Section {
                 Button("Allow notifications") {Task {authorization=await model.scheduler.authorizeNotifications();model.queueRefresh()}}
                 Button("Allow system alarms") {Task {authorization=await model.scheduler.authorizeAlarms();model.queueRefresh()}}
-                if let authorization {Text(authorization).font(.footnote)}
+                if let authorization {Text(LocalizedStringKey(authorization)).font(.footnote)}
             } footer: {Text("Notifications follow your system settings. System alarms require separate permission. No alerts are enabled by granting permission alone.")}
             ForEach(["FAJR","DHUHR","ASR","MAGHRIB","ISHA"],id:\.self) {id in
                 Section(LocalizedStringKey(id)) {

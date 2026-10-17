@@ -1,5 +1,6 @@
 import XCTest
 import AVFoundation
+import UIKit
 import SalatiCore
 @testable import Salati
 final class SalatiTests:XCTestCase {
@@ -67,5 +68,27 @@ final class SalatiTests:XCTestCase {
         XCTAssertEqual(loaded.city,"Madinah")
         XCTAssertEqual(loaded.events,[event])
         XCTAssertEqual(loaded.language,"ar")
+    }
+    @MainActor func testAccentIsOpaqueAndContrastsInBothAppearances() throws {
+        let color=try XCTUnwrap(UIColor(named:"AccentColor"))
+        for style in [UIUserInterfaceStyle.light,.dark] {
+            let resolved=color.resolvedColor(with:UITraitCollection(userInterfaceStyle:style))
+            var r:CGFloat=0,g:CGFloat=0,b:CGFloat=0,a:CGFloat=0
+            XCTAssertTrue(resolved.getRed(&r,green:&g,blue:&b,alpha:&a))
+            XCTAssertGreaterThanOrEqual(a,0.99,"Accent controls must not disappear into their background")
+            func linear(_ value:CGFloat) -> Double {let v=Double(value);return v<=0.04045 ? v/12.92 : pow((v+0.055)/1.055,2.4)}
+            let luminance=0.2126*linear(r)+0.7152*linear(g)+0.0722*linear(b)
+            let contrast=style == .light ? 1.05/(luminance+0.05) : (luminance+0.05)/0.05
+            XCTAssertGreaterThanOrEqual(contrast,4.5)
+        }
+    }
+    @MainActor func testAlertHorizonUsesSelectedZoneAndWesternDigits() {
+        var settings=Settings()
+        settings.location=SavedLocation(name:"Madinah",latitude:24.4672,longitude:39.6111,zone:"Asia/Riyadh")
+        settings.language="ar";settings.use24Hour=true
+        let date=ISO8601DateFormatter().date(from:"2026-01-15T05:00:00Z")!
+        let text=PrayerScheduler.formattedHorizon(date,settings:settings)
+        XCTAssertTrue(text.contains("08:00"))
+        XCTAssertNil(text.range(of:"[٠-٩۰-۹]",options:.regularExpression))
     }
 }
