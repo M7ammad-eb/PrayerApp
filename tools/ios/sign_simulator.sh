@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-APP="${1:-iosApp/.derivedData/Build/Products/Debug-iphonesimulator/Salati.app}"
-PLATFORM=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$APP/Info.plist")
-if [[ "$PLATFORM" != "iPhoneSimulator" ]]; then
-  echo "This helper signs only local simulator builds, never iPhone device builds." >&2
-  exit 1
-fi
-codesign --force --sign - --generate-entitlement-der --entitlements iosApp/Config/Simulator.entitlements "$APP/PlugIns/SalatiWidgets.appex"
-codesign --force --sign - --generate-entitlement-der --entitlements iosApp/Config/Simulator.entitlements "$APP"
+# Xcode embeds simulator entitlements in the proper Mach-O section and signs all nested
+# products. Applying iPhone entitlements directly with codesign creates an invalid host
+# signature on current macOS. The pseudo-identity '-' requires no certificate or account.
+xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati \
+  -destination 'generic/platform=iOS Simulator' -derivedDataPath iosApp/.derivedData \
+  ARCHS="$(uname -m)" ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=YES \
+  CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= \
+  build-for-testing
+APP=iosApp/.derivedData/Build/Products/Debug-iphonesimulator/Salati.app
+codesign --verify --deep --strict "$APP"
 codesign --display --entitlements - "$APP"
