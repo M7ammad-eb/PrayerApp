@@ -3,6 +3,7 @@ import SalatiCore
 
 struct HijriView: View {
     @EnvironmentObject var model: AppModel
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var delta=0
     @State private var selected:CalendarCell?
     private var page: CalendarPage? { try? model.engine.calendar(dateISO:model.todayISO,monthDelta:Int32(delta),offset:Int32(model.settings.hijriAnchor == model.day?.hijriMonthKey ? model.settings.hijriOffset : 0)) }
@@ -17,6 +18,17 @@ struct HijriView: View {
                         Spacer()
                         Button {delta+=1} label: {Image(systemName:"chevron.forward").frame(minWidth:44,minHeight:44)}.accessibilityLabel("Next month")
                     }.buttonStyle(.borderless)
+                    if typeSize.isAccessibilitySize {
+                        ForEach(page.cells.filter { $0.inMonth },id:\.dateISO) { cell in
+                            Button {selected=cell} label: {
+                                VStack(alignment:.leading,spacing:6) {
+                                    Text(cell.day.description).font(.headline.monospacedDigit())
+                                    Text(cell.dateISO).font(.body.monospacedDigit())
+                                    ForEach(cell.observances,id:\.self) {Text(LocalizedStringKey($0))}
+                                }.frame(maxWidth:.infinity,minHeight:44,alignment:.leading)
+                            }.buttonStyle(.plain)
+                        }
+                    } else {
                     LazyVGrid(columns:Array(repeating:GridItem(.flexible(),spacing:2),count:7),spacing:4) {
                         ForEach(0..<7) { index in Text(weekday(index)).font(.caption).foregroundStyle(.secondary).frame(maxWidth:.infinity) }
                         ForEach(page.cells,id:\.dateISO) { cell in
@@ -29,6 +41,7 @@ struct HijriView: View {
                                     .background(cell.dateISO == model.todayISO ? Color.accentColor.opacity(0.16) : .clear,in:RoundedRectangle(cornerRadius:12))
                             }.buttonStyle(.plain).accessibilityLabel("\(cell.day), \(cell.dateISO)")
                         }
+                    }
                     }
                 }
                 if let selected {

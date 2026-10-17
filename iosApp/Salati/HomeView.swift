@@ -26,7 +26,7 @@ struct HomeView: View {
                 Section(model.displayDate(Date())) {
                     ForEach(day.events,id:\.id) { event in
                         HStack(spacing:14) {
-                            Image(systemName:symbol(event.id)).foregroundStyle(event.id == day.next.id ? Color.accentColor : .secondary).frame(width:28)
+                            Image(systemName:symbol(event.id)).foregroundStyle(event.id == day.next.id ? Color.accentColor : .secondary).frame(width:28).accessibilityHidden(true)
                             VStack(alignment:.leading,spacing:3) {
                                 Text(model.title(event)).fontWeight(event.id == day.next.id ? .semibold : .regular)
                                 if event.id == day.currentId { Text(day.currentEnded ? "Prayer time ended" : "Current prayer").font(.caption).foregroundStyle(.secondary) }

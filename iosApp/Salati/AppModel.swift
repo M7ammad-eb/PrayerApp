@@ -25,13 +25,13 @@ import CoreLocation
             if ProcessInfo.processInfo.arguments.contains("-uiTestingArabicDark") {settings.language="ar";settings.appearance="dark"}
             settings.save()
         }
-        locationService.onFix = { [weak self] fix in
+        locationService.onFix = { [weak self] latitude,longitude in
             guard let self else { return }
             Task {
                 do {
-                    guard let (place,distance)=try await self.places.nearest(latitude:fix.coordinate.latitude,longitude:fix.coordinate.longitude) else { throw CocoaError(.fileReadCorruptFile) }
+                    guard let (place,distance)=try await self.places.nearest(latitude:latitude,longitude:longitude) else { throw CocoaError(.fileReadCorruptFile) }
                     var location=place.location
-                    location.latitude=fix.coordinate.latitude; location.longitude=fix.coordinate.longitude
+                    location.latitude=latitude; location.longitude=longitude
                     location.isGPS=true; location.nearestDistance=distance
                     self.select(location)
                 } catch { self.error=error.localizedDescription }

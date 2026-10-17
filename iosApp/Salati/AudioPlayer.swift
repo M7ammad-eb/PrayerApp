@@ -17,6 +17,6 @@ import Combine
             isPlaying=true
         } catch { self.error=error.localizedDescription }
     }
-    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer,successfully flag: Bool) {stop()}
+    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer,successfully flag: Bool) {Task { @MainActor [weak self] in self?.stop() }}
     func stop() { isPlaying=false; player?.stop(); try? AVAudioSession.sharedInstance().setActive(false,options:.notifyOthersOnDeactivation) }
 }

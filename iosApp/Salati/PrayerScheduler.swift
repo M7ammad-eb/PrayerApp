@@ -45,12 +45,15 @@ struct ScheduledAlert: Equatable {
         guard current==revision && !Task.isCancelled else {return ""}
         notifications.removePendingNotificationRequests(withIdentifiers:pending.filter {$0.identifier.hasPrefix("salati.")}.map(\.identifier))
         // Query the system so interrupted prior scheduling cannot orphan a persisted alarm.
-        do {for alarm in try AlarmManager.shared.alarms {try AlarmManager.shared.cancel(id:alarm.id)}}
-        catch {failures.append("Could not clear previous alarms: \(error.localizedDescription)")}
+        if AlarmManager.shared.authorizationState == .authorized {
+            do {for alarm in try AlarmManager.shared.alarms {try AlarmManager.shared.cancel(id:alarm.id)}}
+            catch {failures.append("Could not clear previous alarms: \(error.localizedDescription)")}
+        }
         let permission=await notifications.notificationSettings()
         guard current==revision && !Task.isCancelled else {return ""}
         let plan=ScheduledAlert.plan(events:events,settings:settings,now:Date())
         var scheduled=0
+        var lastScheduled:Date?
         for item in plan {
             guard current==revision && !Task.isCancelled else {return ""}
             do {
@@ -83,11 +86,12 @@ struct ScheduledAlert: Equatable {
                     guard current==revision && !Task.isCancelled else {notifications.removePendingNotificationRequests(withIdentifiers:[identifier]);return ""}
                 }
                 scheduled+=1
+                lastScheduled=item.date
             } catch {failures.append(error.localizedDescription)}
         }
         if plan.isEmpty && failures.isEmpty {return ""}
         let unique=Array(Set(failures)).sorted().joined(separator:" ")
-        let horizon=plan.last.map {DateFormatter.localizedString(from:$0.date,dateStyle:.medium,timeStyle:.short)} ?? "—"
+        let horizon=lastScheduled.map {DateFormatter.localizedString(from:$0,dateStyle:.medium,timeStyle:.short)} ?? "—"
         return settings.language == "ar" ? "تم تجهيز \(scheduled) تنبيهًا حتى \(horizon). \(unique)" : "\(scheduled) alerts prepared through \(horizon). \(unique)"
     }
     func reconcileLiveActivities(next:PrayerEvent,city:String) async {
