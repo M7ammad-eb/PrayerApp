@@ -1,106 +1,155 @@
-# Salati iOS migration
+# Salati iOS implementation handoff
 
-## Branch safety and baseline
+## Repository and review references
 
-- Baseline: `9d4382d60f23de3b8f2be30cf877b27b0211515d`, Android 1.8 (8).
-- Annotated tag: `android-1.8-baseline`.
-- `main` and all its pre-existing uncommitted changes are preserved. Those changes are intentionally not part of this migration.
-- `Android_Legacy` and `ios` started at that exact commit; both and the tag were pushed to the original repository. Do not move Android_Legacy as part of migration.
-- Implementation checkout on this Windows host: `C:/Users/M1993/PrayerApp/.worktrees/ios`.
-- Detached baseline test checkout: `.worktrees/baseline`.
+- Android baseline: `9d4382d60f23de3b8f2be30cf877b27b0211515d`, version 1.8 (8).
+- Annotated tag: `android-1.8-baseline`. Both local and remote `main` and `Android_Legacy` remain at the baseline. The primary main checkout's pre-existing uncommitted changes are preserved.
+- All migration work is on [ios](https://github.com/M7ammad-eb/PrayerApp/tree/ios). Latest application source: `9cdb063564a9a9e0501bf07323b7e4613d4912ef`; subsequent documentation commits do not change the tested source.
+- Implementation checkout: `C:/Users/M1993/PrayerApp/.worktrees/ios`. Detached baseline verification checkout: `.worktrees/baseline`.
+- [Full successful runtime verification before visual polish](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39078667945). [Final source verification](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39080114700).
+- No main merge, history rewrite, default-audio replacement, paid enrollment, TestFlight upload or App Store publication occurred.
 
-## Implemented architecture
+## Architecture and behavior
 
-`app` remains the original Android app and retains its identity, UI, preference keys and Java time API. Its thin adapters call `shared`; production calculator/calendar/resolver/Qibla math has one implementation. A frozen baseline calculator exists only in JVM tests for differential verification. Notification/audio policy stays in Android. Shared value enums retain their names for preference compatibility.
+`app` remains the existing Android application, with the same identity, UI, assets, preference keys and Java time interface. Thin adapters call `shared`. Production prayer/calendar/resolver/Qibla logic has one implementation. Baseline source is retained only under JVM test sources for differential checks. Android notification/audio integration, Collator and audio-stream constants remain Android-specific. Shared enum names preserve stored preferences.
 
-`shared` uses Kotlin 2.4.10, JVM 11 bytecode (consumed by Android), native iOS device and simulator frameworks, kotlinx-datetime 0.7.1 and explicit platform locks. UTC instants precede IANA-zone conversion, preserving DST and signed UTC day rollover. Swift uses SalatiEngine, ISO dates, identifiers and epoch seconds. The existing Gradle 9.7.0/AGP 9.1.1 versions are retained rather than upgraded; these are beyond Kotlin's published tested maxima (Gradle 9.5/AGP 9.1.0). Actual local/CI results determine this repository's verification, not a claim of blanket vendor compatibility.
+`shared` builds JVM 11 bytecode and native iOS device/simulator frameworks. It uses Kotlin 2.4.10, kotlinx-datetime 0.7.1, real UTC instants, IANA time zones and platform locks. Swift sees a small SalatiEngine facade using ISO local dates, identifiers and epoch seconds. DST, UTC day rollover, yesterday's current Isha before Fajr, tomorrow's Fajr, Islamic midnight, last third, manual adjustments and Ramadan Umm al-Qura Isha remain real date-aware calculations. Offline FTS token rules and geographic distance are shared; database access is platform-specific.
 
-Umm al-Qura AH 1300–1600 uses month boundaries generated from OpenJDK's existing Hijrah-umalqura calendar. All days are compared with Java. Outside that range the original converter fallback remains, now honestly labelled tabular. Calendar navigation requires the supported range, as Java did. Data generation source is tools/migration/GenerateUmmAlQura.java; table is versioned, so Foundation Islamic calendars cannot silently diverge. Prayer baseline parity is regression evidence, not independent astronomical certification.
+Existing Gradle 9.7.0/AGP 9.1.1 were retained. They exceed Kotlin's published tested maxima (Gradle 9.5/AGP 9.1.0); the recorded successful builds establish this repository's tested combination, not blanket vendor compatibility. No unrelated dependency upgrade was made.
 
-`iosApp` is a SwiftUI app (iOS 26+) with native tabs, navigation, forms, sheets, system typography and controls. System bars adopt Liquid Glass. Prayer content uses restrained sage accents. Native material respects system Reduce Transparency and custom compass animation respects Reduce Motion. The app supports Arabic/English, RTL, Western digits, localized Gregorian/Hijri month names, Dynamic Type and combined VoiceOver prayer labels.
+Umm al-Qura AH 1300–1600 month starts are generated from the baseline's OpenJDK Hijrah-umalqura calendar by `tools/migration/GenerateUmmAlQura.java`. Every supported day is compared with Java. The versioned table prevents silent Foundation-calendar differences. Outside this range the original converter fallback remains explicitly labelled tabular; calendar navigation requires the supported range. Baseline parity is regression evidence, not independent astronomical certification.
 
-Connected features: onboarding, offline Arabic/English FTS city search, exact GPS with nearest offline label, manual coordinates/IANA zone, current/next prayers and system-rendered countdown, daily schedule/night milestones, calculation methods/Hanafi/high latitudes/manual adjustments/month-scoped Hijri offset, appearance/language/time format, calendar/observances, true-north Qibla bearing and distance with compass accuracy handling, AVFoundation foreground full-adhan playback, optional per-prayer local notifications/system alarms, reminders, WidgetKit timelines, immediate and scheduled ActivityKit countdown requests.
+## Native iOS experience
 
-## Assets
+The iOS 26+ app uses SwiftUI tabs, navigation, forms, sheets, SF Symbols and standard system controls. Native bars adopt Liquid Glass; restrained adaptive sage accents establish hierarchy without decorative glass everywhere. It supports English/Arabic and RTL, Western digits, localized month names, light/dark/system appearance, Dynamic Type and combined VoiceOver prayer labels. Calendar switches to a list at accessibility text sizes. Compass animation respects Reduce Motion; native materials follow system accessibility behavior. Largest text sizes, VoiceOver and Reduce Transparency still need a dedicated device audit.
 
-Verified baseline: 69,632 database rows, 736 string entries in each Android catalogue and 11 MP3 recordings. Main has newer uncommitted translations which remain untouched. Resources are generated from the repository originals; no default recording is replaced. iOS-specific UI/permission strings are separate; method and observance translations are converted from Android. Full catalogues are retained as generated reference JSON, never used to display Android permission instructions. GeoNames attribution remains visible. Full MP3 and short 25-second PCM CAF excerpts are bundled on macOS; original recordings remain byte-identical.
+Connected screens and integrations:
 
-## Alerts and platform limits
+- Onboarding with optional permissions, offline Arabic/English city search, manual coordinates and explicit IANA zone selection.
+- GPS coordinates stay exact, with offline nearest-city naming and distance. The nearest city's zone is used; border locations must verify or manually select the correct zone. No online geocoding is used.
+- Current/next event, native countdown, daily schedule and night milestones. Before Fajr the current Isha is labelled previous day rather than falsely highlighting tonight's row.
+- All 14 calculation methods, Hanafi Asr, high-latitude rules, manual adjustments, month-scoped Hijri offset, language/appearance/time settings.
+- Hijri calendar and original observances; true-north Qibla bearing/distance with native heading and clear unavailable/inaccurate sensor states.
+- AVFoundation foreground full-adhan playback and an explicit foreground playback notification action.
+- Per-prayer off/notification/system-alarm policies, sound selection, reminders, bounded replenishment, WidgetKit timelines, and immediate/scheduled ActivityKit countdown requests.
 
-All prayer policies default to off. Permissions and per-prayer delivery are independent. Notification, audible AlarmKit system alarm and off are iOS policies, not Android ALARM/MEDIA/RINGTONE stream mappings. Silent is a notification policy; a system alarm must be audible. Ordinary notifications use system sound, silence or a 25-second recording excerpt. Full recordings play through AVFoundation while the app is open. This implementation does not claim unattended multi-minute adhan via UserNotifications or AlarmKit. Custom AlarmKit excerpt playback, silent-switch/Focus behavior and actual alarm duration need physical-device testing.
+## Original assets and offline operation
 
-A maximum of 60 combined alerts/reminders over six date-specific prayer schedules is prepared. Changing settings/location, foregrounding or significant time changes cancels and rebuilds the plan. App refresh requests replenish opportunistically; iOS decides whether background work runs. There are no repeating fixed prayer times, silent audio loops, private APIs, account, server or subscription. Reopen before the horizon expires. Errors/denied permissions are surfaced. App Group snapshots let a lightweight widget extension render timelines without loading the engine/database. A Live Activity requests the next prayer only; user action can schedule it five minutes before that prayer. Activity lifetime and system limits still apply.
+Baseline assets contain 69,632 places, 736 entries in each English/Arabic Android catalogue and 11 MP3 recordings. The primary checkout's newer uncommitted catalogue changes remain untouched. No backend, prayer API, remote geocoder, account, advertisement or subscription is required.
 
-## Verification record (updated during implementation)
+The original SQLite database, translations, recordings and suitable app icon are reused. Bundled SQLite is opened read-only with documented URI `immutable=1`; its checkpointed WAL header otherwise caused read-only sidecar errors in the simulator. The database is not rewritten. GeoNames attribution is displayed.
 
-- Windows: original baseline Android unit tests + debug APK passed using existing ignored debug keystore. Without that key the baseline failed validateSigningDebug; migration falls back to generated Android debug signing safely.
-- Shared JVM suite passed: every supported Umm al-Qura day and 18,144 prayer combinations (Madinah/Makkah/Damascus/London/New York/Tokyo/Auckland/Honolulu/Tromso; 14 methods; both juristic choices; all high latitude rules; Ramadan/non-Ramadan; DST dates; adjustments and Hijri offsets), plus common end-to-end boundary/calendar tests.
-- Integrated Android: all 97 unchanged tests and debug APK passed. Six geographic failures from a radians-parentheses extraction error were fixed; no test expectations were changed. Shared suite: 7 tests passed, including the 18,144-case differential matrix and all supported calendar days. Existing KSP AWT shutdown exception and deprecation warnings also appeared in the passing baseline.
-- iOS source implemented. First macOS run reached native compilation and exposed a JVM-only IntArray binarySearch extension; replaced with a common binary search. Android CI SDK bootstrap fixed to omit the retired tools package. Kotlin simulator framework and resource/project generation succeeded on the second run. Native common tests, Swift integration and simulator/UI tests are being exercised in CI. Linux migration CI built the APK but failed two scheduler assertions (all 97 pass on Windows); an unchanged-baseline Linux audit is running to classify them; no physical iPhone validation or simulator screenshots claimed yet.
+Generators convert method/observance translations and retain full Android catalogues as reference JSON; iOS UI and permission explanations use separate native strings. Regeneration does not patch Swift sources. Full MP3 files remain byte-identical. macOS generates 25-second PCM CAF excerpts for alerts. Baseline `athan_default.mp3` SHA-256: `88FF93BC31DC49B4DB6C177DCB50F9AE03C5F64A07073913EDBFD5EF0A454E9C`.
 
-## Build locally and in CI
+## Alerts, widgets and platform limits
 
-Android/JVM (JDK 21 recommended, Android SDK 36.1):
+All prayer delivery policies default to off. Granting permission alone enables no alerts. iOS policies do not map Android ALARM/MEDIA/RINGTONE streams. AlarmKit is the prominent audible system-alarm policy; silent delivery uses notifications. Ordinary notifications use silence, system sound or a 25-second recording excerpt. Full recordings play through AVFoundation while the app is open.
+
+**Automatic multi-minute adhan is not implemented or verified.** AlarmKit receives short excerpts; its actual custom-sound duration, audibility under Focus/silent mode, and locked/terminated/reboot behavior require a physical iPhone. Simulator compilation does not prove sound delivery. No silent loops, private APIs or continuous background-execution tricks are used.
+
+A maximum of 60 combined alerts/reminders over six changing date-specific schedules is prepared. Location/settings changes, foregrounding and significant time changes cancel/rebuild schedules. Background refresh requests replenish opportunistically; iOS decides whether they execute. No fixed daily repeating prayer times or indefinite unattended scheduling are claimed. Open the app regularly before its displayed horizon expires. Denials/errors are surfaced.
+
+A lightweight extension reads schedule snapshots through `group.com.salati.prayertimes` and uses WidgetKit timelines/system countdown rendering. App Group read/write is simulator-tested; actual Home Screen widget rendering remains device-unverified. A Live Activity covers the next event only, with an optional foreground request to start five minutes before it. Lock Screen/Dynamic Island presentation and system lifetime limits need device validation.
+
+## Verification and resolved failures
+
+| Area | Evidence | Remaining limit |
+| --- | --- | --- |
+| Baseline Android | 97 tests and debug APK passed on Windows with existing ignored debug key | Baseline without that key fails validateSigningDebug |
+| Integrated Android | 97 tests and debug APK pass locally and on Linux CI | No new Android device/manual UI session |
+| Shared JVM | 8 tests pass: 6 common plus 2 parity tests | Matching baseline does not independently establish astronomy accuracy |
+| Shared native | 6 common tests pass on iOS 26.4.1 simulator | Physical ARM64 device execution untested |
+| Swift framework/app/extension | Native framework consumed by Swift; unsigned app/extension/tests compile with Xcode 26.4.1 | Device signing/install still required |
+| iOS runtime | Previous green run: 6 app XCTest tests and 2 end-to-end UI tests; final run adds accent contrast and selected-zone Arabic date tests | See final run for final counts/results |
+| Resources/storage | Arabic/English/nearest-place SQLite queries, 11 full/short audio resources and actual App Group snapshot round-trip pass | Playback audibility and widget presentation untested |
+| UI | Actual English/light and Arabic/dark onboarding, city selection, home/calendar/Qibla/settings screenshots reviewed | Other iPhone sizes and full accessibility device audit pending |
+
+The parity matrix covers 18,144 combinations: Madinah, Makkah, Damascus, London, New York, Tokyo, Auckland, Honolulu and Tromso; 6 dates including Ramadan/non-Ramadan and DST changes; 14 methods; both juristic choices; 4 high-latitude rules; 3 Hijri offsets and manual adjustments. Existing Android boundary/calendar tests plus common tests cover after-Isha/tomorrow-Fajr and before-Fajr/yesterday-Isha timestamps.
+
+The [unchanged Linux baseline audit](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39076463651) reproduced a scheduler assertion race. PrayerApplication's background DataStore collector could overwrite explicit unit-test settings. Only the direct scheduler test class now uses a plain Application; every assertion is preserved and receiver/process integration tests still use PrayerApplication. No production scheduler change was made to satisfy it. Original KSP AWT shutdown/deprecation warnings also occurred in passing baseline builds.
+
+Migration failures were fixed rather than hidden: geographic radians extraction, native binary search, Xcode resource configuration/architecture, bundled SQLite immutable access and simulator App Group signing. Unsigned compilation is checked separately; runtime tests use Xcode-managed local ad-hoc simulator signing. A prior manual iPhone-style entitlement signature was rejected by macOS before app launch and is not counted as test success. Screenshot inspection also caught a nearly transparent accent asset; it now uses opaque floating-point components, a configured global accent and light/dark contrast assertions.
+
+## Exact build and CI instructions
+
+Android/JVM requires JDK 21 (recommended), Android SDK platform 36.1/build-tools 36.0.0 and an SDK path in local.properties or ANDROID_HOME:
 
 ```powershell
-.\gradlew.bat :shared:jvmTest :app:testDebugUnitTest :app:assembleDebug --console=plain
+.\gradlew.bat :shared:jvmTest :shared:compileCommonMainKotlinMetadata :app:testDebugUnitTest :app:assembleDebug --console=plain --max-workers=2
 ```
 
-On this Windows machine set JAVA_HOME to the installed Android Studio JBR and GRADLE_USER_HOME to the normal user Gradle directory if the execution environment overrides it. No local signing secrets are needed for generated debug signing. Release credentials remain environment-only.
+This Windows machine has Java 25 in the existing Android Studio JBR; verified local command:
 
-macOS: select Xcode 26.4.1, install JDK 21 and XcodeGen, then:
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio1\jbr'
+$env:GRADLE_USER_HOME='C:\Users\M1993\.gradle'
+Set-Location 'C:\Users\M1993\PrayerApp\.worktrees\ios'
+.\gradlew.bat :shared:jvmTest :shared:compileCommonMainKotlinMetadata :app:testDebugUnitTest :app:assembleDebug --console=plain --max-workers=2
+```
+
+Debug builds use the existing ignored repository key when present, otherwise normal generated Android debug signing. No key is committed; release signing remains environment-only.
+
+macOS ARM64: install/select Xcode 26.4.1, JDK 21 and XcodeGen, then from the ios checkout:
 
 ```sh
 export DEVELOPER_DIR=/Applications/Xcode_26.4.1.app/Contents/Developer
+brew install xcodegen
 bash tools/ios/build.sh
-xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination 'platform=iOS Simulator,name=YOUR_AVAILABLE_IPHONE' CODE_SIGNING_ALLOWED=NO test
+xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination 'generic/platform=iOS Simulator' -derivedDataPath iosApp/.derivedData CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build-for-testing
+bash tools/ios/sign_simulator.sh
+xcrun simctl list devices available
+# Set DEVICE to an available iPhone UDID on iOS 26.4, then:
+xcrun simctl boot "$DEVICE" || true
+xcrun simctl bootstatus "$DEVICE" -b
+bash ./gradlew :shared:iosSimulatorArm64Test --device "$DEVICE" --console=plain
+xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$DEVICE" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO test-without-building
+xcrun xcresulttool export attachments --path iosApp/TestResults.xcresult --output-path iosApp/screenshots
 ```
 
-The generator builds the correct simulator framework, copies unchanged database/audio, creates notification excerpts, and generates the Xcode project. Run it after changing Kotlin/resources. For an ARM64 device use `KOTLIN_TARGET=IosArm64 bash tools/ios/build.sh`, open the project and configure signing. `.github/workflows/multiplatform.yml` selects macos-26 and Xcode 26.4.1 explicitly, builds the unsigned app/extension, runs framework/SQLite/scheduler and UI tests, retains xcresult attachments and captures an actual simulator screenshot. The Android job builds APK and tests with JDK 21. No TestFlight/App Store operations are configured.
+The initial compile is unsigned. Runtime tests use locally ad-hoc signed simulator products from sign_simulator.sh; Xcode supplies correct simulator entitlements, without an Apple account, certificate or provisioning profile. Intel Macs use the generator's IosX64 framework, x86_64 builds and iosX64Test instead. Regenerate after shared logic/resources change. Generated Xcode project, framework, resource copies and build output are ignored.
+
+`.github/workflows/multiplatform.yml` runs on ios pushes and relevant pull requests, selecting macos-26/Xcode 26.4.1 explicitly and JDK 21. It compiles unsigned first, signs locally for runtime App Groups, runs common native/XCTest/UI tests, exports xcresult screenshots and uploads results. Android runs JVM parity, all Android tests and APK. Review/re-run an existing Actions run or push a source change to ios; docs-only pushes intentionally skip builds. Existing results are linked above. No distribution workflow is configured.
 
 ## Signing and physical installation later
 
-Unsigned simulator builds need no Apple account. Device installation requires access to a Mac/Xcode (a trusted remote Mac is sufficient), an Apple ID/appropriate development team, a registered iPhone with Developer Mode enabled and development signing/provisioning. For the shared App Group capabilities, register the app IDs `com.salati.prayertimes.ios` and `.widgets`, register `group.com.salati.prayertimes`, and enable it for both IDs/profiles. Change IDs/group consistently if already claimed. Select your team for all targets in Xcode. A paid Apple Developer membership may be required for these capabilities; none has been purchased or enrolled here. No distribution certificate, App Store Connect API key or release credentials are necessary for unsigned CI. Signed distribution/remote installation remains a separate user action.
+Device installation needs Mac/Xcode access (a trusted remote Mac can work), an Apple ID/team, development certificate/private key and provisioning profiles for the iPhone's UDID, plus Developer Mode. Generate the device framework with `KOTLIN_TARGET=IosArm64 bash tools/ios/build.sh`, open iosApp/Salati.xcodeproj and select the development team for app and widget targets.
 
-Physical checklist:
+Register app IDs `com.salati.prayertimes.ios` and `com.salati.prayertimes.ios.widgets` plus App Group `group.com.salati.prayertimes`, enabling that group in both profiles. If IDs are already claimed, change IDs/group consistently in project, entitlements and snapshot code. App Group capability may require paid Apple Developer membership; none was purchased or enrolled. Remote signed builds also require securely supplied development signing material and registered-device profiles. No App Store Connect key/distribution certificate is needed for simulator CI.
 
-1. Deny then grant GPS; compare exact coordinates, nearest-city label and border time zone. Verify unavailable/low-accuracy true heading and Qibla in a known location.
-2. Check Arabic RTL, Western digits, month names, light/dark, largest accessibility text, VoiceOver, Reduce Motion and Reduce Transparency.
-3. Compare local mosque times with each selected method/adjustment; cross midnight, DST and Ramadan; verify tomorrow Fajr/night milestones and month offset expiry.
-4. Grant/revoke both alert permissions; test Fajr alarm versus quieter other prayers, reminders, all selected sounds, Focus/silent mode, locked/terminated/rebooted device. Measure actual AlarmKit playback; never infer full-length behavior from simulator success.
-5. Change location/settings and confirm old alerts disappear. Leave beyond the six-day horizon to document refresh limits. Verify background denial and exhaustion messaging.
-6. Add widget, switch language/time format, check midnight/timeline expiry; start/schedule/end Live Activity on Lock Screen and Dynamic Island. Test App Group entitlements on the signed build.
+Short physical-iPhone checklist:
 
-## Independent upcoming default-audio update
+1. Deny/grant GPS; verify exact coordinates, nearest label/zone near borders, true heading and low-accuracy/no-compass handling against a reliable local reference.
+2. Check Arabic RTL/Western digits/month names, both appearances, small iPhone, largest text, VoiceOver, Reduce Motion and Reduce Transparency.
+3. Compare selected calculation methods with local mosque practice; cross midnight/DST/Ramadan and verify tomorrow Fajr, night milestones and Hijri-offset expiry.
+4. Grant/revoke both alert permissions; verify Fajr alarm versus quieter prayers, reminders, selected sounds, Focus/silent mode and locked/terminated/rebooted behavior. Measure actual sound duration.
+5. Change location/settings and confirm old alerts cancel. Test background denial and six-day horizon exhaustion/replenishment.
+6. Add Home Screen widgets, change language/time settings and cross midnight/expiry; start/schedule/end Live Activities on Lock Screen/Dynamic Island with signed App Groups.
 
-On Android_Legacy commit only the intended recording (and genuinely required audio metadata), e.g. app/src/main/res/raw/athan_default.mp3. On ios inspect `git show --stat AUDIO_COMMIT`, then `git cherry-pick AUDIO_COMMIT` if the commit contains only that update. If mixed with unrelated Android work, use `git restore --source=AUDIO_COMMIT -- app/src/main/res/raw/athan_default.mp3` and commit that file on ios; do not merge the branch wholesale. Run tools/ios/build.sh to regenerate full audio and 25-second excerpts; recheck audio rights, duration and device playback. Never move the baseline tag.
+No physical iPhone has been tested. Next work is this device/signing validation, then accessibility/size coverage and tuning based on observed results. Resolve those before release/distribution.
 
-## Next work
+## Carry the independent Android_Legacy audio update into ios
 
-Run/repair remote iOS and Android checks, inspect actual simulator screens, review accessibility/Arabic layouts, improve any observed failures, then physical device validation and signing when hardware/account access exists. Keep implemented, compiled, simulator-tested and device-tested status separate.
+Keep the baseline tag fixed. On Android_Legacy, commit only the intended recording and genuinely required metadata. On ios inspect the proposed commit first:
 
-## Official references checked
+```sh
+git show --stat AUDIO_COMMIT
+# If the commit is exclusively the intended audio change:
+git cherry-pick AUDIO_COMMIT
+# If it also contains unrelated Android changes, instead:
+git restore --source=AUDIO_COMMIT -- app/src/main/res/raw/athan_default.mp3
+git add app/src/main/res/raw/athan_default.mp3
+git commit -m "Update default adhan recording"
+```
+
+Choose one path, not both. Do not merge Android_Legacy wholesale. Rebuild Android and run tools/ios/build.sh/CI to regenerate the full recording and short CAF; verify duration and physical playback. Keep audio attribution/rights metadata with the change where applicable.
+
+## Official references consulted
 
 - [Kotlin Multiplatform compatibility](https://kotlinlang.org/docs/multiplatform/multiplatform-compatibility-guide.html)
-- [kotlinx-datetime and instant/calendar arithmetic](https://github.com/Kotlin/kotlinx-datetime)
+- [kotlinx-datetime](https://github.com/Kotlin/kotlinx-datetime)
 - [Apple: adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)
 - [Apple: scheduling AlarmKit alarms](https://developer.apple.com/documentation/alarmkit/scheduling-an-alarm-with-alarmkit)
-- [Apple: notification sound constraints](https://developer.apple.com/documentation/usernotifications/unnotificationsound)
+- [Apple: notification sounds](https://developer.apple.com/documentation/usernotifications/unnotificationsound)
 - [Apple: scheduled Live Activities](https://developer.apple.com/documentation/activitykit/activity/request(attributes:content:pushtype:style:alertconfiguration:start:))
+- [SQLite immutable database URI](https://www.sqlite.org/uri.html#uriimmutable)
 - [XcodeGen project/resource schema](https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md)
-
-## Linux baseline race diagnosis
-
-[Unchanged baseline audit](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39076463651) reproduced a scheduler cancellation assertion failure in the original commit. Migration Linux CI failed two related assertions while both builds passed all tests locally. PrayerApplication starts a real Dispatchers.Default DataStore collector on every Robolectric application startup; it can overwrite the explicit settings supplied by scheduler unit tests. The direct scheduler test class now uses a plain Android Application, isolating the unit under test. Every existing assertion is preserved; receiver/process integration tests continue using the real PrayerApplication. No production scheduling behavior was changed to make tests pass. [Linux reverification passed](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39076828765): shared tests, all 97 Android tests and APK.
-
-[Native shared tests](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39076033535) passed in the iOS 26.4.1 simulator before the obsolete combined run was cancelled for the corrected resource configuration. That run also proves the simulator boots; first boot and initial Xcode setup were slow rather than unavailable. Unsigned Swift compilation now runs before simulator startup and has a separate status.
-
-## iOS runtime database fix
-
-The first app-level simulator run passed the framework, audio-resource, alert-plan and Western-digit tests, then exposed a WAL sidecar failure reading the original database from the read-only app bundle. The unchanged asset is fully checkpointed but its SQLite header declares WAL mode. The iOS reader now uses SQLite's documented `immutable=1` URI mode with `SQLITE_OPEN_READONLY | SQLITE_OPEN_URI`, appropriate for an immutable bundled asset. The original database is not rewritten or replaced. Offline Arabic/English/nearest-place and both onboarding UI assertions are rerun unchanged. The same run confirmed that a truly unsigned app lacks App Group access; signed or local ad-hoc simulator entitlement validation remains separate from the unsigned compile checks.
-
-## Simulator App Group verification
-
-Unsigned compilation is retained as its own CI check. Runtime tests then apply a local ad-hoc simulator signature (`codesign --sign -`) to the app and widget with the declared App Group and debug entitlement. This uses no Apple certificate, account, provisioning profile or distribution signing and is not an iPhone install/signing bypass. The added runtime test writes and reads the actual App Group schedule snapshot, so widget storage is checked rather than assumed from successful compilation. Physical-device provisioning remains a separate requirement.
-
-The first manual simulator signature was rejected by macOS Taskgated before app execution. Runtime signing now goes through Xcode using `CODE_SIGN_IDENTITY=-` and manual local simulator signing, so Xcode supplies the correct simulator entitlement embedding and signs nested products. Device entitlements are not applied directly as a host macOS code signature. The prior crash was a CI signing error, not evidence about database or app behavior; no application tests are counted as passed for that failed launch.
