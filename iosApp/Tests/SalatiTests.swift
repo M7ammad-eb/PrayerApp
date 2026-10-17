@@ -1,4 +1,5 @@
 import XCTest
+import AVFoundation
 import SalatiCore
 @testable import Salati
 final class SalatiTests:XCTestCase {
@@ -46,5 +47,16 @@ final class SalatiTests:XCTestCase {
         let instant=ISO8601DateFormatter().date(from:"2026-01-15T05:00:00Z")!
         XCTAssertEqual(model.time(instant.timeIntervalSince1970),"08:00")
         XCTAssertEqual(model.iso(ISO8601DateFormatter().date(from:"2026-01-15T22:00:00Z")!),"2026-01-16")
+    }
+    func testBundledAudioResources() throws {
+        XCTAssertEqual(Recording.all.count,11)
+        for recording in Recording.all {
+            let full=try XCTUnwrap(Bundle.main.url(forResource:recording.id,withExtension:"mp3"))
+            let excerpt=try XCTUnwrap(Bundle.main.url(forResource:recording.id+"_short",withExtension:"caf"))
+            XCTAssertGreaterThan(try AVAudioPlayer(contentsOf:full).duration,0)
+            let duration=try AVAudioPlayer(contentsOf:excerpt).duration
+            XCTAssertGreaterThan(duration,0)
+            XCTAssertLessThanOrEqual(duration,25.1)
+        }
     }
 }

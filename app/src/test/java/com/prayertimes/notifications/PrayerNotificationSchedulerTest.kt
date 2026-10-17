@@ -1,5 +1,6 @@
 package com.prayertimes.notifications
 
+import android.app.Application
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.app.NotificationManager
@@ -31,7 +32,10 @@ import org.robolectric.shadows.ShadowAlarmManager
  * with FLAG_NO_CREATE - since that's exactly the mechanism the bug left broken.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+// Test explicit scheduler commands without PrayerApplication's concurrent DataStore observer,
+// which can replace a test's settings while assertions inspect pending alarms. The unchanged
+// baseline exhibited this race on Linux CI; receiver/process integration tests retain the real app.
+@Config(sdk = [36], application = Application::class)
 class PrayerNotificationSchedulerTest {
 
     private val context = ApplicationProvider.getApplicationContext<Context>()

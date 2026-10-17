@@ -88,3 +88,9 @@ Run/repair remote iOS and Android checks, inspect actual simulator screens, revi
 - [Apple: notification sound constraints](https://developer.apple.com/documentation/usernotifications/unnotificationsound)
 - [Apple: scheduled Live Activities](https://developer.apple.com/documentation/activitykit/activity/request(attributes:content:pushtype:style:alertconfiguration:start:))
 - [XcodeGen project/resource schema](https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md)
+
+## Linux baseline race diagnosis
+
+[Unchanged baseline audit](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39076463651) reproduced a scheduler cancellation assertion failure in the original commit. Migration Linux CI failed two related assertions while both builds passed all tests locally. PrayerApplication starts a real Dispatchers.Default DataStore collector on every Robolectric application startup; it can overwrite the explicit settings supplied by scheduler unit tests. The direct scheduler test class now uses a plain Android Application, isolating the unit under test. Every existing assertion is preserved; receiver/process integration tests continue using the real PrayerApplication. No production scheduling behavior was changed to make tests pass. Reverification pending.
+
+[Native shared tests](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39076033535) passed in the iOS 26.4.1 simulator before the obsolete combined run was cancelled for the corrected resource configuration. That run also proves the simulator boots; first boot and initial Xcode setup were slow rather than unavailable. Unsigned Swift compilation now runs before simulator startup and has a separate status.

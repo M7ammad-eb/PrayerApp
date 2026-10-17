@@ -41,9 +41,11 @@ struct HomeView: View {
                     LabeledContent("Last third",value:model.time(day.lastThirdEpoch))
                 }
                 Section {
-                    Button { Task { do {try do {try await model.scheduler.startLiveActivity(day:day,city:model.settings.location?.name ?? "",title:model.title(day.next))} catch {model.error=error.localizedDescription}} catch {model.error=error.localizedDescription} } } label: { Label("Show countdown on Lock Screen",systemImage:"lock.rectangle") }
-                    Button("Schedule next prayer countdown") {do {try model.scheduler.scheduleLiveActivity(day:day,city:model.settings.location?.name ?? "",title:model.title(day.next))} catch {model.error=error.localizedDescription}}
-                    Button("Schedule next prayer countdown") {do {try model.scheduler.scheduleLiveActivity(day:day,city:model.settings.location?.name ?? "",title:model.title(day.next))} catch {model.error=error.localizedDescription}}
+                    Button {startCountdown(day)} label: {Label("Show countdown on Lock Screen",systemImage:"lock.rectangle")}
+                    Button("Schedule next prayer countdown") {
+                        do {try model.scheduler.scheduleLiveActivity(day:day,city:model.settings.location?.name ?? "",title:model.title(day.next))}
+                        catch {model.error=error.localizedDescription}
+                    }
                 } footer: { Text("The countdown uses system rendering. Open Salati regularly to refresh changing prayer schedules.") }
             } else { ContentUnavailableView("Choose your location",systemImage:"location",description:Text("Prayer times are calculated entirely on your device.")) }
             if let status=model.scheduleStatus { Section { Text(status).font(.footnote).foregroundStyle(.secondary) } }
@@ -57,6 +59,12 @@ struct HomeView: View {
         .task(id:model.day?.next.epochSeconds) {
             guard let time=model.day?.next.epochSeconds else { return }
             do { try await Task.sleep(for:.seconds(max(1,time-Date().timeIntervalSince1970+1))); model.queueRefresh() } catch { }
+        }
+    }
+    func startCountdown(_ day: PrayerDay) {
+        Task {
+            do {try await model.scheduler.startLiveActivity(day:day,city:model.settings.location?.name ?? "",title:model.title(day.next))}
+            catch {model.error=error.localizedDescription}
         }
     }
     func symbol(_ id: String) -> String {
