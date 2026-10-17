@@ -1,0 +1,99 @@
+import Foundation
+import UserNotifications
+import AlarmKit
+import ActivityKit
+import SwiftUI
+import SalatiCore
+
+struct PrayerAlarmMetadata: AlarmMetadata { var prayer: String }
+struct ScheduledAlert: Equatable {
+    let id: String
+    let prayer: String
+    let title: String
+    let date: Date
+    let policy: PrayerPolicy
+    let reminder: Bool
+    static func plan(events:[SnapshotEvent],settings:Settings,now:Date) -> [ScheduledAlert] {
+        var items:[ScheduledAlert]=[]
+        for event in events {
+            let prayer=String(event.id.split(separator:".").last ?? "")
+            guard prayer != "SUNRISE",let policy=settings.policies[prayer],policy.delivery != .off else {continue}
+            if event.date>now {items.append(.init(id:"salati.\(event.id)",prayer:prayer,title:event.title,date:event.date,policy:policy,reminder:false))}
+            let reminder=event.date.addingTimeInterval(Double(-policy.reminder*60))
+            if policy.reminder>0 && reminder>now {items.append(.init(id:"salati.\(event.id).reminder",prayer:prayer,title:event.title,date:reminder,policy:policy,reminder:true))}
+        }
+        return Array(items.sorted {$0.date<$1.date}.prefix(60))
+    }
+}
+@MainActor final class PrayerScheduler {
+    private let notifications=UNUserNotificationCenter.current()
+    private var revision=0
+    func authorizeNotifications() async -> String {
+        do {return try await notifications.requestAuthorization(options:[.alert,.sound,.badge]) ? "Notifications allowed" : "Notifications were not allowed. You can change this in iOS Settings."}
+        catch {return error.localizedDescription}
+    }
+    func authorizeAlarms() async -> String {
+        do {return try await AlarmManager.shared.requestAuthorization() == .authorized ? "System alarms allowed" : "System alarms were not allowed. You can change this in iOS Settings."}
+        catch {return error.localizedDescription}
+    }
+    func reconcile(events:[SnapshotEvent],settings:Settings) async -> String {
+        revision+=1; let current=revision
+        var failures:[String]=[]
+        let pending=await notifications.pendingNotificationRequests()
+        guard current==revision && !Task.isCancelled else {return ""}
+        notifications.removePendingNotificationRequests(withIdentifiers:pending.filter {$0.identifier.hasPrefix("salati.")}.map(\.identifier))
+        // Query the system so interrupted prior scheduling cannot orphan a persisted alarm.
+        do {for alarm in try AlarmManager.shared.alarms {try AlarmManager.shared.cancel(id:alarm.id)}}
+        catch {failures.append("Could not clear previous alarms: \(error.localizedDescription)")}
+        let permission=await notifications.notificationSettings()
+        guard current==revision && !Task.isCancelled else {return ""}
+        let plan=ScheduledAlert.plan(events:events,settings:settings,now:Date())
+        var scheduled=0
+        for item in plan {
+            guard current==revision && !Task.isCancelled else {return ""}
+            do {
+                if item.policy.delivery == .alarm && !item.reminder {
+                    guard AlarmManager.shared.authorizationState == .authorized else {failures.append("Allow system alarms to use the selected alarm policy.");continue}
+                    guard item.policy.sound != "silent" else {failures.append("System alarms require an audible sound. Choose Notification for silent delivery.");continue}
+                    let stop=AlarmButton(text:settings.language == "ar" ? "إيقاف" : "Stop",textColor:.white,systemImageName:"stop.fill")
+                    let alert=AlarmPresentation.Alert(title:LocalizedStringResource(stringLiteral:item.title),stopButton:stop)
+                    let attributes=AlarmAttributes(presentation:AlarmPresentation(alert:alert),metadata:PrayerAlarmMetadata(prayer:item.prayer),tintColor:Color.green)
+                    let sound: AlertConfiguration.AlertSound = item.policy.sound == "default" || item.policy.sound == "silent" ? .default : .named("\(item.policy.sound)_short.caf")
+                    // AlarmKit is intentionally a prominent audible policy. A silent system alarm
+                    // is not represented as an Android audio-stream mapping.
+                    _=try await AlarmManager.shared.schedule(id:UUID(),configuration:AlarmManager.AlarmConfiguration.alarm(schedule:.fixed(item.date),attributes:attributes,sound:sound))
+                } else {
+                    guard permission.authorizationStatus == .authorized || permission.authorizationStatus == .provisional else {failures.append("Allow notifications for the selected alerts and reminders.");continue}
+                    let content=UNMutableNotificationContent()
+                    content.title=item.title
+                    content.body=item.reminder ? (settings.language == "ar" ? "اقترب موعد الصلاة" : "Prayer time is approaching") : (settings.language == "ar" ? "حان وقت الصلاة" : "It is time for prayer")
+                    content.sound=item.policy.sound == "silent" ? nil : item.policy.sound == "default" ? .default : UNNotificationSound(named:UNNotificationSoundName("\(item.policy.sound)_short.caf"))
+                    var calendar=Calendar(identifier:.gregorian);calendar.timeZone = .gmt
+                    var components=calendar.dateComponents([.year,.month,.day,.hour,.minute,.second],from:item.date);components.timeZone = .gmt
+                    try await notifications.add(UNNotificationRequest(identifier:item.id,content:content,trigger:UNCalendarNotificationTrigger(dateMatching:components,repeats:false)))
+                }
+                scheduled+=1
+            } catch {failures.append(error.localizedDescription)}
+        }
+        let unique=Array(Set(failures)).sorted().joined(separator:" ")
+        let horizon=plan.last.map {DateFormatter.localizedString(from:$0.date,dateStyle:.medium,timeStyle:.short)} ?? "—"
+        return "\(scheduled) alerts prepared through \(horizon). \(unique)"
+    }
+    func startLiveActivity(day:PrayerDay,city:String,title:String) async throws {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {throw CocoaError(.featureUnsupported)}
+        for existing in Activity<PrayerActivityAttributes>.activities {await existing.end(nil,dismissalPolicy:.immediate)}
+        let date=Date(timeIntervalSince1970:day.next.epochSeconds)
+        guard date>Date() else {return}
+        let content=ActivityContent(state:PrayerActivityAttributes.ContentState(title:title,date:date),staleDate:date)
+        _=try Activity.request(attributes:PrayerActivityAttributes(city:city),content:content,pushType:nil)
+    }
+    // One scheduled countdown, started shortly before the next prayer. Requesting it is an
+    // explicit foreground action; there is no server or assumption of indefinite execution.
+    func scheduleLiveActivity(day:PrayerDay,city:String,title:String) throws {
+        let date=Date(timeIntervalSince1970:day.next.epochSeconds)
+        let start=date.addingTimeInterval(-300)
+        guard start>Date(),ActivityAuthorizationInfo().areActivitiesEnabled else {return}
+        let content=ActivityContent(state:PrayerActivityAttributes.ContentState(title:title,date:date),staleDate:date)
+        _=try Activity<PrayerActivityAttributes>.request(attributes:PrayerActivityAttributes(city:city),content:content,pushType:nil,style:.standard,alertConfiguration:AlertConfiguration(title:LocalizedStringResource(stringLiteral:title),body:"Prayer countdown",sound:.default),start:start)
+    }
+}

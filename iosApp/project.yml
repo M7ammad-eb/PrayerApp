@@ -1,0 +1,66 @@
+name: Salati
+options:
+  bundleIdPrefix: com.salati
+  deploymentTarget:
+    iOS: "26.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    SWIFT_STRICT_CONCURRENCY: targeted
+targets:
+  Salati:
+    type: application
+    platform: iOS
+    sources: [Salati, SharedPresentation]
+    resources: [Generated/Resources]
+    dependencies:
+      - framework: Generated/SalatiCore.framework
+        embed: false
+      - target: SalatiWidgets
+      - sdk: libsqlite3.tbd
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.salati.prayertimes.ios
+        INFOPLIST_FILE: Config/App-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/Salati.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  SalatiWidgets:
+    type: app-extension
+    platform: iOS
+    sources: [Widgets, SharedPresentation]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.salati.prayertimes.ios.widgets
+        INFOPLIST_FILE: Config/Widget-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/Salati.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+  SalatiTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: Salati
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+  SalatiUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: Salati
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Salati:
+    build:
+      targets:
+        Salati: all
+    test:
+      targets: [SalatiTests, SalatiUITests]

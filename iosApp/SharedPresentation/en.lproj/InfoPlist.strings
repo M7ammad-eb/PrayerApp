@@ -1,0 +1,2 @@
+"NSLocationWhenInUseUsageDescription" = "Salati uses your coordinates to calculate prayer times and label your location offline.";
+"NSAlarmKitUsageDescription" = "Allow Salati to schedule system alarms for prayers you choose.";
