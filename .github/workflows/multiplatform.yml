@@ -80,10 +80,16 @@ jobs:
         timeout-minutes: 15
         run: |
           xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO test-without-building
+      - name: Export runtime screenshots and diagnostic attachments
+        if: always()
+        continue-on-error: true
+        run: |
+          if [[ -d iosApp/TestResults.xcresult ]]; then
+            xcrun xcresulttool export attachments --path iosApp/TestResults.xcresult --output-path iosApp/screenshots
+          fi
       - name: Capture running simulator
         if: success()
         run: |
-          xcrun xcresulttool export attachments --path iosApp/TestResults.xcresult --output-path iosApp/screenshots
           xcrun simctl terminate "$SIMULATOR_ID" com.salati.prayertimes.ios || true
           xcrun simctl launch "$SIMULATOR_ID" com.salati.prayertimes.ios
           sleep 3
