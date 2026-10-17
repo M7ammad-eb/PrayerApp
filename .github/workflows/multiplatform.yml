@@ -62,14 +62,24 @@ jobs:
       - run: brew install xcodegen
       - name: Build Kotlin framework and reproducible Xcode project
         run: bash tools/ios/build.sh
-      - name: Unsigned simulator integration and UI tests
+      - name: Compile unsigned app, extension and tests
+        timeout-minutes: 12
+        run: xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination 'generic/platform=iOS Simulator' -derivedDataPath iosApp/.derivedData CODE_SIGNING_ALLOWED=NO build-for-testing
+      - name: Select and boot compatible simulator
+        timeout-minutes: 5
         run: |
-          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for k,vs in d["devices"].items() if "iOS-26" in k for v in vs if "iPhone" in v["name"]))')
+          xcrun simctl list devices available
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for k,vs in d["devices"].items() if "iOS-26-4" in k for v in vs if "iPhone" in v["name"]))')
           echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
           xcrun simctl boot "$DEVICE" || true
           xcrun simctl bootstatus "$DEVICE" -b
-          bash ./gradlew :shared:iosSimulatorArm64Test --device "$DEVICE" --console=plain
-          xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$DEVICE" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO test
+      - name: Native shared-core tests
+        timeout-minutes: 10
+        run: bash ./gradlew :shared:iosSimulatorArm64Test --device "$SIMULATOR_ID" --console=plain
+      - name: Unsigned SwiftUI build and tests
+        timeout-minutes: 15
+        run: |
+          xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO test-without-building
       - name: Capture running simulator
         if: success()
         run: |
