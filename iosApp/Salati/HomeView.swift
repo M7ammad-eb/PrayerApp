@@ -33,13 +33,13 @@ struct HomeView: View {
                 Section(model.displayDate(Date())) {
                     ForEach(day.events,id:\.id) { event in
                         HStack(spacing:14) {
-                            Image(systemName:symbol(event.id)).foregroundStyle(event.id == day.next.id ? Color.accentColor : .secondary).frame(width:28).accessibilityHidden(true)
+                            Image(systemName:symbol(event.id)).foregroundStyle(event.epochSeconds == day.next.epochSeconds ? Color.accentColor : .secondary).frame(width:28).accessibilityHidden(true)
                             VStack(alignment:.leading,spacing:3) {
-                                Text(model.title(event)).fontWeight(event.id == day.next.id ? .semibold : .regular)
+                                Text(model.title(event)).fontWeight(event.epochSeconds == day.next.epochSeconds ? .semibold : .regular)
                                 if event.epochSeconds == day.current.epochSeconds { Text(day.currentEnded ? "Prayer time ended" : "Current prayer").font(.caption).foregroundStyle(.secondary) }
                             }
                             Spacer(minLength:8)
-                            Text(model.time(event.epochSeconds)).monospacedDigit().fontWeight(event.id == day.next.id ? .semibold : .regular)
+                            Text(model.time(event.epochSeconds)).monospacedDigit().fontWeight(event.epochSeconds == day.next.epochSeconds ? .semibold : .regular)
                         }.padding(.vertical,6).accessibilityElement(children:.combine)
                     }
                 }
