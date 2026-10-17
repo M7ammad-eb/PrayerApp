@@ -25,3 +25,5 @@ dependencyResolutionManagement {
 rootProject.name = "Prayer Times"
 
 include(":app")
+
+include(":shared")

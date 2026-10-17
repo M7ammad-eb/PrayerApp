@@ -11,8 +11,8 @@ object QiblaCalculator {
     const val KAABA_LATITUDE = 21.422487
     const val KAABA_LONGITUDE = 39.826206
 
-    private const val DEG_TO_RAD = Math.PI / 180.0
-    private const val RAD_TO_DEG = 180.0 / Math.PI
+    private const val DEG_TO_RAD = kotlin.math.PI / 180.0
+    private const val RAD_TO_DEG = 180.0 / kotlin.math.PI
 
     /**
      * Calculates the Qibla bearing in degrees from True North (0° - 360° clockwise)

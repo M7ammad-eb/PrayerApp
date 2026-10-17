@@ -78,10 +78,7 @@ object PlaceRepository {
 
     /** Converts arbitrary Arabic/Latin input into a safe all-token FTS prefix query. */
     internal fun buildFtsMatchQuery(query: String): String =
-        Regex("[\\p{L}\\p{N}]+")
-            .findAll(query)
-            .map { "${it.value}*" }
-            .joinToString(" ")
+        com.salati.shared.SalatiEngine().searchTokens(query)
 
     // internal (not private) so relation-bucketing math can be unit-tested without spinning up Room.
     internal fun nearestOf(candidates: List<PlaceEntity>, lat: Double, lon: Double): NearestPlaceResult {

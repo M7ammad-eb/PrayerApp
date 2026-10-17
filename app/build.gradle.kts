@@ -43,7 +43,7 @@ android {
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
     }
-    debug { signingConfig = signingConfigs.getByName("debugConfig") }
+    debug { if (rootProject.file("debug.keystore").exists()) signingConfig = signingConfigs.getByName("debugConfig") }
   }
   compileOptions {
     isCoreLibraryDesugaringEnabled = true
@@ -69,6 +69,7 @@ android {
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
 dependencies {
+  implementation(project(":shared"))
   coreLibraryDesugaring(libs.desugar.jdk.libs)
   implementation(platform(libs.androidx.compose.bom))
   // implementation(platform(libs.firebase.bom))

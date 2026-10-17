@@ -539,8 +539,9 @@ class PrayerPreferences(private val context: Context) {
             prefs[Keys.LOC_LON] = location.longitude
             prefs[Keys.LOC_TZ] = location.timeZoneId
             prefs[Keys.LOC_IS_GPS] = location.isGps
-            if (location.nearestPlaceDistanceKm != null) {
-                prefs[Keys.LOC_DISTANCE_KM] = location.nearestPlaceDistanceKm
+            val nearestDistance = location.nearestPlaceDistanceKm
+            if (nearestDistance != null) {
+                prefs[Keys.LOC_DISTANCE_KM] = nearestDistance
             } else {
                 prefs.remove(Keys.LOC_DISTANCE_KM)
             }

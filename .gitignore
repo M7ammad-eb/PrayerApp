@@ -19,3 +19,13 @@ debug.keystore
 *.jks
 *.keystore
 /play-store-assets
+
+.worktrees/
+**/build/
+*.log
+iosApp/Generated/
+iosApp/*.xcodeproj/
+iosApp/.derivedData/
+
+/tools/migration/*.py
+/tools/migration/*.json
