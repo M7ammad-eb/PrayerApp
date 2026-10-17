@@ -35,8 +35,8 @@ A maximum of 60 combined alerts/reminders over six date-specific prayer schedule
 
 - Windows: original baseline Android unit tests + debug APK passed using existing ignored debug keystore. Without that key the baseline failed validateSigningDebug; migration falls back to generated Android debug signing safely.
 - Shared JVM suite passed: every supported Umm al-Qura day and 18,144 prayer combinations (Madinah/Makkah/Damascus/London/New York/Tokyo/Auckland/Honolulu/Tromso; 14 methods; both juristic choices; all high latitude rules; Ramadan/non-Ramadan; DST dates; adjustments and Hijri offsets), plus common end-to-end boundary/calendar tests.
-- Integrated Android: debug APK built. Regression rerun in progress after fixing a radians-parentheses error caught by six unchanged geographic tests. No expected values were changed. Existing KSP AWT shutdown exception and deprecation warnings also appeared in the passing baseline.
-- iOS source implemented. Native compilation, Swift integration and simulator/UI tests pending GitHub Actions; no physical iPhone validation or simulator screenshots claimed yet.
+- Integrated Android: all 97 unchanged tests and debug APK passed. Six geographic failures from a radians-parentheses extraction error were fixed; no test expectations were changed. Shared suite: 7 tests passed, including the 18,144-case differential matrix and all supported calendar days. Existing KSP AWT shutdown exception and deprecation warnings also appeared in the passing baseline.
+- iOS source implemented. First macOS run reached native compilation and exposed a JVM-only IntArray binarySearch extension; replaced with a common binary search. Android CI SDK bootstrap fixed to omit the retired tools package. Swift integration and simulator/UI tests pending rerun; no physical iPhone validation or simulator screenshots claimed yet.
 
 ## Build locally and in CI
 

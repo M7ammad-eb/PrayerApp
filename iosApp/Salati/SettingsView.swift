@@ -58,7 +58,7 @@ struct NotificationSettingsView: View {
                     }
                     Picker("Sound",selection:policy(id,\.sound)) {
                         Text("System sound").tag("default");if model.settings.policies[id]?.delivery != .alarm {Text("Silent").tag("silent")}
-                        ForEach(Recording.all) {Text($0.name).tag($0.id)}
+                        ForEach(Recording.all) {Text(model.arabic ? $0.arabic : $0.english).tag($0.id)}
                     }
                     Stepper(value:policy(id,\.reminder),in:0...60,step:5) {LabeledContent("Reminder before prayer",value:(model.settings.policies[id]?.reminder ?? 0).description+" min")}
                     if let sound=model.settings.policies[id]?.sound,Recording.all.contains(where:{$0.id == sound}) {

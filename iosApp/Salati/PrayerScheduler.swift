@@ -26,6 +26,7 @@ struct ScheduledAlert: Equatable {
     }
 }
 @MainActor final class PrayerScheduler {
+    static let shared=PrayerScheduler()
     private let notifications=UNUserNotificationCenter.current()
     private var revision=0
     func authorizeNotifications() async -> String {
@@ -38,6 +39,7 @@ struct ScheduledAlert: Equatable {
     }
     func reconcile(events:[SnapshotEvent],settings:Settings) async -> String {
         revision+=1; let current=revision
+        let batch=UUID().uuidString
         var failures:[String]=[]
         let pending=await notifications.pendingNotificationRequests()
         guard current==revision && !Task.isCancelled else {return ""}
@@ -61,7 +63,9 @@ struct ScheduledAlert: Equatable {
                     let sound: AlertConfiguration.AlertSound = item.policy.sound == "default" || item.policy.sound == "silent" ? .default : .named("\(item.policy.sound)_short.caf")
                     // AlarmKit is intentionally a prominent audible policy. A silent system alarm
                     // is not represented as an Android audio-stream mapping.
-                    _=try await AlarmManager.shared.schedule(id:UUID(),configuration:AlarmManager.AlarmConfiguration.alarm(schedule:.fixed(item.date),attributes:attributes,sound:sound))
+                    let alarmID=UUID()
+                    _=try await AlarmManager.shared.schedule(id:alarmID,configuration:AlarmManager.AlarmConfiguration.alarm(schedule:.fixed(item.date),attributes:attributes,sound:sound))
+                    guard current==revision && !Task.isCancelled else {try AlarmManager.shared.cancel(id:alarmID);return ""}
                 } else {
                     guard permission.authorizationStatus == .authorized || permission.authorizationStatus == .provisional else {failures.append("Allow notifications for the selected alerts and reminders.");continue}
                     let content=UNMutableNotificationContent()
@@ -70,7 +74,9 @@ struct ScheduledAlert: Equatable {
                     content.sound=item.policy.sound == "silent" ? nil : item.policy.sound == "default" ? .default : UNNotificationSound(named:UNNotificationSoundName("\(item.policy.sound)_short.caf"))
                     var calendar=Calendar(identifier:.gregorian);calendar.timeZone = .gmt
                     var components=calendar.dateComponents([.year,.month,.day,.hour,.minute,.second],from:item.date);components.timeZone = .gmt
-                    try await notifications.add(UNNotificationRequest(identifier:item.id,content:content,trigger:UNCalendarNotificationTrigger(dateMatching:components,repeats:false)))
+                    let identifier=item.id+"."+batch
+                    try await notifications.add(UNNotificationRequest(identifier:identifier,content:content,trigger:UNCalendarNotificationTrigger(dateMatching:components,repeats:false)))
+                    guard current==revision && !Task.isCancelled else {notifications.removePendingNotificationRequests(withIdentifiers:[identifier]);return ""}
                 }
                 scheduled+=1
             } catch {failures.append(error.localizedDescription)}
@@ -92,7 +98,8 @@ struct ScheduledAlert: Equatable {
     func scheduleLiveActivity(day:PrayerDay,city:String,title:String) throws {
         let date=Date(timeIntervalSince1970:day.next.epochSeconds)
         let start=date.addingTimeInterval(-300)
-        guard start>Date(),ActivityAuthorizationInfo().areActivitiesEnabled else {return}
+        guard start>Date(),ActivityAuthorizationInfo().areActivitiesEnabled else {throw CocoaError(.featureUnsupported)}
+        guard Activity<PrayerActivityAttributes>.activities.isEmpty else {throw CocoaError(.validationMultipleErrors)}
         let content=ActivityContent(state:PrayerActivityAttributes.ContentState(title:title,date:date),staleDate:date)
         _=try Activity<PrayerActivityAttributes>.request(attributes:PrayerActivityAttributes(city:city),content:content,pushType:nil,style:.standard,alertConfiguration:AlertConfiguration(title:LocalizedStringResource(stringLiteral:title),body:"Prayer countdown",sound:.default),start:start)
     }

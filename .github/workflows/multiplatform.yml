@@ -21,7 +21,11 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name != 'push' }}
       - run: sdkmanager 'platforms;android-36.1' 'build-tools;36.0.0'
       - name: Shared parity, Android tests and APK
         run: bash ./gradlew :shared:jvmTest :app:testDebugUnitTest :app:assembleDebug --console=plain
@@ -47,6 +51,12 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name != 'push' }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ runner.arch }}-2.4.10-xcode26.4.1
       - run: brew install xcodegen
       - name: Build Kotlin framework and reproducible Xcode project
         run: bash tools/ios/build.sh
@@ -56,10 +66,13 @@ jobs:
           echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
           xcrun simctl boot "$DEVICE" || true
           xcrun simctl bootstatus "$DEVICE" -b
+          bash ./gradlew :shared:iosSimulatorArm64Test --device "$DEVICE" --console=plain
           xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$DEVICE" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO test
       - name: Capture running simulator
         if: success()
         run: |
+          xcrun xcresulttool export attachments --path iosApp/TestResults.xcresult --output-path iosApp/screenshots
+          xcrun simctl terminate "$SIMULATOR_ID" com.salati.prayertimes.ios || true
           xcrun simctl launch "$SIMULATOR_ID" com.salati.prayertimes.ios
           sleep 3
           xcrun simctl io "$SIMULATOR_ID" screenshot iosApp/simulator-home.png
@@ -70,4 +83,5 @@ jobs:
           path: |
             iosApp/TestResults.xcresult
             iosApp/*.png
+            iosApp/screenshots
             shared/build/reports/tests

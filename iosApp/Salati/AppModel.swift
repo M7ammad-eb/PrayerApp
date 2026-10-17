@@ -8,7 +8,7 @@ import CoreLocation
     let engine = SalatiEngine()
     let places = OfflinePlaces()
     let locationService = LocationService()
-    let scheduler = PrayerScheduler()
+    let scheduler = PrayerScheduler.shared
     @Published var settings = Settings.load() { didSet { settings.save(); queueRefresh() } }
     @Published var day: PrayerDay?
     @Published var error: String?

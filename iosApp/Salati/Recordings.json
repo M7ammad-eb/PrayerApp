@@ -1,0 +1,57 @@
+[
+  {
+    "id": "athan_default",
+    "english": "Default Athan",
+    "arabic": "الأذان الافتراضي"
+  },
+  {
+    "id": "athan_makkah_ali_bin_ahmad_mula",
+    "english": "Makkah - Ali Bin Ahmad Mullah",
+    "arabic": "مكة المكرمة - علي بن أحمد ملا"
+  },
+  {
+    "id": "athan_fajr1_kwait_mashary_alafasy",
+    "english": "Fajr (Kuwait) - Mishary Alafasy",
+    "arabic": "أذان الفجر (الكويت) - مشاري العفاسي"
+  },
+  {
+    "id": "athan_fajr2_jordan_kamel_allala",
+    "english": "Fajr (Jordan) - Kamel Allala",
+    "arabic": "أذان الفجر (الأردن) - كامل اللالا"
+  },
+  {
+    "id": "athan_riyadh_naser_alqatami",
+    "english": "Riyadh - Nasser Al-Qatami",
+    "arabic": "الرياض - ناصر القطامي"
+  },
+  {
+    "id": "athan_qatar_saleh_alnabet",
+    "english": "Qatar - Saleh Al-Nabet",
+    "arabic": "قطر - صالح النابت"
+  },
+  {
+    "id": "athan_palastine_quds_nagi_qazaz_1",
+    "english": "Al-Aqsa Al-Quds - Naji Qazzaz",
+    "arabic": "المسجد الأقصى - ناجي قزاز"
+  },
+  {
+    "id": "athan_egypt_ahmad_dawod",
+    "english": "Egypt - Ahmad Dawod",
+    "arabic": "مصر - أحمد داود"
+  },
+  {
+    "id": "athan_egypt_salah_alalfi",
+    "english": "Fajr (Egypt) - Salah Al-Alfi",
+    "arabic": "أذان الفجر (مصر) - صلاح الألفي"
+  },
+  {
+    "id": "athan_egypt_alhusain_sayed_abdulaati",
+    "english": "Egypt - Sayed Abdulaati",
+    "arabic": "مصر - سيد عبد العاطي"
+  },
+  {
+    "id": "athan_iraq_abu_omar_alamouri",
+    "english": "Iraq - Abu Omar Al-Maamouri",
+    "arabic": "العراق - أبو عمر المعموري"
+  }
+]

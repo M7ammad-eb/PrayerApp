@@ -20,3 +20,15 @@ p=Path('iosApp/Salati/PrayerScheduler.swift');s=p.read_text().replace('func star
 p=Path('iosApp/Salati/HomeView.swift');s=p.read_text().replace('await model.scheduler.startLiveActivity(day:day,city:model.settings.location?.name ?? "",title:model.title(day.next))','do {try await model.scheduler.startLiveActivity(day:day,city:model.settings.location?.name ?? "",title:model.title(day.next))} catch {model.error=error.localizedDescription}')
 s=s.replace('                } footer: { Text("The countdown uses','                    Button("Schedule next prayer countdown") {do {try model.scheduler.scheduleLiveActivity(day:day,city:model.settings.location?.name ?? "",title:model.title(day.next))} catch {model.error=error.localizedDescription}}\n                } footer: { Text("The countdown uses');p.write_text(s)
 p=Path('iosApp/Salati/PlacesView.swift');s=p.read_text().replace('    @ObservedObject private var service: LocationService\n','').replace('    init(service:LocationService = LocationService()) { self.service=service }\n','');p.write_text(s)
+
+# Generate the shared recording catalogue from Android metadata rather than filename guesses.
+models=Path('app/src/main/java/com/prayertimes/data/models/PrayerModels.kt').read_text(encoding='utf-8')
+engine=Path('app/src/main/java/com/prayertimes/audio/AthanAudioEngine.kt').read_text(encoding='utf-8')
+metadata={key:(en,ar) for key,en,ar in re.findall(r'\s+(ATHAN_\w+)\("([^"\n]*)", "[^"\n]*", "([^"\n]*)", true\)',models)}
+mapping=re.findall(r'NotificationSoundType\.(ATHAN_\w+) -> R.raw.(\w+)',engine)
+recordings=[]
+for key,file in mapping:
+ if key in metadata:
+  en,ar=metadata[key]
+  recordings.append({'id':file,'english':en,'arabic':ar})
+Path('iosApp/Salati/Recordings.json').write_text(json.dumps(recordings,ensure_ascii=False,indent=2),encoding='utf-8')

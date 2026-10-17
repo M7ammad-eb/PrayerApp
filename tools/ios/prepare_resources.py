@@ -15,3 +15,6 @@ asset=out/'Assets.xcassets/AppIcon.appiconset';asset.mkdir(parents=True,exist_ok
 source=root/'app/src/main/res/mipmap-xxxhdpi/salati_launcher.png'
 shutil.copy2(source,asset/'Icon.png')
 (asset/'Contents.json').write_text(json.dumps({'images':[{'filename':'Icon.png','idiom':'universal','platform':'ios','size':'1024x1024'}],'info':{'author':'xcode','version':1}}))
+
+accent=out/'Assets.xcassets/AccentColor.colorset';accent.mkdir(parents=True,exist_ok=True)
+(accent/'Contents.json').write_text(json.dumps({'colors':[{'idiom':'universal','color':{'color-space':'srgb','components':{'red':'0.18','green':'0.39','blue':'0.31','alpha':'1'}}},{'idiom':'universal','appearances':[{'appearance':'luminosity','value':'dark'}],'color':{'color-space':'srgb','components':{'red':'0.55','green':'0.78','blue':'0.67','alpha':'1'}}}],'info':{'author':'xcode','version':1}}))

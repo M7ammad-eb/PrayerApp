@@ -21,13 +21,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var model=AppModel()
     @Environment(\.scenePhase) private var phase
+    @Environment(\.colorScheme) private var scheme
     var body: some Scene {
         WindowGroup {
             RootView().environmentObject(model)
                 .environment(\.locale,model.locale)
                 .environment(\.layoutDirection,model.arabic ? .rightToLeft : .leftToRight)
                 .preferredColorScheme(model.settings.appearance == "dark" ? .dark : model.settings.appearance == "light" ? .light : nil)
-                .tint(Color(red:0.20,green:0.43,blue:0.36))
+                .tint(Color("AccentColor"))
                 .task { await model.refresh() }
                 .onChange(of:phase) { _,phase in if phase == .active { model.queueRefresh() } }
                 .onReceive(NotificationCenter.default.publisher(for:UIApplication.significantTimeChangeNotification)) { _ in model.queueRefresh() }

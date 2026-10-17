@@ -49,7 +49,14 @@ object HijriDateCalculator {
     fun convertToHijri(date: LocalDate, adjustmentDays: Int = 0): HijriDate {
         return try {
             val adjustedDate = date.plusDays(adjustmentDays.toLong())
-            val index = ummAlQuraMonthStarts.binarySearch(adjustedDate.toEpochDay().toInt()).let { if(it >= 0) it else -it - 2 }
+            val epochDay = adjustedDate.toEpochDay().toInt()
+            var low = 0
+            var high = ummAlQuraMonthStarts.size
+            while (low < high) {
+                val middle = (low + high) / 2
+                if (ummAlQuraMonthStarts[middle] <= epochDay) low = middle + 1 else high = middle
+            }
+            val index = low - 1
             require(index in 0 until ummAlQuraMonthStarts.lastIndex)
             val day = (adjustedDate.toEpochDay() - ummAlQuraMonthStarts[index] + 1).toInt()
             val month = index % 12 + 1
