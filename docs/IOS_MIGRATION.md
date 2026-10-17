@@ -36,7 +36,7 @@ A maximum of 60 combined alerts/reminders over six date-specific prayer schedule
 - Windows: original baseline Android unit tests + debug APK passed using existing ignored debug keystore. Without that key the baseline failed validateSigningDebug; migration falls back to generated Android debug signing safely.
 - Shared JVM suite passed: every supported Umm al-Qura day and 18,144 prayer combinations (Madinah/Makkah/Damascus/London/New York/Tokyo/Auckland/Honolulu/Tromso; 14 methods; both juristic choices; all high latitude rules; Ramadan/non-Ramadan; DST dates; adjustments and Hijri offsets), plus common end-to-end boundary/calendar tests.
 - Integrated Android: all 97 unchanged tests and debug APK passed. Six geographic failures from a radians-parentheses extraction error were fixed; no test expectations were changed. Shared suite: 7 tests passed, including the 18,144-case differential matrix and all supported calendar days. Existing KSP AWT shutdown exception and deprecation warnings also appeared in the passing baseline.
-- iOS source implemented. First macOS run reached native compilation and exposed a JVM-only IntArray binarySearch extension; replaced with a common binary search. Android CI SDK bootstrap fixed to omit the retired tools package. Swift integration and simulator/UI tests pending rerun; no physical iPhone validation or simulator screenshots claimed yet.
+- iOS source implemented. First macOS run reached native compilation and exposed a JVM-only IntArray binarySearch extension; replaced with a common binary search. Android CI SDK bootstrap fixed to omit the retired tools package. Kotlin simulator framework and resource/project generation succeeded on the second run. Native common tests, Swift integration and simulator/UI tests are being exercised in CI. Linux migration CI built the APK but failed two scheduler assertions (all 97 pass on Windows); an unchanged-baseline Linux audit is running to classify them; no physical iPhone validation or simulator screenshots claimed yet.
 
 ## Build locally and in CI
 
@@ -78,3 +78,13 @@ On Android_Legacy commit only the intended recording (and genuinely required aud
 ## Next work
 
 Run/repair remote iOS and Android checks, inspect actual simulator screens, review accessibility/Arabic layouts, improve any observed failures, then physical device validation and signing when hardware/account access exists. Keep implemented, compiled, simulator-tested and device-tested status separate.
+
+## Official references checked
+
+- [Kotlin Multiplatform compatibility](https://kotlinlang.org/docs/multiplatform/multiplatform-compatibility-guide.html)
+- [kotlinx-datetime and instant/calendar arithmetic](https://github.com/Kotlin/kotlinx-datetime)
+- [Apple: adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)
+- [Apple: scheduling AlarmKit alarms](https://developer.apple.com/documentation/alarmkit/scheduling-an-alarm-with-alarmkit)
+- [Apple: notification sound constraints](https://developer.apple.com/documentation/usernotifications/unnotificationsound)
+- [Apple: scheduled Live Activities](https://developer.apple.com/documentation/activitykit/activity/request(attributes:content:pushtype:style:alertconfiguration:start:))
+- [XcodeGen project/resource schema](https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md)

@@ -3,6 +3,7 @@ import Combine
 
 @MainActor final class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
+    private var waitingForAuthorization=false
     @Published var heading: Double?
     @Published var accuracy: Double?
     @Published var message: String?
@@ -10,7 +11,7 @@ import Combine
     override init() { super.init(); manager.delegate=self; manager.desiredAccuracy=kCLLocationAccuracyHundredMeters }
     func request() {
         switch manager.authorizationStatus {
-        case .notDetermined: manager.requestWhenInUseAuthorization()
+        case .notDetermined: waitingForAuthorization=true; manager.requestWhenInUseAuthorization()
         case .authorizedAlways,.authorizedWhenInUse: manager.requestLocation()
         default: message="Location access is unavailable. Choose a city or enter coordinates."
         }
@@ -21,7 +22,7 @@ import Combine
     }
     func stopHeading() { manager.stopUpdatingHeading() }
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways { manager.requestLocation() }
+        if waitingForAuthorization && (manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways) {waitingForAuthorization=false; manager.requestLocation()}
     }
     func locationManager(_ manager: CLLocationManager,didUpdateLocations locations: [CLLocation]) {
         guard let fix=locations.last, fix.horizontalAccuracy >= 0, abs(fix.timestamp.timeIntervalSinceNow)<120 else { return }

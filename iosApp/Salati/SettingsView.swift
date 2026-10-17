@@ -42,7 +42,7 @@ struct SettingsView: View {
 }
 struct NotificationSettingsView: View {
     @EnvironmentObject var model: AppModel
-    @StateObject private var player=AdhanPlayer()
+    @ObservedObject private var player=AdhanPlayer.shared
     @State private var authorization:String?
     var body: some View {
         Form {

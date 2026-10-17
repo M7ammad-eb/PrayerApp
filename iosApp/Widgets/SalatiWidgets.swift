@@ -28,8 +28,8 @@ struct PrayerWidget: Widget {
                 if let next=entry.next,let snapshot=entry.snapshot,entry.date<snapshot.validUntil {
                     Text(snapshot.city).font(.caption).foregroundStyle(.secondary)
                     Text(next.title).font(.title2.weight(.semibold))
-                    Text(timerInterval:entry.date...next.date,countsDown:true).font(.title.monospacedDigit())
-                    Text(next.date,style:.time).font(.caption)
+                    Text(timerInterval:entry.date...next.date,countsDown:true).font(.title.monospacedDigit()).environment(\.locale,Locale(identifier:"en_US_POSIX"))
+                    Text(next.timeText).font(.caption)
                 } else { Label("Open Salati to refresh",systemImage:"moon.stars").font(.headline) }
             }.frame(maxWidth:.infinity,alignment:.leading).containerBackground(.fill.tertiary,for:.widget)
                 .environment(\.locale,Locale(identifier:entry.snapshot?.language == "ar" ? "ar_SA@numbers=latn" : "en_US@numbers=latn"))

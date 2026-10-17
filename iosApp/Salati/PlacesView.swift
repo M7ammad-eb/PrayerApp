@@ -35,7 +35,7 @@ struct PlacesView: View {
 }
 struct LocationMessage: View {
     @ObservedObject var service: LocationService
-    var body: some View { if let message=service.message { Text(message).font(.footnote).padding().background(.regularMaterial,in:RoundedRectangle(cornerRadius:16)).padding() } }
+    var body: some View { if let message=service.message { Text(LocalizedStringKey(message)).font(.footnote).padding().background(.regularMaterial,in:RoundedRectangle(cornerRadius:16)).padding() } }
 }
 struct ManualLocationView: View {
     @EnvironmentObject var model: AppModel
@@ -44,7 +44,15 @@ struct ManualLocationView: View {
     @State private var latitude=""
     @State private var longitude=""
     @State private var zone=TimeZone.current.identifier
-    var valid: Bool { guard let lat=Double(latitude),let lon=Double(longitude) else {return false}; return (-90...90).contains(lat) && (-180...180).contains(lon) && TimeZone(identifier:zone) != nil }
+    func coordinate(_ text:String) -> Double? {
+        let latin=text.compactMap { character -> String? in
+            if let number=character.wholeNumberValue {return String(number)}
+            if character == "٫" {return "."}
+            return String(character)
+        }.joined()
+        return Double(latin)
+    }
+    var valid: Bool { guard let lat=coordinate(latitude),let lon=coordinate(longitude) else {return false}; return (-90...90).contains(lat) && (-180...180).contains(lon) && TimeZone(identifier:zone) != nil }
     var body: some View {
         Form {
             TextField("Location name",text:$name)
@@ -55,7 +63,7 @@ struct ManualLocationView: View {
         }
         .navigationTitle("Coordinates")
         .toolbar { ToolbarItem(placement:.confirmationAction) { Button("Save") {
-            guard valid,let lat=Double(latitude),let lon=Double(longitude) else {return}
+            guard valid,let lat=coordinate(latitude),let lon=coordinate(longitude) else {return}
             model.select(.init(name:name.isEmpty ? "\(latitude), \(longitude)" : name,latitude:lat,longitude:lon,zone:zone)); dismiss()
         }.disabled(!valid) } }
     }
@@ -75,7 +83,7 @@ struct OnboardingView: View {
                     Label("No account or subscription",systemImage:"hand.raised")
                     Picker("Language",selection:$model.settings.language) { Text("English").tag("en"); Text("العربية").tag("ar") }.pickerStyle(.segmented)
                     Text("Choose a city without granting location access, or use GPS when you need it. Notifications and alarms are optional and requested from Settings.").foregroundStyle(.secondary)
-                    Button {showPlaces=true} label: { Text(model.settings.location?.name ?? String(localized:"Choose location")).frame(maxWidth:.infinity,minHeight:44) }.buttonStyle(.borderedProminent).buttonBorderShape(.capsule).accessibilityIdentifier("chooseLocation")
+                    Button {showPlaces=true} label: { Text(model.settings.location?.name ?? (model.arabic ? "اختيار الموقع" : "Choose location")).frame(maxWidth:.infinity,minHeight:44) }.buttonStyle(.borderedProminent).buttonBorderShape(.capsule).accessibilityIdentifier("chooseLocation")
                     Button("Continue") {model.settings.onboardingComplete=true}.buttonStyle(.bordered).buttonBorderShape(.capsule).disabled(model.settings.location == nil).accessibilityIdentifier("continueOnboarding")
                 }.padding(28).frame(maxWidth:560)
             }.sheet(isPresented:$showPlaces) { NavigationStack { PlacesView() } }

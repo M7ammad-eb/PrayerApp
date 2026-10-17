@@ -36,4 +36,15 @@ final class SalatiTests:XCTestCase {
         XCTAssertNotNil(nearest)
         XCTAssertLessThan(nearest!.1,20)
     }
+    @MainActor func testSelectedZoneAndWesternDigits() {
+        let model=AppModel()
+        var settings=Settings()
+        settings.location=SavedLocation(name:"Madinah",latitude:24.4672,longitude:39.6111,zone:"Asia/Riyadh")
+        settings.use24Hour=true
+        settings.language="ar"
+        model.settings=settings
+        let instant=ISO8601DateFormatter().date(from:"2026-01-15T05:00:00Z")!
+        XCTAssertEqual(model.time(instant.timeIntervalSince1970),"08:00")
+        XCTAssertEqual(model.iso(ISO8601DateFormatter().date(from:"2026-01-15T22:00:00Z")!),"2026-01-16")
+    }
 }

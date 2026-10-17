@@ -5,6 +5,7 @@ struct SnapshotEvent: Codable, Identifiable, Equatable {
     let id: String
     let title: String
     let date: Date
+    var timeText: String = ""
 }
 struct ScheduleSnapshot: Codable {
     static let group = "group.com.salati.prayertimes"

@@ -2,6 +2,7 @@ name: Salati multiplatform
 on:
   push:
     branches: [ios]
+    paths-ignore: [docs/**, .github/workflows/baseline-audit.yml]
   pull_request:
     branches: [ios]
   workflow_dispatch:
@@ -9,7 +10,7 @@ permissions:
   contents: read
 concurrency:
   group: salati-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -35,6 +36,7 @@ jobs:
           name: android-and-shared-results
           path: |
             app/build/reports/tests
+            app/build/test-results/testDebugUnitTest
             shared/build/reports/tests
             app/build/outputs/apk/debug/*.apk
   ios:

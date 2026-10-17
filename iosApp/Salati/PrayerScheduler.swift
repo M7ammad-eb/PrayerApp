@@ -70,6 +70,10 @@ struct ScheduledAlert: Equatable {
                     guard permission.authorizationStatus == .authorized || permission.authorizationStatus == .provisional else {failures.append("Allow notifications for the selected alerts and reminders.");continue}
                     let content=UNMutableNotificationContent()
                     content.title=item.title
+                    if Recording.all.contains(where:{$0.id == item.policy.sound}) {
+                        content.categoryIdentifier="PRAYER"
+                        content.userInfo=["recording":item.policy.sound]
+                    }
                     content.body=item.reminder ? (settings.language == "ar" ? "اقترب موعد الصلاة" : "Prayer time is approaching") : (settings.language == "ar" ? "حان وقت الصلاة" : "It is time for prayer")
                     content.sound=item.policy.sound == "silent" ? nil : item.policy.sound == "default" ? .default : UNNotificationSound(named:UNNotificationSoundName("\(item.policy.sound)_short.caf"))
                     var calendar=Calendar(identifier:.gregorian);calendar.timeZone = .gmt
@@ -81,9 +85,16 @@ struct ScheduledAlert: Equatable {
                 scheduled+=1
             } catch {failures.append(error.localizedDescription)}
         }
+        if plan.isEmpty && failures.isEmpty {return ""}
         let unique=Array(Set(failures)).sorted().joined(separator:" ")
         let horizon=plan.last.map {DateFormatter.localizedString(from:$0.date,dateStyle:.medium,timeStyle:.short)} ?? "—"
-        return "\(scheduled) alerts prepared through \(horizon). \(unique)"
+        return settings.language == "ar" ? "تم تجهيز \(scheduled) تنبيهًا حتى \(horizon). \(unique)" : "\(scheduled) alerts prepared through \(horizon). \(unique)"
+    }
+    func reconcileLiveActivities(next:PrayerEvent,city:String) async {
+        let date=Date(timeIntervalSince1970:next.epochSeconds)
+        for activity in Activity<PrayerActivityAttributes>.activities where activity.content.state.date != date || activity.attributes.city != city {
+            await activity.end(nil,dismissalPolicy:.immediate)
+        }
     }
     func startLiveActivity(day:PrayerDay,city:String,title:String) async throws {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {throw CocoaError(.featureUnsupported)}

@@ -20,7 +20,11 @@ import CoreLocation
     var calendar: Calendar { var c=Calendar(identifier:.gregorian); c.timeZone=zone; return c }
     var todayISO: String { iso(Date()) }
     init() {
-        if ProcessInfo.processInfo.arguments.contains("-uiTestingReset") { settings=Settings(); settings.save() }
+        if ProcessInfo.processInfo.arguments.contains("-uiTestingReset") {
+            settings=Settings()
+            if ProcessInfo.processInfo.arguments.contains("-uiTestingArabicDark") {settings.language="ar";settings.appearance="dark"}
+            settings.save()
+        }
         locationService.onFix = { [weak self] fix in
             guard let self else { return }
             Task {
@@ -76,14 +80,16 @@ import CoreLocation
             for delta in 0..<6 {
                 guard let date=calendar.date(byAdding:.day,value:delta,to:Date()) else { continue }
                 let schedule=try calculate(date)
-                all += schedule.events.map { SnapshotEvent(id:"\(schedule.dateISO).\($0.id)",title:title($0),date:Date(timeIntervalSince1970:$0.epochSeconds)) }
+                all += schedule.events.map { SnapshotEvent(id:"\(schedule.dateISO).\($0.id)",title:title($0),date:Date(timeIntervalSince1970:$0.epochSeconds),timeText:time($0.epochSeconds)) }
             }
-            let snapshot=ScheduleSnapshot(city:settings.location!.name,events:all,validUntil:calendar.date(byAdding:.day,value:6,to:calendar.startOfDay(for:Date()))!,language:settings.language,use24Hour:settings.use24Hour)
+            let snapshot=ScheduleSnapshot(city:arabic ? (settings.location!.arabicName ?? settings.location!.name) : settings.location!.name,events:all,validUntil:calendar.date(byAdding:.day,value:6,to:calendar.startOfDay(for:Date()))!,language:settings.language,use24Hour:settings.use24Hour)
+            var storageStatus:String?
             do { try snapshot.save(); WidgetCenter.shared.reloadAllTimelines() }
-            catch { scheduleStatus="App Group storage is unavailable. Widgets need the signed App Group entitlement." }
+            catch { storageStatus="App Group storage is unavailable. Widgets need the signed App Group entitlement." }
             try Task.checkCancellation()
+            await scheduler.reconcileLiveActivities(next:current.next,city:snapshot.city)
             let result=await scheduler.reconcile(events:all,settings:settings)
-            if !Task.isCancelled { scheduleStatus=result; error=nil }
+            if !Task.isCancelled {let status=[result,storageStatus].compactMap {$0}.filter {!$0.isEmpty}.joined(separator:" ");scheduleStatus=status.isEmpty ? nil : status;error=nil}
             AppDelegate.requestRefresh()
         } catch is CancellationError { }
         catch { self.error=error.localizedDescription }

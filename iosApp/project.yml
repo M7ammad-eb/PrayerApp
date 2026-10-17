@@ -16,8 +16,7 @@ targets:
   Salati:
     type: application
     platform: iOS
-    sources: [Salati, SharedPresentation]
-    resources: [Generated/Resources]
+    sources: [Salati, SharedPresentation, Generated/Resources]
     dependencies:
       - framework: Generated/SalatiCore.framework
         embed: false

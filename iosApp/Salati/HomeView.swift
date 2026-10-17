@@ -4,6 +4,7 @@ import SalatiCore
 struct HomeView: View {
     @EnvironmentObject var model: AppModel
     @State private var showPlaces=false
+    @ObservedObject private var audio=AdhanPlayer.shared
     var body: some View {
         List {
             if let day=model.day {
@@ -16,7 +17,7 @@ struct HomeView: View {
                         }
                         if Date(timeIntervalSince1970:day.next.epochSeconds)>Date() {
                             Text(timerInterval:Date()...Date(timeIntervalSince1970:day.next.epochSeconds),countsDown:true)
-                                .font(.system(.largeTitle,design:.rounded,weight:.light)).monospacedDigit()
+                                .font(.system(.largeTitle,design:.rounded,weight:.light)).monospacedDigit().environment(\.locale,Locale(identifier:"en_US_POSIX"))
                                 .accessibilityLabel(Text("Time until next prayer"))
                         }
                         Text(model.arabic ? day.hijriArabic : day.hijriEnglish).font(.subheadline).foregroundStyle(.secondary)
@@ -49,7 +50,8 @@ struct HomeView: View {
         }
         .navigationTitle("Salati")
         .toolbar {
-            ToolbarItem(placement:.topBarTrailing) { Button {showPlaces=true} label: { Label(model.settings.location.map { model.arabic ? ($0.arabicName ?? $0.name) : $0.name } ?? String(localized:"Location"),systemImage:"location") } }
+            if audio.isPlaying {ToolbarItem(placement:.topBarLeading) {Button("Stop playback",systemImage:"stop.fill") {audio.stop()}}}
+            ToolbarItem(placement:.topBarTrailing) { Button {showPlaces=true} label: { Label(model.settings.location.map { model.arabic ? ($0.arabicName ?? $0.name) : $0.name } ?? (model.arabic ? "الموقع" : "Location"),systemImage:"location") } }
         }
         .sheet(isPresented:$showPlaces) { NavigationStack { PlacesView() } }
         .task(id:model.day?.next.epochSeconds) {
