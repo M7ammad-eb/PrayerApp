@@ -1,0 +1,73 @@
+name: Salati multiplatform
+on:
+  push:
+    branches: [ios]
+  pull_request:
+    branches: [ios]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: salati-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - run: sdkmanager 'platforms;android-36.1' 'build-tools;36.0.0'
+      - name: Shared parity, Android tests and APK
+        run: bash ./gradlew :shared:jvmTest :app:testDebugUnitTest :app:assembleDebug --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-and-shared-results
+          path: |
+            app/build/reports/tests
+            shared/build/reports/tests
+            app/build/outputs/apk/debug/*.apk
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.4.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pinned Xcode
+        run: xcodebuild -version
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: brew install xcodegen
+      - name: Build Kotlin framework and reproducible Xcode project
+        run: bash tools/ios/build.sh
+      - name: Unsigned simulator integration and UI tests
+        run: |
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for k,vs in d["devices"].items() if "iOS-26" in k for v in vs if "iPhone" in v["name"]))')
+          echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
+          xcrun simctl boot "$DEVICE" || true
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$DEVICE" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO test
+      - name: Capture running simulator
+        if: success()
+        run: |
+          xcrun simctl launch "$SIMULATOR_ID" com.salati.prayertimes.ios
+          sleep 3
+          xcrun simctl io "$SIMULATOR_ID" screenshot iosApp/simulator-home.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-simulator-results
+          path: |
+            iosApp/TestResults.xcresult
+            iosApp/*.png
+            shared/build/reports/tests
