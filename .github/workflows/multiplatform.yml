@@ -64,7 +64,7 @@ jobs:
         run: bash tools/ios/build.sh
       - name: Compile unsigned app, extension and tests
         timeout-minutes: 12
-        run: xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination 'generic/platform=iOS Simulator' -derivedDataPath iosApp/.derivedData CODE_SIGNING_ALLOWED=NO build-for-testing
+        run: xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination 'generic/platform=iOS Simulator' -derivedDataPath iosApp/.derivedData CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build-for-testing
       - name: Select and boot compatible simulator
         timeout-minutes: 5
         run: |
@@ -79,7 +79,7 @@ jobs:
       - name: Unsigned SwiftUI build and tests
         timeout-minutes: 15
         run: |
-          xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO test-without-building
+          xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO test-without-building
       - name: Capture running simulator
         if: success()
         run: |
