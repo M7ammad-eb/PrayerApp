@@ -18,7 +18,13 @@ actor OfflinePlaces {
         if let database { return database }
         guard let url = Bundle.main.url(forResource:"places",withExtension:"db") else { throw CocoaError(.fileNoSuchFile) }
         var handle: OpaquePointer?
-        guard sqlite3_open_v2(url.path,&handle,SQLITE_OPEN_READONLY,nil) == SQLITE_OK, let handle else { throw CocoaError(.fileReadCorruptFile) }
+        // The shipped Room database has a WAL-mode header. It is checkpointed and cannot
+        // change inside the app bundle; immutable URI mode avoids creating -wal/-shm there.
+        let uri=url.absoluteString+"?immutable=1"
+        guard sqlite3_open_v2(uri,&handle,SQLITE_OPEN_READONLY | SQLITE_OPEN_URI,nil) == SQLITE_OK,let handle else {
+            if let handle {sqlite3_close(handle)}
+            throw CocoaError(.fileReadCorruptFile)
+        }
         database = handle
         return handle
     }
