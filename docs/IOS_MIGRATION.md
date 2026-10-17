@@ -4,9 +4,9 @@
 
 - Android baseline: `9d4382d60f23de3b8f2be30cf877b27b0211515d`, version 1.8 (8).
 - Annotated tag: `android-1.8-baseline`. Both local and remote `main` and `Android_Legacy` remain at the baseline. The primary main checkout's pre-existing uncommitted changes are preserved.
-- All migration work is on [ios](https://github.com/M7ammad-eb/PrayerApp/tree/ios). Latest application source: `9cdb063564a9a9e0501bf07323b7e4613d4912ef`; subsequent documentation commits do not change the tested source.
+- All migration work is on [ios](https://github.com/M7ammad-eb/PrayerApp/tree/ios). Latest application source: `39d9959635bb09e927aaa8d126494335f6ae6510`; subsequent documentation commits do not change the tested source.
 - Implementation checkout: `C:/Users/M1993/PrayerApp/.worktrees/ios`. Detached baseline verification checkout: `.worktrees/baseline`.
-- [Full successful runtime verification before visual polish](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39078667945). [Final source verification](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39080114700).
+- [Full successful runtime verification before visual polish](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39078667945). [Final source verification](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39080678204).
 - No main merge, history rewrite, default-audio replacement, paid enrollment, TestFlight upload or App Store publication occurred.
 
 ## Architecture and behavior
