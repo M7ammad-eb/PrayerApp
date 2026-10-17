@@ -15,6 +15,12 @@ class CoreTest {
             assertEquals(minutes*60.0,d.events[5].epochSeconds-d.events[4].epochSeconds)
         }
     }
+    @Test fun beforeFajrCurrentPrayerRetainsPreviousDayTimestamp() {
+        val today=day("2026-01-15")
+        val before=day("2026-01-15",today.events.first().epochSeconds-60)
+        assertEquals(day("2026-01-14").events.last(),before.current)
+        assertTrue(before.current.epochSeconds<today.events.first().epochSeconds)
+    }
     @Test fun afterIshaUsesTomorrowFajr() {
         val today=day("2026-01-15")
         val after=day("2026-01-15",today.events.last().epochSeconds+60)

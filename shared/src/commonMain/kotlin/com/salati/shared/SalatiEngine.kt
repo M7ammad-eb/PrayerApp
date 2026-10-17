@@ -6,9 +6,9 @@ import com.prayertimes.data.qibla.QiblaCalculator
 // epoch seconds. Swift never needs to reason about Kotlin date/time internals.
 data class PrayerEvent(val id: String, val title: String, val arabicTitle: String, val epochSeconds: Double)
 data class PrayerDay(val dateISO: String, val hijriEnglish: String, val hijriArabic: String,
-    val events: List<PrayerEvent>, val next: PrayerEvent, val currentId: String,
+    val events: List<PrayerEvent>, val next: PrayerEvent, val current: PrayerEvent,
     val currentEnded: Boolean, val midnightEpoch: Double, val lastThirdEpoch: Double,
-    val hijriMonthKey: String)
+    val hijriMonthKey: String) { val currentId: String get() = current.id }
 data class CalendarCell(val dateISO: String, val day: Int, val inMonth: Boolean, val observances: List<String>)
 data class CalendarPage(val year: Int, val month: Int, val titleEnglish: String, val titleArabic: String, val cells: List<CalendarCell>)
 class SalatiEngine {
@@ -34,7 +34,7 @@ class SalatiEngine {
         val current = CurrentPrayerResolver.resolve(now,yesterday,today,tomorrow)
         fun event(item: PrayerTimeItem) = PrayerEvent(item.type.name,item.type.title,item.type.arabicName,item.zonedDateTime.epochSeconds.toDouble())
         return PrayerDay(dateISO,today.hijriDate!!.formattedEn,today.hijriDate.formattedAr,
-            today.prayerItems.map(::event),event(next.prayerItem),current.prayerItem.type.name,current.isPrayerTimeEnded,
+            today.prayerItems.map(::event),event(next.prayerItem),event(current.prayerItem),current.isPrayerTimeEnded,
             today.islamicMidnightAt!!.epochSeconds.toDouble(),today.lastThirdAt!!.epochSeconds.toDouble(),HijriCalendar.monthKeyFor(date))
     }
     @Throws(IllegalArgumentException::class)

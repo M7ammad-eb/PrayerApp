@@ -21,6 +21,13 @@ struct HomeView: View {
                                 .accessibilityLabel(Text("Time until next prayer"))
                         }
                         Text(model.arabic ? day.hijriArabic : day.hijriEnglish).font(.subheadline).foregroundStyle(.secondary)
+                        if !day.events.contains(where:{$0.epochSeconds == day.current.epochSeconds}) {
+                            HStack {
+                                Text("Current prayer")
+                                Text(model.title(day.current))
+                                Text("Previous day")
+                            }.font(.caption).foregroundStyle(.secondary).accessibilityElement(children:.combine)
+                        }
                     }.padding(.vertical,12)
                 }.listRowBackground(Color.accentColor.opacity(0.09))
                 Section(model.displayDate(Date())) {
@@ -29,7 +36,7 @@ struct HomeView: View {
                             Image(systemName:symbol(event.id)).foregroundStyle(event.id == day.next.id ? Color.accentColor : .secondary).frame(width:28).accessibilityHidden(true)
                             VStack(alignment:.leading,spacing:3) {
                                 Text(model.title(event)).fontWeight(event.id == day.next.id ? .semibold : .regular)
-                                if event.id == day.currentId { Text(day.currentEnded ? "Prayer time ended" : "Current prayer").font(.caption).foregroundStyle(.secondary) }
+                                if event.epochSeconds == day.current.epochSeconds { Text(day.currentEnded ? "Prayer time ended" : "Current prayer").font(.caption).foregroundStyle(.secondary) }
                             }
                             Spacer(minLength:8)
                             Text(model.time(event.epochSeconds)).monospacedDigit().fontWeight(event.id == day.next.id ? .semibold : .regular)
