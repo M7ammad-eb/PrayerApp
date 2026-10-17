@@ -6,7 +6,7 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Location") {
-                Button {places=true} label: {LabeledContent("City",value:model.settings.location?.name ?? "—")}
+                Button {places=true} label: {LabeledContent("City",value:model.settings.location.map {model.arabic ? ($0.arabicName ?? $0.name) : $0.name} ?? "—")}
                 if let location=model.settings.location {
                     Text(String(format:"%.5f, %.5f",locale:Locale(identifier:"en_US_POSIX"),location.latitude,location.longitude)).monospacedDigit().font(.footnote)
                     if location.isGPS,let distance=location.nearestDistance {

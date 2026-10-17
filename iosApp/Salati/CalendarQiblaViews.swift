@@ -81,6 +81,7 @@ struct QiblaContent: View {
                     ZStack {
                         Circle().stroke(Color.secondary.opacity(0.2),lineWidth:1)
                         Text("N").font(.caption.weight(.semibold)).offset(y:-100)
+                            .rotationEffect(.degrees(-(service.heading ?? 0)))
                         Image(systemName:"location.north.fill").font(.system(size:72,weight:.ultraLight))
                             .foregroundStyle(Color.accentColor).rotationEffect(.degrees(bearing-(service.heading ?? 0)))
                             .animation(reduceMotion ? nil : .easeOut(duration:0.25),value:service.heading)
