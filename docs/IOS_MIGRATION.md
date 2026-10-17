@@ -98,3 +98,7 @@ Run/repair remote iOS and Android checks, inspect actual simulator screens, revi
 ## iOS runtime database fix
 
 The first app-level simulator run passed the framework, audio-resource, alert-plan and Western-digit tests, then exposed a WAL sidecar failure reading the original database from the read-only app bundle. The unchanged asset is fully checkpointed but its SQLite header declares WAL mode. The iOS reader now uses SQLite's documented `immutable=1` URI mode with `SQLITE_OPEN_READONLY | SQLITE_OPEN_URI`, appropriate for an immutable bundled asset. The original database is not rewritten or replaced. Offline Arabic/English/nearest-place and both onboarding UI assertions are rerun unchanged. The same run confirmed that a truly unsigned app lacks App Group access; signed or local ad-hoc simulator entitlement validation remains separate from the unsigned compile checks.
+
+## Simulator App Group verification
+
+Unsigned compilation is retained as its own CI check. Runtime tests then apply a local ad-hoc simulator signature (`codesign --sign -`) to the app and widget with the declared App Group and debug entitlement. This uses no Apple certificate, account, provisioning profile or distribution signing and is not an iPhone install/signing bypass. The added runtime test writes and reads the actual App Group schedule snapshot, so widget storage is checked rather than assumed from successful compilation. Physical-device provisioning remains a separate requirement.

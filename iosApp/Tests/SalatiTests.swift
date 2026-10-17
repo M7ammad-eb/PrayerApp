@@ -59,4 +59,13 @@ final class SalatiTests:XCTestCase {
             XCTAssertLessThanOrEqual(duration,25.1)
         }
     }
+    func testWidgetAppGroupRoundTrip() throws {
+        let event=SnapshotEvent(id:"2026-10-18.FAJR",title:"Fajr",date:Date(timeIntervalSince1970:1792288800),timeText:"05:00")
+        let snapshot=ScheduleSnapshot(city:"Madinah",events:[event],validUntil:event.date,language:"ar",use24Hour:true)
+        try snapshot.save()
+        let loaded=try XCTUnwrap(ScheduleSnapshot.load())
+        XCTAssertEqual(loaded.city,"Madinah")
+        XCTAssertEqual(loaded.events,[event])
+        XCTAssertEqual(loaded.language,"ar")
+    }
 }

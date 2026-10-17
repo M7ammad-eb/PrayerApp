@@ -65,6 +65,12 @@ jobs:
       - name: Compile unsigned app, extension and tests
         timeout-minutes: 12
         run: xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination 'generic/platform=iOS Simulator' -derivedDataPath iosApp/.derivedData CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build-for-testing
+      - name: Apply certificate-free simulator App Group entitlements
+        run: |
+          APP=iosApp/.derivedData/Build/Products/Debug-iphonesimulator/Salati.app
+          codesign --force --sign - --generate-entitlement-der --entitlements iosApp/Config/Simulator.entitlements "$APP/PlugIns/SalatiWidgets.appex"
+          codesign --force --sign - --generate-entitlement-der --entitlements iosApp/Config/Simulator.entitlements "$APP"
+          codesign --display --entitlements - "$APP"
       - name: Select and boot compatible simulator
         timeout-minutes: 5
         run: |
