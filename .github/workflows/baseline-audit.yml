@@ -1,0 +1,38 @@
+name: Android baseline audit
+on:
+  push:
+    branches: [ios]
+    paths: [.github/workflows/baseline-audit.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 9d4382d60f23de3b8f2be30cf877b27b0211515d
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+      - run: sdkmanager 'platforms;android-36.1' 'build-tools;36.0.0'
+      - name: Ephemeral debug key for unchanged baseline
+        run: keytool -genkeypair -keystore debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 365 -dname 'CN=Android Debug,O=Android,C=US'
+      - name: Unchanged baseline tests and debug APK
+        run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: baseline-android-results
+          path: |
+            app/build/reports/tests
+            app/build/test-results/testDebugUnitTest
