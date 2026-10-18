@@ -42,7 +42,11 @@ struct SettingsView: View {
                 Text("Offline city data: GeoNames, CC BY 4.0. Calendar month boundaries: OpenJDK Hijrah-umalqura.").font(.footnote)
                 Link("GeoNames attribution",destination:URL(string:"https://www.geonames.org/about.html")!)
             }
-        }.navigationTitle("Settings").sheet(isPresented:$places) {NavigationStack {PlacesView()}}
+        }
+        // A fresh native Form avoids retaining the previous reading direction during
+        // a live language change. Keep the surrounding tab and navigation selection.
+        .id(model.settings.language)
+        .navigationTitle("Settings").sheet(isPresented:$places) {NavigationStack {PlacesView()}}
     }
 }
 struct NotificationSettingsView: View {

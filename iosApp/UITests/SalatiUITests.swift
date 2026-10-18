@@ -24,6 +24,13 @@ final class SalatiUITests:XCTestCase {
         app.tabBars.buttons["الإعدادات"].tap()
         app.segmentedControls["appLanguage"].buttons["English"].tap()
         XCTAssertTrue(app.tabBars.buttons["Settings"].waitForExistence(timeout:5))
+        let english=app.segmentedControls["appLanguage"].buttons["English"]
+        let arabic=app.segmentedControls["appLanguage"].buttons["العربية"]
+        let leftToRight=NSPredicate {_,_ in english.exists && arabic.exists && english.frame.minX<arabic.frame.minX}
+        expectation(for:leftToRight,evaluatedWith:nil)
+        waitForExpectations(timeout:5)
+        // Native Form direction changes can animate after accessibility labels update.
+        Thread.sleep(forTimeInterval:1)
         capture("Settings after changing language")
     }
     func testArabicDarkOfflineFlow() {
