@@ -25,7 +25,14 @@ struct PrayerAlarmStopIntent:LiveActivityIntent {
     }
     @MainActor private static func replenish(_ id:String) async {
         PrayerScheduler.shared.recordAlarmInteraction(id)
-        let model=AppModel();await model.refresh()
+        let model=AppModel();await model.refresh(context:.liveActivityIntent)
+    }
+}
+
+enum SchedulingContext {
+    case application,liveActivityIntent
+    func canPrepareLiveActivities(applicationIsActive:Bool)->Bool {
+        applicationIsActive || self == .liveActivityIntent
     }
 }
 
@@ -131,12 +138,12 @@ private enum SchedulingFailure: LocalizedError {
         let permission=await center.notificationSettings()
         let allowed=permission.authorizationStatus == .authorized || permission.authorizationStatus == .provisional
         var result=await center.pendingNotificationRequests().map {
-            NativePendingAlert(id:$0.identifier,route:.notification,date:$0.trigger?.nextTriggerDate(),authorized:allowed)
+            NativePendingAlert(id:$0.identifier,route:.notification,date:($0.trigger as? UNCalendarNotificationTrigger)?.nextTriggerDate() ?? ($0.trigger as? UNTimeIntervalNotificationTrigger)?.nextTriggerDate(),authorized:allowed)
         }
         if AlarmManager.shared.authorizationState == .authorized {
             result += try AlarmManager.shared.alarms.map { alarm in
                 let date:Date?
-                if case let .fixed(value)?=alarm.schedule {date=value} else {date=nil}
+                if case let .fixed(value)? = alarm.schedule {date=value} else {date=nil}
                 return NativePendingAlert(id:alarm.id.uuidString,route:.alarm,date:date,isAlerting:alarm.state == .alerting)
             }
         }
@@ -342,15 +349,15 @@ struct ScheduleDiagnostic: Codable {
         do {return try await AlarmManager.shared.requestAuthorization() == .authorized ? "System alarms allowed" : "System alarms were not allowed. You can change this in iOS Settings."}
         catch {return error.localizedDescription}
     }
-    func reconcile(alerts:[ScheduledAlert],live:[ScheduledLivePrayer],city:String,settings:Settings) async -> String {
+    func reconcile(alerts:[ScheduledAlert],live:[ScheduledLivePrayer],city:String,settings:Settings,context:SchedulingContext = .application) async -> String {
         await operations.latest { [weak self] in
             guard let self else {return ""}
-            return await self.perform(alerts:alerts,live:live,city:city,settings:settings)
+            return await self.perform(alerts:alerts,live:live,city:city,settings:settings,context:context)
         }
     }
-    private func perform(alerts:[ScheduledAlert],live:[ScheduledLivePrayer],city:String,settings:Settings) async -> String {
+    private func perform(alerts:[ScheduledAlert],live:[ScheduledLivePrayer],city:String,settings:Settings,context:SchedulingContext) async -> String {
         let now=Date()
-        let liveResult=await prepareLiveActivities(live,city:city,settings:settings,now:now)
+        let liveResult=await prepareLiveActivities(live,city:city,settings:settings,now:now,context:context)
         let filtered=alerts.filter {item in
             !item.reminder || !liveResult.accepted.contains {$0.id == item.id.replacingOccurrences(of:".reminder",with:".live") && abs($0.start.timeIntervalSince(item.date))<1}
         }
@@ -392,7 +399,7 @@ struct ScheduleDiagnostic: Codable {
         return settings.language == "ar" ? "تم تجهيز \(result.prepared) تنبيهًا حتى \(horizon)، و\(liveResult.accepted.count) أنشطة مباشرة. \(error)" : "\(result.prepared) alerts prepared through \(horizon); \(liveResult.accepted.count) Live Activities. \(error)"
     }
     private struct LiveResult {var accepted:[ScheduledLivePrayer]=[];var failures:[String]=[];var outdated:[ScheduledLivePrayer]=[]}
-    private func prepareLiveActivities(_ desired:[ScheduledLivePrayer],city:String,settings:Settings,now:Date) async -> LiveResult {
+    private func prepareLiveActivities(_ desired:[ScheduledLivePrayer],city:String,settings:Settings,now:Date,context:SchedulingContext) async -> LiveResult {
         var result=LiveResult()
         let enabled=settings.liveActivitiesEnabled && ActivityAuthorizationInfo().areActivitiesEnabled
         for activity in Activity<PrayerActivityAttributes>.activities where !enabled || activity.content.state.date<=now {await activity.end(nil,dismissalPolicy:.immediate)}
@@ -405,7 +412,7 @@ struct ScheduleDiagnostic: Codable {
             }
             return false
         },submit:{item in
-            guard UIApplication.shared.applicationState == .active else {throw ActivityAuthorizationError.visibility}
+            guard context.canPrepareLiveActivities(applicationIsActive:UIApplication.shared.applicationState == .active) else {throw ActivityAuthorizationError.visibility}
             let old=Activity<PrayerActivityAttributes>.activities.filter {$0.content.state.eventID == item.id}
             let state=PrayerActivityAttributes.ContentState(title:item.title,date:item.date,eventID:item.id,language:settings.language,start:item.start,timeText:Self.formattedTime(item.date,settings:settings),endMessage:settings.language == "ar" ? "حان وقت الصلاة" : "It is time for prayer")
             let content=ActivityContent(state:state,staleDate:item.date)

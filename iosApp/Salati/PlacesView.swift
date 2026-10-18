@@ -94,14 +94,14 @@ struct OnboardingView: View {
                         Text("English").tag("en");Text("العربية").tag("ar")
                     }.pickerStyle(.segmented).accessibilityIdentifier("onboardingLanguage")
                 }
-                Section("Location") {
+                Section {
                     OnboardingLocationActions(service:model.locationService,showPlaces:$showPlaces)
                     if let location=model.settings.location {
                         Label(model.locationDisplayName,systemImage:"checkmark.circle.fill")
                             .foregroundStyle(Color.accentColor).accessibilityIdentifier("onboardingSelectedLocation")
                         Text(LocalizedStringKey(location.isGPS ? "Using exact GPS coordinates" : "Offline manual location")).font(.footnote).foregroundStyle(.secondary)
                     }
-                } footer: {Text("Choose a city without granting location access, or use GPS when you need it.")}
+                } header: {Text("Location")} footer: {Text("Choose a city without granting location access, or use GPS when you need it.")}
                 Section("Calculation") {
                     Picker("Method",selection:$model.settings.method) {
                         ForEach(model.engine.calculationMethods,id:\.self) {Text(LocalizedStringKey($0)).tag($0)}

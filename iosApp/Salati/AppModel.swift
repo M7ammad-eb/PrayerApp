@@ -104,7 +104,7 @@ import CoreLocation
             catch { }
         }
     }
-    func refresh() async {
+    func refresh(context:SchedulingContext = .application) async {
         guard settings.location != nil else {return}
         generation+=1;let revision=generation;let configuration=settings;let now=Date()
         do {
@@ -144,7 +144,7 @@ import CoreLocation
                     policy:configuration.policies[item.prayer] ?? PrayerPolicy(),reminder:item.kind == "reminder")
             }
             let live=plan.filter {$0.kind == "live"}.map {ScheduledLivePrayer(id:$0.id,title:$0.title,date:Date(timeIntervalSince1970:$0.eventEpoch),start:Date(timeIntervalSince1970:$0.triggerEpoch))}
-            let result=await scheduler.reconcile(alerts:alerts,live:live,city:snapshot.city,settings:configuration)
+            let result=await scheduler.reconcile(alerts:alerts,live:live,city:snapshot.city,settings:configuration,context:context)
             guard generation == revision else {return}
             let status=[result,storageStatus].compactMap {$0}.filter {!$0.isEmpty}.joined(separator:" ")
             scheduleStatus=status.isEmpty ? nil:status;error=nil;AppDelegate.requestRefresh()

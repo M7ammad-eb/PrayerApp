@@ -31,6 +31,11 @@ import ActivityKit
 }
 
 final class SchedulingTests:XCTestCase {
+    func testBackgroundRefreshDoesNotInheritLiveActivityIntentExecution() {
+        XCTAssertFalse(SchedulingContext.application.canPrepareLiveActivities(applicationIsActive:false))
+        XCTAssertTrue(SchedulingContext.application.canPrepareLiveActivities(applicationIsActive:true))
+        XCTAssertTrue(SchedulingContext.liveActivityIntent.canPrepareLiveActivities(applicationIsActive:false))
+    }
     private let now=Date(timeIntervalSince1970:1_800_000_000)
     private func request(_ id:String="salati.2027-01-15.FAJR",route:NativeAlertRoute = .alarm,offset:Double=3600,test:Bool=false) -> NativeAlertRequest {
         NativeAlertRequest(id:id,route:route,date:now.addingTimeInterval(offset),prayerDate:now.addingTimeInterval(offset),prayer:"FAJR",title:"Fajr",body:"Prayer time",sound:"default",recording:nil,language:"en",reminder:false,isTest:test)
