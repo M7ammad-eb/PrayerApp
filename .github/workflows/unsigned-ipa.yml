@@ -1,0 +1,50 @@
+name: Salati unsigned IPA
+on:
+  push:
+    branches: [ios]
+    paths:
+      - .github/workflows/unsigned-ipa.yml
+      - iosApp/**
+      - shared/**
+      - tools/ios/**
+      - gradle/**
+      - settings.gradle.kts
+      - build.gradle.kts
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: salati-unsigned-ipa-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  unsigned-ipa:
+    runs-on: macos-26
+    timeout-minutes: 25
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.4.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -version
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ runner.arch }}-2.4.10-xcode26.4.1
+      - run: brew install xcodegen
+      - name: Build actual iPhone framework and resources
+        run: KOTLIN_TARGET=IosArm64 bash tools/ios/build.sh
+      - name: Compile and package unsigned iPhone IPA
+        run: bash tools/ios/package_unsigned_ipa.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Salati-unsigned-iphone-ipa
+          if-no-files-found: error
+          path: |
+            build/unsigned-ipa/Salati-unsigned.ipa
+            build/unsigned-ipa/Salati-unsigned.ipa.sha256
+            build/unsigned-ipa/build-info.json
+            iosApp/Config/Salati.entitlements
