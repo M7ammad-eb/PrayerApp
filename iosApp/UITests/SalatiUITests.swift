@@ -18,19 +18,15 @@ final class SalatiUITests:XCTestCase {
         XCTAssertTrue(language.waitForExistence(timeout:5))
         language.buttons["العربية"].tap()
         XCTAssertTrue(app.tabBars.buttons["الإعدادات"].waitForExistence(timeout:5))
+        assertLanguageDirection(app,arabic:true)
+        capture("Settings after switching to Arabic")
         // The language must survive reopening without onboarding or test-reset arguments.
         app.terminate();app.launchArguments=[];app.launch()
         XCTAssertTrue(app.tabBars.buttons["الإعدادات"].waitForExistence(timeout:10))
         app.tabBars.buttons["الإعدادات"].tap()
         app.segmentedControls["appLanguage"].buttons["English"].tap()
         XCTAssertTrue(app.tabBars.buttons["Settings"].waitForExistence(timeout:5))
-        let english=app.segmentedControls["appLanguage"].buttons["English"]
-        let arabic=app.segmentedControls["appLanguage"].buttons["العربية"]
-        let leftToRight=NSPredicate {_,_ in english.exists && arabic.exists && english.frame.minX<arabic.frame.minX}
-        expectation(for:leftToRight,evaluatedWith:nil)
-        waitForExpectations(timeout:5)
-        // Native Form direction changes can animate after accessibility labels update.
-        Thread.sleep(forTimeInterval:1)
+        assertLanguageDirection(app,arabic:false)
         capture("Settings after changing language")
     }
     func testArabicDarkOfflineFlow() {
@@ -48,6 +44,17 @@ final class SalatiUITests:XCTestCase {
         app.tabBars.buttons["التقويم"].tap();capture("Arabic dark Hijri calendar")
         app.tabBars.buttons["القبلة"].tap();capture("Arabic dark Qibla")
         app.tabBars.buttons["الإعدادات"].tap();capture("Arabic dark Settings")
+    }
+    func assertLanguageDirection(_ app:XCUIApplication,arabic:Bool) {
+        let english=app.segmentedControls["appLanguage"].buttons["English"]
+        let arabicButton=app.segmentedControls["appLanguage"].buttons["العربية"]
+        let direction=NSPredicate {_,_ in
+            guard english.exists && arabicButton.exists else {return false}
+            return arabic ? english.frame.minX>arabicButton.frame.minX : english.frame.minX<arabicButton.frame.minX
+        }
+        expectation(for:direction,evaluatedWith:nil)
+        waitForExpectations(timeout:5)
+        Thread.sleep(forTimeInterval:1)
     }
     func capture(_ name:String) {let attachment=XCTAttachment(screenshot:XCUIApplication().screenshot());attachment.name=name;attachment.lifetime = .keepAlways;add(attachment)}
 }

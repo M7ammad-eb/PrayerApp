@@ -36,10 +36,15 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 @main struct SalatiApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var model=AppModel()
+    @State private var selectedTab=0
     @Environment(\.scenePhase) private var phase
     var body: some Scene {
         WindowGroup {
-            RootView().environmentObject(model)
+            RootView(selectedTab:$selectedTab)
+                // Recreate UIKit-backed tab/navigation/form hosts when reading direction
+                // changes. Keep selection and the app model outside this identity.
+                .id(model.settings.language)
+                .environmentObject(model)
                 .environment(\.locale,model.locale)
                 .environment(\.layoutDirection,model.arabic ? .rightToLeft : .leftToRight)
                 .preferredColorScheme(model.settings.appearance == "dark" ? .dark : model.settings.appearance == "light" ? .light : nil)
@@ -52,15 +57,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 }
 struct RootView: View {
     @EnvironmentObject var model: AppModel
+    @Binding var selectedTab:Int
     var body: some View {
         Group {
             if !model.settings.onboardingComplete { OnboardingView() }
             else {
-                TabView {
-                    Tab("Prayer",systemImage:"sun.horizon") { NavigationStack { HomeView() } }
-                    Tab("Calendar",systemImage:"calendar") { NavigationStack { HijriView() } }
-                    Tab("Qibla",systemImage:"location.north.circle") { NavigationStack { QiblaView() } }
-                    Tab("Settings",systemImage:"slider.horizontal.3") { NavigationStack { SettingsView() } }
+                TabView(selection:$selectedTab) {
+                    Tab("Prayer",systemImage:"sun.horizon",value:0) { NavigationStack { HomeView() } }
+                    Tab("Calendar",systemImage:"calendar",value:1) { NavigationStack { HijriView() } }
+                    Tab("Qibla",systemImage:"location.north.circle",value:2) { NavigationStack { QiblaView() } }
+                    Tab("Settings",systemImage:"slider.horizontal.3",value:3) { NavigationStack { SettingsView() } }
                 }
             }
         }
