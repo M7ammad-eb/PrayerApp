@@ -8,9 +8,15 @@ data class PrayerEvent(val id: String, val title: String, val arabicTitle: Strin
 data class PrayerDay(val dateISO: String, val hijriEnglish: String, val hijriArabic: String,
     val events: List<PrayerEvent>, val next: PrayerEvent, val current: PrayerEvent,
     val currentEnded: Boolean, val midnightEpoch: Double, val lastThirdEpoch: Double,
-    val hijriMonthKey: String) { val currentId: String get() = current.id }
+    val hijriMonthKey: String,
+    val civilHijriEnglish: String, val civilHijriArabic: String,
+    val sunsetHijriEnglish: String, val sunsetHijriArabic: String,
+    val civilStartEpoch: Double, val civilEndEpoch: Double, val maghribEpoch: Double,
+    val followingDateISO: String, val religiousDateISO:String) { val currentId: String get() = current.id }
 data class CalendarCell(val dateISO: String, val day: Int, val inMonth: Boolean, val observances: List<String>)
-data class CalendarPage(val year: Int, val month: Int, val titleEnglish: String, val titleArabic: String, val cells: List<CalendarCell>)
+data class CalendarPage(val year: Int, val month: Int, val titleEnglish: String, val titleArabic: String, val cells: List<CalendarCell>) {
+    val monthKey: String get() = year.toString().padStart(4, '0') + "-" + month.toString().padStart(2, '0')
+}
 class SalatiEngine {
     val calculationMethods: List<String> get() = CalculationMethod.entries.map { it.name }
     val highLatitudeRules: List<String> get() = HighLatitudeRule.entries.map { it.name }
@@ -19,28 +25,54 @@ class SalatiEngine {
     @Throws(IllegalArgumentException::class)
     fun day(dateISO: String, latitude: Double, longitude: Double, zone: String, method: String,
         hanafi: Boolean, highLatitude: String, fajr: Int, sunrise: Int, dhuhr: Int, asr: Int,
-        maghrib: Int, isha: Int, hijriOffset: Int, nowEpoch: Double): PrayerDay {
+        maghrib: Int, isha: Int, hijriOffset: Int, nowEpoch: Double): PrayerDay = calculateDay(dateISO,latitude,longitude,zone,method,hanafi,highLatitude,fajr,sunrise,dhuhr,asr,maghrib,isha,hijriOffset,null,nowEpoch,false)
+
+    @Throws(IllegalArgumentException::class)
+    fun dayScoped(dateISO: String, latitude: Double, longitude: Double, zone: String, method: String,
+        hanafi: Boolean, highLatitude: String, fajr: Int, sunrise: Int, dhuhr: Int, asr: Int,
+        maghrib: Int, isha: Int, hijriOffset: Int, hijriAnchor: String?, nowEpoch: Double): PrayerDay =
+        calculateDay(dateISO,latitude,longitude,zone,method,hanafi,highLatitude,fajr,sunrise,dhuhr,asr,maghrib,isha,hijriOffset,hijriAnchor,nowEpoch,true)
+
+    private fun calculateDay(dateISO:String,latitude:Double,longitude:Double,zone:String,method:String,hanafi:Boolean,highLatitude:String,
+        fajr:Int,sunrise:Int,dhuhr:Int,asr:Int,maghrib:Int,isha:Int,hijriOffset:Int,hijriAnchor:String?,nowEpoch:Double,scoped:Boolean):PrayerDay {
         require(latitude in -90.0..90.0 && longitude in -180.0..180.0)
         val date = LocalDate.parse(dateISO)
         val zoneId = ZoneId.of(zone)
         val now = ZonedDateTime.fromEpochSeconds(nowEpoch.toLong(),zoneId)
         fun schedule(d: LocalDate) = PrayerTimesCalculator.calculateDailySchedule(d,latitude,longitude,zoneId,
             CalculationMethod.valueOf(method),if(hanafi) JuristicMethod.HANAFI else JuristicMethod.STANDARD,
-            HighLatitudeRule.valueOf(highLatitude),PrayerTimeAdjustments(fajr,sunrise,dhuhr,asr,maghrib,isha),hijriOffset,now)
+            HighLatitudeRule.valueOf(highLatitude),PrayerTimeAdjustments(fajr,sunrise,dhuhr,asr,maghrib,isha),if(scoped) HijriCalendar.effectiveAdjustment(hijriOffset,hijriAnchor,d) else hijriOffset,now)
         val today = schedule(date)
         val yesterday = schedule(date.minusDays(1))
         val tomorrow = schedule(date.plusDays(1))
         val next = NextPrayerResolver.resolve(now,yesterday,today,tomorrow)
         val current = CurrentPrayerResolver.resolve(now,yesterday,today,tomorrow)
         fun event(item: PrayerTimeItem) = PrayerEvent(item.type.name,item.type.title,item.type.arabicName,item.zonedDateTime.epochSeconds.toDouble())
-        return PrayerDay(dateISO,today.hijriDate!!.formattedEn,today.hijriDate.formattedAr,
+        val sunsetEpoch = today.prayerItems.first { it.type == PrayerType.MAGHRIB }.zonedDateTime.epochSeconds.toDouble()
+        fun hijri(d:LocalDate) = if (scoped) ReligiousDates.adjusted(d,hijriOffset,hijriAnchor) else HijriDateCalculator.convertToHijri(d,hijriOffset)
+        val civilHijri=hijri(date); val sunsetHijri=hijri(date.plusDays(1))
+        val correspondence=ReligiousDates.correspondence(date,nowEpoch,sunsetEpoch)
+        val displayed=if(now.toLocalDate() == date && nowEpoch >= sunsetEpoch) sunsetHijri else civilHijri
+        return PrayerDay(dateISO,displayed.formattedEn,displayed.formattedAr,
             today.prayerItems.map(::event),event(next.prayerItem),event(current.prayerItem),current.isPrayerTimeEnded,
-            today.islamicMidnightAt!!.epochSeconds.toDouble(),today.lastThirdAt!!.epochSeconds.toDouble(),HijriCalendar.monthKeyFor(date))
+            today.islamicMidnightAt!!.epochSeconds.toDouble(),today.lastThirdAt!!.epochSeconds.toDouble(),HijriCalendar.monthKeyFor(if(now.toLocalDate() == date) correspondence else date),
+            civilHijri.formattedEn,civilHijri.formattedAr,sunsetHijri.formattedEn,sunsetHijri.formattedAr,
+            date.atStartOfDay(zoneId).epochSeconds.toDouble(),date.plusDays(1).atStartOfDay(zoneId).epochSeconds.toDouble(),sunsetEpoch,date.plusDays(1).toString(),ReligiousDates.forSchedule(dateISO,nowEpoch,sunsetEpoch,zone))
     }
     @Throws(IllegalArgumentException::class)
     fun calendar(dateISO: String, monthDelta: Int, offset: Int): CalendarPage {
         val month = HijriCalendar.monthContaining(LocalDate.parse(dateISO),offset).plusMonths(monthDelta)
         val page = HijriCalendar.generate(month,offset)
+        return CalendarPage(month.year,month.month,page.monthNameEn,page.monthNameAr,page.days.map {
+            CalendarCell(it.gregorianDate.toString(),it.hijriDate.day,it.isInDisplayedMonth,it.hijriDate.observances.map { o -> o.name })
+        })
+    }
+    @Throws(IllegalArgumentException::class)
+    fun calendarScoped(dateISO:String,monthDelta:Int,storedOffset:Int,anchor:String?):CalendarPage {
+        val date=LocalDate.parse(dateISO)
+        val current=ReligiousDates.adjusted(date,storedOffset,anchor)
+        val month=HijriYearMonth(current.year,current.month).plusMonths(monthDelta)
+        val page=HijriCalendar.generateScoped(month,storedOffset,anchor)
         return CalendarPage(month.year,month.month,page.monthNameEn,page.monthNameAr,page.days.map {
             CalendarCell(it.gregorianDate.toString(),it.hijriDate.day,it.isInDisplayedMonth,it.hijriDate.observances.map { o -> o.name })
         })

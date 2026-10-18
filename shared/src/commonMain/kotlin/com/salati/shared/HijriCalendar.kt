@@ -119,6 +119,26 @@ object HijriCalendar {
         )
     }
 
+    /** Each civil cell uses the same month-scoped conversion as the live religious label.
+     * A manual correction expires at the unadjusted next month; this can repeat boundary
+     * labels when a correction resets, but never changes a civil date or prayer instant. */
+    fun generateScoped(yearMonth:HijriYearMonth,storedOffset:Int,anchor:String?):HijriCalendarMonth {
+        val unadjusted=generate(yearMonth,0)
+        val aroundStart=unadjusted.firstGregorianDate.minusDays(3)
+        val matches=(0..36).map { aroundStart.plusDays(it.toLong()) }.filter {
+            val h=ReligiousDates.adjusted(it,storedOffset,anchor)
+            h.year == yearMonth.year && h.month == yearMonth.month
+        }
+        val first=matches.firstOrNull() ?: unadjusted.firstGregorianDate
+        val last=matches.lastOrNull() ?: unadjusted.lastGregorianDate
+        val start=first.minusDays(((first.dayOfWeek.value+1)%7).toLong())
+        val days=(0..41).map {
+            val date=start.plusDays(it.toLong());val h=ReligiousDates.adjusted(date,storedOffset,anchor)
+            HijriCalendarDay(date,h,h.year == yearMonth.year && h.month == yearMonth.month)
+        }
+        return unadjusted.copy(firstGregorianDate=first,lastGregorianDate=last,days=days)
+    }
+
     fun gregorianDateFor(yearMonth: HijriYearMonth, day: Int, adjustmentDays: Int): LocalDate {
         val index = (yearMonth.year - 1300) * 12 + yearMonth.month - 1
         require(index in 0 until ummAlQuraMonthStarts.lastIndex) { "Outside supported Umm al-Qura range AH 1300–1600" }

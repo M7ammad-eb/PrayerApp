@@ -135,27 +135,13 @@ fun PrayerHomeScreen(
     val nowAtLocation = ZonedDateTime.now(prayerZone)
     val isToday = selectedDate == nowAtLocation.toLocalDate()
     val todayMaghrib = dailySchedule?.prayerItems?.firstOrNull { it.type == PrayerType.MAGHRIB }?.zonedDateTime
-    val islamicDateHasAdvanced = isToday && todayMaghrib != null && !nowAtLocation.isBefore(todayMaghrib)
-    val displayedHijriCivilDate = if (islamicDateHasAdvanced) selectedDate.plusDays(1) else selectedDate
-
-    val currentHijriDate = remember(displayedHijriCivilDate, settings.hijriAdjustmentDays) {
-        HijriDateCalculator.convertToHijri(displayedHijriCivilDate, settings.hijriAdjustmentDays)
+    val displayedHijriCivilDate = LocalDate.parse(com.salati.shared.ReligiousDates.forSchedule(
+        selectedDate.toString(),nowAtLocation.toEpochSecond().toDouble(),todayMaghrib?.toEpochSecond()?.toDouble() ?: Double.MAX_VALUE,prayerZone.id))
+    val currentHijriDate = remember(displayedHijriCivilDate,settings.hijriAdjustmentDays,settings.hijriAdjustmentAnchorMonth) {
+        com.salati.shared.ReligiousDates.adjusted(com.salati.shared.LocalDate.parse(displayedHijriCivilDate.toString()),settings.hijriAdjustmentDays,settings.hijriAdjustmentAnchorMonth)
     }
-    val displayedPrayerItems = remember(
-        dailySchedule?.prayerItems,
-        nextPrayerInfo.tomorrowFajr,
-        nextPrayerInfo.tomorrowSunrise,
-        islamicDateHasAdvanced
-    ) {
-        val items = dailySchedule?.prayerItems.orEmpty()
-        if (!islamicDateHasAdvanced) items else items.map { item ->
-            when (item.type) {
-                PrayerType.FAJR -> nextPrayerInfo.tomorrowFajr ?: item
-                PrayerType.SUNRISE -> nextPrayerInfo.tomorrowSunrise ?: item
-                else -> item
-            }
-        }
-    }
+    // Changing the religious label never substitutes tomorrow's Fajr into today's civil schedule.
+    val displayedPrayerItems=dailySchedule?.prayerItems.orEmpty()
 
     val timeFormatter = remember(settings.is24HourFormat) {
         if (settings.is24HourFormat) DateTimeFormatter.ofPattern("HH:mm") else DateTimeFormatter.ofPattern("h:mm a")

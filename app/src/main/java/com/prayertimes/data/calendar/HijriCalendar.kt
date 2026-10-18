@@ -48,5 +48,9 @@ object HijriCalendar {
         val result = com.salati.shared.HijriCalendar.generate(com.salati.shared.HijriYearMonth(yearMonth.year,yearMonth.month),adjustmentDays)
         return HijriCalendarMonth(yearMonth,result.monthNameEn,result.monthNameAr,result.firstGregorianDate.android(),result.lastGregorianDate.android(),result.days.map { HijriCalendarDay(it.gregorianDate.android(),it.hijriDate,it.isInDisplayedMonth) },result.isSacredMonth,result.hasSixShawwalReminder)
     }
+    fun generateScoped(yearMonth:HijriYearMonth,offset:Int,anchor:String?):HijriCalendarMonth {
+        val r=com.salati.shared.HijriCalendar.generateScoped(com.salati.shared.HijriYearMonth(yearMonth.year,yearMonth.month),offset,anchor)
+        return HijriCalendarMonth(yearMonth,r.monthNameEn,r.monthNameAr,r.firstGregorianDate.android(),r.lastGregorianDate.android(),r.days.map {HijriCalendarDay(it.gregorianDate.android(),it.hijriDate,it.isInDisplayedMonth)},r.isSacredMonth,r.hasSixShawwalReminder)
+    }
     fun gregorianDateFor(yearMonth: HijriYearMonth, day: Int, adjustmentDays: Int) = com.salati.shared.HijriCalendar.gregorianDateFor(com.salati.shared.HijriYearMonth(yearMonth.year,yearMonth.month),day,adjustmentDays).android()
 }

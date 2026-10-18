@@ -100,7 +100,7 @@ fun MonthlyCalendarScreen(
     val visibleMonth = pagerOrigin.plusMonths(pagerState.settledPage)
     var selectedGregorianDate by remember { mutableStateOf(initialSelectedDate) }
     val month = remember(visibleMonth, hijriAdjustmentDays) {
-        HijriCalendar.generate(visibleMonth, hijriAdjustmentDays)
+        HijriCalendar.generateScoped(visibleMonth, hijriAdjustmentDays,settings.hijriAdjustmentAnchorMonth)
     }
     val visibleWeekCount = remember(month) {
         month.days.chunked(7).count { week -> week.any { it.isInDisplayedMonth } }
@@ -327,11 +327,9 @@ private fun resolveCurrentHijriCivilDate(
 
     val civilToday = now.toLocalDate()
     val todayMaghrib = maghribFor(civilToday)
-    return if (now.isBefore(todayMaghrib)) {
-        civilToday to todayMaghrib
-    } else {
-        civilToday.plusDays(1) to maghribFor(civilToday.plusDays(1))
-    }
+    val correspondence=LocalDate.parse(com.salati.shared.ReligiousDates.forSchedule(civilToday.toString(),now.toEpochSecond().toDouble(),todayMaghrib.toEpochSecond().toDouble(),zoneId.id))
+    val nextEpoch=com.salati.shared.ReligiousDates.nextTransition(now.toEpochSecond().toDouble(),todayMaghrib.toEpochSecond().toDouble(),maghribFor(civilToday.plusDays(1)).toEpochSecond().toDouble())
+    return correspondence to java.time.Instant.ofEpochSecond(nextEpoch.toLong()).atZone(zoneId)
 }
 
 @Composable
