@@ -1,0 +1,83 @@
+{
+  "workflowRun": "https://github.com/M7ammad-eb/PrayerApp/actions/runs/39080678204",
+  "sourceCommit": "39d9959635bb09e927aaa8d126494335f6ae6510",
+  "artifactId": 12118976676,
+  "xcode": "26.4.1",
+  "simulatorRuntime": "iOS 26.4.1",
+  "dimensions": "1206 x 2622",
+  "modifications": "Files renamed for readability only; PNG bytes unchanged. No generated mockups, crops or image edits.",
+  "screenshots": [
+    {
+      "file": "settings-ar-dark.png",
+      "title": "Arabic dark Settings",
+      "originalExportedFileName": "3445C2CA-4D9E-47AC-AA53-CD38BB118FBA.png",
+      "test": "SalatiUITests/testArabicDarkOfflineFlow()",
+      "device": "iPhone 17 Pro",
+      "timestampUTC": "2026-10-18T00:04:42.495000+00:00",
+      "sha256": "110af3cd9652732fda61de67bedcf0ed57b32b1dc0c47050984f167ddf3ac0e3"
+    },
+    {
+      "file": "qibla-ar-dark.png",
+      "title": "Arabic dark Qibla",
+      "originalExportedFileName": "10D9802C-D203-4D6A-A397-084774F93040.png",
+      "test": "SalatiUITests/testArabicDarkOfflineFlow()",
+      "device": "iPhone 17 Pro",
+      "timestampUTC": "2026-10-18T00:04:39.645000+00:00",
+      "sha256": "c94d44f33935b55718024f7bf85181d865ee5e9a6333723cc89a8e391b5386ed"
+    },
+    {
+      "file": "calendar-ar-dark.png",
+      "title": "Arabic dark Hijri calendar",
+      "originalExportedFileName": "19543712-1D0C-4DD8-9F58-F0BE2D38E6B0.png",
+      "test": "SalatiUITests/testArabicDarkOfflineFlow()",
+      "device": "iPhone 17 Pro",
+      "timestampUTC": "2026-10-18T00:04:37.474000+00:00",
+      "sha256": "5d69c63156caf3ead88a83f18db56ed22ee13e88e08ade5f27bbe74407a6f78f"
+    },
+    {
+      "file": "prayer-ar-dark.png",
+      "title": "Arabic dark prayer home",
+      "originalExportedFileName": "1B50DD3C-91FC-4A68-981B-7AB5A9722CD0.png",
+      "test": "SalatiUITests/testArabicDarkOfflineFlow()",
+      "device": "iPhone 17 Pro",
+      "timestampUTC": "2026-10-18T00:04:32.203000+00:00",
+      "sha256": "eb6da83549cb4a6247497f4ea1d0c6a744af880181e0cb0b23ce49c257c5a56a"
+    },
+    {
+      "file": "settings-en-light.png",
+      "title": "Settings",
+      "originalExportedFileName": "5BB59DEE-9833-4D43-A041-B30D45F5AA10.png",
+      "test": "SalatiUITests/testChooseOfflineCityAndNavigate()",
+      "device": "iPhone 17 Pro",
+      "timestampUTC": "2026-10-18T00:05:09.257000+00:00",
+      "sha256": "15619b264f0bb2bb73190a1c5bbe0023a642fc117562ba8d6e071fb62752e5a6"
+    },
+    {
+      "file": "qibla-en-light.png",
+      "title": "Qibla without simulator heading",
+      "originalExportedFileName": "003A15BA-BA54-4F16-AC9F-56622BD63E0B.png",
+      "test": "SalatiUITests/testChooseOfflineCityAndNavigate()",
+      "device": "iPhone 17 Pro",
+      "timestampUTC": "2026-10-18T00:05:06.990000+00:00",
+      "sha256": "acd76f2c634cc5c4ac4b8730200ec46c8bb64912572ca11605d6dcc3ec7df268"
+    },
+    {
+      "file": "calendar-en-light.png",
+      "title": "Hijri calendar",
+      "originalExportedFileName": "31342BCD-CD90-48F0-8D5D-9AB93874C119.png",
+      "test": "SalatiUITests/testChooseOfflineCityAndNavigate()",
+      "device": "iPhone 17 Pro",
+      "timestampUTC": "2026-10-18T00:05:04.877000+00:00",
+      "sha256": "2257a48d7f15788b7cf71fb2dfd8048eb61e3bd60f22cc07ada31da12fc0637b"
+    },
+    {
+      "file": "prayer-en-light.png",
+      "title": "Prayer home",
+      "originalExportedFileName": "2FF3607F-B34D-422B-BE11-9C7C8E4750CB.png",
+      "test": "SalatiUITests/testChooseOfflineCityAndNavigate()",
+      "device": "iPhone 17 Pro",
+      "timestampUTC": "2026-10-18T00:05:02.688000+00:00",
+      "sha256": "5f1b5bc29e300b19c1cac7dcfef3fb6703db905ae5ba4ec8277b761470a9d564"
+    }
+  ]
+}

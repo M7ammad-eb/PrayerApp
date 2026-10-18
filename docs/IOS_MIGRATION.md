@@ -6,7 +6,7 @@
 - Annotated tag: `android-1.8-baseline`. Both local and remote `main` and `Android_Legacy` remain at the baseline. The primary main checkout's pre-existing uncommitted changes are preserved.
 - All migration work is on [ios](https://github.com/M7ammad-eb/PrayerApp/tree/ios). Latest application source: `39d9959635bb09e927aaa8d126494335f6ae6510`; subsequent documentation commits do not change the tested source.
 - Implementation checkout: `C:/Users/M1993/PrayerApp/.worktrees/ios`. Detached baseline verification checkout: `.worktrees/baseline`.
-- [Full successful runtime verification before visual polish](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39078667945). [Final source verification](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39080678204).
+- [Final successful Android and iOS verification](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39080678204): both jobs completed successfully on the final application source. APK, test reports, xcresult and screenshots are available in its artifacts.
 - No main merge, history rewrite, default-audio replacement, paid enrollment, TestFlight upload or App Store publication occurred.
 
 ## Architecture and behavior
@@ -60,7 +60,7 @@ A lightweight extension reads schedule snapshots through `group.com.salati.praye
 | Shared JVM | 8 tests pass: 6 common plus 2 parity tests | Matching baseline does not independently establish astronomy accuracy |
 | Shared native | 6 common tests pass on iOS 26.4.1 simulator | Physical ARM64 device execution untested |
 | Swift framework/app/extension | Native framework consumed by Swift; unsigned app/extension/tests compile with Xcode 26.4.1 | Device signing/install still required |
-| iOS runtime | Previous green run: 6 app XCTest tests and 2 end-to-end UI tests; final run adds accent contrast and selected-zone Arabic date tests | See final run for final counts/results |
+| iOS runtime | 8 app XCTest tests and 2 end-to-end UI tests pass on the final source, including accent contrast and selected-zone Arabic date formatting | No physical iPhone execution |
 | Resources/storage | Arabic/English/nearest-place SQLite queries, 11 full/short audio resources and actual App Group snapshot round-trip pass | Playback audibility and widget presentation untested |
 | UI | Actual English/light and Arabic/dark onboarding, city selection, home/calendar/Qibla/settings screenshots reviewed | Other iPhone sizes and full accessibility device audit pending |
 
@@ -69,6 +69,10 @@ The parity matrix covers 18,144 combinations: Madinah, Makkah, Damascus, London,
 The [unchanged Linux baseline audit](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39076463651) reproduced a scheduler assertion race. PrayerApplication's background DataStore collector could overwrite explicit unit-test settings. Only the direct scheduler test class now uses a plain Application; every assertion is preserved and receiver/process integration tests still use PrayerApplication. No production scheduler change was made to satisfy it. Original KSP AWT shutdown/deprecation warnings also occurred in passing baseline builds.
 
 Migration failures were fixed rather than hidden: geographic radians extraction, native binary search, Xcode resource configuration/architecture, bundled SQLite immutable access and simulator App Group signing. Unsigned compilation is checked separately; runtime tests use Xcode-managed local ad-hoc simulator signing. A prior manual iPhone-style entitlement signature was rejected by macOS before app launch and is not counted as test success. Screenshot inspection also caught a nearly transparent accent asset; it now uses opaque floating-point components, a configured global accent and light/dark contrast assertions.
+
+## Screenshots from the running application
+
+All eight final screenshots were downloaded from successful CI, inspected, and saved unmodified in [the screenshot gallery](ios/screenshots/README.md). English/light and Arabic/dark cover prayer home, Hijri calendar, Qibla and settings. The corrected accent, selected tabs, calendar controls, method picker and compass arrow are visible in both appearances. The original export manifest and SHA-256 mapping identify their exact source/run. No generated mockups are included.
 
 ## Exact build and CI instructions
 

@@ -1,0 +1,86 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0183276C-C5F7-4A53-B0AF-C3D9117595F6",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "3445C2CA-4D9E-47AC-AA53-CD38BB118FBA.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic dark Settings_0_7421E75A-7011-4FB0-9332-02AB3761687D.png",
+        "timestamp" : 1792281882.495
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0183276C-C5F7-4A53-B0AF-C3D9117595F6",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "10D9802C-D203-4D6A-A397-084774F93040.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic dark Qibla_0_3E9934BB-67D0-48F9-AF5D-466CA6B4B9D4.png",
+        "timestamp" : 1792281879.645
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0183276C-C5F7-4A53-B0AF-C3D9117595F6",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "19543712-1D0C-4DD8-9F58-F0BE2D38E6B0.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic dark Hijri calendar_0_D493A5F9-1A2B-4A71-924D-693C618B4EEC.png",
+        "timestamp" : 1792281877.474
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0183276C-C5F7-4A53-B0AF-C3D9117595F6",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "1B50DD3C-91FC-4A68-981B-7AB5A9722CD0.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic dark prayer home_0_48BC534F-B9A5-4BFE-A1CD-1B86D4E9196B.png",
+        "timestamp" : 1792281872.203
+      }
+    ],
+    "testIdentifier" : "SalatiUITests/testArabicDarkOfflineFlow()",
+    "testIdentifierURL" : "test://com.apple.xcode/Salati/SalatiUITests/SalatiUITests/testArabicDarkOfflineFlow"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0183276C-C5F7-4A53-B0AF-C3D9117595F6",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "5BB59DEE-9833-4D43-A041-B30D45F5AA10.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Settings_0_CE03AFC3-C37B-497B-8874-CA41233F9359.png",
+        "timestamp" : 1792281909.257
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0183276C-C5F7-4A53-B0AF-C3D9117595F6",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "003A15BA-BA54-4F16-AC9F-56622BD63E0B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Qibla without simulator heading_0_B6B1CC80-3927-45B1-8563-68E524719E58.png",
+        "timestamp" : 1792281906.99
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0183276C-C5F7-4A53-B0AF-C3D9117595F6",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "31342BCD-CD90-48F0-8D5D-9AB93874C119.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Hijri calendar_0_414EA0E6-3129-4EFF-AA19-A685825D9148.png",
+        "timestamp" : 1792281904.877
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0183276C-C5F7-4A53-B0AF-C3D9117595F6",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "2FF3607F-B34D-422B-BE11-9C7C8E4750CB.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Prayer home_0_24FB6C91-4B3E-4C1D-84B3-A39CA155920B.png",
+        "timestamp" : 1792281902.688
+      }
+    ],
+    "testIdentifier" : "SalatiUITests/testChooseOfflineCityAndNavigate()",
+    "testIdentifierURL" : "test://com.apple.xcode/Salati/SalatiUITests/SalatiUITests/testChooseOfflineCityAndNavigate"
+  }
+]
