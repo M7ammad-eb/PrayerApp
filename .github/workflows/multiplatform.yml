@@ -48,6 +48,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify pinned Xcode
         run: xcodebuild -version
+      # Start the cold simulator while Gradle/Xcode compile independent build products.
+      - name: Start compatible simulator
+        timeout-minutes: 3
+        run: |
+          xcrun simctl list devices available
+          read -r DEVICE SIMULATOR_STATE <<< "$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); v=next(v for k,vs in d["devices"].items() if "iOS-26-4" in k for v in vs if "iPhone" in v["name"]); print(v["udid"],v["state"])')"
+          echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
+          if [[ "$SIMULATOR_STATE" != "Booted" ]]; then xcrun simctl boot "$DEVICE"; fi
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -67,14 +75,9 @@ jobs:
         run: xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination 'generic/platform=iOS Simulator' -derivedDataPath iosApp/.derivedData CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build-for-testing
       - name: Apply certificate-free simulator App Group entitlements
         run: bash tools/ios/sign_simulator.sh
-      - name: Select and boot compatible simulator
-        timeout-minutes: 5
-        run: |
-          xcrun simctl list devices available
-          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for k,vs in d["devices"].items() if "iOS-26-4" in k for v in vs if "iPhone" in v["name"]))')
-          echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
-          xcrun simctl boot "$DEVICE" || true
-          xcrun simctl bootstatus "$DEVICE" -b
+      - name: Wait for compatible simulator
+        timeout-minutes: 10
+        run: xcrun simctl bootstatus "$SIMULATOR_ID" -b
       - name: Native shared-core tests
         timeout-minutes: 10
         run: bash ./gradlew :shared:iosSimulatorArm64Test --device "$SIMULATOR_ID" --console=plain
