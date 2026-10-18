@@ -41,7 +41,7 @@ jobs:
             app/build/outputs/apk/debug/*.apk
   ios:
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.4.1.app/Contents/Developer
     steps:
@@ -53,7 +53,7 @@ jobs:
         timeout-minutes: 3
         run: |
           xcrun simctl list devices available
-          read -r DEVICE SIMULATOR_STATE <<< "$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); v=next(v for k,vs in d["devices"].items() if "iOS-26-4" in k for v in vs if "iPhone" in v["name"]); print(v["udid"],v["state"])')"
+          read -r DEVICE SIMULATOR_STATE <<< "$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); vs=[v for k,vs in d["devices"].items() if "iOS-26-4" in k for v in vs if "iPhone" in v["name"]]; v=next((v for v in vs if v["name"] == "iPhone 17 Pro Max"),vs[0]); print(v["udid"],v["state"])')"
           echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
           if [[ "$SIMULATOR_STATE" != "Booted" ]]; then xcrun simctl boot "$DEVICE"; fi
       - uses: actions/setup-java@v4
@@ -82,7 +82,7 @@ jobs:
         timeout-minutes: 10
         run: bash ./gradlew :shared:iosSimulatorArm64Test --device "$SIMULATOR_ID" --console=plain
       - name: Simulator XCTest and UI tests
-        timeout-minutes: 15
+        timeout-minutes: 22
         run: |
           xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO test-without-building
       - name: Export runtime screenshots and diagnostic attachments
@@ -92,19 +92,40 @@ jobs:
           if [[ -d iosApp/TestResults.xcresult ]]; then
             xcrun xcresulttool export attachments --path iosApp/TestResults.xcresult --output-path iosApp/screenshots
           fi
+      - name: Select compact simulator after main device finishes
+        timeout-minutes: 12
+        run: |
+          xcrun simctl shutdown "$SIMULATOR_ID"
+          SMALL=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); vs=[v for k,vs in d["devices"].items() if "iOS-26-4" in k for v in vs if "iPhone" in v["name"]]; names=["iPhone SE (3rd generation)","iPhone 17e","iPhone 16e","iPhone 17"]; print(next((v["udid"] for name in names for v in vs if v["name"]==name),vs[-1]["udid"]))')
+          echo "COMPACT_SIMULATOR_ID=$SMALL" >> "$GITHUB_ENV"
+          xcrun simctl boot "$SMALL"
+          xcrun simctl bootstatus "$SMALL" -b
+      - name: Compact iPhone and large-text UI checks
+        timeout-minutes: 15
+        run: |
+          xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$COMPACT_SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/CompactTestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO -only-testing:SalatiUITests/SalatiUITests/testChooseOfflineCityAndNavigate -only-testing:SalatiUITests/SalatiUITests/testAccessibilityCalendarAndHome test-without-building
+      - name: Export compact screenshots
+        if: always()
+        continue-on-error: true
+        run: |
+          if [[ -d iosApp/CompactTestResults.xcresult ]]; then
+            xcrun xcresulttool export attachments --path iosApp/CompactTestResults.xcresult --output-path iosApp/screenshots-compact
+          fi
       - name: Capture running simulator
         if: success()
         run: |
-          xcrun simctl terminate "$SIMULATOR_ID" com.salati.prayertimes.ios || true
-          xcrun simctl launch "$SIMULATOR_ID" com.salati.prayertimes.ios
+          xcrun simctl terminate "$COMPACT_SIMULATOR_ID" com.salati.prayertimes.ios || true
+          xcrun simctl launch "$COMPACT_SIMULATOR_ID" com.salati.prayertimes.ios
           sleep 3
-          xcrun simctl io "$SIMULATOR_ID" screenshot iosApp/simulator-home.png
+          xcrun simctl io "$COMPACT_SIMULATOR_ID" screenshot iosApp/simulator-home.png
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ios-simulator-results
           path: |
             iosApp/TestResults.xcresult
+            iosApp/CompactTestResults.xcresult
             iosApp/*.png
             iosApp/screenshots
+            iosApp/screenshots-compact
             shared/build/reports/tests
