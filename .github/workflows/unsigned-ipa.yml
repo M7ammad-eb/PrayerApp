@@ -39,6 +39,8 @@ jobs:
         run: KOTLIN_TARGET=IosArm64 KOTLIN_BUILD_TYPE=Release bash tools/ios/build.sh
       - name: Compile and package unsigned iPhone IPA
         run: bash tools/ios/package_unsigned_ipa.sh
+      - name: Preserve App Group capability metadata for AltStore
+        run: bash tools/ios/package_altstore_ipa.sh
       - uses: actions/upload-artifact@v4
         with:
           name: Salati-unsigned-iphone-ipa
@@ -48,6 +50,15 @@ jobs:
             build/unsigned-ipa/Salati-unsigned.ipa.sha256
             build/unsigned-ipa/build-info.json
             iosApp/Config/Salati.entitlements
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Salati-AltStore-ready-iphone-ipa
+          if-no-files-found: error
+          path: |
+            build/unsigned-ipa/Salati-AltStore-ready.ipa
+            build/unsigned-ipa/Salati-AltStore-ready.ipa.sha256
+            build/unsigned-ipa/AltStore-build-info.json
+            build/unsigned-ipa/AltStore-README.txt
       - uses: actions/upload-artifact@v4
         with:
           name: Salati-iphone-release-symbols

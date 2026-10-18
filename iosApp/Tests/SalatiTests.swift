@@ -130,4 +130,43 @@ final class SalatiTests:XCTestCase {
         XCTAssertNil(ScheduleSnapshot.load(storage:denied))
     }
 
+    func testAltStoreMetadataSharesGroupAcrossDifferentBundleIDSuffixes() throws {
+        let group="group.com.salati.prayertimes.TESTTEAM01"
+        // AltStore can also include its own backup group. It is not our storage target.
+        let metadata=["group.com.rileytestut.AltStore.TESTTEAM01",group]
+        let appID="com.salati.prayertimes.ios.TESTTEAM01"
+        let widgetID="com.salati.prayertimes.ios.widgets.TESTTEAM01"
+        XCTAssertEqual(SharedScheduleStorage.groups(bundleIdentifier:appID,signedGroups:metadata).first,group)
+        let authorized=try XCTUnwrap(FileManager.default.containerURL(forSecurityApplicationGroupIdentifier:group))
+        let container: (String)->URL? = {$0 == group ? authorized : nil}
+        let appStorage=SharedScheduleStorage(bundleIdentifier:appID,signedGroups:metadata,containerURL:container)
+        let widgetStorage=SharedScheduleStorage(bundleIdentifier:widgetID,signedGroups:metadata,containerURL:container)
+        XCTAssertEqual(appStorage.files,widgetStorage.files)
+        let snapshot=ScheduleSnapshot(city:"Makkah",events:[],validUntil:Date(),language:"ar",use24Hour:true)
+        try snapshot.save(storage:appStorage)
+        XCTAssertEqual(ScheduleSnapshot.load(storage:widgetStorage)?.city,"Makkah")
+    }
+    func testSettingsMigrateToPrivateStorageAndRetainLanguageChanges() throws {
+        let prefix="SalatiTests."+UUID().uuidString
+        let primary=try XCTUnwrap(UserDefaults(suiteName:prefix+".private"))
+        let legacy=try XCTUnwrap(UserDefaults(suiteName:prefix+".legacy"))
+        defer {
+            primary.removePersistentDomain(forName:prefix+".private")
+            legacy.removePersistentDomain(forName:prefix+".legacy")
+        }
+        var previous=Settings()
+        previous.language="ar";previous.onboardingComplete=true
+        previous.location=SavedLocation(name:"Madinah",latitude:24.4672,longitude:39.6111,zone:"Asia/Riyadh")
+        legacy.set(try JSONEncoder().encode(previous),forKey:"settings.v1")
+        var migrated=Settings.load(from:primary,legacy:legacy)
+        XCTAssertEqual(migrated.language,"ar")
+        XCTAssertTrue(migrated.onboardingComplete)
+        XCTAssertEqual(migrated.location,previous.location)
+        XCTAssertNotNil(primary.data(forKey:"settings.v1"))
+        migrated.language="en";migrated.save(to:primary)
+        XCTAssertEqual(Settings.load(from:primary,legacy:legacy).language,"en")
+        // The old shared preference must never override a newer private preference.
+        XCTAssertEqual(Settings.load(from:primary,legacy:legacy).location,previous.location)
+    }
+
 }

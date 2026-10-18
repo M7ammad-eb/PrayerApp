@@ -28,12 +28,24 @@ struct Settings: Codable {
     var use24Hour = false
     var onboardingComplete = false
     var policies = Dictionary(uniqueKeysWithValues: ["FAJR","DHUHR","ASR","MAGHRIB","ISHA"].map { ($0, PrayerPolicy()) })
-    static let defaults = UserDefaults(suiteName: ScheduleSnapshot.group) ?? .standard
-    static func load() -> Settings {
-        guard let data = defaults.data(forKey: "settings.v1"), let value = try? JSONDecoder().decode(Settings.self,from:data), value.adjustments.count == 6 else { return Settings() }
-        return value
+    // Widgets consume only ScheduleSnapshot. App preferences must remain available even
+    // when a signer changes or removes shared-group access.
+    static func load(from defaults: UserDefaults = .standard, legacy: UserDefaults? = nil) -> Settings {
+        func decode(_ data: Data?) -> Settings? {
+            guard let data,let value=try? JSONDecoder().decode(Settings.self,from:data),value.adjustments.count == 6 else {return nil}
+            return value
+        }
+        if let value=decode(defaults.data(forKey:"settings.v1")) {return value}
+        let previous=legacy ?? UserDefaults(suiteName:SharedScheduleStorage.declaredGroup)
+        if let value=decode(previous?.data(forKey:"settings.v1")) {
+            value.save(to:defaults)
+            return value
+        }
+        return Settings()
     }
-    func save() { if let data = try? JSONEncoder().encode(self) { Self.defaults.set(data,forKey:"settings.v1") } }
+    func save(to defaults: UserDefaults = .standard) {
+        if let data=try? JSONEncoder().encode(self) {defaults.set(data,forKey:"settings.v1")}
+    }
 }
 struct Recording: Identifiable, Decodable {
     let id: String
