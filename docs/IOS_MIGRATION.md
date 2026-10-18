@@ -4,7 +4,7 @@
 
 - Android baseline: `9d4382d60f23de3b8f2be30cf877b27b0211515d`, version 1.8 (8).
 - Annotated tag: `android-1.8-baseline`. Both local and remote `main` and `Android_Legacy` remain at the baseline. The primary main checkout's pre-existing uncommitted changes are preserved.
-- All migration work is on [ios](https://github.com/M7ammad-eb/PrayerApp/tree/ios). Latest application source: `39d9959635bb09e927aaa8d126494335f6ae6510`; subsequent documentation commits do not change the tested source.
+- All migration work is on [ios](https://github.com/M7ammad-eb/PrayerApp/tree/ios). Latest application source: `39d9959635bb09e927aaa8d126494335f6ae6510`; subsequent documentation and unsigned-device packaging commits do not change the tested application source.
 - Implementation checkout: `C:/Users/M1993/PrayerApp/.worktrees/ios`. Detached baseline verification checkout: `.worktrees/baseline`.
 - [Final successful Android and iOS verification](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39080678204): both jobs completed successfully on the final application source. APK, test reports, xcresult and screenshots are available in its artifacts.
 - No main merge, history rewrite, default-audio replacement, paid enrollment, TestFlight upload or App Store publication occurred.
@@ -113,6 +113,19 @@ xcrun xcresulttool export attachments --path iosApp/TestResults.xcresult --outpu
 The initial compile is unsigned. Runtime tests use locally ad-hoc signed simulator products from sign_simulator.sh; Xcode supplies correct simulator entitlements, without an Apple account, certificate or provisioning profile. Intel Macs use the generator's IosX64 framework, x86_64 builds and iosX64Test instead. Regenerate after shared logic/resources change. Generated Xcode project, framework, resource copies and build output are ignored.
 
 `.github/workflows/multiplatform.yml` runs on ios pushes and relevant pull requests, selecting macos-26/Xcode 26.4.1 explicitly and JDK 21. It compiles unsigned first, signs locally for runtime App Groups, runs common native/XCTest/UI tests, exports xcresult screenshots and uploads results. Android runs JVM parity, all Android tests and APK. Review/re-run an existing Actions run or push a source change to ios; docs-only pushes intentionally skip builds. Existing results are linked above. No distribution workflow is configured.
+
+## Unsigned iPhone IPA
+
+The separate `.github/workflows/unsigned-ipa.yml` workflow builds the actual `IosArm64` Kotlin framework and iPhoneOS app/widget binaries, then packages `Payload/Salati.app` into `Salati-unsigned.ipa`. It validates both Mach-O platform identifiers (iPhoneOS, not ARM64 simulator), bundle platform metadata, all 11 recordings, database presence and ZIP integrity. No certificate or provisioning profile is embedded. This is a Debug configuration device build; it still requires proper signing/provisioning before installation.
+
+Reproduce on the pinned Mac/Xcode environment:
+
+```sh
+KOTLIN_TARGET=IosArm64 bash tools/ios/build.sh
+bash tools/ios/package_unsigned_ipa.sh
+```
+
+Output: `build/unsigned-ipa/Salati-unsigned.ipa`, SHA-256 file and build-info.json. CI artifact `Salati-unsigned-iphone-ipa` also contains the app/widget App Group entitlements for subsequent signing. [Successful device packaging run](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39082393881), source `b10467999ca8329206062ef2a1d8e5f5953c956f`. The IPA was downloaded to `C:/Users/M1993/PrayerApp/build/ios/Salati-unsigned.ipa` (58,583,649 bytes), independently checked as unsigned ARM64 iPhoneOS app and widget binaries, with SHA-256 `ac9e700503e9be1e6716111929ccc65eb8b1ba40d03cabb86a0cebdc3428bbf9`. It has not been installed or run on a physical device.
 
 ## Signing and physical installation later
 
