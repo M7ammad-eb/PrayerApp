@@ -5,6 +5,12 @@ struct SettingsView: View {
     @State private var places=false
     var body: some View {
         Form {
+            Section("Language") {
+                Picker("Language",selection:$model.settings.language) {
+                    Text("English").tag("en")
+                    Text("العربية").tag("ar")
+                }.pickerStyle(.segmented).accessibilityIdentifier("appLanguage")
+            }
             Section("Location") {
                 Button {places=true} label: {LabeledContent("City",value:model.settings.location.map {model.arabic ? ($0.arabicName ?? $0.name) : $0.name} ?? "—")}
                 if let location=model.settings.location {
@@ -23,7 +29,6 @@ struct SettingsView: View {
                 Stepper(value:Binding(get:{model.settings.hijriOffset},set:{model.settings.hijriAnchor=model.day?.hijriMonthKey;model.settings.hijriOffset=$0}),in:-2...2) {LabeledContent("Hijri adjustment",value:model.settings.hijriOffset.description)}
             }
             Section("Display") {
-                Picker("Language",selection:$model.settings.language) { Text("English").tag("en");Text("العربية").tag("ar") }
                 Picker("Appearance",selection:$model.settings.appearance) {Text("System").tag("system");Text("Light").tag("light");Text("Dark").tag("dark")}
                 Toggle("24-hour time",isOn:$model.settings.use24Hour)
                 Text("Western digits (0123456789) are used in both languages.").font(.footnote).foregroundStyle(.secondary)

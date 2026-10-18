@@ -91,4 +91,43 @@ final class SalatiTests:XCTestCase {
         XCTAssertTrue(text.contains("08:00"))
         XCTAssertNil(text.range(of:"[٠-٩۰-۹]",options:.regularExpression))
     }
+    func testResignedWidgetReadsAppSnapshotFromAuthorizedGroup() throws {
+        let appID="com.salati.prayertimes.ios.TESTTEAM01"
+        let group="group."+appID
+        XCTAssertEqual(SharedScheduleStorage.groups(bundleIdentifier:appID),SharedScheduleStorage.groups(bundleIdentifier:appID+".widgets"))
+        XCTAssertEqual(SharedScheduleStorage.groups(bundleIdentifier:SharedScheduleStorage.originalAppIdentifier),[SharedScheduleStorage.declaredGroup])
+        // Use the actual signed simulator App Group. Model iLoader's profile by denying
+        // the original group, so falling back to the old hardcoded ID cannot pass.
+        let authorized=try XCTUnwrap(FileManager.default.containerURL(forSecurityApplicationGroupIdentifier:group))
+        let container: (String)->URL? = {$0 == group ? authorized : nil}
+        let appStorage=SharedScheduleStorage(bundleIdentifier:appID,containerURL:container)
+        let widgetStorage=SharedScheduleStorage(bundleIdentifier:appID+".widgets",containerURL:container)
+        XCTAssertEqual(appStorage.files,widgetStorage.files)
+        let now=Date()
+        let event=SnapshotEvent(id:"today.FAJR",title:"Fajr",date:now.addingTimeInterval(600),timeText:"05:00")
+        let snapshot=ScheduleSnapshot(city:"Madinah",events:[event],validUntil:now.addingTimeInterval(3600),language:"ar",use24Hour:true)
+        try snapshot.save(storage:appStorage)
+        let loaded=try XCTUnwrap(ScheduleSnapshot.load(storage:widgetStorage))
+        XCTAssertEqual(loaded.nextEvent(after:now),event)
+        XCTAssertEqual(loaded.city,"Madinah")
+        XCTAssertEqual(loaded.language,"ar")
+        XCTAssertNil(loaded.nextEvent(after:loaded.validUntil))
+    }
+    func testSharedSnapshotFallsBackFromUnusableContainer() throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at:root,withIntermediateDirectories:true)
+        defer {try? FileManager.default.removeItem(at:root)}
+        let blocked=root.appendingPathComponent("not-a-directory")
+        try Data("blocked".utf8).write(to:blocked)
+        let storage=SharedScheduleStorage(bundleIdentifier:"com.salati.prayertimes.ios.TESTTEAM01") {
+            $0 == SharedScheduleStorage.declaredGroup ? root : blocked
+        }
+        let snapshot=ScheduleSnapshot(city:"Damascus",events:[],validUntil:Date(),language:"en",use24Hour:false)
+        try snapshot.save(storage:storage)
+        XCTAssertEqual(ScheduleSnapshot.load(storage:storage)?.city,"Damascus")
+        let denied=SharedScheduleStorage(bundleIdentifier:nil,containerURL:{_ in nil})
+        XCTAssertThrowsError(try snapshot.save(storage:denied))
+        XCTAssertNil(ScheduleSnapshot.load(storage:denied))
+    }
+
 }

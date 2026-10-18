@@ -141,4 +141,5 @@
 "Use current location" = "Use current location";
 "WHITE_DAY" = "White Day";
 "Western digits (0123456789) are used in both languages." = "Western digits (0123456789) are used in both languages.";
+"Widget storage is unavailable. The app and widget must share the same signed App Group." = "Widget storage is unavailable. The app and widget must share the same signed App Group.";
 "Your next prayer, calculated offline." = "Your next prayer, calculated offline.";

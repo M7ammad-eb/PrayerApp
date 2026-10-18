@@ -85,7 +85,7 @@ import CoreLocation
             let snapshot=ScheduleSnapshot(city:arabic ? (settings.location!.arabicName ?? settings.location!.name) : settings.location!.name,events:all,validUntil:calendar.date(byAdding:.day,value:6,to:calendar.startOfDay(for:Date()))!,language:settings.language,use24Hour:settings.use24Hour)
             var storageStatus:String?
             do { try snapshot.save(); WidgetCenter.shared.reloadAllTimelines() }
-            catch { storageStatus="App Group storage is unavailable. Widgets need the signed App Group entitlement." }
+            catch { storageStatus=String(localized:"Widget storage is unavailable. The app and widget must share the same signed App Group.",locale:locale) }
             try Task.checkCancellation()
             await scheduler.reconcileLiveActivities(next:current.next,city:snapshot.city)
             let result=await scheduler.reconcile(events:all,settings:settings)

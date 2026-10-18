@@ -14,6 +14,17 @@ final class SalatiUITests:XCTestCase {
         app.tabBars.buttons["Calendar"].tap();capture("Hijri calendar")
         app.tabBars.buttons["Qibla"].tap();capture("Qibla without simulator heading")
         app.tabBars.buttons["Settings"].tap();capture("Settings")
+        let language=app.segmentedControls["appLanguage"]
+        XCTAssertTrue(language.waitForExistence(timeout:5))
+        language.buttons["العربية"].tap()
+        XCTAssertTrue(app.tabBars.buttons["الإعدادات"].waitForExistence(timeout:5))
+        // The language must survive reopening without onboarding or test-reset arguments.
+        app.terminate();app.launchArguments=[];app.launch()
+        XCTAssertTrue(app.tabBars.buttons["الإعدادات"].waitForExistence(timeout:10))
+        app.tabBars.buttons["الإعدادات"].tap()
+        app.segmentedControls["appLanguage"].buttons["English"].tap()
+        XCTAssertTrue(app.tabBars.buttons["Settings"].waitForExistence(timeout:5))
+        capture("Settings after changing language")
     }
     func testArabicDarkOfflineFlow() {
         let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingArabicDark"];app.launch()

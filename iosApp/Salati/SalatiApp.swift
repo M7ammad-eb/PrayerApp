@@ -3,12 +3,16 @@ import BackgroundTasks
 import UserNotifications
 
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    // Signers may rewrite the permitted ID along with the bundle identifier.
+    static var refreshIdentifier: String {
+        (Bundle.main.object(forInfoDictionaryKey:"BGTaskSchedulerPermittedIdentifiers") as? [String])?.first ?? "com.salati.prayertimes.ios.refresh"
+    }
     func application(_ application: UIApplication,didFinishLaunchingWithOptions launchOptions:[UIApplication.LaunchOptionsKey:Any]?=nil) -> Bool {
         let center=UNUserNotificationCenter.current()
         center.delegate=self
         let play=UNNotificationAction(identifier:"PLAY_ADHAN",title:Settings.load().language == "ar" ? "تشغيل الأذان كاملًا الآن" : "Play full adhan now",options:.foreground)
         center.setNotificationCategories([UNNotificationCategory(identifier:"PRAYER",actions:[play],intentIdentifiers:[])])
-        BGTaskScheduler.shared.register(forTaskWithIdentifier:"com.salati.prayertimes.ios.refresh",using:nil) { task in
+        BGTaskScheduler.shared.register(forTaskWithIdentifier:Self.refreshIdentifier,using:nil) { task in
             let work=Task { @MainActor in
                 let model=AppModel(); await model.refresh(); task.setTaskCompleted(success:!Task.isCancelled && model.error == nil)
             }
@@ -24,7 +28,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         completion()
     }
     static func requestRefresh() {
-        let request=BGAppRefreshTaskRequest(identifier:"com.salati.prayertimes.ios.refresh")
+        let request=BGAppRefreshTaskRequest(identifier:refreshIdentifier)
         request.earliestBeginDate=Date(timeIntervalSinceNow:12*3600)
         try? BGTaskScheduler.shared.submit(request)
     }

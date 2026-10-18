@@ -5,7 +5,7 @@ import ActivityKit
 struct PrayerEntry: TimelineEntry {
     let date:Date
     let snapshot:ScheduleSnapshot?
-    var next:SnapshotEvent? {snapshot?.events.first {$0.date>date}}
+    var next:SnapshotEvent? {snapshot?.nextEvent(after:date)}
 }
 struct Provider: TimelineProvider {
     func placeholder(in context:Context) -> PrayerEntry {PrayerEntry(date:Date(),snapshot:nil)}
@@ -15,7 +15,7 @@ struct Provider: TimelineProvider {
         var entries=[PrayerEntry(date:now,snapshot:snapshot)]
         if let snapshot {
             entries += snapshot.events.filter {$0.date>now}.map {PrayerEntry(date:$0.date,snapshot:snapshot)}
-            entries.append(PrayerEntry(date:snapshot.validUntil,snapshot:nil))
+            entries.append(PrayerEntry(date:snapshot.validUntil,snapshot:snapshot))
         }
         completion(Timeline(entries:entries,policy:.after(min(snapshot?.validUntil ?? now.addingTimeInterval(3600),now.addingTimeInterval(6*3600)))))
     }

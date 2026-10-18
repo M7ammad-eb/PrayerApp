@@ -141,4 +141,5 @@
 "Use current location" = "استخدام الموقع الحالي";
 "WHITE_DAY" = "يوم من الأيام البيض";
 "Western digits (0123456789) are used in both languages." = "تُستخدم الأرقام 0123456789 في اللغتين.";
+"Widget storage is unavailable. The app and widget must share the same signed App Group." = "تخزين الودجت غير متاح. يجب توقيع التطبيق والودجت بمجموعة تطبيقات مشتركة واحدة.";
 "Your next prayer, calculated offline." = "صلاتك القادمة، محسوبة دون اتصال.";
