@@ -13,11 +13,33 @@ codesign --force --sign - --timestamp=none --entitlements iosApp/Config/Salati.e
 codesign --force --sign - --timestamp=none --entitlements iosApp/Config/Salati.entitlements "$APP"
 codesign --verify --deep --strict "$APP"
 python3 - "$APP" <<'PY'
-import plistlib,subprocess,sys
+import plistlib,struct,subprocess,sys
 from pathlib import Path
 app=Path(sys.argv[1])
 for bundle in [app,app/'PlugIns/SalatiWidgets.appex']:
-    entitlements=plistlib.loads(subprocess.check_output(['codesign','--display','--entitlements','-',str(bundle)],stderr=subprocess.DEVNULL))
+    info=plistlib.loads((bundle/'Info.plist').read_bytes())
+    executable=(bundle/info['CFBundleExecutable']).read_bytes()
+    header=struct.unpack_from('<8I',executable)
+    assert header[0]==0xfeedfacf and header[1]==0x0100000c, 'Expected ARM64 Mach-O'
+    cursor=32; signature_blob=None
+    for _ in range(header[4]):
+        command,size=struct.unpack_from('<II',executable,cursor)
+        assert size>=8 and cursor+size<=len(executable)
+        if command==0x1d:  # LC_CODE_SIGNATURE
+            offset,length=struct.unpack_from('<II',executable,cursor+8)
+            signature_blob=executable[offset:offset+length]
+        cursor+=size
+    assert signature_blob is not None, 'Missing embedded capability metadata'
+    magic,length,count=struct.unpack_from('>III',signature_blob)
+    assert magic==0xfade0cc0 and length<=len(signature_blob)
+    entitlements=None
+    for index in range(count):
+        slot,offset=struct.unpack_from('>II',signature_blob,12+index*8)
+        if slot==5:  # CSSLOT_ENTITLEMENTS, XML plist following the blob header
+            magic,length=struct.unpack_from('>II',signature_blob,offset)
+            assert magic==0xfade7171
+            entitlements=plistlib.loads(signature_blob[offset+8:offset+length])
+    assert entitlements is not None, 'Missing XML App Group entitlement'
     assert entitlements['com.apple.security.application-groups']==['group.com.salati.prayertimes']
     signature=subprocess.run(['codesign','--display','--verbose=2',str(bundle)],capture_output=True,text=True,check=True)
     assert 'Signature=adhoc' in signature.stderr+signature.stdout
