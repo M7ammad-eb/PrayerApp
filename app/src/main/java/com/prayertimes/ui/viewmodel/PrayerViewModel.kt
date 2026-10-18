@@ -54,12 +54,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 
 data class NextPrayerInfo(
     val prayerItem: PrayerTimeItem? = null,
@@ -170,6 +173,12 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     private var cachedBoundary: NextPrayerBoundary? = null
     private var languageLocationJob: Job? = null
+
+    // A recent cached fix is enough to detect meaningful travel. Room-scale GPS drift is filtered
+    // separately before persistence so it cannot invalidate prayer schedules and alarms.
+    private var lastRoutineLocationEpoch=0.0
+    private val locationSelectionVersion=AtomicInteger(0)
+    private val locationPersistenceGate=Mutex()
 
     fun setForeground(foreground: Boolean) {
         _isForeground.value = foreground
@@ -298,26 +307,22 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun selectCity(location: UserLocation) {
-        locationSelectionVersion += 1
+        locationSelectionVersion.incrementAndGet()
         languageLocationJob?.cancel()
         _isGpsLoading.value = false
         _locationErrorMessage.value = null
         viewModelScope.launch {
-            prefs.updateLocation(location)
+            locationPersistenceGate.withLock { prefs.updateLocation(location) }
         }
     }
 
-    // A recent cached fix is enough to detect meaningful travel. Room-scale GPS drift is filtered
-    // separately before persistence so it cannot invalidate prayer schedules and alarms.
-    private var lastRoutineLocationEpoch=0.0
-    private var locationSelectionVersion=0
 
     @SuppressLint("MissingPermission")
     fun requestGpsLocation(context: Context, forceRefresh: Boolean = true) {
         val requestEpoch=System.currentTimeMillis()/1000.0
         if (!com.salati.shared.LocationAcceptance.shouldAcquire(lastRoutineLocationEpoch,requestEpoch,settings.value.location.isGps,forceRefresh)) return
         lastRoutineLocationEpoch=requestEpoch
-        val requestVersion=++locationSelectionVersion
+        val requestVersion=locationSelectionVersion.incrementAndGet()
         _isGpsLoading.value = true
         _locationErrorMessage.value = null
         val language = settings.value.language
@@ -329,7 +334,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         if (forceRefresh) {
             fusedLocationClient.lastLocation
                 .addOnSuccessListener { cached: Location? ->
-                    if (requestVersion != locationSelectionVersion) return@addOnSuccessListener
+                    if (requestVersion != locationSelectionVersion.get()) return@addOnSuccessListener
                     if (cached != null && com.salati.shared.LocationAcceptance.usableFix(cached.accuracy.toDouble(),cached.time/1000.0,System.currentTimeMillis()/1000.0,true)) {
                         viewModelScope.launch(Dispatchers.IO) {
                             resolveAndPersistGpsLocation(context, cached, localizedRes, language, forcePersist = true,expectedVersion=requestVersion)
@@ -346,7 +351,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
         fusedLocationClient.lastLocation
             .addOnSuccessListener { cached: Location? ->
-                if (requestVersion != locationSelectionVersion) return@addOnSuccessListener
+                if (requestVersion != locationSelectionVersion.get()) return@addOnSuccessListener
                 if (cached != null && com.salati.shared.LocationAcceptance.usableFix(cached.accuracy.toDouble(),cached.time/1000.0,System.currentTimeMillis()/1000.0,false)) {
                     viewModelScope.launch(Dispatchers.IO) {
                         resolveAndPersistGpsLocation(context, cached, localizedRes, language,expectedVersion=requestVersion)
@@ -366,12 +371,12 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         localizedRes: android.content.res.Resources,
         language: AppLanguage,
         forcePersist: Boolean = false,
-        expectedVersion:Int=locationSelectionVersion
+        expectedVersion:Int=locationSelectionVersion.get()
     ) {
-        if(expectedVersion != locationSelectionVersion) return
+        if(expectedVersion != locationSelectionVersion.get()) return
         fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
             .addOnSuccessListener { location: Location? ->
-                if(expectedVersion != locationSelectionVersion) return@addOnSuccessListener
+                if(expectedVersion != locationSelectionVersion.get()) return@addOnSuccessListener
                 if (location != null && com.salati.shared.LocationAcceptance.usableFix(location.accuracy.toDouble(),location.time/1000.0,System.currentTimeMillis()/1000.0,forcePersist)) {
                     viewModelScope.launch(Dispatchers.IO) {
                         resolveAndPersistGpsLocation(context, location, localizedRes, language, forcePersist,expectedVersion)
@@ -382,7 +387,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 }
             }
             .addOnFailureListener {
-                if (expectedVersion != locationSelectionVersion) return@addOnFailureListener
+                if (expectedVersion != locationSelectionVersion.get()) return@addOnFailureListener
                 _isGpsLoading.value = false
                 _locationErrorMessage.value = localizedRes.getString(R.string.gps_request_failed_error, it.localizedMessage)
             }
@@ -394,9 +399,9 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         localizedRes: android.content.res.Resources,
         language: AppLanguage,
         forcePersist: Boolean = false,
-        expectedVersion:Int=locationSelectionVersion
+        expectedVersion:Int=locationSelectionVersion.get()
     ) {
-        if(expectedVersion != locationSelectionVersion) return
+        if(expectedVersion != locationSelectionVersion.get()) return
         try {
             val newLoc = resolveGpsLocation(
                 context = context,
@@ -405,8 +410,10 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 language = language,
                 localizedRes = localizedRes
             )
-            if (expectedVersion == locationSelectionVersion && (forcePersist || isMeaningfulLocationChange(settings.value.location, newLoc))) {
-                prefs.updateLocation(newLoc)
+            locationPersistenceGate.withLock {
+                if (expectedVersion == locationSelectionVersion.get() && (forcePersist || isMeaningfulLocationChange(settings.value.location, newLoc))) {
+                    prefs.updateLocation(newLoc)
+                }
             }
         } catch (e: Exception) {
             val newLoc = UserLocation(
@@ -417,11 +424,13 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 timeZoneId = ZoneId.systemDefault().id,
                 isGps = true
             )
-            if (expectedVersion == locationSelectionVersion && (forcePersist || isMeaningfulLocationChange(settings.value.location, newLoc))) {
-                prefs.updateLocation(newLoc)
+            locationPersistenceGate.withLock {
+                if (expectedVersion == locationSelectionVersion.get() && (forcePersist || isMeaningfulLocationChange(settings.value.location, newLoc))) {
+                    prefs.updateLocation(newLoc)
+                }
             }
         } finally {
-            if(expectedVersion == locationSelectionVersion) _isGpsLoading.value = false
+            if(expectedVersion == locationSelectionVersion.get()) _isGpsLoading.value = false
         }
     }
 
@@ -528,14 +537,13 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     /**
      * Localizing a GPS place opens/queries the large offline places database. Keep it off the
-     * language-switch critical path and in the process scope so it can finish independently of
-     * the current screen lifecycle.
+     * language-switch critical path. The view-model scope cancels stale work on destruction.
      */
     private fun relocalizeGpsLocationInBackground(currentLocation: UserLocation, language: AppLanguage) {
         val application = getApplication<Application>()
-        val expectedVersion = locationSelectionVersion
+        val expectedVersion = locationSelectionVersion.get()
         languageLocationJob?.cancel()
-        languageLocationJob = PrayerApplication.instance.applicationScope.launch(Dispatchers.IO) {
+        languageLocationJob = viewModelScope.launch(Dispatchers.IO) {
             val localizedRes = com.prayertimes.util.LocalizedStrings.forLanguage(
                 application,
                 language.resolveIsArabic(application)
@@ -555,8 +563,10 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                     localizedRes
                 )
             }
-            if (expectedVersion == locationSelectionVersion && settings.value.location == currentLocation) {
-                PrayerPreferences(application).updateLocation(relocalized)
+            locationPersistenceGate.withLock {
+                if (expectedVersion == locationSelectionVersion.get() && settings.value.location == currentLocation) {
+                    PrayerPreferences(application).updateLocation(relocalized)
+                }
             }
         }
     }
