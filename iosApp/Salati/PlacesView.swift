@@ -112,13 +112,13 @@ struct OnboardingView: View {
                 Section {
                     NavigationLink("Optional alerts and Live Activities") {NotificationSettingsView()}
                 } footer: {Text("Notifications and alarms stay off until you choose them. Permission alone never enables audible alerts.")}
-                Section("Ready") {
+                Section {
                     if model.settings.location != nil {LabeledContent("City",value:model.locationDisplayName)}
                     LabeledContent("Method") {Text(LocalizedStringKey(model.settings.method))}
                     Button("Continue") {model.settings.onboardingComplete=true}
                         .frame(maxWidth:.infinity,minHeight:44).buttonStyle(.borderedProminent)
                         .disabled(model.settings.location == nil).accessibilityIdentifier("continueOnboarding")
-                } footer: {Text("Calculated on your device. No account or subscription.")}
+                } header: {Text("Ready")} footer: {Text("Calculated on your device. No account or subscription.")}
             }
             .navigationTitle("Welcome to Salati").navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented:$showPlaces) {NavigationStack {PlacesView()}}

@@ -67,7 +67,7 @@ struct HijriView: View {
                         ForEach(selected.observances,id:\.self) {Text(LocalizedStringKey($0))}
                     }
                 }
-                Section("Month adjustment") {
+                Section {
                     Text("\(model.arabic ? page.titleArabic : page.titleEnglish) \(page.year.description)").font(.subheadline).foregroundStyle(.secondary)
                     Stepper(value:Binding(get:{model.calendarOffset(pageMonthKey:page.monthKey)},set:{model.setCalendarOffset(pageMonthKey:page.monthKey,value:$0);selected=nil}),in:-2...2) {
                         LabeledContent("Hijri adjustment",value:model.calendarOffset(pageMonthKey:page.monthKey).description)
@@ -79,7 +79,7 @@ struct HijriView: View {
                         Button("Reset active adjustment") {model.setCalendarOffset(pageMonthKey:anchor,value:0);selected=nil}
                             .accessibilityIdentifier("resetActiveHijriAdjustment")
                     }
-                } footer: {
+                } header: {Text("Month adjustment")} footer: {
                     Text("Local moon sighting may differ. This adjustment changes only the named Hijri month.")
                     Text("The correction expires at the unadjusted month boundary. Some Hijri labels may repeat when it resets.")
                 }

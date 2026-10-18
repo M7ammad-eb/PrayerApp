@@ -43,10 +43,10 @@ struct HomeView: View {
                         }.padding(.vertical,6).accessibilityElement(children:.combine)
                     }
                 }
-                Section("The night") {
+                Section {
                     LabeledContent("Islamic midnight",value:model.time(day.midnightEpoch))
                     LabeledContent("Last third",value:model.time(day.lastThirdEpoch))
-                }
+                } header: {Text("The night")}
                 Section {
                     NavigationLink("Notifications and adhan") { NotificationSettingsView() }
                 } footer: { Text("Prayer countdowns start automatically when enabled. Open Salati regularly to replenish future alerts.") }
