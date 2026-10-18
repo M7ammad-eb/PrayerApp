@@ -1,0 +1,30 @@
+{
+  "workflowRun": "https://github.com/M7ammad-eb/PrayerApp/actions/runs/39087685774",
+  "sourceCommit": "a419ded14261322b33071d8f06d6c45c0df47834",
+  "artifactId": 12122075400,
+  "artifactSHA256": "16fcb460e4b79104aedd6de09fcd83e850fe6e2e99c6d51c9a8a6a0c27cf416a",
+  "xcode": "26.4.1",
+  "simulatorRuntime": "iOS 26.4.1",
+  "dimensions": "1206 x 2622",
+  "modifications": "PNG exports unchanged; renamed only. No image edits.",
+  "screenshots": [
+    {
+      "file": "settings-after-english.png",
+      "title": "Settings after changing language",
+      "originalExportedFileName": "CB2D1536-32A1-4C71-B057-10D89BEE2315.png",
+      "test": "SalatiUITests/testChooseOfflineCityAndNavigate()",
+      "device": "iPhone 17 Pro",
+      "timestampUTC": "2026-10-18T02:00:29.028000+00:00",
+      "sha256": "0fa4e9897bf81055a2847d82cce9e08b3685073065f0a826180de89c137f492a"
+    },
+    {
+      "file": "settings-after-arabic.png",
+      "title": "Settings after switching to Arabic",
+      "originalExportedFileName": "35BE21DC-DC55-46C1-9D8D-B7A74AE639D0.png",
+      "test": "SalatiUITests/testChooseOfflineCityAndNavigate()",
+      "device": "iPhone 17 Pro",
+      "timestampUTC": "2026-10-18T02:00:12.171000+00:00",
+      "sha256": "d8f72b0bb63e3bee41432c9095bbcba19f0a5d79951d239df815d83af8205a74"
+    }
+  ]
+}

@@ -10,3 +10,5 @@ Actual XCTest screenshots from [successful CI run 39080678204](https://github.co
 | Settings | [Settings](settings-en-light.png) | [Settings](settings-ar-dark.png) |
 
 These show real offline database selections and calculated times. The simulator has no compass; the unavailable-sensor message is intentional. Its status-bar time uses the simulator's region/zone; prayer times use the selected city's zone. Screenshots were visually inspected for contrast, RTL, Western digits and visible native controls. Physical sensors, notification/alarm delivery, widgets, Live Activities and the full accessibility/size matrix remain unverified on an iPhone.
+
+Build 2 adds a visible top language control and live reading-direction correction. [Current language-switch screenshots and provenance](build2/README.md) show both transitions from the matching final source.
