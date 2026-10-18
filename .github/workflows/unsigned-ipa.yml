@@ -36,7 +36,7 @@ jobs:
           key: konan-${{ runner.os }}-${{ runner.arch }}-2.4.10-xcode26.4.1
       - run: brew install xcodegen
       - name: Build actual iPhone framework and resources
-        run: KOTLIN_TARGET=IosArm64 bash tools/ios/build.sh
+        run: KOTLIN_TARGET=IosArm64 KOTLIN_BUILD_TYPE=Release bash tools/ios/build.sh
       - name: Compile and package unsigned iPhone IPA
         run: bash tools/ios/package_unsigned_ipa.sh
       - uses: actions/upload-artifact@v4
@@ -48,3 +48,8 @@ jobs:
             build/unsigned-ipa/Salati-unsigned.ipa.sha256
             build/unsigned-ipa/build-info.json
             iosApp/Config/Salati.entitlements
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Salati-iphone-release-symbols
+          if-no-files-found: error
+          path: build/unsigned-ipa/DerivedData/Build/Products/Release-iphoneos/*.dSYM
