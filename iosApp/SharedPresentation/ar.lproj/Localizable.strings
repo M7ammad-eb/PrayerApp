@@ -98,6 +98,7 @@
 "Method" = "طريقة الحساب";
 "Month adjustment" = "تعديل الشهر";
 "NONE" = "بدون تعديل (None)";
+"Nearest offline city: %@ · %@ km" = "أقرب مدينة في قاعدة البيانات: %@ · %@ كم";
 "Next month" = "الشهر التالي";
 "Next prayer" = "الصلاة القادمة";
 "Next prayer and your daily offline schedule." = "الصلاة القادمة وجدولك اليومي دون اتصال.";
@@ -113,6 +114,7 @@
 "ONE_SEVENTH" = "سُبع الليل";
 "Off" = "إيقاف";
 "Offline city data: GeoNames, CC BY 4.0. Calendar month boundaries: OpenJDK Hijrah-umalqura." = "بيانات المدن: GeoNames بترخيص CC BY 4.0. بدايات الأشهر: OpenJDK Hijrah-umalqura.";
+"Offline manual location" = "موقع مُختار يدويًا دون اتصال";
 "Offline place lookup failed. Try again or select a location manually." = "تعذر العثور على المكان دون اتصال. حاول مجددًا أو حدد الموقع يدويًا.";
 "Open Salati to refresh" = "افتح صلاتي لتحديث المواقيت";
 "Open the app to update your location and shared prayer schedule." = "افتح التطبيق لتحديث الموقع وجدول المواقيت المشترك.";
@@ -192,6 +194,7 @@
 "Up next" = "الموعد القادم";
 "Up to six days are prepared. Open Salati regularly to replenish the schedule; background refresh is best effort." = "تُجهز مواقيت ستة أيام. افتح صلاتي بانتظام لتجديد الجدول؛ التحديث في الخلفية غير مضمون.";
 "Use current location" = "استخدام الموقع الحالي";
+"Using exact GPS coordinates" = "تُستخدم إحداثيات GPS الدقيقة";
 "WHITE_DAY" = "يوم من الأيام البيض";
 "Welcome to Salati" = "مرحبًا بك في صلاتي";
 "Western digits (0123456789) are used in both languages." = "تُستخدم الأرقام 0123456789 في اللغتين.";

@@ -98,6 +98,7 @@
 "Method" = "Method";
 "Month adjustment" = "Month adjustment";
 "NONE" = "None";
+"Nearest offline city: %@ · %@ km" = "Nearest offline city: %@ · %@ km";
 "Next month" = "Next month";
 "Next prayer" = "Next prayer";
 "Next prayer and your daily offline schedule." = "Next prayer and your daily offline schedule.";
@@ -113,6 +114,7 @@
 "ONE_SEVENTH" = "One Seventh of Night";
 "Off" = "Off";
 "Offline city data: GeoNames, CC BY 4.0. Calendar month boundaries: OpenJDK Hijrah-umalqura." = "Offline city data: GeoNames, CC BY 4.0. Calendar month boundaries: OpenJDK Hijrah-umalqura.";
+"Offline manual location" = "Offline manual location";
 "Offline place lookup failed. Try again or select a location manually." = "Offline place lookup failed. Try again or select a location manually.";
 "Open Salati to refresh" = "Open Salati to refresh";
 "Open the app to update your location and shared prayer schedule." = "Open the app to update your location and shared prayer schedule.";
@@ -192,6 +194,7 @@
 "Up next" = "Up next";
 "Up to six days are prepared. Open Salati regularly to replenish the schedule; background refresh is best effort." = "Up to six days are prepared. Open Salati regularly to replenish the schedule; background refresh is best effort.";
 "Use current location" = "Use current location";
+"Using exact GPS coordinates" = "Using exact GPS coordinates";
 "WHITE_DAY" = "White Day";
 "Welcome to Salati" = "Welcome to Salati";
 "Western digits (0123456789) are used in both languages." = "Western digits (0123456789) are used in both languages.";
