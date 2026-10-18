@@ -116,20 +116,20 @@ The initial compile is unsigned. Runtime tests use locally ad-hoc signed simulat
 
 ## Unsigned iPhone IPA
 
-The separate `.github/workflows/unsigned-ipa.yml` workflow builds the actual `IosArm64` Kotlin framework and iPhoneOS app/widget binaries, then packages `Payload/Salati.app` into `Salati-unsigned.ipa`. It validates both Mach-O platform identifiers (iPhoneOS, not ARM64 simulator), bundle platform metadata, all 11 recordings, database presence and ZIP integrity. No certificate or provisioning profile is embedded. This is a Debug configuration device build; it still requires proper signing/provisioning before installation.
+The separate `.github/workflows/unsigned-ipa.yml` workflow builds the actual `IosArm64` Kotlin framework and iPhoneOS app/widget binaries, then packages `Payload/Salati.app` into `Salati-unsigned.ipa`. It validates both Mach-O platform identifiers (iPhoneOS, not ARM64 simulator), bundle platform metadata, all 11 recordings, database presence and ZIP integrity. No certificate or provisioning profile is embedded. The current packaging lane uses Release for both Kotlin and Swift, explicitly disables debug dylibs, and retains app/widget dSYM symbols separately. It still requires proper signing/provisioning before installation.
 
 Reproduce on the pinned Mac/Xcode environment:
 
 ```sh
-KOTLIN_TARGET=IosArm64 bash tools/ios/build.sh
+KOTLIN_TARGET=IosArm64 KOTLIN_BUILD_TYPE=Release bash tools/ios/build.sh
 bash tools/ios/package_unsigned_ipa.sh
 ```
 
-Output: `build/unsigned-ipa/Salati-unsigned.ipa`, SHA-256 file and build-info.json. CI artifact `Salati-unsigned-iphone-ipa` also contains the app/widget App Group entitlements for subsequent signing. [Successful device packaging run](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39082393881), source `b10467999ca8329206062ef2a1d8e5f5953c956f`. The IPA was downloaded to `C:/Users/M1993/PrayerApp/build/ios/Salati-unsigned.ipa` (58,583,649 bytes), independently checked as unsigned ARM64 iPhoneOS app and widget binaries, with SHA-256 `ac9e700503e9be1e6716111929ccc65eb8b1ba40d03cabb86a0cebdc3428bbf9`. It has not been installed or run on a physical device.
+Output: `build/unsigned-ipa/Salati-unsigned.ipa`, SHA-256 file and build-info.json. CI artifact `Salati-unsigned-iphone-ipa` also contains the app/widget App Group entitlements for subsequent signing. [Successful device packaging run](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39082393881), source `b10467999ca8329206062ef2a1d8e5f5953c956f`. The IPA was downloaded to `C:/Users/M1993/PrayerApp/build/ios/Salati-unsigned.ipa` (58,583,649 bytes), independently checked as unsigned ARM64 iPhoneOS app and widget binaries, with SHA-256 `ac9e700503e9be1e6716111929ccc65eb8b1ba40d03cabb86a0cebdc3428bbf9`. The user subsequently confirmed successful installation of this original IPA via iLoader/free Apple ID on iOS 27.0.1 after a restart/failed-install cleanup. Launch and individual feature behavior have not yet been confirmed.
 
 ## Signing and physical installation later
 
-Device installation needs Mac/Xcode access (a trusted remote Mac can work), an Apple ID/team, development certificate/private key and provisioning profiles for the iPhone's UDID, plus Developer Mode. Generate the device framework with `KOTLIN_TARGET=IosArm64 bash tools/ios/build.sh`, open iosApp/Salati.xcodeproj and select the development team for app and widget targets.
+For the Xcode-managed development-signing path, use Mac/Xcode access (a trusted remote Mac can work), an Apple ID/team, development certificate/private key and provisioning profiles for the iPhone's UDID, plus Developer Mode. Windows iLoader with a free Apple ID is also user-confirmed to install the unsigned IPA after signing; that tool manages its own IDs/profiles. Widget App Group matching and all runtime features still need device validation. Generate the device framework with `KOTLIN_TARGET=IosArm64 bash tools/ios/build.sh`, open iosApp/Salati.xcodeproj and select the development team for app and widget targets.
 
 Register app IDs `com.salati.prayertimes.ios` and `com.salati.prayertimes.ios.widgets` plus App Group `group.com.salati.prayertimes`, enabling that group in both profiles. If IDs are already claimed, change IDs/group consistently in project, entitlements and snapshot code. App Group capability may require paid Apple Developer membership; none was purchased or enrolled. Remote signed builds also require securely supplied development signing material and registered-device profiles. No App Store Connect key/distribution certificate is needed for simulator CI.
 
@@ -142,7 +142,7 @@ Short physical-iPhone checklist:
 5. Change location/settings and confirm old alerts cancel. Test background denial and six-day horizon exhaustion/replenishment.
 6. Add Home Screen widgets, change language/time settings and cross midnight/expiry; start/schedule/end Live Activities on Lock Screen/Dynamic Island with signed App Groups.
 
-No physical iPhone has been tested. Next work is this device/signing validation, then accessibility/size coverage and tuning based on observed results. Resolve those before release/distribution.
+The user confirmed installation on a physical iPhone running iOS 27.0.1. Device feature validation, accessibility/size coverage and tuning based on observed results remain next. Resolve those before release/distribution.
 
 ## Carry the independent Android_Legacy audio update into ios
 
@@ -170,3 +170,11 @@ Choose one path, not both. Do not merge Android_Legacy wholesale. Rebuild Androi
 - [Apple: scheduled Live Activities](https://developer.apple.com/documentation/activitykit/activity/request(attributes:content:pushtype:style:alertconfiguration:start:))
 - [SQLite immutable database URI](https://www.sqlite.org/uri.html#uriimmutable)
 - [XcodeGen project/resource schema](https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md)
+
+## iLoader installation diagnosis
+
+The reported iLoader/isideload 0.4.6 log reached `App signed!`, passed `VerifyingApplication`, and then failed during `SandboxingApplication` with `_GetContinuationFD` / ENOENT for an iPhone bundle-container directory. This points toward installation/container state on the device; it does not establish an IPA filename, signature or minimum-OS rejection. Restart the iPhone and remove only an incomplete/grey failed Salati installation before retrying. Do not treat a successful compile as proof of a successful device install.
+
+The original IPA was a valid Debug build using Xcode's stub executable plus separate `.debug.dylib` and `__preview.dylib`. The published isideload 0.4.6 source recursively handles dylibs, so that layout is not a confirmed cause of this error. The replacement is a conventional Release build with no preview/debug dylibs, eliminating this packaging variable while preserving the widget extension. See [Apple's build-layout documentation](https://developer.apple.com/documentation/xcode/understanding-build-product-layout-changes). The user retried the original IPA after the restart/failed-install cleanup and confirmed installation succeeded. This supports a transient installation/container-state explanation; the exact iOS cause is not proven. A Release rebuild was not needed to obtain that successful installation. Launch and individual feature behavior are still unconfirmed.
+
+The optional Release IPA is available at `C:/Users/M1993/PrayerApp/build/ios/Salati-release-unsigned.ipa` (57,888,905 bytes), SHA-256 `402534c382fadef2c982dbc1bc550ef35a9e4c7bfa98dcfdafb826eaa430f519`. [Release build 39083123917](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39083123917) passed on packaging source `6ad3ca29368433302484baaf4375232c7a2f126c`; local checks confirmed unsigned ARM64 iPhoneOS binaries and no debug/preview dylibs. Widgets and Live Activities remain included. Original working installation can be kept; this optional file has not been installed on the device. Matching app/widget dSYM symbols are retained in that run's separate artifact.
