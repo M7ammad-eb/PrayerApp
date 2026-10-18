@@ -1,6 +1,14 @@
 # iOS migration progress
 
-## Current work
+## Phase 2 (build 3)
+
+- Release source: `3e8187df00af123e60efeeaae9257ffa69f44928` on `ios`; packaging [39158515340](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39158515340) PASSED (job 117766671114). Independently verified final file `C:/Users/M1993/PrayerApp/build/ios/Salati-Phase2-1.8-build3.ipa`, 39,226,581 bytes, SHA-256 `edfad79c505cb132a8a489b08b71556885683b1aca872ee84cab0deeaeb44d99`. [Receipt](ios/build3-verification.json) includes artifact hash, source and both bundle checks. Both binaries are ARM64 iPhoneOS/build 3 with matching ad-hoc App Group capability metadata; AltStore must replace that metadata with the user’s signing. All 11 MP3s match build 2 originals; no arbitrary short clips, Apple profiles or debug/preview dylibs. Reviewed Arabic source labels are present in both compiled bundles.
+- Runtime [39155706316](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39155706316) PASSED: 97 Android tests/APK, 19 shared JVM tests, native shared tests (17 common cases), 33 app tests, 5 UI flows on iPhone 17 Pro Max and 2 selected UI flows on iPhone 17e (both iOS 26.4.1). The compact selectors ran two actual tests, not zero.
+- Runtime/screenshots source: `d3f45d5d4b44862e895d35494064ad7bf65b61f7`. Final source differs only by three localization entries found during visual review; Release resources are checked independently. No Swift, domain or Android logic changed afterward. The full suite was not redundantly rerun for those dictionary entries.
+- Lead/independent review inspected Home, calendar, Qibla, transitions/relaunch/sheets, large text, GPS UI fixtures and all 22 widget/Activity renderer captures. 52 original PNGs and exported manifests/checksums are preserved under [build3](ios/screenshots/build3/README.md). Arabic Settings had an English location-source label in these captures; that catalog omission is corrected in Release. Previews and simulated sensors are not physical-device proof.
+- Architecture, platform limits, pending approved short audio and physical checklist: [Phase 2 handoff](IOS_PHASE2.md), [scheduling/audio](IOS_PHASE2_SCHEDULING.md), [UI/widgets](IOS_PHASE2_UI.md). Main, Android_Legacy, baseline tag and previous IPAs remain preserved.
+
+## Phase 1 history
 
 - Worktree: `C:/Users/M1993/PrayerApp/.worktrees/ios`, branch `ios`. Main's existing uncommitted work is preserved.
 - Android baseline: `9d4382d60f23de3b8f2be30cf877b27b0211515d`, annotated tag `android-1.8-baseline`. Main and Android_Legacy remain at that baseline locally/remotely.

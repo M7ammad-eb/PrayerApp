@@ -1,0 +1,122 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "9706BB15-2E77-474A-B4F9-44392B716598.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility large text calendar list_0_C06AC0E8-C50B-4882-9CC8-7AFA4B0D99C0.png",
+        "timestamp" : 1792350708.299
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "BBE8851C-180F-4CC1-AF89-D6986E74F61C.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility large text prayer home_0_5BA98752-9B5B-4307-A6F6-24A28CC1F7A2.png",
+        "timestamp" : 1792350705.76
+      }
+    ],
+    "testIdentifier" : "SalatiUITests/testAccessibilityCalendarAndHome()",
+    "testIdentifierURL" : "test://com.apple.xcode/Salati/SalatiUITests/SalatiUITests/testAccessibilityCalendarAndHome"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "D2161E73-02B7-4118-BF45-193654F52CA7.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English settings after language persistence relaunch_0_F6497295-70E6-4099-9252-87DD1CDE626B.png",
+        "timestamp" : 1792351034.496
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "3B5A6D8A-EF8F-4803-81FF-CE9B03CC3F1E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Location sheet after repeated language transitions_0_0B0B5455-2FE3-45A8-91E1-4118E9C6A639.png",
+        "timestamp" : 1792350981.455
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "111F0239-A2C7-4EA9-8E39-BFF2064F4A54.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Settings immediately after returning to English_0_42B29D46-793A-43E8-94A8-972DD4666A97.png",
+        "timestamp" : 1792350951.261
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "38D9A15E-8B92-471C-841B-61722EB96189.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Qibla simulated true heading 90 Arabic_0_B983F366-B54B-461F-B030-34E5EB74F3E1.png",
+        "timestamp" : 1792350935.005
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "E3C22824-A470-4616-B8AD-155BF1B41301.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Calendar after switching to Arabic_0_557A8B30-40A5-4F89-8902-F54B318E02DA.png",
+        "timestamp" : 1792350931.883
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "DBBD2EB3-BCDE-44AD-A1FD-BA3D959743E3.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Settings immediately after switching to Arabic_0_ECB7A2AC-06C0-4B9C-860F-EBE8327F30C6.png",
+        "timestamp" : 1792350928.608
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "C2CB0288-2AA1-45DF-9B15-7217E578AA29.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Settings Display language_0_41C27906-031C-4281-8C8E-5564BD953334.png",
+        "timestamp" : 1792350920.238
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "39983940-4A22-45A9-A78C-5ACBAE7D3807.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Qibla simulated true heading 90 English_0_1010B5F2-F2F0-4DF3-9168-C683E570535B.png",
+        "timestamp" : 1792350913.176
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "11276DAE-16CE-446A-AEF9-B48A3B014E71.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Hijri calendar with dual dates_0_CA8DA5FD-88C3-4DD9-A9F5-74BD0ED754CB.png",
+        "timestamp" : 1792350905.754
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "315581A2-127D-42D4-84D9-9D55BF57C2B8.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Prayer home_0_251FFFCF-2091-4E0B-A27D-8E662C4FA7BE.png",
+        "timestamp" : 1792350900.801
+      }
+    ],
+    "testIdentifier" : "SalatiUITests/testChooseOfflineCityAndNavigate()",
+    "testIdentifierURL" : "test://com.apple.xcode/Salati/SalatiUITests/SalatiUITests/testChooseOfflineCityAndNavigate"
+  }
+]

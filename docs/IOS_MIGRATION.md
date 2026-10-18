@@ -1,5 +1,7 @@
 # Salati iOS implementation handoff
 
+Phase 2 (build 3) is delivered as `Salati-Phase2-1.8-build3.ipa` from source `3e8187d`, with passing runtime/Release workflows and an independent receipt. Current architecture, actual validation status and remaining device checks are tracked in [IOS_PHASE2.md](IOS_PHASE2.md) and [IOS_PROGRESS.md](IOS_PROGRESS.md). The Phase 1 build references below are historical.
+
 ## Repository and review references
 
 - Android baseline: `9d4382d60f23de3b8f2be30cf877b27b0211515d`, version 1.8 (8).
