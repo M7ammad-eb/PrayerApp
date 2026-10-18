@@ -17,9 +17,8 @@ BINARY_TARGET="$(echo "${TARGET:0:1}" | tr '[:upper:]' '[:lower:]')${TARGET:1}"
 ditto "shared/build/bin/${BINARY_TARGET}/${BINARY_CONFIGURATION}Framework/SalatiCore.framework" iosApp/Generated/SalatiCore.framework
 python3 tools/ios/prepare_resources.py
 python3 tools/ios/prepare_localizations.py
-for recording in iosApp/Generated/Resources/*.mp3; do
-  afconvert -f caff -d LEI16 -c 1 "$recording" "${recording%.mp3}_decoded.caf"
-done
+# No arbitrary excerpts: AlarmKit names the original bundled MP3. Ordinary
+# notifications use the system sound until the user approves dedicated short assets.
 python3 tools/ios/short_sounds.py
 sips -z 1024 1024 iosApp/Generated/Resources/Assets.xcassets/AppIcon.appiconset/Icon.png >/dev/null
 xcodegen generate --spec iosApp/project.yml

@@ -36,7 +36,7 @@ struct HomeView: View {
                             Image(systemName:symbol(event.id)).foregroundStyle(event.epochSeconds == day.next.epochSeconds ? Color.accentColor : .secondary).frame(width:28).accessibilityHidden(true)
                             VStack(alignment:.leading,spacing:3) {
                                 Text(model.title(event)).fontWeight(event.epochSeconds == day.next.epochSeconds ? .semibold : .regular)
-                                if event.epochSeconds == day.current.epochSeconds { Text(day.currentEnded ? "Prayer time ended" : "Current prayer").font(.caption).foregroundStyle(.secondary) }
+                                if event.epochSeconds == day.current.epochSeconds { Text(LocalizedStringKey(day.currentEnded ? "Prayer time ended" : "Current prayer")).font(.caption).foregroundStyle(.secondary) }
                             }
                             Spacer(minLength:8)
                             Text(model.time(event.epochSeconds)).monospacedDigit().fontWeight(event.epochSeconds == day.next.epochSeconds ? .semibold : .regular)
@@ -48,30 +48,27 @@ struct HomeView: View {
                     LabeledContent("Last third",value:model.time(day.lastThirdEpoch))
                 }
                 Section {
-                    Button {startCountdown(day)} label: {Label("Show countdown on Lock Screen",systemImage:"lock.rectangle")}
-                    Button("Schedule next prayer countdown") {
-                        do {try model.scheduler.scheduleLiveActivity(day:day,city:model.settings.location?.name ?? "",title:model.title(day.next))}
-                        catch {model.error=error.localizedDescription}
+                    NavigationLink("Notifications and adhan") { NotificationSettingsView() }
+                } footer: { Text("Prayer countdowns start automatically when enabled. Open Salati regularly to replenish future alerts.") }
+                #if SALATI_APP
+                if ProcessInfo.processInfo.arguments.contains("-uiTestingShowcase") {
+                    Section("Presentation previews") {
+                        NavigationLink("Widget and activity previews") { Phase2ShowcaseView() }.accessibilityIdentifier("presentationShowcase")
                     }
-                } footer: { Text("The countdown uses system rendering. Open Salati regularly to refresh changing prayer schedules.") }
+                }
+                #endif
             } else { ContentUnavailableView("Choose your location",systemImage:"location",description:Text("Prayer times are calculated entirely on your device.")) }
             if let status=model.scheduleStatus { Section { Text(status).font(.footnote).foregroundStyle(.secondary) } }
         }
-        .navigationTitle("Salati")
+        .navigationTitle("Salati").navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if audio.isPlaying {ToolbarItem(placement:.topBarLeading) {Button("Stop playback",systemImage:"stop.fill") {audio.stop()}}}
-            ToolbarItem(placement:.topBarTrailing) { Button {showPlaces=true} label: { Label(model.settings.location.map { model.arabic ? ($0.arabicName ?? $0.name) : $0.name } ?? (model.arabic ? "الموقع" : "Location"),systemImage:"location").labelStyle(.titleAndIcon) } }
+            ToolbarItem(placement:.topBarTrailing) { Button {showPlaces=true} label: { Label(model.settings.location == nil ? (model.arabic ? "الموقع" : "Location") : model.locationDisplayName,systemImage:"location").labelStyle(.titleAndIcon) } }
         }
         .sheet(isPresented:$showPlaces) { NavigationStack { PlacesView() } }
         .task(id:model.day?.next.epochSeconds) {
             guard let time=model.day?.next.epochSeconds else { return }
             do { try await Task.sleep(for:.seconds(max(1,time-Date().timeIntervalSince1970+1))); model.queueRefresh() } catch { }
-        }
-    }
-    func startCountdown(_ day: PrayerDay) {
-        Task {
-            do {try await model.scheduler.startLiveActivity(day:day,city:model.settings.location?.name ?? "",title:model.title(day.next))}
-            catch {model.error=error.localizedDescription}
         }
     }
     func symbol(_ id: String) -> String {

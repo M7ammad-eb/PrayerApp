@@ -7,6 +7,23 @@ struct SnapshotEvent: Codable, Identifiable, Equatable {
     let date: Date
     var timeText: String = ""
 }
+struct SnapshotDay: Codable {
+    let dateISO: String
+    let start: Date
+    let end: Date
+    let hijriEnglish: String
+    let hijriArabic: String
+    let events: [SnapshotEvent]
+}
+struct SnapshotMoment: Codable {
+    let date: Date
+    let civilDateISO: String
+    let religiousDateISO: String
+    let hijriEnglish: String
+    let hijriArabic: String
+    let currentEventID: String?
+    let nextEventID: String?
+}
 // AltStore records signed groups in ALTAppGroups. iLoader instead derives the group
 // from the rewritten parent app ID. Both routes still require signed entitlement access.
 // Both executables must derive the parent app ID, rather than use the widget ID.
@@ -44,6 +61,24 @@ struct ScheduleSnapshot: Codable {
     let validUntil: Date
     let language: String
     let use24Hour: Bool
+    var days: [SnapshotDay] = []
+    var moments: [SnapshotMoment] = []
+    var zone: String = "UTC"
+    init(city:String,events:[SnapshotEvent],validUntil:Date,language:String,use24Hour:Bool,
+         days:[SnapshotDay]=[],moments:[SnapshotMoment]=[],zone:String="UTC") {
+        self.city=city;self.events=events;self.validUntil=validUntil;self.language=language
+        self.use24Hour=use24Hour;self.days=days;self.moments=moments;self.zone=zone
+    }
+    enum CodingKeys:String,CodingKey {case city,events,validUntil,language,use24Hour,days,moments,zone}
+    init(from decoder:Decoder) throws {
+        let c=try decoder.container(keyedBy:CodingKeys.self)
+        city=try c.decode(String.self,forKey:.city);events=try c.decode([SnapshotEvent].self,forKey:.events)
+        validUntil=try c.decode(Date.self,forKey:.validUntil);language=try c.decode(String.self,forKey:.language)
+        use24Hour=try c.decode(Bool.self,forKey:.use24Hour)
+        days=try c.decodeIfPresent([SnapshotDay].self,forKey:.days) ?? []
+        moments=try c.decodeIfPresent([SnapshotMoment].self,forKey:.moments) ?? []
+        zone=try c.decodeIfPresent(String.self,forKey:.zone) ?? "UTC"
+    }
     func save(storage: SharedScheduleStorage = .current) throws {
         let data=try JSONEncoder().encode(self)
         var failure: Error = CocoaError(.fileNoSuchFile)
@@ -61,10 +96,42 @@ struct ScheduleSnapshot: Codable {
     }
     func nextEvent(after date: Date) -> SnapshotEvent? {
         guard date<validUntil else {return nil}
-        return events.filter {$0.date>date}.min {$0.date<$1.date}
+        // Version-1 files still decode, but need one app refresh to obtain shared boundary decisions.
+        guard let id=moment(at:date)?.nextEventID else {return nil}
+        return events.first {$0.id == id && $0.date>date}
+    }
+    func moment(at date:Date) -> SnapshotMoment? {
+        guard date<validUntil else {return nil}
+        return moments.last {$0.date<=date}
+    }
+    func day(at date:Date) -> SnapshotDay? {
+        if let civil=moment(at:date)?.civilDateISO {return days.first {$0.dateISO == civil}}
+        return days.first {$0.start<=date && date<$0.end}
     }
 }
 struct PrayerActivityAttributes: ActivityAttributes {
-    struct ContentState: Codable, Hashable { var title: String; var date: Date }
+    struct ContentState: Codable, Hashable {
+        var title: String
+        var date: Date
+        var eventID: String = ""
+        var language: String = "en"
+        var start: Date? = nil
+        var timeText: String = ""
+        var endMessage: String = ""
+        init(title:String,date:Date,eventID:String="",language:String="en",start:Date?=nil,timeText:String="",endMessage:String="") {
+            self.title=title;self.date=date;self.eventID=eventID;self.language=language
+            self.start=start;self.timeText=timeText;self.endMessage=endMessage
+        }
+        enum CodingKeys:String,CodingKey {case title,date,eventID,language,start,timeText,endMessage}
+        init(from decoder:Decoder) throws {
+            let c=try decoder.container(keyedBy:CodingKeys.self)
+            title=try c.decode(String.self,forKey:.title);date=try c.decode(Date.self,forKey:.date)
+            eventID=try c.decodeIfPresent(String.self,forKey:.eventID) ?? ""
+            language=try c.decodeIfPresent(String.self,forKey:.language) ?? "en"
+            start=try c.decodeIfPresent(Date.self,forKey:.start)
+            timeText=try c.decodeIfPresent(String.self,forKey:.timeText) ?? ""
+            endMessage=try c.decodeIfPresent(String.self,forKey:.endMessage) ?? ""
+        }
+    }
     var city: String
 }

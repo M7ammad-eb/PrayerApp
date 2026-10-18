@@ -14,17 +14,15 @@ final class SalatiTests:XCTestCase {
         let after=try day("2027-02-20",ramadan.events[5].epochSeconds+60)
         XCTAssertEqual(after.next.epochSeconds,try day("2027-02-21").events[0].epochSeconds)
     }
-    func testBoundedPlanRemindersAndCancellationInputs() {
-        var settings=Settings()
-        settings.policies["FAJR"]=PrayerPolicy(delivery:.alarm,sound:"default",reminder:10)
-        let now=Date(timeIntervalSince1970:1000)
-        let events=(0..<100).map {SnapshotEvent(id:"\($0).FAJR",title:"Fajr",date:now.addingTimeInterval(Double(($0+1)*3600)))}
-        let plan=ScheduledAlert.plan(events:events,settings:settings,now:now)
-        XCTAssertEqual(plan.count,60)
-        XCTAssertTrue(plan.first!.reminder)
-        XCTAssertTrue(plan.allSatisfy {$0.date>now})
-        settings.policies["FAJR"]?.delivery = .off
-        XCTAssertTrue(ScheduledAlert.plan(events:events,settings:settings,now:now).isEmpty)
+    func testSharedPlanHasStableIdentitiesAndSeparatePrayerReminderInstants() {
+        let events=(0..<100).map {PlanEvent(id:"\($0).FAJR",prayer:"FAJR",title:"Fajr",epochSeconds:Double(1000+($0+1)*3600))}
+        let policy=PlanPolicy(prayer:"FAJR",delivery:"alarm",reminderMinutes:10)
+        let plan=SharedScheduling.shared.plan(events:events,policies:[policy],nowEpoch:1000,liveActivitiesEnabled:false)
+        XCTAssertEqual(plan.count,200) // Capacity is API-specific, not a shared combined60 truncation.
+        let reminder=plan.first!
+        XCTAssertEqual(reminder.kind,"reminder");XCTAssertEqual(reminder.eventEpoch-reminder.triggerEpoch,600)
+        XCTAssertTrue(plan.allSatisfy {$0.triggerEpoch>1000})
+        XCTAssertEqual(plan.map(\.id),SharedScheduling.shared.plan(events:events,policies:[policy],nowEpoch:1000,liveActivitiesEnabled:false).map(\.id))
     }
     func testOfflineArabicAndEnglishSearch() async throws {
         let places=OfflinePlaces()
@@ -53,11 +51,8 @@ final class SalatiTests:XCTestCase {
         XCTAssertEqual(Recording.all.count,11)
         for recording in Recording.all {
             let full=try XCTUnwrap(Bundle.main.url(forResource:recording.id,withExtension:"mp3"))
-            let excerpt=try XCTUnwrap(Bundle.main.url(forResource:recording.id+"_short",withExtension:"caf"))
+            XCTAssertNil(Bundle.main.url(forResource:recording.id+"_short",withExtension:"caf"),"No arbitrary adhan cut points are approved")
             XCTAssertGreaterThan(try AVAudioPlayer(contentsOf:full).duration,0)
-            let duration=try AVAudioPlayer(contentsOf:excerpt).duration
-            XCTAssertGreaterThan(duration,0)
-            XCTAssertLessThanOrEqual(duration,25.1)
         }
     }
     func testWidgetAppGroupRoundTrip() throws {
@@ -105,7 +100,8 @@ final class SalatiTests:XCTestCase {
         XCTAssertEqual(appStorage.files,widgetStorage.files)
         let now=Date()
         let event=SnapshotEvent(id:"today.FAJR",title:"Fajr",date:now.addingTimeInterval(600),timeText:"05:00")
-        let snapshot=ScheduleSnapshot(city:"Madinah",events:[event],validUntil:now.addingTimeInterval(3600),language:"ar",use24Hour:true)
+        let moment=SnapshotMoment(date:now,civilDateISO:"today",religiousDateISO:"today",hijriEnglish:"",hijriArabic:"",currentEventID:nil,nextEventID:event.id)
+        let snapshot=ScheduleSnapshot(city:"Madinah",events:[event],validUntil:now.addingTimeInterval(3600),language:"ar",use24Hour:true,moments:[moment])
         try snapshot.save(storage:appStorage)
         let loaded=try XCTUnwrap(ScheduleSnapshot.load(storage:widgetStorage))
         XCTAssertEqual(loaded.nextEvent(after:now),event)
@@ -167,6 +163,24 @@ final class SalatiTests:XCTestCase {
         XCTAssertEqual(Settings.load(from:primary,legacy:legacy).language,"en")
         // The old shared preference must never override a newer private preference.
         XCTAssertEqual(Settings.load(from:primary,legacy:legacy).location,previous.location)
+    }
+
+    func testBuild2SettingsDecodeWithoutResettingChoices() throws {
+        var old=Settings();old.language="ar";old.onboardingComplete=true
+        old.policies["MAGHRIB"]=PrayerPolicy(delivery:.alarm,sound:"athan_default",reminder:15)
+        var object=try XCTUnwrap(JSONSerialization.jsonObject(with:JSONEncoder().encode(old)) as? [String:Any])
+        object.removeValue(forKey:"liveActivitiesEnabled");object.removeValue(forKey:"reminderSound")
+        let decoded=try JSONDecoder().decode(Settings.self,from:JSONSerialization.data(withJSONObject:object))
+        XCTAssertEqual(decoded.language,"ar");XCTAssertTrue(decoded.onboardingComplete)
+        XCTAssertEqual(decoded.policies,old.policies);XCTAssertFalse(decoded.liveActivitiesEnabled);XCTAssertTrue(decoded.reminderSound)
+    }
+    func testBuild2SnapshotDecodesButRequiresSharedBoundaryRefresh() throws {
+        let snapshot=ScheduleSnapshot(city:"Madinah",events:[],validUntil:Date().addingTimeInterval(3600),language:"ar",use24Hour:true)
+        var object=try XCTUnwrap(JSONSerialization.jsonObject(with:JSONEncoder().encode(snapshot)) as? [String:Any])
+        for key in ["moments","days","zone"] {object.removeValue(forKey:key)}
+        let decoded=try JSONDecoder().decode(ScheduleSnapshot.self,from:JSONSerialization.data(withJSONObject:object))
+        XCTAssertEqual(decoded.city,"Madinah");XCTAssertEqual(decoded.language,"ar");XCTAssertTrue(decoded.moments.isEmpty)
+        XCTAssertNil(decoded.nextEvent(after:Date()))
     }
 
 }

@@ -1,66 +1,324 @@
 import WidgetKit
 import SwiftUI
 import ActivityKit
+import AppIntents
 
-struct PrayerEntry: TimelineEntry {
+struct PrayerWidgetOptions:WidgetConfigurationIntent {
+    static var title:LocalizedStringResource="Prayer widget"
+    static var description=IntentDescription("Choose the details shown on this widget.")
+    @Parameter(title:"Show city",default:true) var showCity:Bool
+    @Parameter(title:"Show date",default:true) var showDate:Bool
+    @Parameter(title:"Show sunrise in schedule",default:true) var showSunrise:Bool
+}
+struct PrayerEntry:TimelineEntry {
     let date:Date
     let snapshot:ScheduleSnapshot?
+    var showCity=true
+    var showDate=true
+    var showSunrise=true
     var next:SnapshotEvent? {snapshot?.nextEvent(after:date)}
+    var currentID:String? {snapshot?.moment(at:date)?.currentEventID}
+    var day:SnapshotDay? {snapshot?.day(at:date)}
+    var schedule:[SnapshotEvent] {(day?.events ?? []).filter {showSunrise || !$0.id.hasSuffix(".SUNRISE")}}
+    var hijri:String? {
+        guard let moment=snapshot?.moment(at:date) else {return nil}
+        return snapshot?.language == "ar" ? moment.hijriArabic : moment.hijriEnglish
+    }
+    var arabic:Bool {snapshot?.language == "ar"}
+    var locale:Locale {Locale(identifier:arabic ? "ar_SA@numbers=latn" : "en_US@numbers=latn")}
 }
-struct Provider: TimelineProvider {
-    func placeholder(in context:Context) -> PrayerEntry {PrayerEntry(date:Date(),snapshot:nil)}
-    func getSnapshot(in context:Context,completion:@escaping (PrayerEntry)->Void) {completion(PrayerEntry(date:Date(),snapshot:ScheduleSnapshot.load()))}
-    func getTimeline(in context:Context,completion:@escaping (Timeline<PrayerEntry>)->Void) {
+struct PrayerProvider:AppIntentTimelineProvider {
+    func placeholder(in context:Context)->PrayerEntry {PrayerPreview.entry()}
+    func snapshot(for configuration:PrayerWidgetOptions,in context:Context) async->PrayerEntry {
+        entry(configuration,snapshot:context.isPreview ? PrayerPreview.entry().snapshot : ScheduleSnapshot.load(),date:Date())
+    }
+    func timeline(for configuration:PrayerWidgetOptions,in context:Context) async->Timeline<PrayerEntry> {
         let now=Date(),snapshot=ScheduleSnapshot.load()
-        var entries=[PrayerEntry(date:now,snapshot:snapshot)]
+        var boundaries=[now]
         if let snapshot {
-            entries += snapshot.events.filter {$0.date>now}.map {PrayerEntry(date:$0.date,snapshot:snapshot)}
-            entries.append(PrayerEntry(date:snapshot.validUntil,snapshot:snapshot))
+            // Moments are calculated by shared domain rules at prayer, midnight and Maghrib boundaries.
+            boundaries += (snapshot.moments.isEmpty ? snapshot.events.map(\.date) : snapshot.moments.map(\.date)).filter {$0>now && $0<snapshot.validUntil}
+            if snapshot.validUntil>now {boundaries.append(snapshot.validUntil)}
         }
-        completion(Timeline(entries:entries,policy:.after(min(snapshot?.validUntil ?? now.addingTimeInterval(3600),now.addingTimeInterval(6*3600)))))
+        let entries=Array(Set(boundaries)).sorted().map {entry(configuration,snapshot:snapshot,date:$0)}
+        let expiry=snapshot?.validUntil ?? now.addingTimeInterval(3600)
+        let refresh=expiry>now ? min(expiry,now.addingTimeInterval(6*3600)) : now.addingTimeInterval(3600)
+        return Timeline(entries:entries,policy:.after(refresh))
+    }
+    private func entry(_ options:PrayerWidgetOptions,snapshot:ScheduleSnapshot?,date:Date)->PrayerEntry {
+        PrayerEntry(date:date,snapshot:snapshot,showCity:options.showCity,showDate:options.showDate,showSunrise:options.showSunrise)
     }
 }
-struct PrayerWidget: Widget {
+struct PrayerWidget:Widget {
     let kind="SalatiPrayer"
     var body:some WidgetConfiguration {
-        StaticConfiguration(kind:kind,provider:Provider()) { entry in
-            VStack(alignment:.leading,spacing:8) {
-                if let next=entry.next,let snapshot=entry.snapshot,entry.date<snapshot.validUntil {
-                    Text(snapshot.city).font(.caption).foregroundStyle(.secondary)
-                    Text(next.title).font(.title2.weight(.semibold))
-                    Text(timerInterval:entry.date...next.date,countsDown:true).font(.title.monospacedDigit()).environment(\.locale,Locale(identifier:"en_US_POSIX"))
-                    Text(next.timeText).font(.caption)
-                } else { Label("Open Salati to refresh",systemImage:"moon.stars").font(.headline) }
-            }.frame(maxWidth:.infinity,alignment:.leading).containerBackground(.fill.tertiary,for:.widget)
-                .environment(\.locale,Locale(identifier:entry.snapshot?.language == "ar" ? "ar_SA@numbers=latn" : "en_US@numbers=latn"))
-                .environment(\.layoutDirection,entry.snapshot?.language == "ar" ? .rightToLeft : .leftToRight)
-        }.configurationDisplayName("Next prayer").description("Your next prayer, calculated offline.").supportedFamilies([.systemSmall,.systemMedium])
+        AppIntentConfiguration(kind:kind,intent:PrayerWidgetOptions.self,provider:PrayerProvider()) {entry in
+            PrayerWidgetRoot(entry:entry)
+                .containerBackground(.fill.tertiary,for:.widget)
+        }.configurationDisplayName("Prayer times").description("Next prayer and your daily offline schedule.")
+            .supportedFamilies([.systemSmall,.systemMedium,.systemLarge])
     }
 }
-struct PrayerLiveActivity: Widget {
+struct PrayerAccessoryWidget:Widget {
+    let kind="SalatiPrayerAccessory"
     var body:some WidgetConfiguration {
-        ActivityConfiguration(for:PrayerActivityAttributes.self) { context in
-            HStack {
-                VStack(alignment:.leading) {Text(context.attributes.city).font(.caption);Text(context.state.title).font(.headline)}
-                Spacer()
-                Countdown(date:context.state.date)
-            }.padding().activityBackgroundTint(Color.green.opacity(0.12))
+        AppIntentConfiguration(kind:kind,intent:PrayerWidgetOptions.self,provider:PrayerProvider()) {entry in
+            PrayerWidgetRoot(entry:entry).containerBackground(.clear,for:.widget)
+        }.configurationDisplayName("Prayer countdown").description("The next prayer on your Lock Screen.")
+            .supportedFamilies([.accessoryInline,.accessoryCircular,.accessoryRectangular])
+    }
+}
+private struct PrayerWidgetRoot:View {
+    let entry:PrayerEntry
+    @Environment(\.widgetFamily) var family
+    var body:some View {
+        PrayerWidgetContent(entry:entry,family:family)
+            .environment(\.locale,entry.locale)
+            .environment(\.layoutDirection,entry.arabic ? .rightToLeft : .leftToRight)
+    }
+}
+struct PrayerWidgetContent:View {
+    let entry:PrayerEntry
+    let family:WidgetFamily
+    var body:some View {
+        Group {
+            if let next=entry.next {
+                switch family {
+                case .systemSmall:small(next)
+                case .systemMedium:medium(next)
+                case .systemLarge:large(next)
+                case .accessoryInline:Text(next.title+" · "+next.timeText).font(.caption).monospacedDigit()
+                case .accessoryCircular:
+                    VStack(spacing:2) {Text(next.title).font(.caption2.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.75);Countdown(date:next.date,now:entry.date).font(.caption.monospacedDigit()).minimumScaleFactor(0.6)}
+                        .frame(maxWidth:.infinity,maxHeight:.infinity).widgetAccentable()
+                default:
+                    VStack(alignment:.leading,spacing:2) {
+                        Text(next.title+" · "+next.timeText).font(.headline).lineLimit(1).minimumScaleFactor(0.7)
+                        Countdown(date:next.date,now:entry.date).font(.body.monospacedDigit())
+                    }
+                }
+            } else {empty}
+        }
+        .environment(\.locale,entry.locale)
+        .environment(\.layoutDirection,entry.arabic ? .rightToLeft : .leftToRight)
+    }
+    private func small(_ next:SnapshotEvent)->some View {
+        VStack(alignment:.leading,spacing:6) {
+            if entry.showCity {city.font(.caption2)}
+            Text(next.title).font(.title2.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7).widgetAccentable()
+            Text(next.timeText).font(.subheadline.weight(.medium)).monospacedDigit()
+            Countdown(date:next.date,now:entry.date).font(.system(.title2,design:.rounded,weight:.light)).minimumScaleFactor(0.7)
+            if entry.showDate,let hijri=entry.hijri {Text(hijri).font(.caption2).foregroundStyle(.secondary).lineLimit(2)}
+        }.frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.leading)
+    }
+    private func medium(_ next:SnapshotEvent)->some View {
+        HStack(alignment:.center,spacing:14) {
+            VStack(alignment:.leading,spacing:6) {
+                if entry.showCity {city.font(.caption2)}
+                Text(next.title).font(.title2.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7).widgetAccentable()
+                Text(next.timeText).font(.caption).monospacedDigit()
+                Countdown(date:next.date,now:entry.date).font(.system(.title2,design:.rounded,weight:.light)).minimumScaleFactor(0.7)
+                if entry.showDate,let hijri=entry.hijri {Text(hijri).font(.caption2).foregroundStyle(.secondary).lineLimit(2)}
+            }.frame(maxWidth:.infinity,alignment:.leading)
+            Divider()
+            VStack(spacing:3) {
+                ForEach(entry.schedule) {event in scheduleRow(event,compact:true)}
+            }.frame(maxWidth:.infinity)
+        }.frame(maxWidth:.infinity,maxHeight:.infinity)
+    }
+    private func large(_ next:SnapshotEvent)->some View {
+        VStack(alignment:.leading,spacing:10) {
+            if entry.showCity {city.font(.subheadline)}
+            HStack(alignment:.firstTextBaseline) {
+                Text(next.title).font(.title2.weight(.semibold)).widgetAccentable()
+                Spacer(minLength:8)
+                Countdown(date:next.date,now:entry.date).font(.system(.title,design:.rounded,weight:.light)).minimumScaleFactor(0.6)
+            }
+            if entry.showDate,let hijri=entry.hijri {
+                Text(hijri).font(.caption).foregroundStyle(.secondary)
+                if let iso=entry.day?.dateISO {Text(iso).font(.caption2).monospacedDigit().foregroundStyle(.secondary).environment(\.layoutDirection,.leftToRight)}
+            }
+            Divider()
+            VStack(spacing:8) {ForEach(entry.schedule) {event in scheduleRow(event,compact:false)}}
+        }.frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.topLeading)
+    }
+    private var city:some View {Text(entry.snapshot?.city ?? "").foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)}
+    private func scheduleRow(_ event:SnapshotEvent,compact:Bool)->some View {
+        let isNext=event.id == entry.next?.id
+        let isCurrent=event.id == entry.currentID
+        return HStack(spacing:5) {
+            Circle().fill(isNext ? Color.accentColor : (isCurrent ? Color.primary : Color.clear)).frame(width:4,height:4)
+            Text(event.title).lineLimit(1).minimumScaleFactor(0.7)
+            Spacer(minLength:3)
+            Text(event.timeText).monospacedDigit().lineLimit(1).minimumScaleFactor(0.75)
+        }.font(compact ? .caption2 : .subheadline).fontWeight(isNext || isCurrent ? .semibold : .regular)
+            .foregroundStyle(isNext ? Color.accentColor : (isCurrent ? Color.primary : Color.secondary))
+            .accessibilityElement(children:.combine)
+    }
+    @ViewBuilder private var empty:some View {
+        if family == .accessoryInline {Text("Open Salati to refresh")}
+        else {
+            VStack(alignment:.leading,spacing:8) {
+                Image(systemName:"moon.stars").font(.title3)
+                Text("Open Salati to refresh").font(family == .accessoryCircular ? .caption2 : .headline)
+                if family == .systemLarge || family == .systemMedium {
+                    Text("Open the app to update your location and shared prayer schedule.").font(.caption).foregroundStyle(.secondary)
+                }
+            }.frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.leading)
+        }
+    }
+}
+
+struct PrayerLiveActivity:Widget {
+    var body:some WidgetConfiguration {
+        ActivityConfiguration(for:PrayerActivityAttributes.self) {context in
+            PrayerActivityCard(city:context.attributes.city,state:context.state,isExpired:context.isStale)
+                .padding(16).activityBackgroundTint(Color.green.opacity(0.1)).activitySystemActionForegroundColor(.primary)
         } dynamicIsland: {context in
             DynamicIsland {
-                DynamicIslandExpandedRegion(.leading) {Label(context.state.title,systemImage:"moon.stars")}
-                DynamicIslandExpandedRegion(.trailing) {Countdown(date:context.state.date)}
-                DynamicIslandExpandedRegion(.bottom) {Text(context.attributes.city).font(.caption)}
-            } compactLeading: {Image(systemName:"moon.stars")}
-            compactTrailing: {Countdown(date:context.state.date).frame(maxWidth:64)}
-            minimal: {Image(systemName:"moon.stars")}
+                DynamicIslandExpandedRegion(.leading) {
+                    PrayerActivityHeading(state:context.state)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    PrayerActivityRemaining(state:context.state,isExpired:context.isStale)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    PrayerActivityFooter(city:context.attributes.city,state:context.state,isExpired:context.isStale)
+                }
+            } compactLeading: {
+                PrayerActivityCompactName(state:context.state)
+            } compactTrailing: {
+                PrayerActivityCompactTime(state:context.state,isExpired:context.isStale)
+            } minimal: {
+                PrayerActivityMinimalName(state:context.state)
+            }.keylineTint(.green)
         }
+    }
+}
+private func activityLocale(_ state:PrayerActivityAttributes.ContentState)->Locale {Locale(identifier:state.language == "ar" ? "ar_SA@numbers=latn" : "en_US@numbers=latn")}
+private func activityDirection(_ state:PrayerActivityAttributes.ContentState)->LayoutDirection {state.language == "ar" ? .rightToLeft : .leftToRight}
+struct PrayerActivityHeading:View {
+    let state:PrayerActivityAttributes.ContentState
+    var body:some View {
+        VStack(alignment:.leading,spacing:4) {Text(state.title).font(.headline).lineLimit(1).minimumScaleFactor(0.7);Text(state.timeText).font(.caption).monospacedDigit().foregroundStyle(.secondary)}
+            .environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))
+    }
+}
+struct PrayerActivityRemaining:View {
+    let state:PrayerActivityAttributes.ContentState
+    var isExpired=false
+    var body:some View {
+        Group {if isExpired {Text(state.endMessage).font(.caption.weight(.medium))} else {Countdown(date:state.date).font(.system(.title2,design:.rounded,weight:.medium))}}
+            .frame(minWidth:70).minimumScaleFactor(0.65).environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))
+    }
+}
+struct PrayerActivityFooter:View {
+    let city:String
+    let state:PrayerActivityAttributes.ContentState
+    var isExpired=false
+    var body:some View {
+        HStack {Text(city).font(.caption).foregroundStyle(.secondary);Spacer();if isExpired {Text(state.endMessage).font(.caption).foregroundStyle(.secondary)} else {Text("Until prayer").font(.caption).foregroundStyle(.secondary)}}
+            .environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))
+    }
+}
+struct PrayerActivityCompactName:View {
+    let state:PrayerActivityAttributes.ContentState
+    var body:some View {Text(state.title).font(.caption.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.65).environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))}
+}
+struct PrayerActivityMinimalName:View {
+    let state:PrayerActivityAttributes.ContentState
+    var body:some View {Text(state.title).font(.system(size:9,weight:.semibold)).lineLimit(1).minimumScaleFactor(0.6).environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))}
+}
+struct PrayerActivityCompactTime:View {
+    let state:PrayerActivityAttributes.ContentState
+    var isExpired=false
+    var body:some View {Group {if isExpired {Text("0:00")} else {Countdown(date:state.date)}}.font(.caption.monospacedDigit()).frame(maxWidth:58).minimumScaleFactor(0.7).environment(\.locale,Locale(identifier:"en_US_POSIX")).environment(\.layoutDirection,.leftToRight)}
+}
+struct PrayerActivityCard:View {
+    let city:String
+    let state:PrayerActivityAttributes.ContentState
+    var isExpired=false
+    var body:some View {
+        VStack(alignment:.leading,spacing:10) {
+            HStack(alignment:.center,spacing:16) {
+                VStack(alignment:.leading,spacing:5) {
+                    Text(state.title).font(.title3.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(state.timeText).font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
+                    Text(city).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }.frame(maxWidth:.infinity,alignment:.leading)
+                VStack(alignment:.trailing,spacing:5) {
+                    if isExpired {Text(state.endMessage).font(.headline).multilineTextAlignment(.trailing)} else {
+                        Countdown(date:state.date).font(.system(.largeTitle,design:.rounded,weight:.light)).lineLimit(1).minimumScaleFactor(0.65)
+                        Text("Until prayer").font(.caption).foregroundStyle(.secondary)
+                    }
+                }.frame(maxWidth:.infinity,alignment:.trailing)
+            }
+            if !isExpired,let start=state.start,start<state.date {
+                ProgressView(timerInterval:start...state.date,countsDown:false).tint(.green).labelsHidden().accessibilityLabel("Prayer countdown progress")
+            }
+        }.environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))
     }
 }
 struct Countdown:View {
     let date:Date
+    var now=Date()
     var body:some View {
-        if date>Date() {Text(timerInterval:Date()...date,countsDown:true).monospacedDigit().environment(\.locale,Locale(identifier:"en_US_POSIX"))}
-        else {Image(systemName:"checkmark")}
+        Group {
+            if date>now {Text(timerInterval:now...date,countsDown:true)}
+            else {Text("0:00")}
+        }.monospacedDigit().environment(\.locale,Locale(identifier:"en_US_POSIX")).environment(\.layoutDirection,.leftToRight)
     }
 }
-@main struct SalatiWidgetBundle:WidgetBundle {var body:some Widget {PrayerWidget();PrayerLiveActivity()}}
+// Illustrative gallery data is used only in WidgetKit's preview/placeholder context and
+// the explicitly labeled UI-test showcase. Installed live widgets always read App Group data.
+private enum PrayerPreview {
+    static func entry(arabic:Bool=false)->PrayerEntry {
+        let now=Date(),start=Calendar.current.startOfDay(for:now)
+        let names=arabic ? ["الفجر","الشروق","الظهر","العصر","المغرب","العشاء"] : ["Fajr","Sunrise","Dhuhr","Asr","Maghrib","Isha"]
+        let ids=["FAJR","SUNRISE","DHUHR","ASR","MAGHRIB","ISHA"]
+        let text=["5:12 AM","6:31 AM","12:18 PM","3:42 PM","6:04 PM","7:34 PM"]
+        let events=ids.enumerated().map {index,id in SnapshotEvent(id:"preview."+id,title:names[index],date:now.addingTimeInterval(Double(index-4)*3600+872),timeText:text[index])}
+        let day=SnapshotDay(dateISO:"2026-10-18",start:start,end:start.addingTimeInterval(86400),hijriEnglish:"7 Jumada I 1448",hijriArabic:"7 جمادى الأولى 1448",events:events)
+        let moment=SnapshotMoment(date:start,civilDateISO:day.dateISO,religiousDateISO:day.dateISO,hijriEnglish:day.hijriEnglish,hijriArabic:day.hijriArabic,currentEventID:events[3].id,nextEventID:events[4].id)
+        let snapshot=ScheduleSnapshot(city:arabic ? "المدينة المنورة" : "Madinah",events:events,validUntil:start.addingTimeInterval(86400),language:arabic ? "ar" : "en",use24Hour:false,days:[day],moments:[moment],zone:"Asia/Riyadh")
+        return PrayerEntry(date:now,snapshot:snapshot)
+    }
+}
+#if SALATI_APP
+struct Phase2ShowcaseView:View {
+    @EnvironmentObject var model:AppModel
+    private var entry:PrayerEntry {PrayerPreview.entry(arabic:model.arabic)}
+    var body:some View {
+        ScrollView {
+            VStack(alignment:.leading,spacing:20) {
+                Text("Presentation previews").font(.headline)
+                Text("Illustrative gallery data. These are app-rendered previews of the actual widget and activity views, not installed system surfaces.").font(.footnote).foregroundStyle(.secondary)
+                preview("Small widget",id:"preview.small") {PrayerWidgetContent(entry:entry,family:.systemSmall).frame(width:158,height:158)}
+                preview("Medium widget",id:"preview.medium") {PrayerWidgetContent(entry:entry,family:.systemMedium).frame(height:160)}
+                preview("Large widget",id:"preview.large") {PrayerWidgetContent(entry:entry,family:.systemLarge).frame(height:340)}
+                preview("Lock Screen · Inline",id:"preview.inline") {PrayerWidgetContent(entry:entry,family:.accessoryInline)}
+                preview("Lock Screen · Circular",id:"preview.circular") {PrayerWidgetContent(entry:entry,family:.accessoryCircular).frame(width:72,height:72)}
+                preview("Lock Screen · Rectangular",id:"preview.rectangular") {PrayerWidgetContent(entry:entry,family:.accessoryRectangular).frame(width:180,height:70)}
+                if let next=entry.next {
+                    let state=PrayerActivityAttributes.ContentState(title:next.title,date:next.date,eventID:next.id,language:model.settings.language,start:next.date.addingTimeInterval(-900),timeText:next.timeText,endMessage:model.arabic ? "حان وقت الصلاة" : "It is time for prayer")
+                    preview("Live Activity · Lock Screen",id:"preview.activity") {PrayerActivityCard(city:entry.snapshot?.city ?? "",state:state)}
+                    preview("Live Activity · Expired content",id:"preview.activityExpired") {PrayerActivityCard(city:entry.snapshot?.city ?? "",state:state,isExpired:true)}
+                    preview("Dynamic Island · Compact content",id:"preview.compact") {
+                        HStack {PrayerActivityCompactName(state:state);Spacer(minLength:55);PrayerActivityCompactTime(state:state)}.padding(.horizontal,8).frame(maxWidth:250)
+                    }
+                    preview("Dynamic Island · Minimal content",id:"preview.minimal") {PrayerActivityMinimalName(state:state).frame(width:36,height:24)}
+                    preview("Dynamic Island · Expanded content",id:"preview.expanded") {
+                        VStack(spacing:12) {HStack {PrayerActivityHeading(state:state);Spacer();PrayerActivityRemaining(state:state)};PrayerActivityFooter(city:entry.snapshot?.city ?? "",state:state)}
+                    }
+                }
+            }.padding(16)
+        }.navigationTitle("Presentation previews").navigationBarTitleDisplayMode(.inline)
+    }
+    private func preview<Content:View>(_ title:LocalizedStringKey,id:String,@ViewBuilder content:()->Content)->some View {
+        VStack(alignment:.leading,spacing:8) {Text(title).font(.subheadline.weight(.semibold));content().padding(14).frame(maxWidth:.infinity,alignment:.leading).background(.thinMaterial,in:RoundedRectangle(cornerRadius:20))}
+            .accessibilityElement(children:.contain).accessibilityIdentifier(id)
+    }
+}
+#else
+@main struct SalatiWidgetBundle:WidgetBundle {var body:some Widget {PrayerWidget();PrayerAccessoryWidget();PrayerLiveActivity()}}
+#endif

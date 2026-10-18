@@ -8,6 +8,9 @@ struct SavedLocation: Codable, Equatable {
     var zone: String
     var isGPS = false
     var nearestDistance: Double?
+    var lastUpdated: Date?
+    var accuracyMeters: Double?
+    var asciiName: String?
 }
 enum Delivery: String, Codable, CaseIterable { case off, notification, alarm }
 struct PrayerPolicy: Codable, Equatable {
@@ -15,7 +18,7 @@ struct PrayerPolicy: Codable, Equatable {
     var sound = "default"
     var reminder = 0
 }
-struct Settings: Codable {
+struct Settings: Codable, Equatable {
     var location: SavedLocation?
     var method = "UMM_AL_QURA"
     var hanafi = false
@@ -27,7 +30,31 @@ struct Settings: Codable {
     var appearance = "system"
     var use24Hour = false
     var onboardingComplete = false
+    var liveActivitiesEnabled = false
+    var reminderSound = true
     var policies = Dictionary(uniqueKeysWithValues: ["FAJR","DHUHR","ASR","MAGHRIB","ISHA"].map { ($0, PrayerPolicy()) })
+    init() {}
+    enum CodingKeys: String, CodingKey {
+        case location,method,hanafi,highLatitude,adjustments,hijriOffset,hijriAnchor,language,appearance,use24Hour,onboardingComplete,policies,liveActivitiesEnabled,reminderSound
+    }
+    init(from decoder:Decoder) throws {
+        self.init()
+        let c=try decoder.container(keyedBy:CodingKeys.self)
+        location=try c.decodeIfPresent(SavedLocation.self,forKey:.location)
+        method=try c.decodeIfPresent(String.self,forKey:.method) ?? method
+        hanafi=try c.decodeIfPresent(Bool.self,forKey:.hanafi) ?? hanafi
+        highLatitude=try c.decodeIfPresent(String.self,forKey:.highLatitude) ?? highLatitude
+        adjustments=try c.decodeIfPresent([Int].self,forKey:.adjustments) ?? adjustments
+        hijriOffset=try c.decodeIfPresent(Int.self,forKey:.hijriOffset) ?? hijriOffset
+        hijriAnchor=try c.decodeIfPresent(String.self,forKey:.hijriAnchor)
+        language=try c.decodeIfPresent(String.self,forKey:.language) ?? language
+        appearance=try c.decodeIfPresent(String.self,forKey:.appearance) ?? appearance
+        use24Hour=try c.decodeIfPresent(Bool.self,forKey:.use24Hour) ?? use24Hour
+        onboardingComplete=try c.decodeIfPresent(Bool.self,forKey:.onboardingComplete) ?? onboardingComplete
+        policies=try c.decodeIfPresent([String:PrayerPolicy].self,forKey:.policies) ?? policies
+        liveActivitiesEnabled=try c.decodeIfPresent(Bool.self,forKey:.liveActivitiesEnabled) ?? false
+        reminderSound=try c.decodeIfPresent(Bool.self,forKey:.reminderSound) ?? true
+    }
     // Widgets consume only ScheduleSnapshot. App preferences must remain available even
     // when a signer changes or removes shared-group access.
     static func load(from defaults: UserDefaults = .standard, legacy: UserDefaults? = nil) -> Settings {

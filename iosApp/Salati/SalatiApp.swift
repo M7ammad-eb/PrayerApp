@@ -1,6 +1,7 @@
 import SwiftUI
 import BackgroundTasks
 import UserNotifications
+import UIKit
 
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     // Signers may rewrite the permitted ID along with the bundle identifier.
@@ -20,8 +21,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         }
         return true
     }
-    func userNotificationCenter(_ center:UNUserNotificationCenter,willPresent notification:UNNotification,withCompletionHandler completion:@escaping (UNNotificationPresentationOptions)->Void) {completion([.banner,.list,.sound])}
+    func userNotificationCenter(_ center:UNUserNotificationCenter,willPresent notification:UNNotification,withCompletionHandler completion:@escaping (UNNotificationPresentationOptions)->Void) {Task {@MainActor in PrayerScheduler.shared.observeNotification(notification,action:"foreground presentation")};completion([.banner,.list,.sound])}
     func userNotificationCenter(_ center:UNUserNotificationCenter,didReceive response:UNNotificationResponse,withCompletionHandler completion:@escaping ()->Void) {
+        Task {@MainActor in PrayerScheduler.shared.observeNotification(response.notification,action:"user response")}
         if response.actionIdentifier == "PLAY_ADHAN",let recording=response.notification.request.content.userInfo["recording"] as? String {
             Task { @MainActor in AdhanPlayer.shared.play(recording) }
         }
@@ -40,19 +42,38 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     @Environment(\.scenePhase) private var phase
     var body: some Scene {
         WindowGroup {
-            RootView(selectedTab:$selectedTab)
-                // Recreate UIKit-backed tab/navigation/form hosts when reading direction
-                // changes. Keep selection and the app model outside this identity.
+            LocalizedRootHost(model:model,selectedTab:$selectedTab)
                 .id(model.settings.language)
-                .environmentObject(model)
-                .environment(\.locale,model.locale)
-                .environment(\.layoutDirection,model.arabic ? .rightToLeft : .leftToRight)
-                .preferredColorScheme(model.settings.appearance == "dark" ? .dark : model.settings.appearance == "light" ? .light : nil)
-                .tint(Color("AccentColor"))
+                .ignoresSafeArea()
                 .task { await model.refresh() }
-                .onChange(of:phase) { _,phase in if phase == .active {model.queueRefresh();if model.settings.location?.isGPS == true {model.locationService.request()}} }
+                .onChange(of:phase) { _,phase in if phase == .active {model.queueRefresh();model.requestRoutineLocation()} }
                 .onReceive(NotificationCenter.default.publisher(for:UIApplication.significantTimeChangeNotification)) { _ in model.queueRefresh() }
+                .onReceive(NotificationCenter.default.publisher(for:.salatiScheduleNeedsRefresh)) { _ in model.queueRefresh() }
         }
+    }
+}
+// Locale changes replace a controller, not a transform on an existing Form/List host.
+// Semantic direction is scoped to this window's new native host; no global appearance flips.
+struct LocalizedRootHost:UIViewControllerRepresentable {
+    @ObservedObject var model:AppModel
+    @Binding var selectedTab:Int
+    private var content:AnyView {
+        let root=RootView(selectedTab:$selectedTab).environmentObject(model)
+            .environment(\.locale,model.locale)
+            .environment(\.layoutDirection,model.arabic ? .rightToLeft:.leftToRight)
+            .preferredColorScheme(model.settings.appearance == "dark" ? .dark:model.settings.appearance == "light" ? .light:nil)
+            .tint(Color("AccentColor"))
+        if ProcessInfo.processInfo.arguments.contains("-uiTestingLargeText") {return AnyView(root.dynamicTypeSize(.accessibility3))}
+        return AnyView(root)
+    }
+    func makeUIViewController(context:Context)->UIHostingController<AnyView> {
+        let controller=UIHostingController(rootView:content)
+        controller.view.semanticContentAttribute=model.arabic ? .forceRightToLeft:.forceLeftToRight
+        controller.view.backgroundColor = .systemBackground
+        return controller
+    }
+    func updateUIViewController(_ controller:UIHostingController<AnyView>,context:Context) {
+        controller.rootView=content
     }
 }
 struct RootView: View {

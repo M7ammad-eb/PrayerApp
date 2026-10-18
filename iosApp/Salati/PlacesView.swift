@@ -10,7 +10,8 @@ struct PlacesView: View {
     var body: some View {
         List {
             Section {
-                Button { model.locationService.request() } label: { Label("Use current location",systemImage:"location.fill") }
+                CurrentLocationButton(service:model.locationService)
+                LocationStatusView(service:model.locationService)
                 Button {manual=true} label: { Label("Enter coordinates",systemImage:"mappin.and.ellipse") }
             } footer: { Text("GPS coordinates stay exact. City names and time zones come from the nearest offline place; check the zone near borders.") }
             if let failure { Text(failure).foregroundStyle(.red) }
@@ -22,7 +23,7 @@ struct PlacesView: View {
             }
         }
         .searchable(text:$query,prompt:"City name")
-        .navigationTitle("Location")
+        .navigationTitle("Location").navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement:.confirmationAction) { Button("Done") {dismiss()} } }
         .sheet(isPresented:$manual) { NavigationStack { ManualLocationView() } }
         .task(id:query) {
@@ -30,12 +31,24 @@ struct PlacesView: View {
             catch is CancellationError { }
             catch { failure=error.localizedDescription }
         }
-        .overlay(alignment:.bottom) { LocationMessage(service:model.locationService) }
+
     }
 }
-struct LocationMessage: View {
+struct LocationStatusView: View {
     @ObservedObject var service: LocationService
-    var body: some View { if let message=service.message { Text(LocalizedStringKey(message)).font(.footnote).padding().background(.regularMaterial,in:RoundedRectangle(cornerRadius:16)).padding() } }
+    var showLastUpdate=true
+    var body: some View {
+        if service.isAcquiring {
+            HStack(spacing:12) {ProgressView();Text(LocalizedStringKey(service.message ?? "Finding your location…"))}
+                .accessibilityIdentifier("locationProgress")
+        } else if let message=service.message {
+            Text(LocalizedStringKey(message)).font(.footnote).foregroundStyle(.secondary)
+                .accessibilityIdentifier("locationStatus")
+        }
+        if showLastUpdate,let date=service.lastUpdate {
+            HStack {Text("Last location update");Text(date,style:.relative)}.font(.caption).foregroundStyle(.secondary)
+        }
+    }
 }
 struct ManualLocationView: View {
     @EnvironmentObject var model: AppModel
@@ -61,7 +74,7 @@ struct ManualLocationView: View {
             Picker("Time zone",selection:$zone) { ForEach(TimeZone.knownTimeZoneIdentifiers,id:\.self) { Text($0).tag($0) } }
             Text("Choose the IANA time zone for these coordinates. The device time zone may differ.").font(.footnote).foregroundStyle(.secondary)
         }
-        .navigationTitle("Coordinates")
+        .navigationTitle("Coordinates").navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement:.confirmationAction) { Button("Save") {
             guard valid,let lat=coordinate(latitude),let lon=coordinate(longitude) else {return}
             model.select(.init(name:name.isEmpty ? "\(latitude), \(longitude)" : name,latitude:lat,longitude:lon,zone:zone)); dismiss()
@@ -73,20 +86,60 @@ struct OnboardingView: View {
     @State private var showPlaces=false
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment:.leading,spacing:28) {
-                    Image(systemName:"moon.stars").font(.system(size:54,weight:.ultraLight)).foregroundStyle(Color.accentColor).accessibilityHidden(true)
-                    Text("A moment for prayer").font(.largeTitle.weight(.semibold))
-                    Text("Precise times. A quiet space. Always offline.").font(.title3).foregroundStyle(.secondary)
-                    Label("Calculated on your device",systemImage:"iphone")
-                    Label("Arabic and English",systemImage:"character.bubble")
-                    Label("No account or subscription",systemImage:"hand.raised")
-                    Picker("Language",selection:$model.settings.language) { Text("English").tag("en"); Text("العربية").tag("ar") }.pickerStyle(.segmented)
-                    Text("Choose a city without granting location access, or use GPS when you need it. Notifications and alarms are optional and requested from Settings.").foregroundStyle(.secondary)
-                    Button {showPlaces=true} label: { Text(model.settings.location?.name ?? (model.arabic ? "اختيار الموقع" : "Choose location")).frame(maxWidth:.infinity,minHeight:44) }.buttonStyle(.borderedProminent).buttonBorderShape(.capsule).accessibilityIdentifier("chooseLocation")
-                    Button("Continue") {model.settings.onboardingComplete=true}.buttonStyle(.bordered).buttonBorderShape(.capsule).disabled(model.settings.location == nil).accessibilityIdentifier("continueOnboarding")
-                }.padding(28).frame(maxWidth:560)
-            }.sheet(isPresented:$showPlaces) { NavigationStack { PlacesView() } }
+            Form {
+                Section {
+                    Label("A moment for prayer",systemImage:"moon.stars").font(.title2.weight(.semibold))
+                    Text("Precise times. A quiet space. Always offline.").foregroundStyle(.secondary)
+                    Picker("Language",selection:$model.settings.language) {
+                        Text("English").tag("en");Text("العربية").tag("ar")
+                    }.pickerStyle(.segmented).accessibilityIdentifier("onboardingLanguage")
+                }
+                Section("Location") {
+                    OnboardingLocationActions(service:model.locationService,showPlaces:$showPlaces)
+                    if let location=model.settings.location {
+                        Label(model.locationDisplayName,systemImage:"checkmark.circle.fill")
+                            .foregroundStyle(Color.accentColor).accessibilityIdentifier("onboardingSelectedLocation")
+                        Text(LocalizedStringKey(location.isGPS ? "Using exact GPS coordinates" : "Offline manual location")).font(.footnote).foregroundStyle(.secondary)
+                    }
+                } footer: {Text("Choose a city without granting location access, or use GPS when you need it.")}
+                Section("Calculation") {
+                    Picker("Method",selection:$model.settings.method) {
+                        ForEach(model.engine.calculationMethods,id:\.self) {Text(LocalizedStringKey($0)).tag($0)}
+                    }
+                    Toggle("Hanafi Asr",isOn:$model.settings.hanafi)
+                    Text("You can change calculation and display preferences in Settings.").font(.footnote).foregroundStyle(.secondary)
+                }
+                Section {
+                    NavigationLink("Optional alerts and Live Activities") {NotificationSettingsView()}
+                } footer: {Text("Notifications and alarms stay off until you choose them. Permission alone never enables audible alerts.")}
+                Section("Ready") {
+                    if model.settings.location != nil {LabeledContent("City",value:model.locationDisplayName)}
+                    LabeledContent("Method") {Text(LocalizedStringKey(model.settings.method))}
+                    Button("Continue") {model.settings.onboardingComplete=true}
+                        .frame(maxWidth:.infinity,minHeight:44).buttonStyle(.borderedProminent)
+                        .disabled(model.settings.location == nil).accessibilityIdentifier("continueOnboarding")
+                } footer: {Text("Calculated on your device. No account or subscription.")}
+            }
+            .navigationTitle("Welcome to Salati").navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented:$showPlaces) {NavigationStack {PlacesView()}}
         }
+    }
+}
+private struct OnboardingLocationActions: View {
+    @EnvironmentObject var model: AppModel
+    @ObservedObject var service:LocationService
+    @Binding var showPlaces:Bool
+    var body:some View {
+        CurrentLocationButton(service:service).accessibilityIdentifier("onboardingGPS")
+        LocationStatusView(service:model.locationService)
+        Button {showPlaces=true} label: {Label("Choose location",systemImage:"magnifyingglass")}
+            .accessibilityIdentifier("chooseLocation")
+    }
+}
+
+private struct CurrentLocationButton:View {
+    @ObservedObject var service:LocationService
+    var body:some View {
+        Button {service.request()} label: {Label("Use current location",systemImage:"location.fill")}.disabled(service.isAcquiring)
     }
 }

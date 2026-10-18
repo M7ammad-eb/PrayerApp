@@ -40,7 +40,7 @@ actor OfflinePlaces {
         var result: [Place] = []
         var status = sqlite3_step(statement)
         while status == SQLITE_ROW {
-            result.append(Place(id:sqlite3_column_int64(statement,0),name:string(1),arabicName:string(2).isEmpty ? nil : string(2),country:string(4),latitude:sqlite3_column_double(statement,5),longitude:sqlite3_column_double(statement,6),zone:string(7)))
+            result.append(Place(id:sqlite3_column_int64(statement,0),name:LocationLabels.shared.readable(english:string(1),ascii:string(3),arabicName:nil,isArabic:false),arabicName:string(2).isEmpty ? nil : string(2),country:string(4),latitude:sqlite3_column_double(statement,5),longitude:sqlite3_column_double(statement,6),zone:string(7)))
             status = sqlite3_step(statement)
         }
         guard status == SQLITE_DONE else { throw CocoaError(.fileReadCorruptFile) }
