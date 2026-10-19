@@ -294,7 +294,10 @@ struct PrayerLiveActivity:Widget {
                 PrayerActivityCompactTime(state:context.state,isExpired:context.isStale)
             } minimal: {
                 PrayerActivityMinimalName(state:context.state)
-            }.contentMargins(.all,14,for:.expanded).keylineTint(Color.accentColor)
+            // Expanded regions sit beside the sensor and curved upper corners.
+            // Keep their text within a shared safe inset without changing compact regions.
+            }.contentMargins(.horizontal,24,for:.expanded)
+                .contentMargins(.vertical,20,for:.expanded).keylineTint(Color.accentColor)
         }
     }
 }

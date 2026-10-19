@@ -11,6 +11,10 @@ on:
         description: 'Validate an iOS-only repair after unchanged shared/Android sources already passed'
         type: boolean
         default: false
+      activity_only:
+        description: 'Recheck widget and actual Activity presentation after a presentation-only repair'
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -85,12 +89,17 @@ jobs:
         timeout-minutes: 10
         run: xcrun simctl bootstatus "$SIMULATOR_ID" -b
       - name: Native shared-core tests
+        if: inputs.activity_only != true
         timeout-minutes: 10
         run: bash ./gradlew :shared:iosSimulatorArm64Test --device "$SIMULATOR_ID" --console=plain
       - name: Simulator XCTest and UI tests
         timeout-minutes: 32
         run: |
-          xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO test-without-building
+          SELECTION=()
+          if [[ '${{ inputs.activity_only }}' == 'true' ]]; then
+            SELECTION=(-only-testing:SalatiUITests/SalatiUITests/testWidgetAndActivityRendererPreviews)
+          fi
+          xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO "${SELECTION[@]}" test-without-building
       - name: Export runtime screenshots and diagnostic attachments
         if: always()
         continue-on-error: true
@@ -99,6 +108,7 @@ jobs:
             xcrun xcresulttool export attachments --path iosApp/TestResults.xcresult --output-path iosApp/screenshots
           fi
       - name: Select compact simulator after main device finishes
+        if: inputs.activity_only != true
         timeout-minutes: 12
         run: |
           xcrun simctl shutdown "$SIMULATOR_ID"
@@ -107,18 +117,19 @@ jobs:
           xcrun simctl boot "$SMALL"
           xcrun simctl bootstatus "$SMALL" -b
       - name: Compact iPhone and large-text UI checks
+        if: inputs.activity_only != true
         timeout-minutes: 15
         run: |
           xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$COMPACT_SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/CompactTestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO -only-testing:SalatiUITests/SalatiUITests/testChooseOfflineCityAndNavigate -only-testing:SalatiUITests/SalatiUITests/testAccessibilityCalendarAndHome -only-testing:SalatiUITests/SalatiUITests/testCompactWidgetLayouts test-without-building
       - name: Export compact screenshots
-        if: always()
+        if: always() && inputs.activity_only != true
         continue-on-error: true
         run: |
           if [[ -d iosApp/CompactTestResults.xcresult ]]; then
             xcrun xcresulttool export attachments --path iosApp/CompactTestResults.xcresult --output-path iosApp/screenshots-compact
           fi
       - name: Capture running simulator
-        if: success()
+        if: success() && inputs.activity_only != true
         run: |
           xcrun simctl terminate "$COMPACT_SIMULATOR_ID" com.salati.prayertimes.ios || true
           xcrun simctl launch "$COMPACT_SIMULATOR_ID" com.salati.prayertimes.ios
