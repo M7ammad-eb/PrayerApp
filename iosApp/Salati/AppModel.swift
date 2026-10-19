@@ -79,7 +79,7 @@ import CoreLocation
                     var location=place.location;location.latitude=fix.latitude;location.longitude=fix.longitude
                     location.isGPS=true;location.nearestDistance=distance;location.lastUpdated=fix.timestamp;location.accuracyMeters=fix.accuracy
                     self.select(location);self.locationService.status("Location updated from GPS.",date:fix.timestamp)
-                } catch {self.locationService.status("Offline place lookup failed. Try again or select a location manually.");self.error=String(localized:"Prayer times could not be updated. Check your location and calculation settings.",locale:locale)}
+                } catch {self.locationService.status("Offline place lookup failed. Try again or select a location manually.");self.error=String(localized:"Prayer times could not be updated. Check your location and calculation settings.",locale:self.locale)}
             }
         }
     }

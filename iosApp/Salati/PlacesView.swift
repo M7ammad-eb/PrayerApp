@@ -174,7 +174,7 @@ struct OnboardingView: View {
             Section {
                 LabeledContent("Method") {Text(LocalizedStringKey(model.settings.method))}
                 LabeledContent("Asr") {Text(LocalizedStringKey(model.settings.hanafi ? "Hanafi":"Standard"))}
-                Text(LocalizedStringKey(model.settings.calculationMethodOverridden || model.settings.asrOverridden ? "Your chosen calculation settings are preserved.":model.onboardingDefaultsAreFallback ? "A regional method is not available for this time zone. Muslim World League and Standard Asr provide a reviewable starting point.":"Based on your time zone. Standard Asr is the default; you can change either choice.")).font(.footnote).foregroundStyle(.secondary)
+                Text(LocalizedStringKey(model.settings.onboardingComplete || model.settings.calculationMethodOverridden || model.settings.asrOverridden ? "Your chosen calculation settings are preserved.":model.onboardingDefaultsAreFallback ? "A regional method is not available for this time zone. Muslim World League and Standard Asr provide a reviewable starting point.":"Based on your time zone. Standard Asr is the default; you can change either choice.")).font(.footnote).foregroundStyle(.secondary)
             } header: {Text("Calculation")}
             Section {
                 DisclosureGroup("Advanced settings",isExpanded:$advanced) {

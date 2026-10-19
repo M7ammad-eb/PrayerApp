@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ios]
   workflow_dispatch:
+    inputs:
+      native_only:
+        description: 'Validate an iOS-only repair after unchanged shared/Android sources already passed'
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -13,6 +18,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   android:
+    if: github.event_name != 'workflow_dispatch' || inputs.native_only != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

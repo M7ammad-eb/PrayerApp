@@ -162,7 +162,7 @@ struct QiblaContent: View {
                     Text(String(format:"%.0f km",locale:Locale(identifier:"en_US_POSIX"),distance)).font(.title3).monospacedDigit()
                         .environment(\.layoutDirection,.leftToRight)
                     if service.heading == nil {
-                        Label {Text(LocalizedStringKey(service.message ?? "Compass unavailable. Use the true-north bearing above."))} icon:{Image(systemName:"info.circle")}
+                        Label {Text(LocalizedStringKey(service.headingMessage ?? "Compass unavailable. Use the true-north bearing above."))} icon:{Image(systemName:"info.circle")}
                     } else if compass?.reliable != true {
                         Label("Compass accuracy is low. Move away from metal and calibrate your device.",systemImage:"exclamationmark.triangle")
                     }

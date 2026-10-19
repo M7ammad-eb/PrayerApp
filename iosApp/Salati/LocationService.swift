@@ -16,6 +16,7 @@ struct LocationFix {
     @Published var heading:Double?
     @Published var accuracy:Double?
     @Published var message:String?
+    @Published var headingMessage:String?
     @Published var isAcquiring=false
     @Published var lastUpdate:Date?
     var onFix:((LocationFix,Bool)->Void)?
@@ -47,7 +48,8 @@ struct LocationFix {
     func status(_ text:String,date:Date?=nil) {message=text;if let date {lastUpdate=date}}
     func startHeading() {
         if fixture {heading=90;accuracy=3;return}
-        guard CLLocationManager.headingAvailable() else {message="This device has no compass. The Qibla bearing is still available.";return}
+        guard CLLocationManager.headingAvailable() else {headingMessage="This device has no compass. The Qibla bearing is still available.";return}
+        headingMessage=nil
         manager.startUpdatingHeading()
     }
     func stopHeading() {manager.stopUpdatingHeading()}
