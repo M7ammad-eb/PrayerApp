@@ -109,7 +109,7 @@ jobs:
       - name: Compact iPhone and large-text UI checks
         timeout-minutes: 15
         run: |
-          xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$COMPACT_SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/CompactTestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO -only-testing:SalatiUITests/SalatiUITests/testChooseOfflineCityAndNavigate -only-testing:SalatiUITests/SalatiUITests/testAccessibilityCalendarAndHome test-without-building
+          xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$COMPACT_SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/CompactTestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO -only-testing:SalatiUITests/SalatiUITests/testChooseOfflineCityAndNavigate -only-testing:SalatiUITests/SalatiUITests/testAccessibilityCalendarAndHome -only-testing:SalatiUITests/SalatiUITests/testCompactWidgetLayouts test-without-building
       - name: Export compact screenshots
         if: always()
         continue-on-error: true

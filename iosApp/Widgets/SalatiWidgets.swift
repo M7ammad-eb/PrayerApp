@@ -188,7 +188,9 @@ struct PrayerWidgetContent:View {
             Text(event.timeText).monospacedDigit().lineLimit(1).minimumScaleFactor(0.75)
         }.font(compact ? .caption2 : .subheadline).fontWeight(isNext || isCurrent ? .semibold : .regular)
             .foregroundStyle(isNext ? Color.blue : (isCurrent ? Color.primary : Color.secondary))
+            .background(isNext ? Color.blue.opacity(0.06) : .clear,in:RoundedRectangle(cornerRadius:4))
             .accessibilityElement(children:.combine)
+            .accessibilityValue(Text(LocalizedStringKey(isNext ? "Up next" : isCurrent ? "Current prayer" : "")))
     }
     @ViewBuilder private var previousContext:some View {
         if let previous=entry.previousEvent {
@@ -197,6 +199,7 @@ struct PrayerWidgetContent:View {
                 Text(previous.title).fontWeight(.semibold)
                 Text("Previous day").foregroundStyle(.secondary)
             }.font(.caption2).lineLimit(1).minimumScaleFactor(0.8).accessibilityElement(children:.combine)
+                .accessibilityValue(Text("Current prayer"))
         }
     }
     private func horizontal(_ next:SnapshotEvent,large:Bool)->some View {
@@ -235,6 +238,7 @@ struct PrayerWidgetContent:View {
                     Spacer(minLength:4)
                     Text(tomorrow.timeText).fontWeight(.semibold).monospacedDigit()
                 }.font(large ? .subheadline : .system(size:10)).foregroundStyle(.blue).accessibilityElement(children:.combine)
+                    .accessibilityValue(Text("Up next"))
             } else if !large {previousContext}
             if large,entry.showDate,let iso=entry.day?.dateISO {
                 Text(iso).font(.caption2).monospacedDigit().foregroundStyle(.secondary).environment(\.layoutDirection,.leftToRight)
@@ -251,6 +255,7 @@ struct PrayerWidgetContent:View {
             .foregroundStyle(isNext ? Color.blue : (isCurrent ? Color.primary : Color.secondary))
             .background(isNext ? Color.blue.opacity(0.08) : .clear,in:RoundedRectangle(cornerRadius:large ? 12 : 7))
             .accessibilityElement(children:.combine)
+            .accessibilityValue(Text(LocalizedStringKey(isNext ? "Up next" : isCurrent ? "Current prayer" : "")))
     }
     @ViewBuilder private var empty:some View {
         if family == .accessoryInline {Text("Open Salati to refresh")}
@@ -436,17 +441,17 @@ struct Phase2ShowcaseView:View {
                     if let status=actualActivityStatus {Text(status).font(.footnote).accessibilityIdentifier("actualActivity.status")}
                 }
                 preview("Small widget",id:"preview.small") {PrayerWidgetContent(entry:entry,family:.systemSmall).frame(width:158,height:158)}
-                preview("Medium widget",id:"preview.medium") {PrayerWidgetContent(entry:entry,family:.systemMedium).frame(height:160)}
+                preview("Medium widget",id:"preview.medium") {PrayerWidgetContent(entry:entry,family:.systemMedium).frame(height:140)}
                 preview("Large widget",id:"preview.large") {PrayerWidgetContent(entry:entry,family:.systemLarge).frame(height:340)}
-                preview("Horizontal · Medium",id:"preview.horizontalMedium") {PrayerWidgetContent(entry:entry,family:.systemMedium,layout:.horizontal).frame(height:160)}
+                preview("Horizontal · Medium",id:"preview.horizontalMedium") {PrayerWidgetContent(entry:entry,family:.systemMedium,layout:.horizontal).frame(height:140)}
                 preview("Horizontal · Large",id:"preview.horizontalLarge") {PrayerWidgetContent(entry:entry,family:.systemLarge,layout:.horizontal).frame(height:340)}
                 if let overnight {
-                preview("After Isha · Standard",id:"preview.overnightStandard") {PrayerWidgetContent(entry:overnight,family:.systemMedium).frame(height:160)}
-                preview("After Isha · Horizontal",id:"preview.overnightHorizontal") {PrayerWidgetContent(entry:overnight,family:.systemMedium,layout:.horizontal).frame(height:160)}
+                preview("After Isha · Standard",id:"preview.overnightStandard") {PrayerWidgetContent(entry:overnight,family:.systemMedium).frame(height:140)}
+                preview("After Isha · Horizontal",id:"preview.overnightHorizontal") {PrayerWidgetContent(entry:overnight,family:.systemMedium,layout:.horizontal).frame(height:140)}
                 }
                 if let midnight {
-                preview("After midnight · Standard",id:"preview.midnightStandard") {PrayerWidgetContent(entry:midnight,family:.systemMedium).frame(height:160)}
-                preview("After midnight · Horizontal",id:"preview.midnightHorizontal") {PrayerWidgetContent(entry:midnight,family:.systemMedium,layout:.horizontal).frame(height:160)}
+                preview("After midnight · Standard",id:"preview.midnightStandard") {PrayerWidgetContent(entry:midnight,family:.systemMedium).frame(height:140)}
+                preview("After midnight · Horizontal",id:"preview.midnightHorizontal") {PrayerWidgetContent(entry:midnight,family:.systemMedium,layout:.horizontal).frame(height:140)}
                 }
                 preview("Lock Screen · Inline",id:"preview.inline") {PrayerWidgetContent(entry:entry,family:.accessoryInline)}
                 preview("Lock Screen · Circular",id:"preview.circular") {PrayerWidgetContent(entry:entry,family:.accessoryCircular).frame(width:72,height:72)}

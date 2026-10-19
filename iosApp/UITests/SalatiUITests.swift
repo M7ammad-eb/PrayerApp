@@ -85,7 +85,7 @@ final class SalatiUITests:XCTestCase {
                 reveal(open,app:app)
                 XCTAssertTrue(open.waitForExistence(timeout:5),"Missing isolated preview \(id)")
                 open.tap()
-                XCTAssertTrue(app.otherElements["rendererPreviewDetail"].waitForExistence(timeout:5))
+                XCTAssertTrue(identified("rendererPreviewDetail",in:app).waitForExistence(timeout:5))
                 capture(prefix+" "+id+" isolated")
                 app.navigationBars.buttons.element(boundBy:0).tap()
             }
@@ -96,11 +96,11 @@ final class SalatiUITests:XCTestCase {
         let app=XCUIApplication()
         app.launchArguments=["-uiTestingReset","-uiTestingGPSSuccess"];app.launch()
         advanceSetup(app,to:2)
-        XCTAssertTrue(app.staticTexts["onboardingSelectedLocation"].waitForExistence(timeout:5))
+        XCTAssertTrue(identified("onboardingSelectedLocation",in:app).waitForExistence(timeout:5))
         capture("Onboarding GPS success simulated fixture")
         app.terminate();app.launchArguments=["-uiTestingReset","-uiTestingGPSDenied"];app.launch()
         advanceSetup(app,to:2)
-        XCTAssertTrue(app.staticTexts["locationStatus"].waitForExistence(timeout:5))
+        XCTAssertTrue(identified("locationStatus",in:app).waitForExistence(timeout:5))
         XCTAssertTrue(app.buttons["chooseLocation"].isHittable)
         capture("Onboarding GPS denied simulated fixture with manual alternative")
         for (flag,title) in [("-uiTestingGPSPermission","permission request"),("-uiTestingGPSLoading","acquiring location"),("-uiTestingGPSTimeout","timeout with retry")] {
@@ -108,7 +108,20 @@ final class SalatiUITests:XCTestCase {
             advanceSetup(app,to:2)
             XCTAssertTrue(app.buttons["chooseLocation"].isHittable)
             XCTAssertFalse(app.buttons["continueOnboarding"].isEnabled)
+            let statusID=flag == "-uiTestingGPSTimeout" ? "locationStatus":"locationProgress"
+            XCTAssertTrue(identified(statusID,in:app).waitForExistence(timeout:5))
             capture("Onboarding GPS "+title+" simulated fixture")
+        }
+    }
+    func testCompactWidgetLayouts() {
+        let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingShowcase","-uiTestingArabicDark"];app.launch()
+        chooseCity("Madinah",app:app)
+        let showcase=app.buttons["presentationShowcase"];reveal(showcase,app:app);showcase.tap()
+        for id in ["medium","horizontalMedium","overnightStandard","overnightHorizontal","midnightHorizontal"] {
+            let open=app.buttons["open.preview."+id];reveal(open,app:app);XCTAssertTrue(open.isHittable);open.tap()
+            XCTAssertTrue(identified("rendererPreviewDetail",in:app).waitForExistence(timeout:5))
+            capture("Arabic dark compact-width renderer preview "+id)
+            app.navigationBars.buttons.element(boundBy:0).tap()
         }
     }
     func testAccessibilityCalendarAndHome() {
@@ -186,12 +199,13 @@ final class SalatiUITests:XCTestCase {
         advanceSetup(app,to:3)
         if captureSetup {
             capture(prefix+" 3 automatic calculation")
-            reveal(app.buttons["onboardingAdvanced"],app:app)
-            app.buttons["onboardingAdvanced"].tap()
+            let advanced=onboardingDisclosureButton(app)
+            reveal(advanced,app:app)
+            XCTAssertTrue(advanced.waitForExistence(timeout:5));advanced.tap()
             capture(prefix+" 3 optional expert calculation")
-            app.buttons["onboardingAdvanced"].tap()
+            onboardingDisclosureButton(app).tap()
             app.buttons["onboardingBack"].tap()
-            XCTAssertTrue(app.staticTexts["onboardingSelectedLocation"].exists)
+            XCTAssertTrue(identified("onboardingSelectedLocation",in:app).exists)
             advanceSetup(app,to:3)
         }
         advanceSetup(app,to:4)
@@ -230,6 +244,21 @@ final class SalatiUITests:XCTestCase {
         app.navigationBars.buttons.element(boundBy:0).tap()
         reveal(app.buttons["Listen to adhan"],app:app);app.buttons["Listen to adhan"].tap()
         capture("Immediate adhan recording preview list")
+    }
+    private func identified(_ identifier:String,in app:XCUIApplication)->XCUIElement {
+        app.descendants(matching:.any).matching(identifier:identifier).firstMatch
+    }
+    private func onboardingDisclosureButton(_ app:XCUIApplication)->XCUIElement {
+        // SwiftUI may expose a DisclosureGroup identifier on its container.
+        // Select the disclosure header's actual button, never tap the group's centre.
+        let labels=NSPredicate(format:"label BEGINSWITH %@ OR label BEGINSWITH %@","Advanced settings","إعدادات متقدمة")
+        let container=identified("onboardingAdvanced",in:app)
+        let header=container.buttons.matching(labels).firstMatch
+        if header.exists {return header}
+        let globalHeader=app.buttons.matching(labels).firstMatch
+        if globalHeader.exists {return globalHeader}
+        // The collapsed control can itself be the button, with a system-generated label.
+        return app.buttons.matching(identifier:"onboardingAdvanced").firstMatch
     }
     private func languageControl(_ app:XCUIApplication)->XCUIElement {
         let control=app.segmentedControls["appLanguage"]
