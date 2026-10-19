@@ -119,20 +119,61 @@ object HijriCalendar {
         )
     }
 
-    /** Each civil cell uses the same month-scoped conversion as the live religious label.
-     * A manual correction expires at the unadjusted next month; this can repeat boundary
-     * labels when a correction resets, but never changes a civil date or prayer instant. */
+    /** Move the named month intact. Reconcile outward to the nearest baseline boundary,
+     * using only 29/30-day months: a neighboring 30-day month can lose one day and a
+     * 29-day month can gain one. Never repeat a label or invent Hijri days 31/32.
+     * One stored correction has finite boundary effects, not a permanent global offset. */
+    private fun boundaryShifts(storedOffset: Int, anchor: String?): Map<Int, Int> {
+        val parts=anchor?.split('-') ?: return emptyMap()
+        if(parts.size != 2) return emptyMap()
+        val year=parts[0].toIntOrNull() ?: return emptyMap()
+        val month=parts[1].toIntOrNull() ?: return emptyMap()
+        val index=(year-1300)*12+month-1
+        val shift=-storedOffset.coerceIn(-2,2)
+        if(shift == 0 || month !in 1..12 || index !in 1 until ummAlQuraMonthStarts.lastIndex-1) return emptyMap()
+        val shifts=mutableMapOf(index to shift,index+1 to shift)
+        var delta=shift
+        for(i in index+1 until ummAlQuraMonthStarts.lastIndex) {
+            val length=ummAlQuraMonthStarts[i+1]-ummAlQuraMonthStarts[i]
+            delta=0.coerceIn(29-length+delta,30-length+delta)
+            shifts[i+1]=delta
+            if(delta == 0) break
+        }
+        if(delta != 0) return emptyMap() // A correction cannot leave the supported range.
+        delta=shift
+        for(i in index-1 downTo 0) {
+            val length=ummAlQuraMonthStarts[i+1]-ummAlQuraMonthStarts[i]
+            delta=0.coerceIn(length+delta-30,length+delta-29)
+            shifts[i]=delta
+            if(delta == 0) break
+        }
+        return if(delta == 0) shifts else emptyMap()
+    }
+    fun scopedStart(month: HijriYearMonth, storedOffset: Int, anchor: String?): LocalDate {
+        val index=(month.year-1300)*12+month.month-1
+        return gregorianDateFor(month, 1, 0).plusDays((boundaryShifts(storedOffset,anchor)[index] ?: 0).toLong())
+    }
+
+    fun scopedDate(date: LocalDate, storedOffset: Int, anchor: String?): HijriDate {
+        if (storedOffset == 0 || anchor == null) return HijriDateCalculator.convertToHijri(date)
+        val raw = monthContaining(date, 0)
+        // Offsets are bounded by two days, so only a neighboring month can own this date.
+        return try {
+            val month = (-1..1).map { raw.plusMonths(it) }.first {
+                date.toEpochDay() >= scopedStart(it, storedOffset, anchor).toEpochDay() && date.toEpochDay() < scopedStart(it.plusMonths(1), storedOffset, anchor).toEpochDay()
+            }
+            val day = (date.toEpochDay() - scopedStart(month, storedOffset, anchor).toEpochDay() + 1).toInt()
+            HijriDateCalculator.buildHijriDate(day, month.month, month.year)
+        } catch (_: IllegalArgumentException) { HijriDateCalculator.convertToHijri(date) }
+    }
+
     fun generateScoped(yearMonth:HijriYearMonth,storedOffset:Int,anchor:String?):HijriCalendarMonth {
         val unadjusted=generate(yearMonth,0)
-        val aroundStart=unadjusted.firstGregorianDate.minusDays(3)
-        val matches=(0..36).map { aroundStart.plusDays(it.toLong()) }.filter {
-            val h=ReligiousDates.adjusted(it,storedOffset,anchor)
-            h.year == yearMonth.year && h.month == yearMonth.month
-        }
-        val first=matches.firstOrNull() ?: unadjusted.firstGregorianDate
-        val last=matches.lastOrNull() ?: unadjusted.lastGregorianDate
+        val first=scopedStart(yearMonth,storedOffset,anchor)
+        val last=scopedStart(yearMonth.plusMonths(1),storedOffset,anchor).minusDays(1)
         val start=first.minusDays(((first.dayOfWeek.value+1)%7).toLong())
-        val days=(0..41).map {
+        val count=(((last.toEpochDay()-start.toEpochDay()+1)+6)/7*7).toInt()
+        val days=(0 until count).map {
             val date=start.plusDays(it.toLong());val h=ReligiousDates.adjusted(date,storedOffset,anchor)
             HijriCalendarDay(date,h,h.year == yearMonth.year && h.month == yearMonth.month)
         }

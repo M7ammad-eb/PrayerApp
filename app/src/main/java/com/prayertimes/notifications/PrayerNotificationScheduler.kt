@@ -65,7 +65,8 @@ object PrayerNotificationScheduler {
                 juristicMethod = settings.juristicMethod,
                 highLatitudeRule = settings.highLatitudeRule,
                 adjustments = settings.adjustments,
-                hijriAdjustmentDays = settings.hijriAdjustmentDays
+                hijriAnchor = settings.hijriAdjustmentAnchorMonth,
+            hijriAdjustmentDays = settings.hijriAdjustmentDays
             )
 
             for (item in schedule.prayerItems) {

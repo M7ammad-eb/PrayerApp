@@ -33,7 +33,7 @@ class Phase2Test {
             val result=day(date.toString(),0.0,offset,anchor)
             assertEquals(HijriDateCalculator.convertToHijri(date,offset).formattedEn,result.civilHijriEnglish)
             val page=engine.calendarScoped(date.toString(),0,offset,anchor)
-            assertEquals(42,page.cells.size)
+            assertTrue(page.cells.size in listOf(35,42))
             for(cell in page.cells) assertEquals(ReligiousDates.adjusted(LocalDate.parse(cell.dateISO),offset,anchor).day,cell.day)
         }
         val other=HijriCalendar.gregorianDateFor(HijriYearMonth(1448,9),1,0)

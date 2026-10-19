@@ -14,7 +14,8 @@ object PrayerTimesCalculator {
         adjustments: PrayerTimeAdjustments,
         hijriAdjustmentDays: Int,
         previousDays: Int = 7,
-        nextDays: Int = 30
+        nextDays: Int = 30,
+        hijriAnchor: String? = null
     ) {
         val now = ZonedDateTime.now(zoneId)
         for (offset in -previousDays.coerceAtLeast(0)..nextDays.coerceAtLeast(0)) {
@@ -28,7 +29,8 @@ object PrayerTimesCalculator {
                 highLatitudeRule = highLatitudeRule,
                 adjustments = adjustments,
                 hijriAdjustmentDays = hijriAdjustmentDays,
-                now = now
+                now = now,
+                hijriAnchor = hijriAnchor
             )
         }
     }
@@ -43,9 +45,10 @@ object PrayerTimesCalculator {
         highLatitudeRule: HighLatitudeRule = HighLatitudeRule.ANGLE_BASED,
         adjustments: PrayerTimeAdjustments = PrayerTimeAdjustments(),
         hijriAdjustmentDays: Int = 0,
-        now: ZonedDateTime = ZonedDateTime.now(zoneId)
+        now: ZonedDateTime = ZonedDateTime.now(zoneId),
+        hijriAnchor: String? = null
     ): DailyPrayerSchedule {
         return com.salati.shared.PrayerTimesCalculator.calculateDailySchedule(date.shared(),latitude,longitude,
-            com.salati.shared.ZoneId.of(zoneId.id),method,juristicMethod,highLatitudeRule,adjustments,hijriAdjustmentDays,now.shared()).android()
+            com.salati.shared.ZoneId.of(zoneId.id),method,juristicMethod,highLatitudeRule,adjustments,hijriAdjustmentDays,now.shared(),hijriAnchor).android()
     }
 }

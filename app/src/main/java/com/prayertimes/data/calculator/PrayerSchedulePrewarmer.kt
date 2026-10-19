@@ -23,6 +23,7 @@ object PrayerSchedulePrewarmer {
             juristicMethod = settings.juristicMethod,
             highLatitudeRule = settings.highLatitudeRule,
             adjustments = settings.adjustments,
+            hijriAnchor = settings.hijriAdjustmentAnchorMonth,
             hijriAdjustmentDays = settings.hijriAdjustmentDays,
             previousDays = previousDays,
             nextDays = nextDays

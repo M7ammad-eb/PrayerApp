@@ -24,7 +24,8 @@ object PrayerTimesCalculator {
         val juristicMethod: JuristicMethod,
         val highLatitudeRule: HighLatitudeRule,
         val adjustments: PrayerTimeAdjustments,
-        val hijriAdjustmentDays: Int
+        val hijriAdjustmentDays: Int,
+        val hijriAnchor: String?
     )
 
     private val scheduleCache = LruCache<ScheduleCacheKey, DailyPrayerSchedule>(MAX_CACHED_SCHEDULES)
@@ -203,7 +204,8 @@ object PrayerTimesCalculator {
         highLatitudeRule: HighLatitudeRule = HighLatitudeRule.ANGLE_BASED,
         adjustments: PrayerTimeAdjustments = PrayerTimeAdjustments(),
         hijriAdjustmentDays: Int = 0,
-        now: ZonedDateTime = ZonedDateTime.now(zoneId)
+        now: ZonedDateTime = ZonedDateTime.now(zoneId),
+        hijriAnchor: String? = null
     ): DailyPrayerSchedule {
         val key = ScheduleCacheKey(
             date,
@@ -214,7 +216,8 @@ object PrayerTimesCalculator {
             juristicMethod,
             highLatitudeRule,
             adjustments,
-            hijriAdjustmentDays
+            hijriAdjustmentDays,
+            hijriAnchor
         )
         var generation = 0L
         synchronized(scheduleCache) {
@@ -232,7 +235,8 @@ object PrayerTimesCalculator {
             highLatitudeRule,
             adjustments,
             hijriAdjustmentDays,
-            now
+            now,
+            hijriAnchor
         ).withoutPrayerStatus()
 
         val cached = synchronized(scheduleCache) {
@@ -255,7 +259,8 @@ object PrayerTimesCalculator {
         highLatitudeRule: HighLatitudeRule,
         adjustments: PrayerTimeAdjustments,
         hijriAdjustmentDays: Int,
-        now: ZonedDateTime
+        now: ZonedDateTime,
+        hijriAnchor: String?
     ): DailyPrayerSchedule {
         val sunToday = computeSunTimes(date, latitude, longitude)
         val declination = sunToday.declination
@@ -267,7 +272,8 @@ object PrayerTimesCalculator {
 
         var fajrHour = computeTime(method.fajrAngle, latitude, declination, midDay, isMorning = true)
 
-        val hijriDateObj = HijriDateCalculator.convertToHijri(date, hijriAdjustmentDays)
+        val hijriDateObj = if(hijriAnchor == null) HijriDateCalculator.convertToHijri(date, hijriAdjustmentDays)
+            else ReligiousDates.adjusted(date,hijriAdjustmentDays,hijriAnchor)
         val hijriDateStr = hijriDateObj.formattedEn
 
         // The Umm al-Qura method's fixed Isha interval extends from 90 to 120 minutes after

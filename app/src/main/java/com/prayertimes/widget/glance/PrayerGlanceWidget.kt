@@ -225,6 +225,7 @@ class PrayerGlanceWidget : GlanceAppWidget() {
             juristicMethod = settings.juristicMethod,
             highLatitudeRule = settings.highLatitudeRule,
             adjustments = settings.adjustments,
+            hijriAnchor = settings.hijriAdjustmentAnchorMonth,
             hijriAdjustmentDays = settings.hijriAdjustmentDays,
             now = now
         )

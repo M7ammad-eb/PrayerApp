@@ -16,7 +16,7 @@ object ReligiousDates {
     fun nextTransition(nowEpoch:Double,todayMaghrib:Double,tomorrowMaghrib:Double):Double =
         if(nowEpoch<todayMaghrib) todayMaghrib else tomorrowMaghrib
     fun adjusted(date: LocalDate, storedOffset: Int, anchor: String?): HijriDate =
-        HijriDateCalculator.convertToHijri(date, HijriCalendar.effectiveAdjustment(storedOffset, anchor, date))
+        HijriCalendar.scopedDate(date, storedOffset, anchor)
 }
 
 data class PlanEvent(val id: String, val prayer: String, val title: String, val epochSeconds: Double)
@@ -101,7 +101,8 @@ class CompassAlignmentTracker {
 
 data class PresentationMoment(val epochSeconds: Double, val civilDateISO: String,
     val religiousDateISO: String, val hijriEnglish: String, val hijriArabic: String,
-    val currentEventID: String?, val nextEventID: String?)
+    val currentEventID: String?, val nextEventID: String?,
+    val displayEventIDs: List<String>, val tomorrowEventID: String?, val previousEventID: String?)
 
 object SharedPresentation {
     fun timeline(days: List<PrayerDay>, nowEpoch: Double, validUntilEpoch: Double): List<PresentationMoment> {
@@ -117,11 +118,15 @@ object SharedPresentation {
             val obligatory = events.filter { it.second.id != "SUNRISE" }
             val current=obligatory.lastOrNull { it.second.epochSeconds <= instant }
             val fajrEnded=current?.second?.id == "FAJR" && day.events.any { it.id == "SUNRISE" && it.epochSeconds<=instant }
+            val next = events.firstOrNull { it.second.epochSeconds > instant }
+            val civilRows = day.events.map { day.dateISO + "." + it.id }
+            val tomorrow = next?.first?.takeIf { it.startsWith(day.followingDateISO + ".") }
+            val previous = current?.first?.takeIf { it !in civilRows && !fajrEnded }
             PresentationMoment(instant, day.dateISO, if (sunset) day.followingDateISO else day.dateISO,
                 if (sunset) day.sunsetHijriEnglish else day.civilHijriEnglish,
                 if (sunset) day.sunsetHijriArabic else day.civilHijriArabic,
                 if(fajrEnded) null else current?.first,
-                events.firstOrNull { it.second.epochSeconds > instant }?.first)
+                next?.first, civilRows + listOfNotNull(tomorrow), tomorrow, previous)
         }
     }
 }

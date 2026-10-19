@@ -83,6 +83,7 @@ private data class CalculationInputs(
     val juristicMethod: JuristicMethod,
     val highLatitudeRule: HighLatitudeRule,
     val hijriAdjustmentDays: Int,
+    val hijriAdjustmentAnchorMonth: String?,
     val adjustments: PrayerTimeAdjustments
 )
 
@@ -98,7 +99,7 @@ private data class WidgetInputs(
 )
 
 private fun AppPrayerSettings.calculationInputs() = CalculationInputs(
-    location, calculationMethod, juristicMethod, highLatitudeRule, hijriAdjustmentDays, adjustments
+    location, calculationMethod, juristicMethod, highLatitudeRule, hijriAdjustmentDays, hijriAdjustmentAnchorMonth, adjustments
 )
 
 private fun AppPrayerSettings.widgetInputs() = WidgetInputs(
@@ -155,6 +156,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             juristicMethod = currentSettings.juristicMethod,
             highLatitudeRule = currentSettings.highLatitudeRule,
             adjustments = currentSettings.adjustments,
+            hijriAnchor = currentSettings.hijriAdjustmentAnchorMonth,
             hijriAdjustmentDays = currentSettings.hijriAdjustmentDays,
             now = now
         )
@@ -182,7 +184,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun setForeground(foreground: Boolean) {
         _isForeground.value = foreground
-        if (foreground) viewModelScope.launch { prefs.clearExpiredHijriOffset() }
     }
 
     fun setPrayerTabVisible(visible: Boolean) {
@@ -190,7 +191,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     init {
-        viewModelScope.launch { prefs.clearExpiredHijriOffset() }
         val initialSettings = settings.value
         // Repair a GPS display name that an earlier broken places migration persisted as the
         // coordinates fallback. This is asynchronous and never delays first render.

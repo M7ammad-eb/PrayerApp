@@ -76,7 +76,7 @@ object HijriDateCalculator {
         return convertToHijri(date, adjustmentDays).formattedAr
     }
 
-    private fun buildHijriDate(day: Int, month: Int, year: Int): HijriDate {
+    internal fun buildHijriDate(day: Int, month: Int, year: Int): HijriDate {
         val monthIdx = (month - 1).coerceIn(0, 11)
         val monthNameEn = MONTH_NAMES_EN[monthIdx]
         val monthNameAr = MONTH_NAMES_AR[monthIdx]

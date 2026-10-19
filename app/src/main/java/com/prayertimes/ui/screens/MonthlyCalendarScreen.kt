@@ -93,13 +93,13 @@ fun MonthlyCalendarScreen(
     val pagerOrigin = remember { HijriYearMonth(1300, 1) }
     val locationCivilToday = ZonedDateTime.now(prayerZone).toLocalDate()
     val initialSelectedDate = if (selectedDate == locationCivilToday) islamicToday else selectedDate
-    val initialMonth = remember { HijriCalendar.monthContaining(initialSelectedDate, hijriAdjustmentDays) }
+    val initialMonth = remember { scopedMonth(initialSelectedDate, settings) }
     val initialPage = (initialMonth.year - pagerOrigin.year) * 12 + initialMonth.month - pagerOrigin.month
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { 3600 })
     val coroutineScope = rememberCoroutineScope()
     val visibleMonth = pagerOrigin.plusMonths(pagerState.settledPage)
     var selectedGregorianDate by remember { mutableStateOf(initialSelectedDate) }
-    val month = remember(visibleMonth, hijriAdjustmentDays) {
+    val month = remember(visibleMonth, hijriAdjustmentDays, settings.hijriAdjustmentAnchorMonth) {
         HijriCalendar.generateScoped(visibleMonth, hijriAdjustmentDays,settings.hijriAdjustmentAnchorMonth)
     }
     val visibleWeekCount = remember(month) {
@@ -121,7 +121,7 @@ fun MonthlyCalendarScreen(
     LaunchedEffect(islamicToday) {
         if (islamicToday != previousIslamicToday && selectedGregorianDate == previousIslamicToday) {
             selectedGregorianDate = islamicToday
-            val todayMonth = HijriCalendar.monthContaining(islamicToday, hijriAdjustmentDays)
+            val todayMonth = scopedMonth(islamicToday, settings)
             val todayPage = (todayMonth.year - pagerOrigin.year) * 12 + todayMonth.month - pagerOrigin.month
             pagerState.scrollToPage(todayPage)
         }
@@ -150,7 +150,7 @@ fun MonthlyCalendarScreen(
                 coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
             },
             onToday = {
-                val todayMonth = HijriCalendar.monthContaining(islamicToday, hijriAdjustmentDays)
+                val todayMonth = scopedMonth(islamicToday, settings)
                 val todayPage = (todayMonth.year - pagerOrigin.year) * 12 + todayMonth.month - pagerOrigin.month
                 coroutineScope.launch { pagerState.animateScrollToPage(todayPage) }
                 selectedGregorianDate = islamicToday
@@ -173,8 +173,8 @@ fun MonthlyCalendarScreen(
                 beyondViewportPageCount = 0,
                 key = { it }
             ) { page ->
-                val pageMonth = remember(page, hijriAdjustmentDays) {
-                    HijriCalendar.generate(pagerOrigin.plusMonths(page), hijriAdjustmentDays)
+                val pageMonth = remember(page, hijriAdjustmentDays, settings.hijriAdjustmentAnchorMonth) {
+                    HijriCalendar.generateScoped(pagerOrigin.plusMonths(page), hijriAdjustmentDays, settings.hijriAdjustmentAnchorMonth)
                 }
                 HijriMonthGrid(
                     month = pageMonth,
@@ -321,7 +321,8 @@ private fun resolveCurrentHijriCivilDate(
         juristicMethod = settings.juristicMethod,
         highLatitudeRule = settings.highLatitudeRule,
         adjustments = settings.adjustments,
-        hijriAdjustmentDays = settings.hijriAdjustmentDays,
+        hijriAnchor = settings.hijriAdjustmentAnchorMonth,
+            hijriAdjustmentDays = settings.hijriAdjustmentDays,
         now = now
     ).prayerItems.first { it.type == PrayerType.MAGHRIB }.zonedDateTime
 
@@ -689,4 +690,9 @@ private fun observanceText(observance: IslamicObservance): Pair<String, String> 
     IslamicObservance.EID_AL_ADHA -> stringResource(R.string.hijri_observance_eid_adha) to ""
     IslamicObservance.TASHREEQ -> stringResource(R.string.hijri_observance_tashreeq) to stringResource(R.string.hijri_observance_tashreeq_desc)
     IslamicObservance.FASTING_PROHIBITED -> stringResource(R.string.hijri_observance_fasting_prohibited) to stringResource(R.string.hijri_observance_fasting_prohibited_desc)
+}
+
+private fun scopedMonth(date: LocalDate, settings: AppPrayerSettings): HijriYearMonth {
+    val h=com.salati.shared.ReligiousDates.adjusted(com.salati.shared.LocalDate.parse(date.toString()),settings.hijriAdjustmentDays,settings.hijriAdjustmentAnchorMonth)
+    return HijriYearMonth(h.year,h.month)
 }

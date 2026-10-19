@@ -166,7 +166,7 @@ class PrayerPreferences(private val context: Context) {
 
             val rawHijriOffset = fastPrefs.getInt(KEY_HIJRI_OFFSET, 0)
             val rawHijriAnchor = fastPrefs.getString(KEY_HIJRI_OFFSET_ANCHOR, null)?.takeIf { it.isNotBlank() }
-            val hijriOffset = HijriCalendar.effectiveAdjustment(rawHijriOffset, rawHijriAnchor, LocalDate.now())
+            val hijriOffset = if (rawHijriAnchor == null) 0 else rawHijriOffset.coerceIn(-2, 2)
             val hijriOffsetAnchor = rawHijriAnchor.takeIf { hijriOffset != 0 }
 
             // 3. Adjustments
@@ -331,7 +331,7 @@ class PrayerPreferences(private val context: Context) {
 
         val rawHijriOffset = prefs[Keys.HIJRI_OFFSET] ?: 0
         val rawHijriAnchor = prefs[Keys.HIJRI_OFFSET_ANCHOR]?.takeIf { it.isNotBlank() }
-        val hijriOffset = HijriCalendar.effectiveAdjustment(rawHijriOffset, rawHijriAnchor, LocalDate.now())
+        val hijriOffset = if (rawHijriAnchor == null) 0 else rawHijriOffset.coerceIn(-2, 2)
         val hijriOffsetAnchor = rawHijriAnchor.takeIf { hijriOffset != 0 }
         val is24Hour = prefs[Keys.IS_24_HOUR] ?: false
         val language = parseEnumOrDefault(prefs[Keys.APP_LANGUAGE], AppLanguage.SYSTEM)
@@ -577,14 +577,6 @@ class PrayerPreferences(private val context: Context) {
             if (storedAnchor == null) prefs.remove(Keys.HIJRI_OFFSET_ANCHOR)
             else prefs[Keys.HIJRI_OFFSET_ANCHOR] = storedAnchor
         }
-    }
-
-    suspend fun clearExpiredHijriOffset() {
-        val currentMonth = HijriCalendar.monthKeyFor(LocalDate.now())
-        val fastPrefs = context.getSharedPreferences(FAST_CACHE_PREFS, Context.MODE_PRIVATE)
-        val offset = fastPrefs.getInt(KEY_HIJRI_OFFSET, 0)
-        val anchor = fastPrefs.getString(KEY_HIJRI_OFFSET_ANCHOR, null)?.takeIf { it.isNotBlank() }
-        if (offset != 0 && anchor != currentMonth) updateHijriOffset(0, null)
     }
 
     suspend fun updateIs24Hour(is24: Boolean) {
