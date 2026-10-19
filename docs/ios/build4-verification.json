@@ -1,0 +1,48 @@
+{
+  "file": "C:\\Users\\M1993\\PrayerApp\\build\\ios\\Salati-Refinement-1.8-build4.ipa",
+  "metadata": {
+    "sourceCommit": "725a63f382e06e04c6de750f2c011c83b04c8f0b",
+    "workflowRun": "https://github.com/M7ammad-eb/PrayerApp/actions/runs/39320315492",
+    "platform": "iPhoneOS",
+    "architecture": "arm64",
+    "minimumIOS": "26.0",
+    "configuration": "Release",
+    "buildNumber": "4",
+    "version": "1.8",
+    "signing": "ad-hoc capability metadata only; AltStore must re-sign with the user Apple ID before installation",
+    "sha256": "c6071e4611b59d122609324023a6b311b772cb72ba8d4451ed9fd8619142ede5",
+    "bytes": 39508222,
+    "requestedAppGroups": [
+      "group.com.salati.prayertimes"
+    ]
+  },
+  "verified": [
+    {
+      "bundle": "com.salati.prayertimes.ios",
+      "build": "4",
+      "platform": "arm64 iPhoneOS",
+      "adHocMetadata": true,
+      "groups": [
+        "group.com.salati.prayertimes"
+      ]
+    },
+    {
+      "bundle": "com.salati.prayertimes.ios.widgets",
+      "build": "4",
+      "platform": "arm64 iPhoneOS",
+      "adHocMetadata": true,
+      "groups": [
+        "group.com.salati.prayertimes"
+      ]
+    }
+  ],
+  "artifactSHA256": "640454f13f63c69dfa8039ca7af87428901e2f670fa3dec1c51042b63b4a774f",
+  "checks": [
+    "ZIP integrity",
+    "IPA SHA-256 and size",
+    "app/widget bundle identities, version 1.8 and build 4; WidgetKit extension point",
+    "11 MP3s and places.db match build 2 originals; compiled assets and app icon present; no short clips; silent one-shot CAF present",
+    "no Apple profiles or debug/preview dylibs",
+    "all refinement Arabic translations present in app and widget"
+  ]
+}

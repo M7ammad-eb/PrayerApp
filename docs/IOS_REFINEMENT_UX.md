@@ -1,6 +1,6 @@
 # Native app UX refinement
 
-Ownership: PlacesView.swift (including onboarding), HomeView.swift, SettingsView.swift, AlertSettingsView.swift, Settings.swift. Shared policy, AppModel, resources and tests are integrated by the lead.
+The app UX spans PlacesView.swift (including onboarding), HomeView.swift, SettingsView.swift, AlertSettingsView.swift and Settings.swift. Shared policy, AppModel, resources and tests are integrated centrally.
 
 ## Onboarding
 
@@ -29,90 +29,13 @@ Countdown / advance-reminder options, contextual permission controls and ordinar
 - [Apple Onboarding](https://developer.apple.com/design/human-interface-guidelines/onboarding): short contextual introduction, purposeful steps, permission requests in relevant context.
 - [Apple Privacy](https://developer.apple.com/design/human-interface-guidelines/privacy): request access when needed and retain an offline manual alternative.
 
-## Validation handoff
+## Validation
 
-No resource-intensive builds started by this agent. Lead owns combined compiler/runtime checks and screenshot capture. UI tests must press continueOnboarding once before chooseLocation, then continue through calculation/alerts/completion. GPS fixture screenshots advance past welcome once. Accessibility identifiers: onboardingStep, onboardingBack, onboardingAdvanced, onboardingAlertSettings, onboardingAllowNotifications, continueOnboarding, chooseLocation, onboardingSelectedLocation; prayerAlert.FAJR (and other prayer IDs), alertDelivery; scheduleTestAlert now lives inside Test an alert.
+The complete native suite passed at `029b8dd`: 23 shared, 38 app, seven larger-device UI flows and three compact-device flows. Independent review inspected all 84 app captures, including five original-resolution checks. English/Arabic setup, notifications, calendar, repeated direction changes, Qibla geometry and large text passed. The compact setup test scrolls within the available Form area and confirms the location control is above the fixed footer before tapping it. GPS captures are simulated UI states, not sensor verification. Detailed workflow links and evidence limitations are in [the milestone handoff](IOS_REFINEMENT.md).
 
-## New English resource keys for lead localization
+## Localization
 
-The list below is a static string scan; verify dynamic arrays (onboarding titles/subtitles) and compiled resource coverage during integration.
-
-- A regional method is not available for this time zone. Muslim World League and Standard Asr provide a reviewable starting point.
-- A starting point for your location, with the freedom to adjust.
-- Add a Salati widget to keep prayer times on your Home Screen.
-- Add a widget
-- Advance reminder
-- Advance reminders use the system sound or silence, never adhan.
-- Advanced settings
-- Alert status and diagnostics
-- Alerts stay off until you choose them. Continue without enabling alerts if you prefer.
-- Alerts, your way
-- Allow Live Activities in iOS Settings to show the countdown.
-- Allow the selected delivery type, then start the test and lock your iPhone.
-- Automatic prayer countdown
-- Back
-- Based on your time zone. Standard Asr is the default; you can change either choice.
-- Cancel test alerts
-- Choose Prayer times for the original layout, or Prayer times · Horizontal for side-by-side prayer times in medium and large widgets.
-- Choose a city offline, or use your precise location. Check the time zone if you are near a border.
-- Choose an audible alarm sound
-- Choose delivery and sound for each prayer. Off means no prayer alert; advance reminders are a separate choice.
-- Choose prayer alerts
-- City search is unavailable. Try again or enter coordinates.
-- Clear local log
-- Close
-- Countdown and reminders
-- Enabled prayers
-- English
-- Hanafi
-- Help
-- Keep prayer times close. Choose only the alerts you want.
-- Listen to adhan
-- Local diagnostics
-- Location details
-- Notifications are turned off in iOS Settings.
-- Notifications follow your iPhone sound settings. System alarms use a separate permission.
-- Notifications use the system sound or silence. Full adhan recordings are available with system alarms and in Listen to adhan.
-- Open Salati after installing or changing location to update your widgets.
-- Open Salati regularly to keep future alerts ready.
-- Open iOS Settings
-- Permission applies to the choices above. It does not enable other prayer alerts.
-- Permission lets Salati deliver the reminders you selected. It does not turn on other prayer alerts.
-- Permissions
-- Plays immediately. Listening does not change your prayer alert settings.
-- Prayer times for your location
-- Ready for your day
-- Review setup
-- Review your alert settings
-- Salati · صلاتي
-- Search for Salati and choose a size.
-- Searching offline cities…
-- Selected adhan — system notification sound for now
-- Selected location
-- Setup progress
-- Share local log
-- Sound for advance reminders
-- Standard
-- Start using Salati
-- Stored only on this phone. Scheduling acceptance does not prove audible delivery. A notification response records user interaction, not the actual delivery instant.
-- The selected full recording is prepared for the alarm. Use Test an alert to check playback on your iPhone.
-- Test an alert
-- Test an alert for delivery in one minute, or listen to a recording immediately.
-- Test in one minute — lock the phone
-- The countdown starts 15 minutes before prayer. If it cannot start, Salati uses a notification reminder when permitted.
-- The recording could not play. Try another recording.
-- This test uses the chosen prayer’s sound. Your prayer schedule stays unchanged.
-- Tomorrow
-- Touch and hold the widget, then choose Edit Widget to choose location, date, and sunrise details.
-- Touch and hold your Home Screen, then choose Edit and Add Widget.
-- Try your settings
-- Use prayer sound preference
-- Widgets
-- Your changes are kept when you choose another location.
-- Your choices are saved. You can change them anytime in Settings.
-- Your chosen calculation settings are preserved.
-- Your prayer calculation
-- Your setup
+Reviewed English/Arabic additions are maintained in `tools/ios/refinement_ux_translations.json` and the calendar/widget catalogs, then generated into both app and extension resources. Final package verification checks every added Arabic translation in both compiled bundles.
 
 ## Independent review and test implementation
 
@@ -120,4 +43,4 @@ Widget agent reviewed the app UX and requested accurate full-recording wording; 
 
 An independent lightweight arithmetic check of all supported table anchor/offset combinations found 14,426 reconciled corrections with every adjacent month 29/30 days, and maximum finite reconciliation reach eight months. Fourteen edge-of-table cases cannot reconcile within supported bounds and correctly reject the correction. This complements, but does not replace, the lead's Kotlin test suite.
 
-UI tests now cover the five consecutive onboarding pages in both languages, manual-success and simulated GPS permission/acquiring/success/denial/timeout states; per-prayer detail, scheduled-test and immediate-preview journeys; deterministic five/six-week months, fixed height, ±2, swipe direction and numeric Gregorian correspondence in both languages; existing repeated language changes and Qibla regressions; isolated original/horizontal/night widget renderers and Activity surfaces. Optional system Live Activity capture uses the real system activity on the Island simulator and records unavailability rather than substituting rendered previews. Screenshots still require visual inspection by the lead.
+UI tests cover the five consecutive onboarding pages in both languages, manual-success and simulated GPS permission/acquiring/success/denial/timeout states; per-prayer detail, scheduled-test and immediate-preview journeys; deterministic five/six-week months, fixed height, ±2, swipe direction and numeric Gregorian correspondence in both languages; existing repeated language changes and Qibla regressions; isolated original/horizontal/night widget renderers and Activity surfaces. Actual system Live Activity captures use a real system activity on the Island simulator; renderer previews remain labeled separately. Lead and independent reviewers inspected the captures and resolved concrete visual findings before delivery.

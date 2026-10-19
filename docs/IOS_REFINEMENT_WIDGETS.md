@@ -14,7 +14,7 @@ After Isha the six civil-day entries remain, with tomorrow's actual Fajr as a se
 
 ## Live Activity
 
-The scheduler and sound behavior are untouched. Compact Island content remains prayer NAME and remaining TIME, without a decorative replacement icon or a fake island shape. A stable width range is applied only to the countdown text; the system owns overall/camera geometry. Expanded content uses public per-mode 14-point content margins and `belowIfTooWide` for the heading. Clock time is explicitly introduced with “At”, remaining duration has a separate label, and location is secondary. Lock Screen presentation uses the same hierarchy in a compact balanced card. Progress uses the real `start...date` interval. Expired content remains controlled by `context.isStale`, which does not promise system dismissal.
+The scheduler and sound behavior are untouched. Compact Island content remains prayer NAME and remaining TIME, without a decorative replacement icon or a fake island shape. A stable width range is applied only to the countdown text; the system owns overall/camera geometry. Expanded content uses public per-mode content margins (24 points horizontally, 20 vertically) and `belowIfTooWide` for the heading. Actual system screenshots revealed corner clipping with the earlier 14-point margins despite a readable app-hosted preview; the final spacing is validated on the system surface. Clock time is explicitly introduced with “At”, remaining duration has a separate label, and location is secondary. Lock Screen presentation uses the same hierarchy in a compact balanced card. Progress uses the real `start...date` interval. Expired content remains controlled by `context.isStale`, which does not promise system dismissal.
 
 ## Evidence support and limits
 
@@ -24,7 +24,7 @@ A UI-testing-only action starts a real local ActivityKit activity with a separat
 
 ## Validation status
 
-Implementation and lightweight diff checks completed by the widget agent. Lead owns native compile/runtime tests, shared overnight regression tests, actual screenshot inspection, packaging and device-limit documentation. No physical-device claim is made here.
+Full native validation passed all shared, app and UI tests on iPhone 17 Pro Max and iPhone 17e simulators. Lead and independent review inspected original/horizontal widgets, after-Isha and after-midnight context, medium-width Arabic, large-widget spacing and separate Activity surfaces. Final focused system evidence and Release package receipts are recorded in [the milestone handoff](IOS_REFINEMENT.md). No physical-device claim is made here.
 
 References:
 

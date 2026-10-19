@@ -1,6 +1,10 @@
 # Salati iOS implementation handoff
 
-Phase 2 (build 3) is delivered as `Salati-Phase2-1.8-build3.ipa` from source `3e8187d`, with passing runtime/Release workflows and an independent receipt. Current architecture, actual validation status and remaining device checks are tracked in [IOS_PHASE2.md](IOS_PHASE2.md) and [IOS_PROGRESS.md](IOS_PROGRESS.md). The Phase 1 build references below are historical.
+The current delivered milestone is native UX refinement, version 1.8/build 4, application source `725a63f382e06e04c6de750f2c011c83b04c8f0b`: `Salati-Refinement-1.8-build4.ipa`. Its corrected shared calendar/event/default policies, completed UX, passing runtime/Release workflows and independent delivery receipt are in [IOS_REFINEMENT.md](IOS_REFINEMENT.md) and [IOS_PROGRESS.md](IOS_PROGRESS.md). Phase 2 scheduling/audio remains documented in [IOS_PHASE2.md](IOS_PHASE2.md). Previous build 3 and earlier IPA files are preserved.
+
+## Historical Phase 1 handoff
+
+The implementation/build references and limitations below describe Phase 1. Where superseded, use the current refinement and Phase 2 handoffs above; in particular the calendar now keeps a fixed six-row grid area at accessibility sizes, onboarding uses consecutive pages, and sound roles follow Phase 2.
 
 ## Repository and review references
 
