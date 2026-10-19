@@ -3,61 +3,56 @@ import SalatiCore
 
 struct HijriView: View {
     @EnvironmentObject var model: AppModel
-    @Environment(\.dynamicTypeSize) private var typeSize
-    @State private var delta=0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ScaledMetric(relativeTo:.body) private var rowHeight:CGFloat=58
+    @ScaledMetric(relativeTo:.body) private var dayFont:CGFloat=18
+    @ScaledMetric(relativeTo:.caption2) private var dateFont:CGFloat=10
+    @State private var visibleMonth:HijriYearMonth?
     @State private var selected:CalendarCell?
-    private var page: CalendarPage? {model.calendarPage(monthDelta:Int32(delta))}
+    private var page: CalendarPage? {
+        if let visibleMonth {return try? model.engine.calendarMonth(year:visibleMonth.year,month:visibleMonth.month,storedOffset:Int32(model.settings.hijriOffset),anchor:model.settings.hijriAnchor)}
+        return model.calendarPage(monthDelta:0)
+    }
     var body: some View {
         List {
             if let page {
                 Section {
-                    HStack(spacing:8) {
-                        Button {delta-=1;selected=nil} label: {Image(systemName:"chevron.backward").frame(minWidth:44,minHeight:44)}.accessibilityLabel("Previous month")
-                        Spacer(minLength:0)
-                        Text("\(model.arabic ? page.titleArabic : page.titleEnglish) \(page.year.description)")
-                            .font(.headline).multilineTextAlignment(.center).accessibilityIdentifier("calendarMonth")
-                        Spacer(minLength:0)
-                        Button {delta+=1;selected=nil} label: {Image(systemName:"chevron.forward").frame(minWidth:44,minHeight:44)}.accessibilityLabel("Next month")
-                    }.buttonStyle(.borderless)
-                    HStack {
-                        Text("Hijri · Gregorian").font(.caption).foregroundStyle(.secondary)
-                        Spacer()
-                        Button("Today") {delta=0;selected=nil}.buttonStyle(.bordered).controlSize(.small).accessibilityIdentifier("calendarToday")
-                    }
-                    if typeSize.isAccessibilitySize {
-                        ForEach(page.cells.filter { $0.inMonth },id:\.dateISO) {cell in
-                            Button {selected=cell} label: {
-                                HStack(alignment:.top) {
-                                    VStack(alignment:.leading,spacing:6) {
-                                        Text(cell.day.description).font(.headline.monospacedDigit())
-                                        Text(gregorian(cell.dateISO,full:true)).font(.body).foregroundStyle(.secondary)
-                                        ForEach(cell.observances,id:\.self) {Text(LocalizedStringKey($0))}
-                                    }
-                                    Spacer()
-                                    if cell.dateISO == model.religiousTodayISO {Text("Today").font(.caption).foregroundStyle(Color.accentColor)}
-                                    if selected?.dateISO == cell.dateISO {Image(systemName:"checkmark.circle.fill").foregroundStyle(Color.accentColor)}
-                                }.frame(maxWidth:.infinity,minHeight:44,alignment:.leading)
-                            }.buttonStyle(.plain)
+                    VStack(spacing:12) {
+                        HStack(spacing:8) {
+                            Button {navigate(-1,page:page)} label: {Image(systemName:"chevron.backward").frame(width:44,height:44)}.accessibilityLabel("Previous month")
+                            Spacer(minLength:0)
+                            Text("\(model.arabic ? page.titleArabic : page.titleEnglish) \(page.year.description)")
+                                .font(.headline).multilineTextAlignment(.center).accessibilityIdentifier("calendarMonth")
+                            Spacer(minLength:0)
+                            Button {navigate(1,page:page)} label: {Image(systemName:"chevron.forward").frame(width:44,height:44)}.accessibilityLabel("Next month")
+                        }.buttonStyle(.borderless)
+                        HStack(alignment:.center,spacing:8) {
+                            Stepper(value:Binding(get:{model.calendarOffset(pageMonthKey:page.monthKey)},set:{setOffset($0,page:page)}),in:-2...2) {
+                                VStack(alignment:.leading,spacing:3) {
+                                    Text("Hijri adjustment").font(.caption)
+                                    Text(model.calendarOffset(pageMonthKey:page.monthKey).formatted(.number.sign(strategy:.always()).locale(Locale(identifier:"en_US_POSIX"))))
+                                        .font(.subheadline.monospacedDigit()).environment(\.locale,Locale(identifier:"en_US_POSIX"))
+                                        .accessibilityIdentifier("calendarAdjustmentValue")
+                                }
+                            }.accessibilityIdentifier("calendarAdjustment")
+                            Button("Reset") {setOffset(0,page:page)}.font(.caption)
+                                .disabled(model.calendarOffset(pageMonthKey:page.monthKey) == 0)
+                                .accessibilityIdentifier("calendarReset")
                         }
-                    } else {
-                        LazyVGrid(columns:Array(repeating:GridItem(.flexible(),spacing:2),count:7),spacing:5) {
-                            ForEach(0..<7) {index in Text(weekday(index)).font(.caption).foregroundStyle(.secondary).frame(maxWidth:.infinity)}
-                            ForEach(page.cells,id:\.dateISO) {cell in
-                                Button {selected=cell} label: {
-                                    VStack(spacing:3) {
-                                        Text(cell.day.description).font(.body.monospacedDigit()).fontWeight(cell.dateISO == model.religiousTodayISO ? .bold : .regular)
-                                        Text(gregorian(cell.dateISO)).font(.system(size:10,weight:.medium)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.85)
-                                        Circle().fill(cell.observances.isEmpty ? .clear : Color.accentColor).frame(width:4,height:4)
-                                    }.frame(maxWidth:.infinity,minHeight:57)
-                                        .foregroundStyle(cell.inMonth ? Color.primary : Color.secondary)
-                                        .opacity(cell.inMonth ? 1 : 0.55)
-                                        .background(cell.dateISO == model.religiousTodayISO ? Color.accentColor.opacity(0.16) : .clear,in:RoundedRectangle(cornerRadius:10))
-                                        .overlay {RoundedRectangle(cornerRadius:10).stroke(selected?.dateISO == cell.dateISO ? Color.accentColor : .clear,lineWidth:1.5)}
-                                }.buttonStyle(.plain).accessibilityLabel("\(cell.day), \(gregorian(cell.dateISO,full:true))")
-                                    .accessibilityAddTraits(selected?.dateISO == cell.dateISO ? .isSelected : [])
-                            }
+                        HStack {
+                            Text("For this month").font(.caption).foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Today") {withAnimation(reduceMotion ? nil : .easeOut(duration:0.18)) {visibleMonth=nil;selected=nil}}
+                                .buttonStyle(.bordered).controlSize(.small).accessibilityIdentifier("calendarToday")
                         }
                     }
+                    calendarGrid(page)
+                        .contentShape(Rectangle())
+                        .simultaneousGesture(DragGesture(minimumDistance:30).onEnded {value in
+                            guard abs(value.translation.width)>50,abs(value.translation.width)>abs(value.translation.height)*1.6 else {return}
+                            let forward=model.arabic ? value.translation.width>0 : value.translation.width<0
+                            navigate(forward ? 1 : -1,page:page)
+                        })
                 }
                 if let selected {
                     Section(gregorian(selected.dateISO,full:true)) {
@@ -67,21 +62,15 @@ struct HijriView: View {
                         ForEach(selected.observances,id:\.self) {Text(LocalizedStringKey($0))}
                     }
                 }
-                Section {
-                    Text("\(model.arabic ? page.titleArabic : page.titleEnglish) \(page.year.description)").font(.subheadline).foregroundStyle(.secondary)
-                    Stepper(value:Binding(get:{model.calendarOffset(pageMonthKey:page.monthKey)},set:{model.setCalendarOffset(pageMonthKey:page.monthKey,value:$0);selected=nil}),in:-2...2) {
-                        LabeledContent("Hijri adjustment",value:model.calendarOffset(pageMonthKey:page.monthKey).description)
-                    }.accessibilityIdentifier("calendarAdjustment")
-                    Button("Reset this month") {model.setCalendarOffset(pageMonthKey:page.monthKey,value:0);selected=nil}
-                        .disabled(model.calendarOffset(pageMonthKey:page.monthKey) == 0)
-                    if let anchor=model.settings.hijriAnchor,anchor != page.monthKey,model.settings.hijriOffset != 0 {
-                        Text("Active adjustment: \(model.settings.hijriOffset) for AH \(anchor)").font(.footnote).foregroundStyle(.secondary)
-                        Button("Reset active adjustment") {model.setCalendarOffset(pageMonthKey:anchor,value:0);selected=nil}
-                            .accessibilityIdentifier("resetActiveHijriAdjustment")
+                if let anchor=model.settings.hijriAnchor,model.settings.hijriOffset != 0 {
+                    Section {
+                        Text("Active adjustment: \(model.settings.hijriOffset) for AH \(anchor)").font(.footnote)
+                        Text("Neighboring month boundaries reconcile the correction while keeping every month 29 or 30 days.").font(.footnote).foregroundStyle(.secondary)
+                        if anchor != page.monthKey {
+                            Button("Reset active adjustment") {model.setCalendarOffset(pageMonthKey:anchor,value:0);selected=nil}
+                                .accessibilityIdentifier("resetActiveHijriAdjustment")
+                        }
                     }
-                } header: {Text("Month adjustment")} footer: {
-                    Text("Local moon sighting may differ. This adjustment changes only the named Hijri month.")
-                    Text("The correction expires at the unadjusted month boundary. Some Hijri labels may repeat when it resets.")
                 }
                 Section {
                     Text("Umm al-Qura calendar").font(.footnote).foregroundStyle(.secondary)
@@ -89,12 +78,53 @@ struct HijriView: View {
                 }
             } else {ContentUnavailableView("Calendar unavailable",systemImage:"calendar.badge.exclamationmark")}
         }.navigationTitle("Hijri calendar").navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                if visibleMonth == nil,ProcessInfo.processInfo.arguments.contains("-uiTestingCalendarGeometry") {
+                    visibleMonth=HijriYearMonth(year:1448,month:11)
+                }
+            }
+    }
+    private func calendarGrid(_ page:CalendarPage)->some View {
+        LazyVGrid(columns:Array(repeating:GridItem(.flexible(minimum:0),spacing:2),count:7),spacing:5) {
+            ForEach(0..<7) {index in Text(weekday(index)).font(.caption).foregroundStyle(.secondary).frame(maxWidth:.infinity)}
+            ForEach(page.cells,id:\.dateISO) {cell in
+                Button {selected=cell} label: {
+                    VStack(spacing:3) {
+                        Text(cell.day.description).font(.system(size:min(dayFont,28),weight:cell.dateISO == model.religiousTodayISO ? .bold : .regular)).monospacedDigit()
+                        Text(gregorian(cell.dateISO)).font(.system(size:min(dateFont,14),weight:.medium)).monospacedDigit()
+                            .foregroundStyle(.secondary).environment(\.layoutDirection,.leftToRight).lineLimit(1).minimumScaleFactor(0.85)
+                        Circle().fill(cell.observances.isEmpty ? .clear : Color.accentColor).frame(width:4,height:4)
+                    }.frame(maxWidth:.infinity).frame(height:rowHeight)
+                        .foregroundStyle(cell.inMonth ? Color.primary : Color.secondary)
+                        .background(cell.dateISO == model.religiousTodayISO ? Color.accentColor.opacity(0.16) : .clear,in:RoundedRectangle(cornerRadius:10))
+                        .overlay {RoundedRectangle(cornerRadius:10).stroke(selected?.dateISO == cell.dateISO ? Color.accentColor : .clear,lineWidth:1.5)}
+                }.buttonStyle(.plain).accessibilityLabel("\(cell.day), \(gregorian(cell.dateISO,full:true))")
+                    .accessibilityIdentifier("calendarCell."+cell.dateISO)
+                    .accessibilityValue(gregorian(cell.dateISO))
+                    .accessibilityAddTraits(selected?.dateISO == cell.dateISO ? .isSelected : [])
+            }
+            // Reserve geometry only. Empty slots have no buttons, dates or accessibility nodes.
+            ForEach(page.cells.count..<42,id:\.self) {_ in
+                Color.clear.frame(height:rowHeight).allowsHitTesting(false).accessibilityHidden(true)
+            }
+        }.accessibilityElement(children:.contain).accessibilityIdentifier("calendarGrid").accessibilityValue(String(page.cells.count/7))
+    }
+    private func navigate(_ amount:Int32,page:CalendarPage) {
+        withAnimation(reduceMotion ? nil : .easeOut(duration:0.18)) {
+            visibleMonth=HijriYearMonth(year:page.year,month:page.month).plusMonths(amount:amount);selected=nil
+        }
+    }
+    private func setOffset(_ value:Int,page:CalendarPage) {
+        visibleMonth=HijriYearMonth(year:page.year,month:page.month)
+        model.setCalendarOffset(pageMonthKey:page.monthKey,value:value);selected=nil
     }
     private func gregorian(_ iso:String,full:Bool=false)->String {
+        let pieces=iso.split(separator:"-")
+        if !full,pieces.count == 3,let day=Int(pieces[2]),let month=Int(pieces[1]) {return "\(day)/\(month)"}
         let input=DateFormatter();input.locale=Locale(identifier:"en_US_POSIX");input.calendar=model.calendar;input.timeZone=model.zone;input.dateFormat="yyyy-MM-dd"
         guard let date=input.date(from:iso) else {return iso}
         let output=DateFormatter();output.locale=model.locale;output.calendar=model.calendar;output.timeZone=model.zone
-        output.setLocalizedDateFormatFromTemplate(full ? "EEEE d MMMM yyyy" : "d MMM")
+        output.setLocalizedDateFormatFromTemplate("EEEE d MMMM yyyy")
         return output.string(from:date)
     }
     private func weekday(_ index:Int)->String {

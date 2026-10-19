@@ -1,93 +1,171 @@
 import SwiftUI
 import ActivityKit
+import UserNotifications
 
-// Keep the existing per-prayer page and its choices. Phase2 adds only delivery
-// clarification, automatic countdown preference, real tests and local status.
 struct NotificationSettingsView: View {
     @EnvironmentObject var model:AppModel
+    @Environment(\.openURL) private var openURL
     @ObservedObject private var player=AdhanPlayer.shared
-    @ObservedObject private var scheduler=PrayerScheduler.shared
     @State private var authorization:String?
-    @State private var testPrayer="FAJR"
-    @State private var testDelivery:Delivery = .notification
-    @State private var testing=false
+    @State private var requesting=false
+    @State private var notificationDenied=false
     private let prayers=["FAJR","DHUHR","ASR","MAGHRIB","ISHA"]
+    private var notificationsSelected:Bool {model.settings.liveActivitiesEnabled || model.settings.policies.values.contains {$0.delivery == .notification || $0.reminder>0}}
+    private var alarmsSelected:Bool {model.settings.policies.values.contains {$0.delivery == .alarm}}
     var body:some View {
         Form {
             Section {
-                Button("Allow notifications") {Task {authorization=await model.scheduler.authorizeNotifications();model.queueRefresh()}}
-                Button("Allow system alarms") {Task {authorization=await model.scheduler.authorizeAlarms();model.queueRefresh()}}
-                if let authorization {Text(LocalizedStringKey(authorization)).font(.footnote)}
-            } footer: {Text("Notifications follow your system settings. System alarms require separate permission. No alerts are enabled by granting permission alone.")}
-            ForEach(prayers,id:\.self) {id in
-                Section(LocalizedStringKey(id)) {
-                    Picker("Delivery",selection:policy(id,\.delivery)) {
-                        Text("Off").tag(Delivery.off);Text("Notification").tag(Delivery.notification);Text("System alarm").tag(Delivery.alarm)
-                    }
-                    Picker("Sound",selection:policy(id,\.sound)) {
-                        Text("System sound").tag("default")
-                        if model.settings.policies[id]?.delivery != .alarm {Text("Silent").tag("silent")}
-                        else if model.settings.policies[id]?.sound == "silent" {
-                            Text(model.arabic ? "صامت — اختر صوتًا مسموعًا للمنبّه" : "Silent — choose an audible alarm sound").tag("silent")
-                        }
-                        if model.settings.policies[id]?.delivery == .alarm {
-                            ForEach(Recording.all) {Text(model.arabic ? $0.arabic : $0.english).tag($0.id)}
-                        } else if let selected=model.settings.policies[id]?.sound,Recording.all.contains(where:{$0.id == selected}) {
-                            // Preserve the user's old recording choice through upgrade.
-                            Text(model.arabic ? "الأذان المختار — صوت النظام للتنبيه مؤقتًا" : "Selected adhan — system notification sound for now").tag(selected)
-                        }
-                    }
-                    Stepper(value:policy(id,\.reminder),in:0...60,step:5) {
-                        LabeledContent("Reminder before prayer",value:(model.settings.policies[id]?.reminder ?? 0).description+" min")
-                    }
-                    if let sound=model.settings.policies[id]?.sound,Recording.all.contains(where:{$0.id == sound}) {
-                        Button("Play full adhan now") {player.play(sound)}
-                    }
-                    if model.settings.policies[id]?.delivery == .alarm {
-                        Text(model.arabic ? "يُرسل التسجيل الأصلي كاملًا إلى منبّه النظام. استمرار التشغيل الكامل أثناء القفل يحتاج إلى اختبار على هاتفك." : "The original full recording is requested from AlarmKit. Uninterrupted full playback while locked still needs testing on your phone.").font(.footnote).foregroundStyle(.secondary)
-                    }
+                ForEach(prayers,id:\.self) {id in
+                    NavigationLink {PrayerAlertDetailView(prayer:id)} label: {
+                        HStack {
+                            Text(LocalizedStringKey(id)).fontWeight(.medium)
+                            Spacer()
+                            Text(LocalizedStringKey(deliveryTitle(model.settings.policies[id]?.delivery ?? .off))).foregroundStyle(.secondary).font(.subheadline)
+                        }.padding(.vertical,4)
+                    }.accessibilityIdentifier("prayerAlert."+id)
                 }
-            }
-            Section(model.arabic ? "التذكير والأنشطة المباشرة" : "Reminders and Live Activities") {
-                Toggle(model.arabic ? "عدّ تنازلي تلقائي قبل الصلاة بـ 15 دقيقة" : "Automatic countdown 15 minutes before prayer",isOn:$model.settings.liveActivitiesEnabled)
-                Toggle(model.arabic ? "صوت النظام للتذكير المسبق" : "System sound for advance reminders",isOn:$model.settings.reminderSound)
+            } header:{Text("Prayer alerts")} footer:{Text("Choose delivery and sound for each prayer. Off means no prayer alert; advance reminders are a separate choice.")}
+            Section {
+                Toggle("Automatic prayer countdown",isOn:$model.settings.liveActivitiesEnabled)
+                Toggle("Sound for advance reminders",isOn:$model.settings.reminderSound)
                 if model.settings.liveActivitiesEnabled && !ActivityAuthorizationInfo().areActivitiesEnabled {
-                    Text(model.arabic ? "الأنشطة المباشرة غير مسموحة في إعدادات iOS. سيُستخدم تنبيه تذكير بديل." : "Live Activities are disabled in iOS Settings. A conventional reminder is used instead.").font(.footnote)
+                    Label("Allow Live Activities in iOS Settings to show the countdown.",systemImage:"info.circle").font(.footnote)
+                    settingsButton
                 }
-                Text(model.arabic ? "يُجهّز العدّ التنازلي أثناء فتح التطبيق ويبدأ تلقائيًا عند الموعد. عند تعذّر تجهيزه يُستخدم تذكير عادي. قد يبقى النشاط منتهي الصلاحية حتى يتيح النظام للتطبيق تنفيذه مجددًا." : "Countdowns are prepared while Salati is open and start automatically at their scheduled time. A notification is used if preparation fails. An expired activity may remain until iOS lets the app execute again.").font(.footnote).foregroundStyle(.secondary)
+            } header:{Text("Countdown and reminders")} footer:{Text("The countdown starts 15 minutes before prayer. If it cannot start, Salati uses a notification reminder when permitted.")}
+            if notificationsSelected || alarmsSelected {
+                Section {
+                    if notificationsSelected {
+                        if notificationDenied {
+                            Label("Notifications are turned off in iOS Settings.",systemImage:"bell.slash").font(.callout)
+                            settingsButton
+                        } else {
+                            Button("Allow notifications") {requestPermission(alarm:false)}.disabled(requesting)
+                        }
+                    }
+                    if alarmsSelected {Button("Allow system alarms") {requestPermission(alarm:true)}.disabled(requesting)}
+                    if requesting {ProgressView()}
+                    if let authorization {Text(LocalizedStringKey(authorization)).font(.footnote)}
+                } header:{Text("Permissions")} footer:{Text("Permission applies to the choices above. It does not enable other prayer alerts.")}
             }
-            Section(model.arabic ? "اختبار تنبيه مجدول" : "Scheduled test alert") {
-                Picker(model.arabic ? "مسار الاختبار" : "Test delivery",selection:$testDelivery) {
-                    Text("Notification").tag(Delivery.notification);Text("System alarm").tag(Delivery.alarm)
+            Section {
+                NavigationLink {ScheduledAlertTestView()} label:{Label("Test an alert",systemImage:"bell.badge")}
+                NavigationLink {AdhanPreviewView()} label:{Label("Listen to adhan",systemImage:"play.circle")}
+            } header:{Text("Try your settings")} footer:{Text("Test an alert for delivery in one minute, or listen to a recording immediately.")}
+            if player.isPlaying {Section {Button("Stop playback",systemImage:"stop.circle.fill") {player.stop()}}}
+            if player.error != nil {Section {Label("The recording could not play. Try another recording.",systemImage:"exclamationmark.circle").font(.footnote)}}
+            Section {
+                Text("Open Salati regularly to keep future alerts ready.").font(.footnote).foregroundStyle(.secondary)
+                NavigationLink("Alert status and diagnostics") {SchedulingDiagnosticsView()}
+            }
+        }.navigationTitle("Notifications and adhan").navigationBarTitleDisplayMode(.inline)
+            .task {await readPermission()}
+    }
+    private var settingsButton:some View {Button("Open iOS Settings") {if let url=URL(string:UIApplication.openSettingsURLString) {openURL(url)}}}
+    private func deliveryTitle(_ delivery:Delivery)->String {switch delivery {case .off:"Off";case .notification:"Notification";case .alarm:"System alarm"}}
+    private func readPermission() async {let settings=await UNUserNotificationCenter.current().notificationSettings();notificationDenied=settings.authorizationStatus == .denied}
+    private func requestPermission(alarm:Bool) {
+        requesting=true
+        Task {if alarm {authorization=await model.scheduler.authorizeAlarms()}else {authorization=await model.scheduler.authorizeNotifications()};requesting=false;await readPermission();model.queueRefresh()}
+    }
+}
+
+private struct PrayerAlertDetailView:View {
+    @EnvironmentObject var model:AppModel
+    @ObservedObject private var player=AdhanPlayer.shared
+    let prayer:String
+    private var selection:PrayerPolicy {model.settings.policies[prayer] ?? PrayerPolicy()}
+    var body:some View {
+        Form {
+            Section {
+                Picker("Delivery",selection:policy(\.delivery)) {
+                    Text("Off").tag(Delivery.off);Text("Notification").tag(Delivery.notification);Text("System alarm").tag(Delivery.alarm)
+                }.accessibilityIdentifier("alertDelivery")
+            } footer:{Text("Notifications follow your iPhone sound settings. System alarms use a separate permission.")}
+            if selection.delivery != .off {
+                Section {
+                    Picker("Sound",selection:policy(\.sound)) {
+                        Text("System sound").tag("default")
+                        if selection.delivery != .alarm {Text("Silent").tag("silent")}
+                        else if selection.sound == "silent" {Text("Choose an audible alarm sound").tag("silent")}
+                        if selection.delivery == .alarm {
+                            ForEach(Recording.all) {Text(model.arabic ? $0.arabic:$0.english).tag($0.id)}
+                        } else if Recording.all.contains(where:{$0.id == selection.sound}) {
+                            Text("Selected adhan — system notification sound for now").tag(selection.sound)
+                        }
+                    }
+                    if Recording.all.contains(where:{$0.id == selection.sound}) {
+                        Button("Play full adhan now",systemImage:"play.circle") {player.play(selection.sound)}
+                    }
+                } header:{Text("Sound")} footer:{
+                    Text(LocalizedStringKey(selection.delivery == .alarm ? "The selected full recording is prepared for the alarm. Use Test an alert to check playback on your iPhone.":"Notifications use the system sound or silence. Full adhan recordings are available with system alarms and in Listen to adhan."))
                 }
-                Picker(model.arabic ? "استخدام إعداد صوت الصلاة" : "Use prayer sound preference",selection:$testPrayer) {
-                    ForEach(prayers,id:\.self) {Text(LocalizedStringKey($0)).tag($0)}
+            }
+            Section {
+                Stepper(value:policy(\.reminder),in:0...60,step:5) {
+                    LabeledContent("Reminder before prayer") {
+                        if selection.reminder == 0 {Text("Off")}else {Text("\(selection.reminder) min").monospacedDigit()}
+                    }
                 }
-                Button(model.arabic ? "اختبار بعد دقيقة — اقفل الهاتف" : "Test in one minute — lock the phone") {
+            } header:{Text("Advance reminder")} footer:{Text("Advance reminders use the system sound or silence, never adhan.")}
+            if player.isPlaying {Section {Button("Stop playback",systemImage:"stop.circle.fill") {player.stop()}}}
+        }.navigationTitle(LocalizedStringKey(prayer)).navigationBarTitleDisplayMode(.inline)
+    }
+    private func policy<T>(_ keyPath:WritableKeyPath<PrayerPolicy,T>)->Binding<T> {
+        Binding(get:{selection[keyPath:keyPath]},set:{value in var p=selection;p[keyPath:keyPath]=value;model.settings.policies[prayer]=p})
+    }
+}
+
+private struct AdhanPreviewView:View {
+    @EnvironmentObject var model:AppModel
+    @ObservedObject private var player=AdhanPlayer.shared
+    var body:some View {
+        List {
+            Section {ForEach(Recording.all) {recording in
+                Button {player.play(recording.id)} label:{Label(model.arabic ? recording.arabic:recording.english,systemImage:"play.circle")}.padding(.vertical,4)
+            }} footer:{Text("Plays immediately. Listening does not change your prayer alert settings.")}
+            if player.isPlaying {Section {Button("Stop playback",systemImage:"stop.circle.fill") {player.stop()}}}
+            if player.error != nil {Section {Text("The recording could not play. Try another recording.").foregroundStyle(.secondary)}}
+        }.navigationTitle("Listen to adhan").navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct ScheduledAlertTestView:View {
+    @EnvironmentObject var model:AppModel
+    @ObservedObject private var scheduler=PrayerScheduler.shared
+    @State private var testPrayer="FAJR"
+    @State private var testDelivery:Delivery = .notification
+    @State private var testing=false
+    @State private var authorization:String?
+    @State private var requesting=false
+    var body:some View {
+        Form {
+            Section {
+                Picker("Delivery",selection:$testDelivery) {Text("Notification").tag(Delivery.notification);Text("System alarm").tag(Delivery.alarm)}
+                Picker("Use prayer sound preference",selection:$testPrayer) {
+                    ForEach(["FAJR","DHUHR","ASR","MAGHRIB","ISHA"],id:\.self) {Text(LocalizedStringKey($0)).tag($0)}
+                }
+            } footer:{Text("This test uses the chosen prayer’s sound. Your prayer schedule stays unchanged.")}
+            Section {
+                Button(LocalizedStringKey(testDelivery == .alarm ? "Allow system alarms":"Allow notifications")) {
+                    requesting=true
+                    Task {
+                        if testDelivery == .alarm {authorization=await scheduler.authorizeAlarms()}
+                        else {authorization=await scheduler.authorizeNotifications()}
+                        requesting=false;model.queueRefresh()
+                    }
+                }.disabled(requesting)
+                if let authorization {Text(LocalizedStringKey(authorization)).font(.footnote)}
+                Button("Test in one minute — lock the phone") {
                     testing=true
                     let sound=model.settings.policies[testPrayer]?.sound ?? "default"
                     Task {await scheduler.scheduleTest(delivery:testDelivery,sound:sound,settings:model.settings);testing=false}
                 }.disabled(testing).accessibilityIdentifier("scheduleTestAlert")
-                Button(model.arabic ? "إلغاء تنبيهات الاختبار" : "Cancel test alerts") {Task {await scheduler.cancelTests()}}
+                if testing {ProgressView()}
+                Button("Cancel test alerts",role:.destructive) {Task {await scheduler.cancelTests()}}
                 if let status=scheduler.testStatus {Text(LocalizedStringKey(status)).font(.footnote)}
-                Text(model.arabic ? "هذا تنبيه فعلي مجدول، وليس معاينة صوت فورية. له معرّفات منفصلة ولا يغيّر مواعيد الصلاة." : "This uses the real scheduled delivery path, not an immediate audio preview. Separate test identities preserve your prayer schedule.").font(.footnote).foregroundStyle(.secondary)
-            }
-            if player.isPlaying {
-                Section {Button("Stop playback") {player.stop()}}
-            }
-            Section {
-                Text(model.arabic ? "التنبيهات العادية تستخدم صوت النظام مؤقتًا أو الصمت حسب اختيارك. لم نعد نستخدم مقاطع الأذان المقتطعة. ننتظر تحديد مقطع قصير معتمد." : "Ordinary notifications temporarily use the system sound, or silence if selected. Arbitrary adhan excerpts are no longer used; an approved short recording is pending.")
-                Text(model.arabic ? "تُجهَّز مواعيد متغيرة حسب سعة كل واجهة في iOS. افتح صلاتي بانتظام لتجديدها؛ تحديث الخلفية غير مضمون." : "Changing prayer times are prepared within each iOS API's capacity. Open Salati regularly to replenish them; background refresh is best effort.")
-                if let status=model.scheduleStatus {Text(status)}
-                if let error=player.error {Text(error).foregroundStyle(.red)}
-                NavigationLink(model.arabic ? "تشخيص الجدولة المحلي" : "Local scheduling diagnostics") {SchedulingDiagnosticsView()}
-            }.font(.footnote).foregroundStyle(.secondary)
-        }.navigationTitle("Notifications and adhan").navigationBarTitleDisplayMode(.inline)
-        // Deliberate user playback continues across navigation; only explicit
-        // stop, completion or a real audio interruption ends it.
-    }
-    private func policy<T>(_ id:String,_ keyPath:WritableKeyPath<PrayerPolicy,T>) -> Binding<T> {
-        Binding(get:{(model.settings.policies[id] ?? PrayerPolicy())[keyPath:keyPath]},set:{value in var p=model.settings.policies[id] ?? PrayerPolicy();p[keyPath:keyPath]=value;model.settings.policies[id]=p})
+            } footer:{Text("Allow the selected delivery type, then start the test and lock your iPhone.")}
+        }.navigationTitle("Test an alert").navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -98,6 +176,7 @@ private struct SchedulingDiagnosticsView:View {
         ScrollView {
             VStack(alignment:.leading,spacing:16) {
                 Text(model.arabic ? "سجل محلي فقط. قبول الموعد من النظام لا يثبت وقت الصوت أو التسليم الفعلي. لا تعرض استجابة المستخدم على أنها وقت وصول التنبيه." : "Stored only on this phone. Scheduling acceptance does not prove audible delivery. A notification response records user interaction, not the actual delivery instant.").font(.callout)
+                if let status=model.scheduleStatus {Text(status).font(.callout)}
                 ShareLink(item:scheduler.diagnosticsText) {Label(model.arabic ? "مشاركة السجل" : "Share local log",systemImage:"square.and.arrow.up")}
                 Text(scheduler.diagnosticsText.isEmpty ? "—" : scheduler.diagnosticsText).font(.caption.monospaced()).textSelection(.enabled).environment(\.layoutDirection,.leftToRight)
                 Button(model.arabic ? "مسح السجل المحلي" : "Clear local log",role:.destructive) {scheduler.clearDiagnostics()}

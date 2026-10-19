@@ -77,8 +77,7 @@ struct LocationFix {
         Task {@MainActor [weak self] in self?.accuracy=accuracy;self?.heading=accuracy>=0 && heading>=0 ? heading:nil}
     }
     nonisolated func locationManager(_ manager:CLLocationManager,didFailWithError error:Error) {
-        let text=error.localizedDescription
-        Task {@MainActor [weak self] in self?.finish(text)}
+        Task {@MainActor [weak self] in self?.finish("Location could not be found. Try again or choose a city.")}
     }
     nonisolated func locationManagerShouldDisplayHeadingCalibration(_ manager:CLLocationManager)->Bool {true}
 }

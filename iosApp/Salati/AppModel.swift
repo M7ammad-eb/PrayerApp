@@ -13,6 +13,10 @@ import CoreLocation
     @Published var day: PrayerDay?
     @Published var error: String?
     @Published var scheduleStatus: String?
+    @Published var presentationSnapshot: ScheduleSnapshot?
+    @Published var onboardingStep=0
+    @Published var reviewingSetup=false
+    @Published var setupReviewStep=0
     private var refreshTask: Task<Void,Never>?
     private var boundaryTask: Task<Void,Never>?
     private var generation=0
@@ -51,6 +55,15 @@ import CoreLocation
         if ProcessInfo.processInfo.arguments.contains("-uiTestingGPSDenied") {
             locationService.status("Location access is unavailable. Choose a city or enter coordinates.")
         }
+        if ProcessInfo.processInfo.arguments.contains("-uiTestingGPSLoading") {
+            locationService.isAcquiring=true;locationService.message="Finding your location…"
+        }
+        if ProcessInfo.processInfo.arguments.contains("-uiTestingGPSPermission") {
+            locationService.isAcquiring=true;locationService.message="Requesting location permission…"
+        }
+        if ProcessInfo.processInfo.arguments.contains("-uiTestingGPSTimeout") {
+            locationService.status("Location request timed out. Try again or choose a city.")
+        }
         locationService.onFix = { [weak self] fix,explicit in
             guard let self else {return}
             let revision=self.locationGeneration
@@ -66,14 +79,23 @@ import CoreLocation
                     var location=place.location;location.latitude=fix.latitude;location.longitude=fix.longitude
                     location.isGPS=true;location.nearestDistance=distance;location.lastUpdated=fix.timestamp;location.accuracyMeters=fix.accuracy
                     self.select(location);self.locationService.status("Location updated from GPS.",date:fix.timestamp)
-                } catch {self.locationService.status("Offline place lookup failed. Try again or select a location manually.");self.error=error.localizedDescription}
+                } catch {self.locationService.status("Offline place lookup failed. Try again or select a location manually.");self.error=String(localized:"Prayer times could not be updated. Check your location and calculation settings.",locale:locale)}
             }
         }
     }
     func select(_ location:SavedLocation) {
         locationGeneration+=1;locationService.cancel()
-        if settings.location == nil {settings.method=engine.suggestedMethod(zone:location.zone)}
         settings.location=location
+        applyOnboardingDefaults()
+    }
+    var onboardingDefaultsAreFallback:Bool {
+        OnboardingDefaults.shared.recommendation(zone:settings.location?.zone ?? "UTC").fallback
+    }
+    func applyOnboardingDefaults() {
+        guard let location=settings.location else {return}
+        let defaults=OnboardingDefaults.shared.resolve(zone:location.zone,currentMethod:settings.method,currentHanafi:settings.hanafi,
+            methodOverridden:settings.calculationMethodOverridden,asrOverridden:settings.asrOverridden,completed:settings.onboardingComplete)
+        var updated=settings;updated.method=defaults.method;updated.hanafi=defaults.hanafi;settings=updated
     }
     func iso(_ date: Date) -> String {
         let f=DateFormatter(); f.locale=Locale(identifier:"en_US_POSIX"); f.calendar=calendar; f.timeZone=zone; f.dateFormat="yyyy-MM-dd"; return f.string(from:date)
@@ -97,6 +119,33 @@ import CoreLocation
             fajr:Int32(a[0]),sunrise:Int32(a[1]),dhuhr:Int32(a[2]),asr:Int32(a[3]),maghrib:Int32(a[4]),isha:Int32(a[5]),
             hijriOffset:Int32(settings.hijriOffset),hijriAnchor:settings.hijriAnchor,nowEpoch:now.timeIntervalSince1970)
     }
+    private func makeSnapshot(schedules:[PrayerDay],now:Date,until:Date,configuration:Settings)->ScheduleSnapshot {
+        func events(_ schedule:PrayerDay)->[SnapshotEvent] {
+            schedule.events.map {SnapshotEvent(id:"\(schedule.dateISO).\($0.id)",title:title($0),date:Date(timeIntervalSince1970:$0.epochSeconds),timeText:time($0.epochSeconds))}
+        }
+        let all=schedules.flatMap(events)
+        let moments=SharedPresentation.shared.timeline(days:schedules,nowEpoch:now.timeIntervalSince1970,validUntilEpoch:until.timeIntervalSince1970).map {
+            SnapshotMoment(date:Date(timeIntervalSince1970:$0.epochSeconds),civilDateISO:$0.civilDateISO,religiousDateISO:$0.religiousDateISO,
+                hijriEnglish:$0.hijriEnglish,hijriArabic:$0.hijriArabic,currentEventID:$0.currentEventID,nextEventID:$0.nextEventID,
+                displayEventIDs:$0.displayEventIDs,tomorrowEventID:$0.tomorrowEventID,previousEventID:$0.previousEventID)
+        }
+        let days=schedules.map {SnapshotDay(dateISO:$0.dateISO,start:Date(timeIntervalSince1970:$0.civilStartEpoch),end:Date(timeIntervalSince1970:$0.civilEndEpoch),
+            hijriEnglish:$0.civilHijriEnglish,hijriArabic:$0.civilHijriArabic,events:events($0))}
+        return ScheduleSnapshot(city:locationDisplayName,events:all,validUntil:until,language:configuration.language,use24Hour:configuration.use24Hour,days:days,moments:moments,zone:zone.identifier)
+    }
+    // Render-test inputs go through the production Kotlin calculator and presentation policy.
+    // These fixtures never replace the persisted widget schedule.
+    func showcaseSnapshot(phase:String)->(snapshot:ScheduleSnapshot,date:Date)? {
+        guard ProcessInfo.processInfo.arguments.contains("-uiTestingShowcase"),
+              let baseDate=calendar.date(from:DateComponents(year:2026,month:10,day:19)),
+              let base=try? calculate(baseDate,now:baseDate) else {return nil}
+        let instant=Date(timeIntervalSince1970:phase == "afterIsha" ? base.events.last!.epochSeconds+60:base.civilStartEpoch+300)
+        let schedules=(-1...2).compactMap {delta -> PrayerDay? in
+            guard let date=calendar.date(byAdding:.day,value:delta,to:instant) else {return nil}
+            return try? calculate(date,now:instant)
+        }
+        return (makeSnapshot(schedules:schedules,now:instant,until:instant.addingTimeInterval(86400),configuration:settings),instant)
+    }
     func queueRefresh() {
         refreshTask?.cancel()
         refreshTask=Task {
@@ -114,23 +163,15 @@ import CoreLocation
                 guard let date=calendar.date(byAdding:.day,value:delta,to:now) else {continue}
                 schedules.append(try calculate(date,now:now))
             }
-            func events(_ schedule:PrayerDay)->[SnapshotEvent] {
-                schedule.events.map {SnapshotEvent(id:"\(schedule.dateISO).\($0.id)",title:title($0),date:Date(timeIntervalSince1970:$0.epochSeconds),timeText:time($0.epochSeconds))}
-            }
-            let all=schedules.flatMap(events)
             let until=calendar.date(byAdding:.day,value:14,to:calendar.startOfDay(for:now))!
-            let moments=SharedPresentation.shared.timeline(days:schedules,nowEpoch:now.timeIntervalSince1970,validUntilEpoch:until.timeIntervalSince1970).map {
-                SnapshotMoment(date:Date(timeIntervalSince1970:$0.epochSeconds),civilDateISO:$0.civilDateISO,religiousDateISO:$0.religiousDateISO,
-                    hijriEnglish:$0.hijriEnglish,hijriArabic:$0.hijriArabic,currentEventID:$0.currentEventID,nextEventID:$0.nextEventID)
-            }
-            let days=schedules.map {SnapshotDay(dateISO:$0.dateISO,start:Date(timeIntervalSince1970:$0.civilStartEpoch),end:Date(timeIntervalSince1970:$0.civilEndEpoch),
-                hijriEnglish:$0.civilHijriEnglish,hijriArabic:$0.civilHijriArabic,events:events($0))}
-            let snapshot=ScheduleSnapshot(city:locationDisplayName,events:all,validUntil:until,language:configuration.language,use24Hour:configuration.use24Hour,days:days,moments:moments,zone:zone.identifier)
+            let snapshot=makeSnapshot(schedules:schedules,now:now,until:until,configuration:configuration)
+            let all=snapshot.events
+            presentationSnapshot=snapshot
             var storageStatus:String?
             do {try snapshot.save();WidgetCenter.shared.reloadAllTimelines()}
             catch {storageStatus=String(localized:"Widget storage is unavailable. The app and widget must share the same signed App Group.",locale:locale)}
             boundaryTask?.cancel()
-            if let next=moments.first(where:{$0.date>now}) {
+            if let next=snapshot.moments.first(where:{$0.date>now}) {
                 boundaryTask=Task {[weak self] in
                     do {try await Task.sleep(for:.seconds(max(1,next.date.timeIntervalSinceNow)));try Task.checkCancellation();self?.queueRefresh()}
                     catch {}
@@ -148,6 +189,6 @@ import CoreLocation
             guard generation == revision else {return}
             let status=[result,storageStatus].compactMap {$0}.filter {!$0.isEmpty}.joined(separator:" ")
             scheduleStatus=status.isEmpty ? nil:status;error=nil;AppDelegate.requestRefresh()
-        } catch is CancellationError {} catch {if generation == revision {self.error=error.localizedDescription}}
+        } catch is CancellationError {} catch {if generation == revision {self.error=String(localized:"Prayer times could not be updated. Check your location and calculation settings.",locale:locale)}}
     }
 }

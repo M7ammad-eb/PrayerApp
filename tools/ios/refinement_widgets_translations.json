@@ -1,0 +1,22 @@
+{
+  "Prayer times · Horizontal": "مواقيت الصلاة · أفقي",
+  "Your next prayer above a horizontal daily schedule.": "الصلاة القادمة فوق جدول أفقي للمواقيت اليومية.",
+  "Tomorrow": "غدًا",
+  "At %@": "عند %@",
+  "Remaining": "المتبقي",
+  "Horizontal · Medium": "أفقي · متوسط",
+  "Horizontal · Large": "أفقي · كبير",
+  "After Isha · Standard": "بعد العشاء · المعتاد",
+  "After Isha · Horizontal": "بعد العشاء · أفقي",
+  "After midnight · Standard": "بعد منتصف الليل · المعتاد",
+  "After midnight · Horizontal": "بعد منتصف الليل · أفقي",
+  "Open preview": "فتح المعاينة",
+  "App-rendered preview": "معاينة داخل التطبيق",
+  "Overnight scenarios use a fixed calculation date and a static remaining duration.": "تستخدم المعاينات الليلية تاريخ حساب ثابتًا ومدة متبقية ثابتة.",
+  "System placement and Dynamic Island geometry require separate verification.": "يتطلب موضع العرض في النظام وأبعاد الجزيرة الديناميكية تحققًا منفصلًا.",
+  "Start system Live Activity preview": "بدء معاينة نشاط مباشر في النظام",
+  "Clean up preview": "إنهاء المعاينة",
+  "Preview ended": "انتهت المعاينة",
+  "Live Activities are disabled": "الأنشطة المباشرة غير مفعلة",
+  "System Live Activity preview started": "بدأت معاينة النشاط المباشر في النظام"
+}

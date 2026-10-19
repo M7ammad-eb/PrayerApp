@@ -23,6 +23,9 @@ struct SnapshotMoment: Codable {
     let hijriArabic: String
     let currentEventID: String?
     let nextEventID: String?
+    var displayEventIDs: [String]? = nil
+    var tomorrowEventID: String? = nil
+    var previousEventID: String? = nil
 }
 // AltStore records signed groups in ALTAppGroups. iLoader instead derives the group
 // from the rewritten parent app ID. Both routes still require signed entitlement access.
@@ -107,6 +110,11 @@ struct ScheduleSnapshot: Codable {
     func day(at date:Date) -> SnapshotDay? {
         if let civil=moment(at:date)?.civilDateISO {return days.first {$0.dateISO == civil}}
         return days.first {$0.start<=date && date<$0.end}
+    }
+    func displayEvents(at date:Date) -> [SnapshotEvent] {
+        guard let ids=moment(at:date)?.displayEventIDs else {return day(at:date)?.events ?? []}
+        let byID=Dictionary(events.map {($0.id,$0)},uniquingKeysWith:{first,_ in first})
+        return ids.compactMap {byID[$0]}
     }
 }
 struct PrayerActivityAttributes: ActivityAttributes {

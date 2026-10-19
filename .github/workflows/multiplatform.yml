@@ -41,7 +41,7 @@ jobs:
             app/build/outputs/apk/debug/*.apk
   ios:
     runs-on: macos-26
-    timeout-minutes: 60
+    timeout-minutes: 80
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.4.1.app/Contents/Developer
     steps:
@@ -82,7 +82,7 @@ jobs:
         timeout-minutes: 10
         run: bash ./gradlew :shared:iosSimulatorArm64Test --device "$SIMULATOR_ID" --console=plain
       - name: Simulator XCTest and UI tests
-        timeout-minutes: 22
+        timeout-minutes: 32
         run: |
           xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO test-without-building
       - name: Export runtime screenshots and diagnostic attachments

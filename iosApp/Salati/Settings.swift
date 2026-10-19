@@ -22,6 +22,8 @@ struct Settings: Codable, Equatable {
     var location: SavedLocation?
     var method = "UMM_AL_QURA"
     var hanafi = false
+    var calculationMethodOverridden = false
+    var asrOverridden = false
     var highLatitude = "ANGLE_BASED"
     var adjustments = [Int](repeating: 0, count: 6)
     var hijriOffset = 0
@@ -35,7 +37,7 @@ struct Settings: Codable, Equatable {
     var policies = Dictionary(uniqueKeysWithValues: ["FAJR","DHUHR","ASR","MAGHRIB","ISHA"].map { ($0, PrayerPolicy()) })
     init() {}
     enum CodingKeys: String, CodingKey {
-        case location,method,hanafi,highLatitude,adjustments,hijriOffset,hijriAnchor,language,appearance,use24Hour,onboardingComplete,policies,liveActivitiesEnabled,reminderSound
+        case calculationMethodOverridden,asrOverridden,location,method,hanafi,highLatitude,adjustments,hijriOffset,hijriAnchor,language,appearance,use24Hour,onboardingComplete,policies,liveActivitiesEnabled,reminderSound
     }
     init(from decoder:Decoder) throws {
         self.init()
@@ -51,6 +53,10 @@ struct Settings: Codable, Equatable {
         appearance=try c.decodeIfPresent(String.self,forKey:.appearance) ?? appearance
         use24Hour=try c.decodeIfPresent(Bool.self,forKey:.use24Hour) ?? use24Hour
         onboardingComplete=try c.decodeIfPresent(Bool.self,forKey:.onboardingComplete) ?? onboardingComplete
+        // Legacy persisted choices have no override flags; conservatively preserve them,
+        // even when an older setup was not completed. New saves carry explicit flags.
+        calculationMethodOverridden=try c.decodeIfPresent(Bool.self,forKey:.calculationMethodOverridden) ?? (onboardingComplete || c.contains(.method))
+        asrOverridden=try c.decodeIfPresent(Bool.self,forKey:.asrOverridden) ?? (onboardingComplete || c.contains(.hanafi))
         policies=try c.decodeIfPresent([String:PrayerPolicy].self,forKey:.policies) ?? policies
         liveActivitiesEnabled=try c.decodeIfPresent(Bool.self,forKey:.liveActivitiesEnabled) ?? false
         reminderSound=try c.decodeIfPresent(Bool.self,forKey:.reminderSound) ?? true

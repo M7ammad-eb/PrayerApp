@@ -16,6 +16,8 @@ translations.update({'Welcome to Salati': 'مرحبًا بك في صلاتي', '
 translations.update({'Offline manual location':'موقع مُختار يدويًا دون اتصال','Using exact GPS coordinates':'تُستخدم إحداثيات GPS الدقيقة','Nearest offline city: %@ · %@ km':'أقرب مدينة في قاعدة البيانات: %@ · %@ كم'})
 methods={'MUSLIM_WORLD_LEAGUE':'mwl','ISNA':'isna','EGYPTIAN':'egyptian','UMM_AL_QURA':'umm_al_qura','KARACHI':'karachi','TEHRAN':'tehran','SHIA_ITHNA_ASHARI':'shia_ithna_ashari','GULF':'gulf','KUWAIT':'kuwait','QATAR':'qatar','SINGAPORE':'singapore','TURKEY':'turkey','FRANCE_UOIF':'france_uoif','RUSSIA':'russia'}
 observances={'HIJRI_NEW_YEAR':'new_year','TASUA':'tasua','ASHURA':'ashura','WHITE_DAY':'white_day','RAMADAN':'ramadan','RAMADAN_START':'ramadan_start','RAMADAN_LAST_TEN_NIGHTS':'last_ten_nights','RAMADAN_ODD_NIGHT':'odd_night','EID_AL_FITR':'eid_fitr','FIRST_TEN_DHU_AL_HIJJAH':'first_ten_dhul_hijjah','TARWIYAH':'tarwiyah','ARAFAH':'arafah','EID_AL_ADHA':'eid_adha','TASHREEQ':'tashreeq','FASTING_PROHIBITED':'fasting_prohibited'}
+for source in sorted(Path('tools/ios').glob('refinement_*_translations.json')):
+ translations.update(json.loads(source.read_text(encoding='utf-8')))
 for lang,folder in [('en','values'),('ar','values-ar')]:
  catalog={e.attrib['name']:''.join(e.itertext()) for e in ET.parse(f'app/src/main/res/{folder}/strings.xml').getroot() if e.tag=='string'}
  strings={k:(v if lang=='ar' else k) for k,v in translations.items()}
