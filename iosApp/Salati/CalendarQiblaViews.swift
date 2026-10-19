@@ -4,11 +4,14 @@ import SalatiCore
 struct HijriView: View {
     @EnvironmentObject var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo:.body) private var rowHeight:CGFloat=58
     @ScaledMetric(relativeTo:.body) private var dayFont:CGFloat=18
     @ScaledMetric(relativeTo:.caption2) private var dateFont:CGFloat=10
     @State private var visibleMonth:HijriYearMonth?
     @State private var selected:CalendarCell?
+    // Cell fonts are bounded for seven readable columns; keep their padding bounded too.
+    private var cellHeight:CGFloat {min(rowHeight,80)}
     private var page: CalendarPage? {
         if let visibleMonth {return try? model.engine.calendarMonth(year:visibleMonth.year,month:visibleMonth.month,storedOffset:Int32(model.settings.hijriOffset),anchor:model.settings.hijriAnchor)}
         return model.calendarPage(monthDelta:0)
@@ -26,15 +29,19 @@ struct HijriView: View {
                             Spacer(minLength:0)
                             Button {navigate(1,page:page)} label: {Image(systemName:"chevron.forward").frame(width:44,height:44)}.accessibilityLabel("Next month")
                         }.buttonStyle(.borderless)
+                        if dynamicTypeSize.isAccessibilitySize {
+                            Text("Hijri adjustment").font(.caption).frame(maxWidth:.infinity,alignment:.leading)
+                                .fixedSize(horizontal:false,vertical:true)
+                        }
                         HStack(alignment:.center,spacing:8) {
                             Stepper(value:Binding(get:{model.calendarOffset(pageMonthKey:page.monthKey)},set:{setOffset($0,page:page)}),in:-2...2) {
                                 VStack(alignment:.leading,spacing:3) {
-                                    Text("Hijri adjustment").font(.caption)
+                                    if !dynamicTypeSize.isAccessibilitySize {Text("Hijri adjustment").font(.caption)}
                                     Text(model.calendarOffset(pageMonthKey:page.monthKey).formatted(.number.sign(strategy:.always()).locale(Locale(identifier:"en_US_POSIX"))))
                                         .font(.subheadline.monospacedDigit()).environment(\.locale,Locale(identifier:"en_US_POSIX"))
                                         .accessibilityIdentifier("calendarAdjustmentValue")
                                 }
-                            }.accessibilityIdentifier("calendarAdjustment")
+                            }.accessibilityLabel(Text("Hijri adjustment")).accessibilityIdentifier("calendarAdjustment")
                             Button("Reset") {setOffset(0,page:page)}.font(.caption)
                                 .disabled(model.calendarOffset(pageMonthKey:page.monthKey) == 0)
                                 .accessibilityIdentifier("calendarReset")
@@ -56,7 +63,7 @@ struct HijriView: View {
                 }
                 if let selected {
                     Section(gregorian(selected.dateISO,full:true)) {
-                        Text("Hijri day: \(selected.day.description)").font(.headline)
+                        LabeledContent("Hijri day") {Text(selected.day.description).environment(\.layoutDirection,.leftToRight)}.font(.headline)
                         if selected.dateISO == model.religiousTodayISO {Label("Today",systemImage:"sun.horizon")}
                         if selected.observances.isEmpty {Text("No special observance")}
                         ForEach(selected.observances,id:\.self) {Text(LocalizedStringKey($0))}
@@ -64,7 +71,9 @@ struct HijriView: View {
                 }
                 if let anchor=model.settings.hijriAnchor,model.settings.hijriOffset != 0 {
                     Section {
-                        Text("Active adjustment: \(model.settings.hijriOffset) for AH \(anchor)").font(.footnote)
+                        LabeledContent("Active adjustment") {
+                            Text("\(model.settings.hijriOffset) · \(anchor)").monospacedDigit().environment(\.layoutDirection,.leftToRight)
+                        }.font(.footnote)
                         Text("Neighboring month boundaries reconcile the correction while keeping every month 29 or 30 days.").font(.footnote).foregroundStyle(.secondary)
                         if anchor != page.monthKey {
                             Button("Reset active adjustment") {model.setCalendarOffset(pageMonthKey:anchor,value:0);selected=nil}
@@ -94,7 +103,7 @@ struct HijriView: View {
                         Text(gregorian(cell.dateISO)).font(.system(size:min(dateFont,14),weight:.medium)).monospacedDigit()
                             .foregroundStyle(.secondary).environment(\.layoutDirection,.leftToRight).lineLimit(1).minimumScaleFactor(0.85)
                         Circle().fill(cell.observances.isEmpty ? .clear : Color.accentColor).frame(width:4,height:4)
-                    }.frame(maxWidth:.infinity).frame(height:rowHeight)
+                    }.frame(maxWidth:.infinity).frame(height:cellHeight)
                         .foregroundStyle(cell.inMonth ? Color.primary : Color.secondary)
                         .background(cell.dateISO == model.religiousTodayISO ? Color.accentColor.opacity(0.16) : .clear,in:RoundedRectangle(cornerRadius:10))
                         .overlay {RoundedRectangle(cornerRadius:10).stroke(selected?.dateISO == cell.dateISO ? Color.accentColor : .clear,lineWidth:1.5)}
@@ -105,7 +114,7 @@ struct HijriView: View {
             }
             // Reserve geometry only. Empty slots have no buttons, dates or accessibility nodes.
             ForEach(page.cells.count..<42,id:\.self) {_ in
-                Color.clear.frame(height:rowHeight).allowsHitTesting(false).accessibilityHidden(true)
+                Color.clear.frame(height:cellHeight).allowsHitTesting(false).accessibilityHidden(true)
             }
         }.accessibilityElement(children:.contain).accessibilityIdentifier("calendarGrid").accessibilityValue(String(page.cells.count/7))
     }

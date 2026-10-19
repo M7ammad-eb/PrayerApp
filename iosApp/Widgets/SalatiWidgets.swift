@@ -211,6 +211,7 @@ struct PrayerWidgetContent:View {
                     if entry.showDate,let hijri=entry.hijri {Text(hijri).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.85)}
                 }.font(large ? .caption : .system(size:10))
             }
+            if large {Spacer(minLength:0)}
             HStack(alignment:.center,spacing:12) {
                 VStack(alignment:.leading,spacing:3) {
                     HStack(spacing:5) {
@@ -225,7 +226,7 @@ struct PrayerWidgetContent:View {
                 Countdown(date:next.date,now:entry.date,previewReferenceDate:entry.isStaticPreview ? entry.date : nil).font(.system(large ? .largeTitle : .title2,design:.rounded,weight:.light))
                     .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
             }
-            if large {Divider()}
+            if large {Spacer(minLength:0);Divider()}
             if entry.tomorrowID != nil || entry.previousEvent != nil {Text("Today").font(.system(size:large ? 11 : 9)).foregroundStyle(.secondary)}
             HStack(alignment:.top,spacing:large ? 6 : 3) {
                 ForEach(entry.civilSchedule) {event in horizontalCell(event,large:large)}

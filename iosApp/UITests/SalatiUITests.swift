@@ -57,6 +57,7 @@ final class SalatiUITests:XCTestCase {
         app.tabBars.buttons["التقويم"].tap();capture("Arabic dark Hijri calendar")
         app.tabBars.buttons["القبلة"].tap();capture("Arabic dark Qibla")
         app.tabBars.buttons["الإعدادات"].tap();_=languageControl(app);capture("Arabic dark Settings Display")
+        reviewAlertJourney(app,arabic:true)
     }
     func testWidgetAndActivityRendererPreviews() {
         for arabic in [false,true] {
@@ -71,10 +72,16 @@ final class SalatiUITests:XCTestCase {
             XCTAssertTrue(activityStatus.waitForExistence(timeout:10))
             if activityStatus.label == "System Live Activity preview started" {
                 XCUIDevice.shared.press(.home)
-                captureScreen(prefix+" actual system compact Live Activity")
-                // This operates the system island; it does not impose any app layout geometry.
                 let springboard=XCUIApplication(bundleIdentifier:"com.apple.springboard")
+                let systemPrayer=springboard.descendants(matching:.any).matching(NSPredicate(format:"label CONTAINS %@",arabic ? "المغرب":"Maghrib")).firstMatch
+                // Initial system rendering is asynchronous. Some simulator versions do not
+                // expose Island AX text, so this bounded wait must not assert availability.
+                let prayerTextVisible=systemPrayer.waitForExistence(timeout:15)
+                settleSystemPresentation()
+                captureScreen(prefix+" actual system compact Live Activity attempt — "+(prayerTextVisible ? "prayer text detected":"system prayer text unavailable"))
+                // This operates the system island; it does not impose any app layout geometry.
                 springboard.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.035)).press(forDuration:1)
+                settleSystemPresentation()
                 captureScreen(prefix+" actual system island after expansion gesture")
                 app.activate()
                 app.buttons["actualActivity.cleanup"].tap()
@@ -189,7 +196,12 @@ final class SalatiUITests:XCTestCase {
         advanceSetup(app,to:2)
         XCTAssertFalse(app.buttons["continueOnboarding"].isEnabled)
         if captureSetup {capture(prefix+" 2 choose location")}
-        app.buttons["chooseLocation"].tap()
+        let choose=app.buttons["chooseLocation"]
+        revealOnboardingControl(choose,app:app)
+        XCTAssertTrue(choose.exists && choose.isHittable,"Offline location selection must be reachable")
+        XCTAssertTrue(isAboveOnboardingFooter(choose,app:app),"Location control must be fully inside the scrollable content, above the fixed footer")
+        if app.launchArguments.contains("-uiTestingLargeText") {capture("Accessibility large text location action revealed above footer")}
+        choose.tap()
         let search=app.searchFields.firstMatch
         XCTAssertTrue(search.waitForExistence(timeout:10));search.tap();search.typeText(name)
         let city=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'city.'")).firstMatch
@@ -215,6 +227,25 @@ final class SalatiUITests:XCTestCase {
         app.buttons["continueOnboarding"].tap()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:10))
     }
+    private func isAboveOnboardingFooter(_ control:XCUIElement,app:XCUIApplication)->Bool {
+        guard control.exists else {return false}
+        let contentTop=app.navigationBars.firstMatch.frame.maxY
+        let footerTop=app.progressIndicators.firstMatch.frame.minY-16
+        return control.frame.minY>=contentTop && control.frame.maxY<=footerTop
+    }
+    private func revealOnboardingControl(_ control:XCUIElement,app:XCUIApplication) {
+        for _ in 0..<6 {
+            if control.exists && control.isHittable && isAboveOnboardingFooter(control,app:app) {return}
+            // Swipe within the Form's usable region. A full-screen swipe can start
+            // on the fixed footer at accessibility text sizes and fail to scroll.
+            let top=app.navigationBars.firstMatch.frame.maxY
+            let bottom=app.progressIndicators.firstMatch.frame.minY-24
+            let origin=app.coordinate(withNormalizedOffset:.zero)
+            let start=origin.withOffset(CGVector(dx:app.frame.midX,dy:bottom-16))
+            let end=origin.withOffset(CGVector(dx:app.frame.midX,dy:top+44))
+            start.press(forDuration:0.05,thenDragTo:end)
+        }
+    }
     private func advanceSetup(_ app:XCUIApplication,to page:Int) {
         app.buttons["continueOnboarding"].tap()
         let state=app.staticTexts["onboardingStep"]
@@ -222,28 +253,37 @@ final class SalatiUITests:XCTestCase {
         expectation(for:predicate,evaluatedWith:state)
         waitForExpectations(timeout:5)
     }
-    private func reviewAlertJourney(_ app:XCUIApplication) {
-        let alerts=app.buttons["Notifications and adhan"]
+    private func reviewAlertJourney(_ app:XCUIApplication,arabic:Bool=false) {
+        // These labels match the shipped Arabic resource catalog, not translated guesses.
+        let alerts=app.buttons[arabic ? "الإشعارات والأذان":"Notifications and adhan"]
+        let prefix=arabic ? "Arabic dark ":"English light "
         reveal(alerts,app:app);alerts.tap()
         XCTAssertTrue(app.buttons["prayerAlert.FAJR"].waitForExistence(timeout:5))
-        capture("Notification settings per-prayer overview")
+        capture(prefix+"notification settings per-prayer overview")
         app.buttons["prayerAlert.FAJR"].tap()
-        capture("Fajr delivery and independent advance reminder")
+        capture(prefix+"Fajr delivery and independent advance reminder")
         let delivery=app.buttons["alertDelivery"]
         XCTAssertTrue(delivery.exists);delivery.tap()
-        app.buttons["Notification"].tap()
-        capture("Fajr notification sound selection")
-        delivery.tap();app.buttons["System alarm"].tap()
-        capture("Fajr system alarm full recording selection")
+        app.buttons[arabic ? "إشعار":"Notification"].tap()
+        capture(prefix+"Fajr notification sound selection")
+        delivery.tap();app.buttons[arabic ? "منبه النظام":"System alarm"].tap()
+        capture(prefix+"Fajr system alarm default sound and explanation")
         // Restore the no-alert preference; no system alert permission is requested here.
-        delivery.tap();app.buttons["Off"].tap()
+        delivery.tap();app.buttons[arabic ? "إيقاف":"Off"].tap()
         app.navigationBars.buttons.element(boundBy:0).tap()
-        reveal(app.buttons["Test an alert"],app:app);app.buttons["Test an alert"].tap()
-        capture("Scheduled test alert distinct from immediate playback")
+        let test=app.buttons[arabic ? "اختبار تنبيه":"Test an alert"]
+        reveal(test,app:app);test.tap()
+        capture(prefix+"scheduled test alert distinct from immediate playback")
         XCTAssertTrue(app.buttons["scheduleTestAlert"].exists)
         app.navigationBars.buttons.element(boundBy:0).tap()
-        reveal(app.buttons["Listen to adhan"],app:app);app.buttons["Listen to adhan"].tap()
-        capture("Immediate adhan recording preview list")
+        let listen=app.buttons[arabic ? "الاستماع إلى الأذان":"Listen to adhan"]
+        reveal(listen,app:app);listen.tap()
+        capture(prefix+"immediate adhan recording preview list")
+    }
+    private func settleSystemPresentation() {
+        // XCTest waits for UI idleness around its interactions; allow the final
+        // system presentation animation to settle before requesting screen pixels.
+        RunLoop.current.run(until:Date().addingTimeInterval(1))
     }
     private func identified(_ identifier:String,in app:XCUIApplication)->XCUIElement {
         app.descendants(matching:.any).matching(identifier:identifier).firstMatch

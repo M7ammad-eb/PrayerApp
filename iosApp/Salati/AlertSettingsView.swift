@@ -98,7 +98,17 @@ private struct PrayerAlertDetailView:View {
                         Button("Play full adhan now",systemImage:"play.circle") {player.play(selection.sound)}
                     }
                 } header:{Text("Sound")} footer:{
-                    Text(LocalizedStringKey(selection.delivery == .alarm ? "The selected full recording is prepared for the alarm. Use Test an alert to check playback on your iPhone.":"Notifications use the system sound or silence. Full adhan recordings are available with system alarms and in Listen to adhan."))
+                    if selection.delivery == .alarm {
+                        if Recording.all.contains(where:{$0.id == selection.sound}) {
+                            Text("The selected full recording is prepared for the alarm. Use Test an alert to check playback on your iPhone.")
+                        } else if selection.sound == "silent" {
+                            Text("Choose an audible alarm sound")
+                        } else {
+                            Text("This alarm uses the system sound. Choose a recording above to hear the full adhan.")
+                        }
+                    } else {
+                        Text("Notifications use the system sound or silence. Full adhan recordings are available with system alarms and in Listen to adhan.")
+                    }
                 }
             }
             Section {

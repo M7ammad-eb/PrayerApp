@@ -95,6 +95,7 @@
 "High latitudes" = "High latitudes";
 "Hijri adjustment" = "Hijri adjustment";
 "Hijri calendar" = "Hijri calendar";
+"Hijri day" = "Hijri day";
 "Hijri · Gregorian" = "Hijri · Gregorian";
 "Horizontal · Large" = "Horizontal · Large";
 "Horizontal · Medium" = "Horizontal · Medium";
@@ -271,6 +272,7 @@
 "The night" = "The night";
 "The recording could not play. Try another recording." = "The recording could not play. Try another recording.";
 "The selected full recording is prepared for the alarm. Use Test an alert to check playback on your iPhone." = "The selected full recording is prepared for the alarm. Use Test an alert to check playback on your iPhone.";
+"This alarm uses the system sound. Choose a recording above to hear the full adhan." = "This alarm uses the system sound. Choose a recording above to hear the full adhan.";
 "This device has no compass. The Qibla bearing is still available." = "This device has no compass. The Qibla bearing is still available.";
 "This test uses the chosen prayer’s sound. Your prayer schedule stays unchanged." = "This test uses the chosen prayer’s sound. Your prayer schedule stays unchanged.";
 "Time until next prayer" = "Time until next prayer";

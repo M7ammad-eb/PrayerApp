@@ -95,6 +95,7 @@
 "High latitudes" = "خطوط العرض العالية";
 "Hijri adjustment" = "تعديل التاريخ الهجري";
 "Hijri calendar" = "التقويم الهجري";
+"Hijri day" = "اليوم الهجري";
 "Hijri · Gregorian" = "هجري · ميلادي";
 "Horizontal · Large" = "أفقي · كبير";
 "Horizontal · Medium" = "أفقي · متوسط";
@@ -271,6 +272,7 @@
 "The night" = "الليل";
 "The recording could not play. Try another recording." = "تعذّر تشغيل التسجيل. جرّب تسجيلًا آخر.";
 "The selected full recording is prepared for the alarm. Use Test an alert to check playback on your iPhone." = "يُجهّز التسجيل المختار كاملًا للمنبّه. استخدم «اختبار تنبيه» للتحقّق من التشغيل على iPhone.";
+"This alarm uses the system sound. Choose a recording above to hear the full adhan." = "يستخدم هذا المنبّه صوت النظام. اختر تسجيلًا أعلاه لسماع الأذان كاملًا.";
 "This device has no compass. The Qibla bearing is still available." = "لا توجد بوصلة في هذا الجهاز. لا تزال زاوية القبلة متاحة.";
 "This test uses the chosen prayer’s sound. Your prayer schedule stays unchanged." = "يستخدم الاختبار صوت الصلاة المختارة، دون تغيير جدول صلواتك.";
 "Time until next prayer" = "الوقت المتبقي للصلاة القادمة";
