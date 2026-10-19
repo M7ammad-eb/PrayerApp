@@ -29,13 +29,16 @@ python3 - <<'PY'
 import hashlib,json,os,plistlib,subprocess,zipfile
 from pathlib import Path
 out=Path('build/unsigned-ipa');ipa=out/'Salati-unsigned.ipa'
+source_info=plistlib.loads(Path('iosApp/Config/App-Info.plist').read_bytes())
+build_number=source_info['CFBundleVersion'];version=source_info['CFBundleShortVersionString']
 with zipfile.ZipFile(ipa) as archive:
     assert archive.testzip() is None
     files=archive.namelist()
     for bundle in ['Payload/Salati.app','Payload/Salati.app/PlugIns/SalatiWidgets.appex']:
         info=plistlib.loads(archive.read(bundle+'/Info.plist'))
         assert info['CFBundleSupportedPlatforms']==['iPhoneOS'],info
-        assert info['CFBundleVersion']=='3',info
+        assert info['CFBundleVersion']==build_number,info
+        assert info['CFBundleShortVersionString']==version,info
         assert bundle+'/'+info['CFBundleExecutable'] in files
     assert 'Payload/Salati.app/places.db' in files
     assert len([f for f in files if f.startswith('Payload/Salati.app/') and f.endswith('.mp3')])==11
@@ -49,7 +52,7 @@ digest=hashlib.sha256(ipa.read_bytes()).hexdigest()
     'sourceCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
     'workflowRun':'https://github.com/'+os.environ.get('GITHUB_REPOSITORY','M7ammad-eb/PrayerApp')+'/actions/runs/'+os.environ.get('GITHUB_RUN_ID','local'),
     'platform':'iPhoneOS','architecture':'arm64','minimumIOS':'26.0',
-    'configuration':'Release','buildNumber':'3','version':'1.8','signing':'unsigned; signing and provisioning required before installation',
+    'configuration':'Release','buildNumber':build_number,'version':version,'signing':'unsigned; signing and provisioning required before installation',
     'sha256':digest,'bytes':ipa.stat().st_size},indent=2)+'\n')
 print('Validated unsigned ARM64 iPhone IPA:',ipa,ipa.stat().st_size,'bytes',digest)
 PY

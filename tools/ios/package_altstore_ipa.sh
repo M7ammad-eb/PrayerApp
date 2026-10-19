@@ -60,6 +60,6 @@ info.update({'signing':'ad-hoc capability metadata only; AltStore must re-sign w
              'requestedAppGroups':['group.com.salati.prayertimes'],'sha256':digest,'bytes':ipa.stat().st_size})
 (out/'AltStore-build-info.json').write_text(json.dumps(info,indent=2)+'\n')
 (out/'Salati-AltStore-ready.ipa.sha256').write_text(digest+'  Salati-AltStore-ready.ipa\n')
-(out/'AltStore-README.txt').write_text('Salati build 3 (Phase 2) for AltStore Classic. Keep the SalatiWidgets extension when importing. This package carries ad-hoc App Group capability metadata, not Apple development/distribution signing or a provisioning profile. AltStore must sign it with your Apple ID. Open Salati once after installation to refresh the widget schedule.\n')
+(out/'AltStore-README.txt').write_text(f"Salati {info['version']} build {info['buildNumber']} for AltStore Classic. Keep the SalatiWidgets extension when importing. This package carries ad-hoc App Group capability metadata, not Apple development/distribution signing or a provisioning profile. AltStore must sign it with your Apple ID. Open Salati once after installation to refresh the widget schedule.\n")
 print('Validated AltStore-ready ARM64 iPhone IPA:',ipa,ipa.stat().st_size,'bytes',digest)
 PY
