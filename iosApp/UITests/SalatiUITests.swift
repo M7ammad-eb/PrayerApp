@@ -165,12 +165,13 @@ final class SalatiUITests:XCTestCase {
                 captureScreen(prefix+" gallery page \(page+1) live archived timer")
                 if page<4 {board.swipeLeft()}
             }
-            let install=board.buttons["Add Widget"]
+            // The gallery's accessibility label can include leading whitespace.
+            let install=board.buttons.matching(NSPredicate(format:"label CONTAINS[c] 'Add Widget'")).firstMatch
             if install.exists && install.isHittable {install.tap()}
             else {
-                // iOS 26 exposes only the Home Screen AX tree beneath this remote
-                // gallery. Its visible Add Widget button is at this position in
-                // the actual 440x956 system captures (all five gallery pages).
+                // If accessibility cannot resolve the control, this fallback
+                // matches its visible Add Widget button in the
+                // actual 440x956 system captures (all five gallery pages).
                 board.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.915)).tap()
             }
             let done=board.buttons["Done"]
