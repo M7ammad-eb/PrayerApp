@@ -125,6 +125,7 @@
 "Inspect preview" = "فحص المعاينة";
 "Isha" = "العشاء";
 "Islamic midnight" = "منتصف الليل الشرعي";
+"It is time for prayer" = "حان وقت الصلاة";
 "KARACHI" = "جامعة العلوم الإسلامية بكراتشي";
 "KUWAIT" = "وزارة الأوقاف والشؤون الإسلامية بالكويت";
 "Keep prayer times close. Choose only the alerts you want." = "كن قريبًا من مواقيت الصلاة، واختر التنبيهات التي تحتاجها فقط.";
@@ -141,6 +142,7 @@
 "Live Activity · Expired content" = "نشاط مباشر · محتوى منتهٍ";
 "Live Activity · Lock Screen" = "نشاط مباشر · شاشة القفل";
 "Local diagnostics" = "التشخيص المحلي";
+"Local moon sighting may differ." = "قد تختلف رؤية الهلال محليًا.";
 "Local moon sighting may differ. Hijri adjustments apply only to the selected current month." = "قد تختلف الرؤية المحلية للهلال. يسري تعديل التاريخ الهجري على الشهر الحالي المحدد فقط.";
 "Local moon sighting may differ. This adjustment changes only the named Hijri month." = "قد تختلف رؤية الهلال المحلية. يسري التعديل على الشهر الهجري المحدد فقط.";
 "Local notifications use a short excerpt under 30 seconds. Full recordings can be played here while the app is open. Full-length automatic AlarmKit playback requires physical-device validation and is not guaranteed." = "تستخدم الإشعارات مقطعًا أقصر من 30 ثانية. يمكن تشغيل التسجيل كاملًا هنا أثناء فتح التطبيق. تشغيل الأذان كاملًا تلقائيًا عبر AlarmKit غير مضمون ويحتاج إلى اختبار على جهاز فعلي.";
@@ -213,6 +215,7 @@
 "Prayer countdowns start automatically when enabled. Open Salati regularly to replenish future alerts." = "يبدأ العد التنازلي تلقائيًا عند تفعيله. افتح صلاتي بانتظام لتجديد المواعيد القادمة.";
 "Prayer event" = "موعد الصلاة";
 "Prayer time ended" = "انتهى وقت الصلاة";
+"Prayer time is approaching" = "اقترب موعد الصلاة";
 "Prayer times" = "مواقيت الصلاة";
 "Prayer times are calculated entirely on your device." = "تُحسب مواقيت الصلاة بالكامل على جهازك.";
 "Prayer times could not be updated. Check your location and calculation settings." = "تعذر تحديث المواقيت. تحقق من موقعك وإعدادات الحساب.";
@@ -251,6 +254,7 @@
 "SINGAPORE" = "مجلس الشؤون الإسلامية بسنغافورة (MUIS)";
 "SUNRISE" = "الشروق";
 "Salati" = "صلاتي";
+"Salati test alert" = "اختبار تنبيه صلاتي";
 "Salati · صلاتي" = "Salati · صلاتي";
 "Save" = "حفظ";
 "Schedule next prayer countdown" = "جدولة العد التنازلي للصلاة القادمة";
@@ -281,6 +285,7 @@
 "Standard" = "قياسي";
 "Start system Live Activity preview" = "بدء معاينة نشاط مباشر في النظام";
 "Start using Salati" = "ابدأ استخدام صلاتي";
+"Stop" = "إيقاف";
 "Stop playback" = "إيقاف التشغيل";
 "Stop prayer alarm" = "إيقاف منبّه الصلاة";
 "Stored only on this phone. Scheduling acceptance does not prove audible delivery. A notification response records user interaction, not the actual delivery instant." = "يُحفظ على هذا الهاتف فقط. قبول الجدولة لا يثبت تشغيل الصوت. استجابة الإشعار تسجّل تفاعل المستخدم، وليس وقت وصوله الفعلي.";

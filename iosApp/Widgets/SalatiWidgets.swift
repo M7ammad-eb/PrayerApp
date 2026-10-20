@@ -30,9 +30,11 @@ struct PrayerEntry:TimelineEntry {
     var direction:LayoutDirection {AppLanguage.isRightToLeft(snapshot?.language ?? "en") ? .rightToLeft : .leftToRight}
 }
 struct PrayerProvider:AppIntentTimelineProvider {
-    func placeholder(in context:Context)->PrayerEntry {PrayerPreview.entry()}
+    func placeholder(in context:Context)->PrayerEntry {PrayerPreview.entry(arabic:AppLanguage.current == "ar")}
     func snapshot(for configuration:PrayerWidgetOptions,in context:Context) async->PrayerEntry {
-        entry(configuration,snapshot:context.isPreview ? PrayerPreview.entry().snapshot : ScheduleSnapshot.load(),date:Date())
+        let saved=ScheduleSnapshot.load()
+        let preview=saved.flatMap {$0.nextEvent(after:Date()) == nil ? nil:$0} ?? PrayerPreview.entry(arabic:AppLanguage.current == "ar").snapshot
+        return entry(configuration,snapshot:context.isPreview ? preview:saved,date:Date())
     }
     func timeline(for configuration:PrayerWidgetOptions,in context:Context) async->Timeline<PrayerEntry> {
         let now=Date(),snapshot=ScheduleSnapshot.load()
@@ -273,7 +275,7 @@ private func activityLocale(_ state:PrayerActivityAttributes.ContentState)->Loca
 private func activityDirection(_ state:PrayerActivityAttributes.ContentState)->LayoutDirection {AppLanguage.isRightToLeft(state.language) ? .rightToLeft : .leftToRight}
 private func activityEndMessage(_ state:PrayerActivityAttributes.ContentState)->String {
     if !state.endMessage.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty {return state.endMessage}
-    return String(localized:"It is time for prayer",locale:activityLocale(state))
+    return AppLanguage.text("It is time for prayer",language:state.language)
 }
 struct PrayerActivityHeading:View {
     let state:PrayerActivityAttributes.ContentState

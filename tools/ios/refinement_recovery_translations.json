@@ -42,6 +42,11 @@
   "Close countdown": "إغلاق العدّ التنازلي",
   "Shared calculation fixtures with live system timers.": "معاينات بحسابات مشتركة ومؤقتات النظام الحية.",
   "Countdown closed": "أُغلق العدّ التنازلي",
+  "It is time for prayer": "حان وقت الصلاة",
+  "Prayer time is approaching": "اقترب موعد الصلاة",
+  "Stop": "إيقاف",
+  "Salati test alert": "اختبار تنبيه صلاتي",
+  "Local moon sighting may differ.": "قد تختلف رؤية الهلال محليًا.",
   "Inspect preview": "فحص المعاينة",
   "Alarms are turned off in iOS Settings.": "المنبهات متوقفة في إعدادات iOS."
 }

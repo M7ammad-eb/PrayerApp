@@ -112,7 +112,7 @@ struct NativeAlertRequest: Codable, Equatable {
         let alarm=item.policy.delivery == .alarm && !item.reminder
         let sound=alarm ? (recording.map {$0+".mp3"} ?? item.policy.sound) : (item.reminder ? (settings.reminderSound ? "default" : "silent") : (item.policy.sound == "silent" ? "silent" : "default"))
         return Self(id:item.id,route:alarm ? .alarm : .notification,date:item.date,prayerDate:item.prayerDate,prayer:item.prayer,title:item.title,
-                    body:settings.language == "ar" ? (item.reminder ? "اقترب موعد الصلاة" : "حان وقت الصلاة") : (item.reminder ? "Prayer time is approaching" : "It is time for prayer"),
+                    body:AppLanguage.text(item.reminder ? "Prayer time is approaching":"It is time for prayer",language:settings.language),
                     sound:sound,recording:item.reminder ? nil : recording,language:settings.language,reminder:item.reminder)
     }
 }
@@ -154,7 +154,7 @@ private enum SchedulingFailure: LocalizedError {
         if request.route == .alarm {
             guard AlarmManager.shared.authorizationState == .authorized else {throw SchedulingFailure.alarmPermission}
             guard request.sound != "silent" else {throw SchedulingFailure.silentAlarm}
-            let stop=AlarmButton(text:request.language == "ar" ? "إيقاف" : "Stop",textColor:.white,systemImageName:"stop.fill")
+            let stop=AlarmButton(text:LocalizedStringResource(stringLiteral:AppLanguage.text("Stop",language:request.language)),textColor:.white,systemImageName:"stop.fill")
             let alert=AlarmPresentation.Alert(title:LocalizedStringResource(stringLiteral:request.title),stopButton:stop)
             let attributes=AlarmAttributes(presentation:AlarmPresentation(alert:alert),metadata:PrayerAlarmMetadata(prayer:request.prayer),tintColor:Color("AccentColor"))
             let sound:AlertConfiguration.AlertSound=request.sound == "default" ? .default : .named(request.sound)
@@ -367,7 +367,7 @@ struct ScheduleDiagnostic: Codable {
         var requests=filtered.filter {$0.date>now}.map {NativeAlertRequest.make($0,settings:settings)}
         for failed in live where !liveResult.accepted.contains(where:{$0.id == failed.id}) && failed.start>now && !liveLifecycle.isDismissed(failed.id,now:now) {
             if !requests.contains(where:{$0.reminder && abs($0.date.timeIntervalSince(failed.start))<1 && $0.prayerDate == failed.date}) {
-                requests.append(.init(id:failed.id+".fallback",route:.notification,date:failed.start,prayerDate:failed.date,prayer:"",title:failed.title,body:settings.language == "ar" ? "اقترب موعد الصلاة" : "Prayer time is approaching",sound:settings.reminderSound ? "default" : "silent",recording:nil,language:settings.language,reminder:true))
+                requests.append(.init(id:failed.id+".fallback",route:.notification,date:failed.start,prayerDate:failed.date,prayer:"",title:failed.title,body:AppLanguage.text("Prayer time is approaching",language:settings.language),sound:settings.reminderSound ? "default" : "silent",recording:nil,language:settings.language,reminder:true))
             }
         }
         requests.sort {$0.date<$1.date}
@@ -461,11 +461,11 @@ struct ScheduleDiagnostic: Codable {
         },submit:{item in
             guard context.canPrepareLiveActivities(applicationIsActive:UIApplication.shared.applicationState == .active) else {throw ActivityAuthorizationError.visibility}
             let old=Activity<PrayerActivityAttributes>.activities.filter {$0.content.state.eventID == item.id}
-            let state=PrayerActivityAttributes.ContentState(title:item.title,date:item.date,eventID:item.id,language:settings.language,start:item.start,timeText:Self.formattedTime(item.date,settings:settings),endMessage:settings.language == "ar" ? "حان وقت الصلاة" : "It is time for prayer")
+            let state=PrayerActivityAttributes.ContentState(title:item.title,date:item.date,eventID:item.id,language:settings.language,start:item.start,timeText:Self.formattedTime(item.date,settings:settings),endMessage:AppLanguage.text("It is time for prayer",language:settings.language))
             let content=ActivityContent(state:state,staleDate:item.date)
             do {
                 if item.start>now {
-                    _=try Activity<PrayerActivityAttributes>.request(attributes:PrayerActivityAttributes(city:city),content:content,pushType:nil,style:.standard,alertConfiguration:AlertConfiguration(title:LocalizedStringResource(stringLiteral:item.title),body:LocalizedStringResource(stringLiteral:settings.language == "ar" ? "اقترب موعد الصلاة" : "Prayer time is approaching"),sound:settings.reminderSound ? .default : .named("salati_silent.caf")),start:item.start)
+                    _=try Activity<PrayerActivityAttributes>.request(attributes:PrayerActivityAttributes(city:city),content:content,pushType:nil,style:.standard,alertConfiguration:AlertConfiguration(title:LocalizedStringResource(stringLiteral:item.title),body:LocalizedStringResource(stringLiteral:AppLanguage.text("Prayer time is approaching",language:settings.language)),sound:settings.reminderSound ? .default : .named("salati_silent.caf")),start:item.start)
                 } else {_=try Activity<PrayerActivityAttributes>.request(attributes:PrayerActivityAttributes(city:city),content:content,pushType:nil)}
                 for previous in old {await self.liveLifecycle.finish(id:previous.id)}
                 self.record("Live Activity submitted",result:item.id+"; start "+item.start.ISO8601Format()+"; prayer "+item.date.ISO8601Format()+"; staleDate is not dismissal")
@@ -494,7 +494,7 @@ struct ScheduleDiagnostic: Codable {
         _=await operations.enqueue { [weak self] in
             guard let self,delivery != .off else {return ""}
             let date=Date().addingTimeInterval(60)
-            let item=ScheduledAlert(id:"salati.test."+delivery.rawValue,prayer:"TEST",title:settings.language == "ar" ? "اختبار تنبيه صلاتي" : "Salati test alert",date:date,prayerDate:date,policy:PrayerPolicy(delivery:delivery,sound:sound,reminder:0),reminder:false)
+            let item=ScheduledAlert(id:"salati.test."+delivery.rawValue,prayer:"TEST",title:AppLanguage.text("Salati test alert",language:settings.language),date:date,prayerDate:date,policy:PrayerPolicy(delivery:delivery,sound:sound,reminder:0),reminder:false)
             var request=NativeAlertRequest.make(item,settings:settings);request.isTest=true
             let result=await self.reconciler.reconcile([request],now:Date(),production:false)
             self.testStatus=result.failures.isEmpty ? (settings.language == "ar" ? "تمت جدولة اختبار بعد نحو دقيقة. اقفل الهاتف الآن." : "Test scheduled about one minute ahead. Lock the phone now.") : result.failures.joined(separator:" ")

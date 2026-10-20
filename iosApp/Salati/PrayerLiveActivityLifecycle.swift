@@ -58,7 +58,7 @@ struct PrayerActivityRecord {
             if record.state == .dismissed && record.date>now {
                 recordSystemDismissal(id:record.id,eventID:record.eventID,date:record.date,now:now)
             }
-            if !enabled || record.date<=now || record.state == .ended || record.state == .dismissed || isDismissed(record.eventID,now:now) {
+            if !enabled || record.eventID.isEmpty || record.date<=now || record.state == .ended || record.state == .dismissed || isDismissed(record.eventID,now:now) {
                 await finish(id:record.id)
             }
         }

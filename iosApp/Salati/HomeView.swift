@@ -16,8 +16,9 @@ struct HomeView: View {
                             HStack(alignment:.firstTextBaseline) { Text(next.title).font(.largeTitle.weight(.semibold)); Spacer(); Text(next.timeText).font(.title.weight(.medium)).monospacedDigit().environment(\.layoutDirection,.leftToRight) }
                             VStack(alignment:.leading) { Text(next.title).font(.largeTitle.weight(.semibold)); Text(next.timeText).font(.title).monospacedDigit().environment(\.layoutDirection,.leftToRight) }
                         }
-                        if next.date>Date() {
-                            Text(timerInterval:Date()...next.date,countsDown:true)
+                        let countdownStart=Date()
+                        if next.date>countdownStart {
+                            Text(timerInterval:countdownStart...next.date,countsDown:true)
                                 .font(.system(.largeTitle,design:.rounded,weight:.light)).monospacedDigit().environment(\.locale,Locale(identifier:"en_US_POSIX"))
                                 .environment(\.layoutDirection,.leftToRight).accessibilityLabel(Text("Time until next prayer"))
                         }

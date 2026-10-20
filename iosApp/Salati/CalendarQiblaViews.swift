@@ -74,7 +74,6 @@ struct HijriView: View {
                         LabeledContent("Active adjustment") {
                             Text("\(model.settings.hijriOffset) · \(anchor)").monospacedDigit().environment(\.layoutDirection,.leftToRight)
                         }.font(.footnote)
-                        Text("Neighboring month boundaries reconcile the correction while keeping every month 29 or 30 days.").font(.footnote).foregroundStyle(.secondary)
                         if anchor != page.monthKey {
                             Button("Reset active adjustment") {model.setCalendarOffset(pageMonthKey:anchor,value:0);selected=nil}
                                 .accessibilityIdentifier("resetActiveHijriAdjustment")
@@ -83,7 +82,7 @@ struct HijriView: View {
                 }
                 Section {
                     Text("Umm al-Qura calendar").font(.footnote).foregroundStyle(.secondary)
-                    Text("The current Hijri date advances at Maghrib. Gregorian cell dates stay civil dates; prayer times stay on their civil day.").font(.footnote).foregroundStyle(.secondary)
+                    Text("Local moon sighting may differ.").font(.footnote).foregroundStyle(.secondary)
                 }
             } else {ContentUnavailableView("Calendar unavailable",systemImage:"calendar.badge.exclamationmark")}
         }.navigationTitle("Hijri calendar").navigationBarTitleDisplayMode(.inline)

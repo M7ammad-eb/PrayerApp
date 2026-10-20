@@ -16,6 +16,17 @@ final class RecoveryTests:XCTestCase {
         XCTAssertTrue(AppLanguage.isRightToLeft("he"))
         XCTAssertFalse(AppLanguage.isRightToLeft("fr"))
     }
+    func testPrayerLabelsAndTimeRespectSelectedLanguageWithoutChangingDigits() {
+        XCTAssertEqual(AppLanguage.text("FAJR",language:"ar"),"الفجر")
+        XCTAssertEqual(AppLanguage.text("FAJR",language:"en"),"Fajr")
+        XCTAssertEqual(AppLanguage.text("It is time for prayer",language:"ar"),"حان وقت الصلاة")
+        let date=Date(timeIntervalSince1970:0)
+        for language in ["en","ar","fr","he"] {
+            let value=AppLanguage.time(date,language:language,zone:.gmt,use24Hour:true)
+            XCTAssertEqual(value,"00:00")
+        }
+        XCTAssertTrue(AppLanguage.time(date,language:"ar",zone:.gmt,use24Hour:false).contains("ص"))
+    }
     func testSystemLanguageWinsOverOldInAppPreferenceWithoutResettingSettings() throws {
         let name="RecoveryLanguage."+UUID().uuidString
         let store=try XCTUnwrap(UserDefaults(suiteName:name));defer {store.removePersistentDomain(forName:name)}
@@ -31,11 +42,12 @@ final class RecoveryTests:XCTestCase {
         let store=try XCTUnwrap(UserDefaults(suiteName:name));defer {store.removePersistentDomain(forName:name)}
         let now=Date(),backend=FakePrayerActivities()
         backend.items=[.init(id:"expired",eventID:"fajr",date:now.addingTimeInterval(-1),state:.stale),
+                       .init(id:"legacy",eventID:"",date:now.addingTimeInterval(600),state:.active),
                        .init(id:"empty-ended",eventID:"old",date:now.addingTimeInterval(60),state:.ended),
                        .init(id:"pending",eventID:"dhuhr",date:now.addingTimeInterval(3600),state:.pending)]
         let lifecycle=PrayerLiveActivityLifecycle(backend:backend,defaults:store)
         await lifecycle.cleanup(now:now);await lifecycle.cleanup(now:now)
-        XCTAssertEqual(Set(backend.ended),Set(["expired","empty-ended"]));XCTAssertEqual(backend.ended.count,2)
+        XCTAssertEqual(Set(backend.ended),Set(["expired","empty-ended","legacy"]));XCTAssertEqual(backend.ended.count,3)
         XCTAssertEqual(backend.items.map(\.id),["pending"])
     }
     @MainActor func testCloseEndsAllCopiesOfOneEventAndSurvivesRelaunch() async throws {

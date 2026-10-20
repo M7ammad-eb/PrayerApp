@@ -20,8 +20,8 @@ extension PrayerActivityAttributes.ContentState {
     var finalContent:ActivityContent<Self> {
         var final=self
         final.finished=true
-        if date>Date() {final.endMessage=String(localized:"Countdown closed",locale:AppLanguage.locale(language))}
-        else if final.endMessage.isEmpty {final.endMessage=String(localized:"It is time for prayer",locale:AppLanguage.locale(language))}
+        if date>Date() {final.endMessage=AppLanguage.text("Countdown closed",language:language)}
+        else if final.endMessage.isEmpty {final.endMessage=AppLanguage.text("It is time for prayer",language:language)}
         return ActivityContent(state:final,staleDate:nil,relevanceScore:0)
     }
 }
