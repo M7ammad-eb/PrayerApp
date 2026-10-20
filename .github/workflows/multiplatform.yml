@@ -15,6 +15,10 @@ on:
         description: 'Recheck widget and actual Activity presentation after a presentation-only repair'
         type: boolean
         default: false
+      remaining_ui_only:
+        description: 'Complete system widget and compact-phone checks after unchanged app checks passed'
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -91,7 +95,7 @@ jobs:
         timeout-minutes: 10
         run: xcrun simctl bootstatus "$SIMULATOR_ID" -b
       - name: Native shared-core tests
-        if: inputs.activity_only != true
+        if: inputs.activity_only != true && inputs.remaining_ui_only != true
         timeout-minutes: 10
         run: bash ./gradlew :shared:iosSimulatorArm64Test --device "$SIMULATOR_ID" --console=plain
       - name: Simulator XCTest and UI tests
@@ -100,6 +104,8 @@ jobs:
           SELECTION=()
           if [[ '${{ inputs.activity_only }}' == 'true' ]]; then
             SELECTION=(-only-testing:SalatiUITests/SalatiUITests/testWidgetAndActivityRendererPreviews)
+          elif [[ '${{ inputs.remaining_ui_only }}' == 'true' ]]; then
+            SELECTION=(-only-testing:SalatiUITests/SalatiUITests/testSystemWidgetGalleryAndInstalledWidget)
           fi
           xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO "${SELECTION[@]}" test-without-building
       - name: Export runtime screenshots and diagnostic attachments

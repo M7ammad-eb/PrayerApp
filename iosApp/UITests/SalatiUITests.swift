@@ -20,7 +20,7 @@ final class SalatiUITests:XCTestCase {
         expectation(for:opened,evaluatedWith:nil);waitForExpectations(timeout:10)
         XCTAssertTrue(preferences.navigationBars.firstMatch.waitForExistence(timeout:15),preferences.debugDescription)
         settleSystemPresentation()
-        captureScreen("Language action opens native iPhone app settings")
+        captureScreen("Language action opens iOS Settings — simulator destination")
         app.activate()
         // Simulate the OS relaunch with its per-app language preference. Keep all
         // app data; no bespoke in-app setting may override this launch choice.
@@ -159,14 +159,27 @@ final class SalatiUITests:XCTestCase {
             XCTAssertTrue(salati.waitForExistence(timeout:10),board.debugDescription);salati.tap()
             let prefix=arabic ? "Arabic actual WidgetKit":"English actual WidgetKit"
             for page in 0..<5 {
-                settleSystemPresentation();captureScreen(prefix+" gallery page \(page+1) live archived timer")
+                // The remote gallery's first timeline can arrive after its sheet
+                // animation. Capture populated content, not the loading skeleton.
+                RunLoop.current.run(until:Date().addingTimeInterval(page == 0 ? 8:3))
+                captureScreen(prefix+" gallery page \(page+1) live archived timer")
                 if page<4 {board.swipeLeft()}
             }
             let install=board.buttons["Add Widget"]
-            XCTAssertTrue(install.waitForExistence(timeout:5),board.debugDescription);install.tap()
+            if install.exists && install.isHittable {install.tap()}
+            else {
+                // iOS 26 exposes only the Home Screen AX tree beneath this remote
+                // gallery. Its visible Add Widget button is at this position in
+                // the actual 440x956 system captures (all five gallery pages).
+                board.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.915)).tap()
+            }
             let done=board.buttons["Done"]
-            if done.waitForExistence(timeout:5) {done.tap()}
-            settleSystemPresentation();captureScreen(prefix+" installed Home Screen widget live timer")
+            XCTAssertTrue(done.waitForExistence(timeout:10),board.debugDescription)
+            done.tap()
+            RunLoop.current.run(until:Date().addingTimeInterval(5))
+            captureScreen(prefix+" installed Home Screen widget live timer")
+            let hierarchy=XCTAttachment(string:board.debugDescription)
+            hierarchy.name=prefix+" installed widget accessibility";hierarchy.lifetime = .keepAlways;self.add(hierarchy)
             app.terminate()
         }
     }
