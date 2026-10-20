@@ -143,7 +143,9 @@ final class SalatiUITests:XCTestCase {
         capture("Activity expiry recovery has zero remaining previews")
     }
     func testSystemWidgetGalleryAndInstalledWidget() {
-        for arabic in [false,true] {
+        // Start in Arabic on a fresh simulator. WidgetKit caches gallery previews
+        // across app-language changes; the prior run captured English first.
+        for arabic in [true,false] {
             let app=XCUIApplication();app.launchArguments=["-uiTestingReset"]+(arabic ? ["-uiTestingArabicDark"]:[])
             launch(app);chooseCity("Madinah",app:app)
             XCUIDevice.shared.press(.home)
@@ -177,7 +179,15 @@ final class SalatiUITests:XCTestCase {
             let done=board.buttons["Done"]
             XCTAssertTrue(done.waitForExistence(timeout:10),board.debugDescription)
             done.tap()
-            RunLoop.current.run(until:Date().addingTimeInterval(5))
+            let installed=board.icons.matching(NSPredicate(format:"label == 'Salati' AND value == 'Widget'")).firstMatch
+            XCTAssertTrue(installed.waitForExistence(timeout:15),board.debugDescription)
+            // A widget Icon can exist while its contents are still redacted.
+            // Require actual localized timeline text before preserving evidence.
+            let city=installed.staticTexts[arabic ? "المدينة المنورة":"Madinah"]
+            XCTAssertTrue(city.waitForExistence(timeout:60),board.debugDescription)
+            XCTAssertTrue(installed.staticTexts.matching(NSPredicate(format:"label BEGINSWITH %@",arabic ? "الفجر":"Fajr")).firstMatch.exists)
+            XCTAssertFalse(done.exists)
+            settleSystemPresentation()
             captureScreen(prefix+" installed Home Screen widget live timer")
             let hierarchy=XCTAttachment(string:board.debugDescription)
             hierarchy.name=prefix+" installed widget accessibility";hierarchy.lifetime = .keepAlways;self.add(hierarchy)

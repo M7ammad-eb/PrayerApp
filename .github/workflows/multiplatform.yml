@@ -19,6 +19,10 @@ on:
         description: 'Complete system widget and compact-phone checks after unchanged app checks passed'
         type: boolean
         default: false
+      gallery_only:
+        description: 'Verify populated installed widget timelines and gallery rendering only'
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -95,7 +99,7 @@ jobs:
         timeout-minutes: 10
         run: xcrun simctl bootstatus "$SIMULATOR_ID" -b
       - name: Native shared-core tests
-        if: inputs.activity_only != true && inputs.remaining_ui_only != true
+        if: inputs.activity_only != true && inputs.remaining_ui_only != true && inputs.gallery_only != true
         timeout-minutes: 10
         run: bash ./gradlew :shared:iosSimulatorArm64Test --device "$SIMULATOR_ID" --console=plain
       - name: Simulator XCTest and UI tests
@@ -104,7 +108,7 @@ jobs:
           SELECTION=()
           if [[ '${{ inputs.activity_only }}' == 'true' ]]; then
             SELECTION=(-only-testing:SalatiUITests/SalatiUITests/testWidgetAndActivityRendererPreviews)
-          elif [[ '${{ inputs.remaining_ui_only }}' == 'true' ]]; then
+          elif [[ '${{ inputs.remaining_ui_only }}' == 'true' || '${{ inputs.gallery_only }}' == 'true' ]]; then
             SELECTION=(-only-testing:SalatiUITests/SalatiUITests/testSystemWidgetGalleryAndInstalledWidget)
           fi
           xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/TestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO "${SELECTION[@]}" test-without-building
@@ -117,7 +121,7 @@ jobs:
           fi
           xcrun simctl spawn "$SIMULATOR_ID" log show --last 40m --style compact --predicate 'subsystem == "com.salati.prayertimes.ios" OR process == "appintentsd"' > iosApp/activity-intents.log || true
       - name: Select compact simulator after main device finishes
-        if: inputs.activity_only != true
+        if: inputs.activity_only != true && inputs.gallery_only != true
         timeout-minutes: 12
         run: |
           xcrun simctl shutdown "$SIMULATOR_ID"
@@ -126,19 +130,19 @@ jobs:
           xcrun simctl boot "$SMALL"
           xcrun simctl bootstatus "$SMALL" -b
       - name: Compact iPhone and large-text UI checks
-        if: inputs.activity_only != true
+        if: inputs.activity_only != true && inputs.gallery_only != true
         timeout-minutes: 15
         run: |
           xcodebuild -project iosApp/Salati.xcodeproj -scheme Salati -destination "id=$COMPACT_SIMULATOR_ID" -derivedDataPath iosApp/.derivedData -resultBundlePath iosApp/CompactTestResults.xcresult CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES -parallel-testing-enabled NO -only-testing:SalatiUITests/SalatiUITests/testChooseOfflineCityAndNavigate -only-testing:SalatiUITests/SalatiUITests/testAccessibilityCalendarAndHome -only-testing:SalatiUITests/SalatiUITests/testCompactWidgetLayouts test-without-building
       - name: Export compact screenshots
-        if: always() && inputs.activity_only != true
+        if: always() && inputs.activity_only != true && inputs.gallery_only != true
         continue-on-error: true
         run: |
           if [[ -d iosApp/CompactTestResults.xcresult ]]; then
             xcrun xcresulttool export attachments --path iosApp/CompactTestResults.xcresult --output-path iosApp/screenshots-compact
           fi
       - name: Capture running simulator
-        if: success() && inputs.activity_only != true
+        if: success() && inputs.activity_only != true && inputs.gallery_only != true
         run: |
           xcrun simctl terminate "$COMPACT_SIMULATOR_ID" com.salati.prayertimes.ios || true
           xcrun simctl launch "$COMPACT_SIMULATOR_ID" com.salati.prayertimes.ios
