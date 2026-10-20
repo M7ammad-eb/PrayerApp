@@ -155,12 +155,12 @@ final class SalatiTests:XCTestCase {
         previous.location=SavedLocation(name:"Madinah",latitude:24.4672,longitude:39.6111,zone:"Asia/Riyadh")
         legacy.set(try JSONEncoder().encode(previous),forKey:"settings.v1")
         var migrated=Settings.load(from:primary,legacy:legacy)
-        XCTAssertEqual(migrated.language,"ar")
+        XCTAssertEqual(migrated.language,AppLanguage.current)
         XCTAssertTrue(migrated.onboardingComplete)
         XCTAssertEqual(migrated.location,previous.location)
         XCTAssertNotNil(primary.data(forKey:"settings.v1"))
         migrated.language="en";migrated.save(to:primary)
-        XCTAssertEqual(Settings.load(from:primary,legacy:legacy).language,"en")
+        XCTAssertEqual(Settings.load(from:primary,legacy:legacy).language,AppLanguage.current)
         // The old shared preference must never override a newer private preference.
         XCTAssertEqual(Settings.load(from:primary,legacy:legacy).location,previous.location)
     }

@@ -1,2 +1,2 @@
-"NSLocationWhenInUseUsageDescription" = "Salati uses your coordinates to calculate prayer times and label your location offline.";
+"NSLocationWhenInUseUsageDescription" = "Your location is used to find local prayer times and Qibla direction.";
 "NSAlarmKitUsageDescription" = "Allow Salati to schedule system alarms for prayers you choose.";

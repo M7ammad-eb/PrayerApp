@@ -28,13 +28,13 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.8</string>
 	<key>CFBundleVersion</key>
-	<string>4</string>
+	<string>5</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAlarmKitUsageDescription</key>
 	<string>Allow Salati to schedule prominent system alarms for prayers you choose.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Salati uses your coordinates to calculate prayer times and label your location from the bundled offline city database.</string>
+	<string>Your location is used to find local prayer times and Qibla direction.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIBackgroundModes</key>

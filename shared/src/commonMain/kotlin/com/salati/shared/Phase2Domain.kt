@@ -122,11 +122,21 @@ object SharedPresentation {
             val civilRows = day.events.map { day.dateISO + "." + it.id }
             val tomorrow = next?.first?.takeIf { it.startsWith(day.followingDateISO + ".") }
             val previous = current?.first?.takeIf { it !in civilRows && !fajrEnded }
+            // A prayer board has one slot per prayer, not one row per civil event.
+            // Keep exact event identity while substituting the relevant overnight occurrence.
+            // Civil schedules and the Maghrib religious-date boundary remain unchanged.
+            val displayRows = day.events.map { event ->
+                when {
+                    tomorrow != null && next?.second?.id == event.id -> tomorrow
+                    previous != null && current?.second?.id == event.id -> previous
+                    else -> day.dateISO + "." + event.id
+                }
+            }
             PresentationMoment(instant, day.dateISO, if (sunset) day.followingDateISO else day.dateISO,
                 if (sunset) day.sunsetHijriEnglish else day.civilHijriEnglish,
                 if (sunset) day.sunsetHijriArabic else day.civilHijriArabic,
                 if(fajrEnded) null else current?.first,
-                next?.first, civilRows + listOfNotNull(tomorrow), tomorrow, previous)
+                next?.first, displayRows, tomorrow, previous)
         }
     }
 }

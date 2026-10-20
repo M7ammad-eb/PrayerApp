@@ -42,38 +42,27 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     @Environment(\.scenePhase) private var phase
     var body: some Scene {
         WindowGroup {
-            LocalizedRootHost(model:model,selectedTab:$selectedTab)
-                .id(model.settings.language)
-                .ignoresSafeArea()
-                .task { await model.refresh() }
-                .onChange(of:phase) { _,phase in if phase == .active {model.queueRefresh();model.requestRoutineLocation()} }
+            root
+                .task { await model.scheduler.cleanupLiveActivities();await model.refresh() }
+                .onChange(of:phase) { _,phase in if phase == .active {
+                    model.syncSystemLanguage()
+                    Task {await model.scheduler.cleanupLiveActivities();model.queueRefresh()}
+                    model.requestRoutineLocation()
+                } }
                 .onReceive(NotificationCenter.default.publisher(for:UIApplication.significantTimeChangeNotification)) { _ in model.queueRefresh() }
                 .onReceive(NotificationCenter.default.publisher(for:.salatiScheduleNeedsRefresh)) { _ in model.queueRefresh() }
         }
     }
-}
-// Locale changes replace a controller, not a transform on an existing Form/List host.
-// Semantic direction is scoped to this window's new native host; no global appearance flips.
-struct LocalizedRootHost:UIViewControllerRepresentable {
-    @ObservedObject var model:AppModel
-    @Binding var selectedTab:Int
-    private var content:AnyView {
+    // Language follows Settings.app. Keep one native SwiftUI hierarchy rather
+    // than destroying a UIKit host in the middle of an in-app picker interaction.
+    private var root:some View {
         let root=RootView(selectedTab:$selectedTab).environmentObject(model)
             .environment(\.locale,model.locale)
-            .environment(\.layoutDirection,model.arabic ? .rightToLeft:.leftToRight)
+            .environment(\.layoutDirection,AppLanguage.isRightToLeft(model.settings.language) ? .rightToLeft:.leftToRight)
             .preferredColorScheme(model.settings.appearance == "dark" ? .dark:model.settings.appearance == "light" ? .light:nil)
             .tint(Color("AccentColor"))
         if ProcessInfo.processInfo.arguments.contains("-uiTestingLargeText") {return AnyView(root.dynamicTypeSize(.accessibility3))}
         return AnyView(root)
-    }
-    func makeUIViewController(context:Context)->UIHostingController<AnyView> {
-        let controller=UIHostingController(rootView:content)
-        controller.view.semanticContentAttribute=model.arabic ? .forceRightToLeft:.forceLeftToRight
-        controller.view.backgroundColor = .systemBackground
-        return controller
-    }
-    func updateUIViewController(_ controller:UIHostingController<AnyView>,context:Context) {
-        controller.rootView=content
     }
 }
 struct RootView: View {

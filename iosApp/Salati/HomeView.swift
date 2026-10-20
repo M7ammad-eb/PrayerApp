@@ -10,52 +10,36 @@ struct HomeView: View {
             if let day=model.day {
                 Section {
                     VStack(alignment:.leading,spacing:16) {
-                        HStack {
-                            Label("Up next",systemImage:"clock").font(.subheadline.weight(.medium)).foregroundStyle(Color.accentColor)
-                            Spacer()
-                            if !day.events.contains(where:{$0.epochSeconds == day.next.epochSeconds}) {Text("Tomorrow").font(.caption.weight(.semibold)).foregroundStyle(.secondary)}
-                        }
+                        Label("Up next",systemImage:"clock").font(.subheadline.weight(.medium)).foregroundStyle(Color.accentColor)
+                        if let next=model.presentationSnapshot?.events.first(where:{$0.id == model.nextEventID}) {
                         ViewThatFits(in:.horizontal) {
-                            HStack(alignment:.firstTextBaseline) { Text(model.title(day.next)).font(.largeTitle.weight(.semibold)); Spacer(); Text(model.time(day.next.epochSeconds)).font(.title.weight(.medium)).monospacedDigit().environment(\.layoutDirection,.leftToRight) }
-                            VStack(alignment:.leading) { Text(model.title(day.next)).font(.largeTitle.weight(.semibold)); Text(model.time(day.next.epochSeconds)).font(.title).monospacedDigit().environment(\.layoutDirection,.leftToRight) }
+                            HStack(alignment:.firstTextBaseline) { Text(next.title).font(.largeTitle.weight(.semibold)); Spacer(); Text(next.timeText).font(.title.weight(.medium)).monospacedDigit().environment(\.layoutDirection,.leftToRight) }
+                            VStack(alignment:.leading) { Text(next.title).font(.largeTitle.weight(.semibold)); Text(next.timeText).font(.title).monospacedDigit().environment(\.layoutDirection,.leftToRight) }
                         }
-                        if Date(timeIntervalSince1970:day.next.epochSeconds)>Date() {
-                            Text(timerInterval:Date()...Date(timeIntervalSince1970:day.next.epochSeconds),countsDown:true)
+                        if next.date>Date() {
+                            Text(timerInterval:Date()...next.date,countsDown:true)
                                 .font(.system(.largeTitle,design:.rounded,weight:.light)).monospacedDigit().environment(\.locale,Locale(identifier:"en_US_POSIX"))
                                 .environment(\.layoutDirection,.leftToRight).accessibilityLabel(Text("Time until next prayer"))
                         }
-                        Text(model.arabic ? day.hijriArabic : day.hijriEnglish).font(.subheadline).foregroundStyle(.secondary)
-                        if !day.currentEnded && !day.events.contains(where:{$0.epochSeconds == day.current.epochSeconds}) {
-                            HStack {
-                                Text("Current prayer")
-                                Text(model.title(day.current))
-                                Text("Previous day")
-                            }.font(.caption).foregroundStyle(.secondary).accessibilityElement(children:.combine)
                         }
+                        Text(model.arabic ? day.hijriArabic : day.hijriEnglish).font(.subheadline).foregroundStyle(.secondary)
                     }.padding(.vertical,12)
                 }.listRowBackground(Color.accentColor.opacity(0.09))
-                Section(model.displayDate(Date())) {
-                    ForEach(day.events,id:\.id) { event in
+                Section("Prayer times") {
+                    ForEach(model.displayEvents) { event in
+                        let next=event.id == model.nextEventID
+                        let current=event.id == model.currentEventID
                         HStack(spacing:14) {
-                            Image(systemName:symbol(event.id)).foregroundStyle(event.epochSeconds == day.next.epochSeconds ? Color.accentColor : (event.epochSeconds == day.current.epochSeconds && !day.currentEnded ? Color.primary:Color.secondary)).frame(width:28).accessibilityHidden(true)
+                            Image(systemName:symbol(event.id)).foregroundStyle(next ? Color.accentColor : (current ? Color.primary:Color.secondary)).frame(width:28).accessibilityHidden(true)
                             VStack(alignment:.leading,spacing:3) {
-                                Text(model.title(event)).fontWeight(event.epochSeconds == day.next.epochSeconds ? .semibold : .regular)
-                                if event.epochSeconds == day.current.epochSeconds && !day.currentEnded {Label("Current prayer",systemImage:"circle.fill").font(.caption).foregroundStyle(.primary)}
-                                else if event.epochSeconds == day.next.epochSeconds {Label("Up next",systemImage:"circle.fill").font(.caption).foregroundStyle(Color.accentColor)}
+                                Text(event.title).fontWeight(next || current ? .semibold:.regular)
+                                if current {Label("Current prayer",systemImage:"circle.fill").font(.caption).foregroundStyle(.primary)}
+                                else if next {Label("Up next",systemImage:"circle.fill").font(.caption).foregroundStyle(Color.accentColor)}
                             }
                             Spacer(minLength:8)
-                            Text(model.time(event.epochSeconds)).monospacedDigit().environment(\.layoutDirection,.leftToRight).fontWeight(event.epochSeconds == day.next.epochSeconds ? .semibold : .regular)
-                        }.foregroundStyle(event.epochSeconds == day.next.epochSeconds ? Color.accentColor:(event.epochSeconds == day.current.epochSeconds && !day.currentEnded ? Color.primary:Color.secondary)).padding(.vertical,6).accessibilityElement(children:.combine)
-                    }
-                }
-                if !day.events.contains(where:{$0.epochSeconds == day.next.epochSeconds}) {
-                    Section("Tomorrow") {
-                        HStack {
-                            Label(model.title(day.next),systemImage:symbol(day.next.id))
-                            Spacer()
-                            Text(model.time(day.next.epochSeconds)).monospacedDigit().environment(\.layoutDirection,.leftToRight)
-                        }.fontWeight(.semibold).foregroundStyle(Color.accentColor)
-                        Text("Up next").font(.caption).foregroundStyle(Color.accentColor)
+                            Text(event.timeText).monospacedDigit().environment(\.layoutDirection,.leftToRight).fontWeight(next || current ? .semibold:.regular)
+                        }.foregroundStyle(next ? Color.accentColor:(current ? Color.primary:Color.secondary))
+                            .padding(.vertical,7).accessibilityElement(children:.combine).accessibilityIdentifier("homePrayer."+event.id)
                     }
                 }
                 Section {
@@ -64,7 +48,7 @@ struct HomeView: View {
                 } header: {Text("The night")}
                 Section {
                     NavigationLink("Notifications and adhan") { NotificationSettingsView() }
-                } footer: { Text("Prayer countdowns start automatically when enabled. Open Salati regularly to replenish future alerts.") }
+                }
                 #if SALATI_APP
                 if ProcessInfo.processInfo.arguments.contains("-uiTestingShowcase") {
                     Section("Presentation previews") {
@@ -73,9 +57,6 @@ struct HomeView: View {
                 }
                 #endif
             } else { ContentUnavailableView("Choose your location",systemImage:"location",description:Text("Prayer times are calculated entirely on your device.")) }
-            if model.scheduleStatus != nil {
-                Section {NavigationLink {NotificationSettingsView()} label:{Label("Review your alert settings",systemImage:"bell.badge")}}
-            }
         }
         .navigationTitle("Salati").navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -83,12 +64,18 @@ struct HomeView: View {
             ToolbarItem(placement:.topBarTrailing) { Button {showPlaces=true} label: { Label(model.settings.location == nil ? (model.arabic ? "الموقع" : "Location") : model.locationDisplayName,systemImage:"location").labelStyle(.titleAndIcon).lineLimit(1) } }
         }
         .sheet(isPresented:$showPlaces) { NavigationStack { PlacesView() } }
-        .task(id:model.day?.next.epochSeconds) {
-            guard let time=model.day?.next.epochSeconds else { return }
+        .task(id:model.nextEventID) {
+            guard let next=model.presentationSnapshot?.events.first(where:{$0.id == model.nextEventID}) else { return }
+            let time=next.date.timeIntervalSince1970
             do { try await Task.sleep(for:.seconds(max(1,time-Date().timeIntervalSince1970+1))); model.queueRefresh() } catch { }
         }
     }
     func symbol(_ id: String) -> String {
-        switch id { case "FAJR": "sun.horizon"; case "SUNRISE": "sunrise"; case "DHUHR": "sun.max"; case "ASR": "sun.haze"; case "MAGHRIB": "sunset"; default: "moon.stars" }
+        if id.contains("FAJR") {return "sun.horizon"}
+        if id.contains("SUNRISE") {return "sunrise"}
+        if id.contains("DHUHR") {return "sun.max"}
+        if id.contains("ASR") {return "sun.haze"}
+        if id.contains("MAGHRIB") {return "sunset"}
+        return "moon.stars"
     }
 }

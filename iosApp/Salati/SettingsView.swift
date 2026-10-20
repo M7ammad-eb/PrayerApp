@@ -3,12 +3,13 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var model: AppModel
     @State private var places=false
+    @Environment(\.openURL) private var openURL
     var body: some View {
         Form {
             Section("Location") {
                 Button {places=true} label: {LabeledContent("City",value:model.locationDisplayName)}
                 if let location=model.settings.location {
-                    Label(LocalizedStringKey(location.isGPS ? "Using exact GPS coordinates" : "Offline manual location"),systemImage:location.isGPS ? "location.fill":"mappin")
+                    Label(LocalizedStringKey(location.isGPS ? "Current location" : "Selected city"),systemImage:location.isGPS ? "location.fill":"mappin")
                         .font(.footnote).foregroundStyle(.secondary)
                     DisclosureGroup("Location details") {
                         Text(String(format:"%.5f, %.5f",locale:Locale(identifier:"en_US_POSIX"),location.latitude,location.longitude))
@@ -17,7 +18,6 @@ struct SettingsView: View {
                         if let date=location.lastUpdated {HStack {Text("Last location update");Text(date,style:.relative)}.font(.caption).foregroundStyle(.secondary)}
                     }
                 }
-                LocationStatusView(service:model.locationService,showLastUpdate:false)
             }
             Section("Calculation") {
                 Picker("Method",selection:Binding(get:{model.settings.method},set:{model.settings.calculationMethodOverridden=true;model.settings.method=$0})) { ForEach(model.engine.calculationMethods,id:\.self) { Text(LocalizedStringKey($0)).tag($0) } }
@@ -27,13 +27,13 @@ struct SettingsView: View {
                 NavigationLink("Hijri adjustment") { HijriView() }
             }
             Section("Display") {
-                Picker("Language",selection:$model.settings.language) {
-                    Text("English").tag("en")
-                    Text("العربية").tag("ar")
-                }.pickerStyle(.segmented).accessibilityIdentifier("appLanguage")
+                Button {
+                    if let url=URL(string:UIApplication.openSettingsURLString) {openURL(url)}
+                } label: {
+                    LabeledContent("Language") {HStack {Text(model.languageDisplayName);Image(systemName:"arrow.up.forward").font(.caption)}}
+                }.accessibilityIdentifier("appLanguage")
                 Picker("Appearance",selection:$model.settings.appearance) {Text("System").tag("system");Text("Light").tag("light");Text("Dark").tag("dark")}
                 Toggle("24-hour time",isOn:$model.settings.use24Hour)
-                Text("Western digits (0123456789) are used in both languages.").font(.footnote).foregroundStyle(.secondary)
             }
             Section("Prayer alerts") {
                 NavigationLink("Notifications and adhan") { NotificationSettingsView() }
@@ -47,8 +47,12 @@ struct SettingsView: View {
                 Text("Salati · صلاتي").font(.headline)
                 Text("Version \(Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "—") (\(Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "—"))")
                     .font(.footnote).monospacedDigit().accessibilityIdentifier("appBuildIdentity")
-                Text("Offline city data: GeoNames, CC BY 4.0. Calendar month boundaries: OpenJDK Hijrah-umalqura.").font(.footnote)
-                Link("GeoNames attribution",destination:URL(string:"https://www.geonames.org/about.html")!)
+                NavigationLink("Acknowledgements") {
+                    List {
+                        Section("City data") {Text("GeoNames / CC BY 4.0");Link("GeoNames attribution",destination:URL(string:"https://www.geonames.org/about.html")!)}
+                        Section("Calendar") {Text("OpenJDK Hijrah-umalqura")}
+                    }.navigationTitle("Acknowledgements").navigationBarTitleDisplayMode(.inline)
+                }
             }
         }.navigationTitle("Settings").navigationBarTitleDisplayMode(.inline).sheet(isPresented:$places) {NavigationStack {PlacesView()}}
             .sheet(isPresented:$model.reviewingSetup) {OnboardingView(review:true)}

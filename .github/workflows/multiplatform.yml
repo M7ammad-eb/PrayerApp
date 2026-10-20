@@ -50,6 +50,8 @@ jobs:
             shared/build/reports/tests
             app/build/outputs/apk/debug/*.apk
   ios:
+    needs: android
+    if: always() && (needs.android.result == 'success' || needs.android.result == 'skipped')
     runs-on: macos-26
     timeout-minutes: 80
     env:

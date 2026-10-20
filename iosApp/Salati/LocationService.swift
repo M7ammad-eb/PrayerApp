@@ -68,10 +68,10 @@ struct LocationFix {
         Task {@MainActor [weak self] in
             guard let self,self.isAcquiring else {return}
             guard LocationAcceptance.shared.usableFix(accuracyMeters:sample.accuracy,fixEpoch:sample.timestamp.timeIntervalSince1970,nowEpoch:Date().timeIntervalSince1970,explicit:self.explicitRequest) else {
-                self.finish("The location is stale or imprecise. Try again or choose a city.");return
+                self.finish("Couldn’t find your location. Try again or choose a city.");return
             }
             let explicit=self.explicitRequest;self.cancel();self.lastUpdate=sample.timestamp
-            self.message="Resolving your offline place…";self.onFix?(sample,explicit)
+            self.message="Finding your city…";self.onFix?(sample,explicit)
         }
     }
     nonisolated func locationManager(_ manager:CLLocationManager,didUpdateHeading value:CLHeading) {

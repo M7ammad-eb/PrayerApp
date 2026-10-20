@@ -28,7 +28,7 @@ struct Settings: Codable, Equatable {
     var adjustments = [Int](repeating: 0, count: 6)
     var hijriOffset = 0
     var hijriAnchor: String?
-    var language = "en"
+    var language = AppLanguage.current
     var appearance = "system"
     var use24Hour = false
     var onboardingComplete = false
@@ -68,9 +68,10 @@ struct Settings: Codable, Equatable {
             guard let data,let value=try? JSONDecoder().decode(Settings.self,from:data),value.adjustments.count == 6 else {return nil}
             return value
         }
-        if let value=decode(defaults.data(forKey:"settings.v1")) {return value}
+        if var value=decode(defaults.data(forKey:"settings.v1")) {value.language=AppLanguage.current;return value}
         let previous=legacy ?? UserDefaults(suiteName:SharedScheduleStorage.declaredGroup)
-        if let value=decode(previous?.data(forKey:"settings.v1")) {
+        if var value=decode(previous?.data(forKey:"settings.v1")) {
+            value.language=AppLanguage.current
             value.save(to:defaults)
             return value
         }

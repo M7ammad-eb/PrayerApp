@@ -16,7 +16,7 @@ struct SnapshotDay: Codable {
     let events: [SnapshotEvent]
 }
 struct SnapshotMoment: Codable {
-    let date: Date
+    var date: Date
     let civilDateISO: String
     let religiousDateISO: String
     let hijriEnglish: String
@@ -126,11 +126,12 @@ struct PrayerActivityAttributes: ActivityAttributes {
         var start: Date? = nil
         var timeText: String = ""
         var endMessage: String = ""
+        var finished:Bool = false
         init(title:String,date:Date,eventID:String="",language:String="en",start:Date?=nil,timeText:String="",endMessage:String="") {
             self.title=title;self.date=date;self.eventID=eventID;self.language=language
             self.start=start;self.timeText=timeText;self.endMessage=endMessage
         }
-        enum CodingKeys:String,CodingKey {case title,date,eventID,language,start,timeText,endMessage}
+        enum CodingKeys:String,CodingKey {case title,date,eventID,language,start,timeText,endMessage,finished}
         init(from decoder:Decoder) throws {
             let c=try decoder.container(keyedBy:CodingKeys.self)
             title=try c.decode(String.self,forKey:.title);date=try c.decode(Date.self,forKey:.date)
@@ -139,6 +140,7 @@ struct PrayerActivityAttributes: ActivityAttributes {
             start=try c.decodeIfPresent(Date.self,forKey:.start)
             timeText=try c.decodeIfPresent(String.self,forKey:.timeText) ?? ""
             endMessage=try c.decodeIfPresent(String.self,forKey:.endMessage) ?? ""
+            finished=try c.decodeIfPresent(Bool.self,forKey:.finished) ?? false
         }
     }
     var city: String

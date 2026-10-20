@@ -1,2 +1,2 @@
-"NSLocationWhenInUseUsageDescription" = "يستخدم صلاتي إحداثياتك لحساب المواقيت وتسمية موقعك باستخدام قاعدة المدن دون اتصال.";
+"NSLocationWhenInUseUsageDescription" = "يُستخدم موقعك لتحديد مواقيت الصلاة واتجاه القبلة.";
 "NSAlarmKitUsageDescription" = "اسمح لصلاتي بجدولة منبهات النظام للصلوات التي تختارها.";

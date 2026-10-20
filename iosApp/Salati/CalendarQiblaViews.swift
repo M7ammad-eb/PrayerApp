@@ -57,7 +57,7 @@ struct HijriView: View {
                         .contentShape(Rectangle())
                         .simultaneousGesture(DragGesture(minimumDistance:30).onEnded {value in
                             guard abs(value.translation.width)>50,abs(value.translation.width)>abs(value.translation.height)*1.6 else {return}
-                            let forward=model.arabic ? value.translation.width>0 : value.translation.width<0
+                            let forward=AppLanguage.isRightToLeft(model.settings.language) ? value.translation.width>0 : value.translation.width<0
                             navigate(forward ? 1 : -1,page:page)
                         })
                 }

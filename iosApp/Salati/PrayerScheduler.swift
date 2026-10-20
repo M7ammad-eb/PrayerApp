@@ -54,14 +54,15 @@ struct ScheduledLivePrayer: Equatable {
 }
 @MainActor struct LiveActivitySubmissionBatch {
     struct Result {var accepted:[ScheduledLivePrayer]=[];var failures:[String]=[];var blocked=false}
-    func run(_ desired:[ScheduledLivePrayer],retain:(ScheduledLivePrayer) async -> Bool,
+    func run(_ desired:[ScheduledLivePrayer],skip:(ScheduledLivePrayer)->Bool = {_ in false},retain:(ScheduledLivePrayer) async -> Bool,
              submit:(ScheduledLivePrayer) async throws -> Void) async -> Result {
         var result=Result()
         for item in desired {
+            if skip(item) {continue}
             // Matching scheduled activities still count after the first capacity
             // error; only new API submissions are blocked for this batch.
             if await retain(item) {result.accepted.append(item);continue}
-            guard !result.blocked else {continue}
+            guard !result.blocked,!skip(item) else {continue}
             do {try await submit(item);result.accepted.append(item)}
             catch {
                 result.failures.append(error.localizedDescription)
@@ -301,6 +302,8 @@ struct ScheduleDiagnostic: Codable {
     private let reconciler:AlertReconciler
     private let operations=SerialSchedulingQueue()
     private var expiryTask:Task<Void,Never>?
+    private let liveLifecycle=PrayerLiveActivityLifecycle(backend:SystemPrayerActivityBackend(),defaults:.standard)
+    private var liveStateObservers:[String:Task<Void,Never>]=[:]
     private var activityObserver:Task<Void,Never>?
     private var alarmObserver:Task<Void,Never>?
     private var alarmAuthorizationObserver:Task<Void,Never>?
@@ -314,7 +317,7 @@ struct ScheduleDiagnostic: Codable {
             for await enabled in ActivityAuthorizationInfo().activityEnablementUpdates {
                 guard !Task.isCancelled else {return}
                 self?.record("Live Activity authorization",result:enabled ? "enabled" : "disabled")
-                if !enabled {for activity in Activity<PrayerActivityAttributes>.activities {await activity.end(nil,dismissalPolicy:.immediate)}}
+                if !enabled {await self?.cleanupLiveActivities(enabled:false)}
                 NotificationCenter.default.post(name:.salatiScheduleNeedsRefresh,object:nil)
             }
         }
@@ -362,7 +365,7 @@ struct ScheduleDiagnostic: Codable {
             !item.reminder || !liveResult.accepted.contains {$0.id == item.id.replacingOccurrences(of:".reminder",with:".live") && abs($0.start.timeIntervalSince(item.date))<1}
         }
         var requests=filtered.filter {$0.date>now}.map {NativeAlertRequest.make($0,settings:settings)}
-        for failed in live where !liveResult.accepted.contains(where:{$0.id == failed.id}) && failed.start>now {
+        for failed in live where !liveResult.accepted.contains(where:{$0.id == failed.id}) && failed.start>now && !liveLifecycle.isDismissed(failed.id,now:now) {
             if !requests.contains(where:{$0.reminder && abs($0.date.timeIntervalSince(failed.start))<1 && $0.prayerDate == failed.date}) {
                 requests.append(.init(id:failed.id+".fallback",route:.notification,date:failed.start,prayerDate:failed.date,prayer:"",title:failed.title,body:settings.language == "ar" ? "اقترب موعد الصلاة" : "Prayer time is approaching",sound:settings.reminderSound ? "default" : "silent",recording:nil,language:settings.language,reminder:true))
             }
@@ -383,7 +386,7 @@ struct ScheduleDiagnostic: Codable {
             let fallbackAccepted=requests.contains {$0.reminder && $0.prayerDate == item.date && abs($0.date.timeIntervalSince(item.start))<1 && result.accepted.contains($0.id)}
             let previous=Activity<PrayerActivityAttributes>.activities.filter {$0.content.state.eventID == item.id}
             if fallbackAccepted {
-                for activity in previous {await activity.end(nil,dismissalPolicy:.immediate)}
+                for activity in previous {await liveLifecycle.finish(id:activity.id)}
                 record("outdated Live Activity removed",result:item.id+"; corrected reminder accepted first")
             } else if !previous.isEmpty {
                 failures.append(settings.language == "ar" ? "بقي نشاط مباشر سابق قد يعرض موعدًا أو موقعًا قديمًا؛ تعذّر استبداله وتجهيز تذكيره البديل. افتح التشخيص المحلي." : "A previous Live Activity may show an outdated time or location: replacement and its fallback were unavailable. Review local diagnostics.")
@@ -399,15 +402,59 @@ struct ScheduleDiagnostic: Codable {
         return settings.language == "ar" ? "تم تجهيز \(result.prepared) تنبيهًا حتى \(horizon)، و\(liveResult.accepted.count) أنشطة مباشرة. \(error)" : "\(result.prepared) alerts prepared through \(horizon); \(liveResult.accepted.count) Live Activities. \(error)"
     }
     private struct LiveResult {var accepted:[ScheduledLivePrayer]=[];var failures:[String]=[];var outdated:[ScheduledLivePrayer]=[]}
+    func dismissLiveActivity(eventID:String) async {
+        _=await operations.enqueue { [self] in
+            await liveLifecycle.dismiss(eventID:eventID)
+            record("Live Activity closed",result:eventID)
+            armLiveActivityExpiry()
+            return ""
+        }
+    }
+    func cleanupLiveActivities(enabled:Bool=true) async {
+        await liveLifecycle.cleanup(enabled:enabled)
+        observeLiveActivityStates()
+        armLiveActivityExpiry()
+    }
+    private func observeLiveActivityStates() {
+        let activities=Activity<PrayerActivityAttributes>.activities
+        let ids=Set(activities.map(\.id))
+        for id in liveStateObservers.keys where !ids.contains(id) {liveStateObservers.removeValue(forKey:id)?.cancel()}
+        for activity in activities where liveStateObservers[activity.id] == nil {
+            liveStateObservers[activity.id]=Task { @MainActor [weak self] in
+                for await state in activity.activityStateUpdates {
+                    guard !Task.isCancelled else {return}
+                    if state == .dismissed {
+                        self?.liveLifecycle.recordSystemDismissal(id:activity.id,eventID:activity.content.state.eventID,date:activity.content.state.date)
+                    }
+                    if state == .stale || state == .ended || state == .dismissed {
+                        await self?.liveLifecycle.cleanup()
+                        self?.armLiveActivityExpiry()
+                    }
+                }
+            }
+        }
+    }
+    private func armLiveActivityExpiry() {
+        expiryTask?.cancel()
+        guard let next=liveLifecycle.nextExpiry else {expiryTask=nil;return}
+        // No suspended-process execution promise: system stale UI and Close remain
+        // usable offline, and launch/foreground cleanup does not depend on a refresh.
+        expiryTask=Task { @MainActor [weak self] in
+            do {try await Task.sleep(for:.seconds(max(0.05,next.timeIntervalSinceNow)));try Task.checkCancellation()} catch {return}
+            await self?.liveLifecycle.cleanup()
+            self?.armLiveActivityExpiry()
+        }
+    }
     private func prepareLiveActivities(_ desired:[ScheduledLivePrayer],city:String,settings:Settings,now:Date,context:SchedulingContext) async -> LiveResult {
         var result=LiveResult()
         let enabled=settings.liveActivitiesEnabled && ActivityAuthorizationInfo().areActivitiesEnabled
-        for activity in Activity<PrayerActivityAttributes>.activities where !enabled || activity.content.state.date<=now {await activity.end(nil,dismissalPolicy:.immediate)}
+        await liveLifecycle.cleanup(now:now,enabled:enabled)
         guard enabled else {return result}
-        let future=desired.filter {$0.date>now}
-        let batch=await LiveActivitySubmissionBatch().run(future,retain:{item in
+        let future=desired.filter {$0.date>now && !liveLifecycle.isDismissed($0.id,now:now)}
+        let batch=await LiveActivitySubmissionBatch().run(future,skip:{self.liveLifecycle.isDismissed($0.id,now:Date())},retain:{item in
             let old=Activity<PrayerActivityAttributes>.activities.filter {$0.content.state.eventID == item.id}
             if let existing=old.first(where:{$0.content.state.date == item.date && $0.content.state.start == item.start && $0.content.state.title == item.title && $0.content.state.timeText == Self.formattedTime(item.date,settings:settings) && $0.content.state.language == settings.language && $0.attributes.city == city && $0.activityState != .dismissed && $0.activityState != .ended}) {
+                for duplicate in old where duplicate.id != existing.id {await self.liveLifecycle.finish(id:duplicate.id)}
                 self.record("Live Activity retained",result:existing.id+"; event "+item.id);return true
             }
             return false
@@ -420,26 +467,18 @@ struct ScheduleDiagnostic: Codable {
                 if item.start>now {
                     _=try Activity<PrayerActivityAttributes>.request(attributes:PrayerActivityAttributes(city:city),content:content,pushType:nil,style:.standard,alertConfiguration:AlertConfiguration(title:LocalizedStringResource(stringLiteral:item.title),body:LocalizedStringResource(stringLiteral:settings.language == "ar" ? "اقترب موعد الصلاة" : "Prayer time is approaching"),sound:settings.reminderSound ? .default : .named("salati_silent.caf")),start:item.start)
                 } else {_=try Activity<PrayerActivityAttributes>.request(attributes:PrayerActivityAttributes(city:city),content:content,pushType:nil)}
-                for previous in old {await previous.end(nil,dismissalPolicy:.immediate)}
+                for previous in old {await self.liveLifecycle.finish(id:previous.id)}
                 self.record("Live Activity submitted",result:item.id+"; start "+item.start.ISO8601Format()+"; prayer "+item.date.ISO8601Format()+"; staleDate is not dismissal")
             } catch {self.record("Live Activity failed",result:item.id+"; "+error.localizedDescription);throw error}
         })
         result.accepted=batch.accepted;result.failures=batch.failures
         result.outdated=future.filter {item in !result.accepted.contains(where:{$0.id == item.id}) && Activity<PrayerActivityAttributes>.activities.contains(where:{$0.content.state.eventID == item.id})}
         if batch.blocked {record("Live Activity batch stopped",result:"capacity/authorization/visibility prevents new requests; existing matching activities retained; remaining events use notification fallback")}
-        if result.accepted.count == desired.filter({$0.date>now}).count {
-            for old in Activity<PrayerActivityAttributes>.activities where !desired.contains(where:{$0.id == old.content.state.eventID}) {await old.end(nil,dismissalPolicy:.immediate)}
+        if result.accepted.count == future.count {
+            for old in Activity<PrayerActivityAttributes>.activities where !desired.contains(where:{$0.id == old.content.state.eventID}) && !old.content.state.eventID.hasPrefix("salati.showcase.") {await liveLifecycle.finish(id:old.id)}
         }
-        expiryTask?.cancel()
-        if let next=result.accepted.map(\.date).min() {
-            // Execution-only assistance, never the suspended-app expiry guarantee.
-            expiryTask=Task { @MainActor [weak self] in
-                do {try await Task.sleep(for:.seconds(max(0,next.timeIntervalSinceNow)));try Task.checkCancellation()} catch {return}
-                for activity in Activity<PrayerActivityAttributes>.activities where activity.content.state.date<=Date() {await activity.end(nil,dismissalPolicy:.immediate)}
-                self?.record("Live Activity expiry cleanup",result:"app executing; expired activities ended immediately")
-                NotificationCenter.default.post(name:.salatiScheduleNeedsRefresh,object:nil)
-            }
-        }
+        await liveLifecycle.cleanup()
+        observeLiveActivityStates();armLiveActivityExpiry()
         return result
     }
     private func prepareExpiryWarning(horizon:Date?,settings:Settings) async {
@@ -492,10 +531,10 @@ struct ScheduleDiagnostic: Codable {
         let formatter=formatter(settings:settings);formatter.dateFormat=settings.use24Hour ? "d MMM yyyy, HH:mm" : "d MMM yyyy, h:mm a";return formatter.string(from:date)
     }
     private static func formattedTime(_ date:Date,settings:Settings) -> String {
-        let formatter=formatter(settings:settings);formatter.dateFormat=settings.use24Hour ? "HH:mm" : "h:mm a";return formatter.string(from:date)
+        AppLanguage.time(date,language:settings.language,zone:TimeZone(identifier:settings.location?.zone ?? "UTC") ?? .gmt,use24Hour:settings.use24Hour)
     }
     private static func formatter(settings:Settings) -> DateFormatter {
-        let formatter=DateFormatter();formatter.locale=Locale(identifier:settings.language == "ar" ? "ar_SA@numbers=latn" : "en_US@numbers=latn");formatter.calendar=Calendar(identifier:.gregorian);formatter.timeZone=TimeZone(identifier:settings.location?.zone ?? "UTC") ?? .gmt;return formatter
+        let formatter=DateFormatter();formatter.locale=AppLanguage.locale(settings.language);formatter.calendar=Calendar(identifier:.gregorian);formatter.timeZone=TimeZone(identifier:settings.location?.zone ?? "UTC") ?? .gmt;return formatter
     }
 }
 extension Notification.Name {static let salatiScheduleNeedsRefresh=Notification.Name("salati.schedule.needsRefresh")}

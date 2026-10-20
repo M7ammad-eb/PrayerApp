@@ -23,7 +23,12 @@ import CoreLocation
     private var locationGeneration=0
     private var lastLocationCheck=Date.distantPast
     var arabic: Bool { settings.language == "ar" }
-    var locale: Locale { Locale(identifier: arabic ? "ar_SA@numbers=latn" : "en_US@numbers=latn") }
+    var locale: Locale { AppLanguage.locale(settings.language) }
+    var languageDisplayName:String {AppLanguage.name(settings.language)}
+    var displayEvents:[SnapshotEvent] {presentationSnapshot?.displayEvents(at:Date()) ?? []}
+    var currentEventID:String? {presentationSnapshot?.moment(at:Date())?.currentEventID}
+    var nextEventID:String? {presentationSnapshot?.moment(at:Date())?.nextEventID}
+    func syncSystemLanguage() {if settings.language != AppLanguage.current {settings.language=AppLanguage.current}}
     var zone: TimeZone { TimeZone(identifier:settings.location?.zone ?? "UTC") ?? .gmt }
     var calendar: Calendar { var c=Calendar(identifier:.gregorian); c.timeZone=zone; return c }
     var todayISO: String { iso(Date()) }
@@ -44,7 +49,7 @@ import CoreLocation
     init() {
         if ProcessInfo.processInfo.arguments.contains("-uiTestingReset") {
             settings=Settings()
-            if ProcessInfo.processInfo.arguments.contains("-uiTestingArabicDark") {settings.language="ar";settings.appearance="dark"}
+            if ProcessInfo.processInfo.arguments.contains("-uiTestingArabicDark") {settings.appearance="dark"}
             settings.save()
         }
         if ProcessInfo.processInfo.arguments.contains("-uiTestingGPSSuccess") {
@@ -74,12 +79,12 @@ import CoreLocation
                     if let current=self.settings.location,
                        !LocationAcceptance.shared.accept(currentLatitude:current.latitude,currentLongitude:current.longitude,currentIsGps:current.isGPS,
                         candidateLatitude:fix.latitude,candidateLongitude:fix.longitude,zoneChanged:current.zone != place.zone,explicit:explicit) {
-                        self.locationService.status("Location unchanged; small GPS movements are ignored.",date:fix.timestamp);return
+                        self.locationService.status("Location is up to date.",date:fix.timestamp);return
                     }
                     var location=place.location;location.latitude=fix.latitude;location.longitude=fix.longitude
                     location.isGPS=true;location.nearestDistance=distance;location.lastUpdated=fix.timestamp;location.accuracyMeters=fix.accuracy
-                    self.select(location);self.locationService.status("Location updated from GPS.",date:fix.timestamp)
-                } catch {self.locationService.status("Offline place lookup failed. Try again or select a location manually.");self.error=String(localized:"Prayer times could not be updated. Check your location and calculation settings.",locale:self.locale)}
+                    self.select(location);self.locationService.status("Location updated.",date:fix.timestamp)
+                } catch {self.locationService.status("Couldn’t find your location. Try again or choose a city.");self.error=String(localized:"Prayer times could not be updated. Check your location and calculation settings.",locale:self.locale)}
             }
         }
     }
@@ -101,16 +106,12 @@ import CoreLocation
         let f=DateFormatter(); f.locale=Locale(identifier:"en_US_POSIX"); f.calendar=calendar; f.timeZone=zone; f.dateFormat="yyyy-MM-dd"; return f.string(from:date)
     }
     func time(_ epoch: Double) -> String {
-        let parts=calendar.dateComponents([.hour,.minute],from:Date(timeIntervalSince1970:epoch))
-        let h=parts.hour ?? 0, m=parts.minute ?? 0
-        if settings.use24Hour { return String(format:"%02d:%02d",locale:Locale(identifier:"en_US_POSIX"),h,m) }
-        let marker=arabic ? (h<12 ? "ص" : "م") : (h<12 ? "AM" : "PM")
-        return String(format:"%d:%02d %@",locale:Locale(identifier:"en_US_POSIX"),h%12 == 0 ? 12 : h%12,m,marker)
+        AppLanguage.time(Date(timeIntervalSince1970:epoch),language:settings.language,zone:zone,use24Hour:settings.use24Hour)
     }
     func displayDate(_ date: Date) -> String {
         let f=DateFormatter(); f.locale=locale; f.calendar=calendar; f.timeZone=zone; f.setLocalizedDateFormatFromTemplate("EEEE d MMMM"); return f.string(from:date)
     }
-    func title(_ event: PrayerEvent) -> String { arabic ? event.arabicTitle : event.title }
+    func title(_ event: PrayerEvent) -> String {AppLanguage.text(event.id,language:settings.language)}
     func calculate(_ date: Date, now: Date = Date()) throws -> PrayerDay {
         guard let location=settings.location else { throw CocoaError(.validationMissingMandatoryProperty) }
         let a=settings.adjustments
@@ -144,7 +145,16 @@ import CoreLocation
             guard let date=calendar.date(byAdding:.day,value:delta,to:instant) else {return nil}
             return try? calculate(date,now:instant)
         }
-        return (makeSnapshot(schedules:schedules,now:instant,until:instant.addingTimeInterval(86400),configuration:settings),instant)
+        let fixture=makeSnapshot(schedules:schedules,now:instant,until:instant.addingTimeInterval(86400),configuration:settings)
+        // Translate a shared-calculated test scenario onto the current clock so
+        // previews exercise WidgetKit's real flexible timer, not static text.
+        let reference=Date(),shift=reference.timeIntervalSince(instant)
+        func event(_ value:SnapshotEvent)->SnapshotEvent {
+            .init(id:value.id,title:value.title,date:value.date.addingTimeInterval(shift),timeText:value.timeText)
+        }
+        let days=fixture.days.map {SnapshotDay(dateISO:$0.dateISO,start:$0.start.addingTimeInterval(shift),end:$0.end.addingTimeInterval(shift),hijriEnglish:$0.hijriEnglish,hijriArabic:$0.hijriArabic,events:$0.events.map(event))}
+        let moments=fixture.moments.map {value -> SnapshotMoment in var copy=value;copy.date=value.date.addingTimeInterval(shift);return copy}
+        return (ScheduleSnapshot(city:fixture.city,events:fixture.events.map(event),validUntil:fixture.validUntil.addingTimeInterval(shift),language:fixture.language,use24Hour:fixture.use24Hour,days:days,moments:moments,zone:fixture.zone),reference)
     }
     func queueRefresh() {
         refreshTask?.cancel()

@@ -1,7 +1,8 @@
 import XCTest
 final class SalatiUITests:XCTestCase {
+    override func setUp() {super.setUp();continueAfterFailure=false}
     func testChooseOfflineCityAndNavigate() {
-        let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingHeading90"];app.launch()
+        let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingHeading90"];launch(app)
         chooseCity("Damascus",app:app,captureSetup:true)
         XCTAssertTrue(app.tabBars.buttons["Calendar"].waitForExistence(timeout:10))
         capture("Prayer home")
@@ -11,44 +12,35 @@ final class SalatiUITests:XCTestCase {
         app.tabBars.buttons["Qibla"].tap();capture("Qibla simulated true heading 90 English")
         XCTAssertTrue(app.otherElements["qiblaCompass"].exists)
         app.tabBars.buttons["Settings"].tap()
-        let language=languageControl(app)
-        capture("Settings Display language")
-        language.buttons["العربية"].tap()
-        XCTAssertTrue(app.tabBars.buttons["الإعدادات"].waitForExistence(timeout:5))
-        assertLanguageDirection(app,arabic:true)
-        capture("Settings immediately after switching to Arabic")
-        app.tabBars.buttons["التقويم"].tap();capture("Calendar after switching to Arabic")
-        app.tabBars.buttons["القبلة"].tap();capture("Qibla simulated true heading 90 Arabic")
-        app.tabBars.buttons["الإعدادات"].tap()
-        languageControl(app).buttons["English"].tap()
-        XCTAssertTrue(app.tabBars.buttons["Settings"].waitForExistence(timeout:5))
-        assertLanguageDirection(app,arabic:false)
-        capture("Settings immediately after returning to English")
-        // Repeat both directions and reopen a native sheet to catch host-direction regressions.
-        languageControl(app).buttons["العربية"].tap()
-        assertLanguageDirection(app,arabic:true)
-        languageControl(app).buttons["English"].tap()
-        assertLanguageDirection(app,arabic:false)
-        app.swipeDown();app.swipeDown()
-        let city=app.buttons.matching(NSPredicate(format:"label CONTAINS 'Damascus'")).firstMatch
-        reveal(city,app:app,direction:.down)
-        XCTAssertTrue(city.exists);city.tap()
-        XCTAssertTrue(app.searchFields.firstMatch.waitForExistence(timeout:5))
-        capture("Location sheet after repeated language transitions")
-        app.buttons["Done"].tap()
-        languageControl(app).buttons["العربية"].tap()
-        assertLanguageDirection(app,arabic:true)
-        app.terminate();app.launchArguments=[];app.launch()
-        XCTAssertTrue(app.tabBars.buttons["الإعدادات"].waitForExistence(timeout:10))
-        app.tabBars.buttons["الإعدادات"].tap()
-        assertLanguageDirection(app,arabic:true)
-        languageControl(app).buttons["English"].tap()
-        assertLanguageDirection(app,arabic:false)
-        capture("English settings after language persistence relaunch")
+        _=languageControl(app)
+        capture("Settings language follows iPhone")
+        languageControl(app).tap()
+        let preferences=XCUIApplication(bundleIdentifier:"com.apple.Preferences")
+        let opened=NSPredicate {_,_ in preferences.state == .runningForeground}
+        expectation(for:opened,evaluatedWith:nil);waitForExpectations(timeout:10)
+        captureScreen("Language action opens native iPhone app settings")
+        app.activate()
+        // Simulate the OS relaunch with its per-app language preference. Keep all
+        // app data; no bespoke in-app setting may override this launch choice.
+        for arabic in [true,false,true,false] {
+            app.terminate()
+            app.launchArguments=["-uiTestingHeading90"]+systemLanguage(arabic)
+            launch(app)
+            XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:10))
+            assertLanguageDirection(app,arabic:arabic)
+            app.tabBars.buttons[arabic ? "الإعدادات":"Settings"].tap()
+            _=languageControl(app)
+            capture(arabic ? "Arabic Settings from system language":"English Settings from system language")
+            app.tabBars.buttons[arabic ? "القبلة":"Qibla"].tap()
+            capture(arabic ? "Arabic Qibla physical heading 90":"English Qibla physical heading 90")
+            app.tabBars.buttons[arabic ? "الصلاة":"Prayer"].tap()
+            XCTAssertTrue(app.staticTexts.matching(NSPredicate(format:"label CONTAINS %@",arabic ? "دمشق":"Damascus")).firstMatch.waitForExistence(timeout:5))
+        }
+        app.tabBars.buttons["Settings"].tap()
         reviewAlertJourney(app)
     }
     func testArabicDarkOfflineFlow() {
-        let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingArabicDark"];app.launch()
+        let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingArabicDark"];launch(app)
         chooseCity("Madinah",app:app,captureSetup:true)
         XCTAssertTrue(app.tabBars.buttons["التقويم"].waitForExistence(timeout:10))
         capture("Arabic dark prayer home")
@@ -61,7 +53,7 @@ final class SalatiUITests:XCTestCase {
     }
     func testWidgetAndActivityRendererPreviews() {
         for arabic in [false,true] {
-            let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingShowcase"]+(arabic ? ["-uiTestingArabicDark"] : []);app.launch()
+            let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingShowcase"]+(arabic ? ["-uiTestingArabicDark"] : []);launch(app)
             chooseCity("Madinah",app:app)
             let showcase=app.buttons["presentationShowcase"]
             reveal(showcase,app:app)
@@ -99,19 +91,81 @@ final class SalatiUITests:XCTestCase {
             app.terminate()
         }
     }
+    func testSystemActivityCloseAndExpiryRecovery() {
+        let app=XCUIApplication()
+        app.launchArguments=["-uiTestingReset","-uiTestingShowcase","-uiTestingActivityDuration","40"]
+        launch(app);chooseCity("Madinah",app:app)
+        let showcase=app.buttons["presentationShowcase"];reveal(showcase,app:app);showcase.tap()
+        let springboard=XCUIApplication(bundleIdentifier:"com.apple.springboard")
+        app.buttons["actualActivity.start"].tap()
+        XCTAssertTrue(app.staticTexts["System Live Activity preview started"].waitForExistence(timeout:10))
+        XCUIDevice.shared.press(.home)
+        let visiblePrayer=springboard.descendants(matching:.any).matching(NSPredicate(format:"label CONTAINS 'Maghrib'")).firstMatch
+        _=visiblePrayer.waitForExistence(timeout:15);settleSystemPresentation()
+        springboard.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.035)).press(forDuration:1)
+        let close=springboard.buttons["Close"]
+        XCTAssertTrue(close.waitForExistence(timeout:10),"Actual expanded Activity must offer a working Close action")
+        captureScreen("System expanded Activity with Close action")
+        close.tap();settleSystemPresentation();captureScreen("System Island after explicit Close")
+        app.activate();app.buttons["actualActivity.inspect"].tap()
+        XCTAssertEqual(app.staticTexts["actualActivity.status"].label,"Preview activities: 0")
+
+        app.buttons["actualActivity.start"].tap()
+        XCTAssertTrue(app.staticTexts["System Live Activity preview started"].waitForExistence(timeout:10))
+        XCUIDevice.shared.press(.home);_=visiblePrayer.waitForExistence(timeout:15);app.terminate()
+        RunLoop.current.run(until:Date().addingTimeInterval(42))
+        springboard.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.035)).press(forDuration:1)
+        settleSystemPresentation();captureScreen("System Activity after deadline with app terminated")
+        // A terminated process cannot run a local end timer. If iOS keeps the
+        // stale activity visible, its real Close intent must still recover it.
+        if close.waitForExistence(timeout:3) {close.tap();settleSystemPresentation();captureScreen("Expired system Activity closed without opening Salati")}
+        app.launchArguments=["-uiTestingShowcase"]+systemLanguage(false);launch(app)
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:10))
+        reveal(showcase,app:app);showcase.tap();app.buttons["actualActivity.inspect"].tap()
+        XCTAssertEqual(app.staticTexts["actualActivity.status"].label,"Preview activities: 0","Launch cleanup must not depend on a schedule refresh")
+        capture("Activity expiry recovery has zero remaining previews")
+    }
+    func testSystemWidgetGalleryAndInstalledWidget() {
+        for arabic in [false,true] {
+            let app=XCUIApplication();app.launchArguments=["-uiTestingReset"]+(arabic ? ["-uiTestingArabicDark"]:[])
+            launch(app);chooseCity("Madinah",app:app)
+            XCUIDevice.shared.press(.home)
+            let board=XCUIApplication(bundleIdentifier:"com.apple.springboard")
+            board.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.72)).press(forDuration:2)
+            let edit=board.buttons["Edit"]
+            XCTAssertTrue(edit.waitForExistence(timeout:8),board.debugDescription);edit.tap()
+            let add=board.buttons["Add Widget"]
+            XCTAssertTrue(add.waitForExistence(timeout:5),board.debugDescription);add.tap()
+            let search=board.searchFields.firstMatch
+            XCTAssertTrue(search.waitForExistence(timeout:8),board.debugDescription);search.tap();search.typeText("Salati")
+            let salati=board.buttons.matching(NSPredicate(format:"label CONTAINS[c] 'Salati'")).firstMatch
+            XCTAssertTrue(salati.waitForExistence(timeout:10),board.debugDescription);salati.tap()
+            let prefix=arabic ? "Arabic actual WidgetKit":"English actual WidgetKit"
+            for page in 0..<5 {
+                settleSystemPresentation();captureScreen(prefix+" gallery page \(page+1) live archived timer")
+                if page<4 {board.swipeLeft()}
+            }
+            let install=board.buttons["Add Widget"]
+            XCTAssertTrue(install.waitForExistence(timeout:5),board.debugDescription);install.tap()
+            let done=board.buttons["Done"]
+            if done.waitForExistence(timeout:5) {done.tap()}
+            settleSystemPresentation();captureScreen(prefix+" installed Home Screen widget live timer")
+            app.terminate()
+        }
+    }
     func testOnboardingGPSStatusFixtures() {
         let app=XCUIApplication()
-        app.launchArguments=["-uiTestingReset","-uiTestingGPSSuccess"];app.launch()
+        app.launchArguments=["-uiTestingReset","-uiTestingGPSSuccess"];launch(app)
         advanceSetup(app,to:2)
         XCTAssertTrue(identified("onboardingSelectedLocation",in:app).waitForExistence(timeout:5))
         capture("Onboarding GPS success simulated fixture")
-        app.terminate();app.launchArguments=["-uiTestingReset","-uiTestingGPSDenied"];app.launch()
+        app.terminate();app.launchArguments=["-uiTestingReset","-uiTestingGPSDenied"];launch(app)
         advanceSetup(app,to:2)
         XCTAssertTrue(identified("locationStatus",in:app).waitForExistence(timeout:5))
         XCTAssertTrue(app.buttons["chooseLocation"].isHittable)
         capture("Onboarding GPS denied simulated fixture with manual alternative")
         for (flag,title) in [("-uiTestingGPSPermission","permission request"),("-uiTestingGPSLoading","acquiring location"),("-uiTestingGPSTimeout","timeout with retry")] {
-            app.terminate();app.launchArguments=["-uiTestingReset",flag];app.launch()
+            app.terminate();app.launchArguments=["-uiTestingReset",flag];launch(app)
             advanceSetup(app,to:2)
             XCTAssertTrue(app.buttons["chooseLocation"].isHittable)
             XCTAssertFalse(app.buttons["continueOnboarding"].isEnabled)
@@ -121,7 +175,7 @@ final class SalatiUITests:XCTestCase {
         }
     }
     func testCompactWidgetLayouts() {
-        let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingShowcase","-uiTestingArabicDark"];app.launch()
+        let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingShowcase","-uiTestingArabicDark"];launch(app)
         chooseCity("Madinah",app:app)
         let showcase=app.buttons["presentationShowcase"];reveal(showcase,app:app);showcase.tap()
         for id in ["medium","horizontalMedium","overnightStandard","overnightHorizontal","midnightHorizontal"] {
@@ -132,7 +186,7 @@ final class SalatiUITests:XCTestCase {
         }
     }
     func testAccessibilityCalendarAndHome() {
-        let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingLargeText"];app.launch()
+        let app=XCUIApplication();app.launchArguments=["-uiTestingReset","-uiTestingLargeText"];launch(app)
         chooseCity("Madinah",app:app)
         capture("Accessibility large text prayer home")
         app.tabBars.buttons["Calendar"].tap()
@@ -143,7 +197,7 @@ final class SalatiUITests:XCTestCase {
         for arabic in [false,true] {
             let app=XCUIApplication()
             app.launchArguments=["-uiTestingReset","-uiTestingCalendarGeometry"]+(arabic ? ["-uiTestingArabicDark"]:[])
-            app.launch();chooseCity("Madinah",app:app)
+            launch(app);chooseCity("Madinah",app:app)
             app.tabBars.buttons[arabic ? "التقويم":"Calendar"].tap()
             let grid=app.otherElements["calendarGrid"]
             XCTAssertTrue(grid.waitForExistence(timeout:5))
@@ -166,11 +220,11 @@ final class SalatiUITests:XCTestCase {
             let increase=adjustment.buttons.element(boundBy:1),decrease=adjustment.buttons.element(boundBy:0)
             increase.tap();increase.tap()
             XCTAssertEqual(app.staticTexts["calendarAdjustmentValue"].label,"+2")
-            capture(prefix+" plus 2 adjusted first and last days")
+            settleSystemPresentation();capture(prefix+" plus 2 adjusted first and last days")
             assertNumericCalendarDates(app)
             decrease.tap();decrease.tap();decrease.tap();decrease.tap()
             XCTAssertEqual(app.staticTexts["calendarAdjustmentValue"].label,"-2")
-            capture(prefix+" minus 2 adjusted first and last days")
+            settleSystemPresentation();capture(prefix+" minus 2 adjusted first and last days")
             assertNumericCalendarDates(app)
             app.buttons["calendarReset"].tap()
             XCTAssertEqual(app.staticTexts["calendarMonth"].label,heading)
@@ -192,7 +246,7 @@ final class SalatiUITests:XCTestCase {
     private func chooseCity(_ name:String,app:XCUIApplication,captureSetup:Bool=false) {
         let prefix=app.launchArguments.contains("-uiTestingArabicDark") ? "Arabic dark onboarding":"English light onboarding"
         XCTAssertTrue(app.buttons["continueOnboarding"].waitForExistence(timeout:10))
-        if captureSetup {capture(prefix+" 1 language")}
+        if captureSetup {capture(prefix+" 1 welcome")}
         advanceSetup(app,to:2)
         XCTAssertFalse(app.buttons["continueOnboarding"].isEnabled)
         if captureSetup {capture(prefix+" 2 choose location")}
@@ -210,20 +264,16 @@ final class SalatiUITests:XCTestCase {
         if captureSetup {capture(prefix+" 2 offline location selected")}
         advanceSetup(app,to:3)
         if captureSetup {
-            capture(prefix+" 3 automatic calculation")
+            capture(prefix+" 3 ready next prayer")
             let advanced=onboardingDisclosureButton(app)
             reveal(advanced,app:app)
             XCTAssertTrue(advanced.waitForExistence(timeout:5));advanced.tap()
             capture(prefix+" 3 optional expert calculation")
-            onboardingDisclosureButton(app).tap()
+            app.buttons[app.launchArguments.contains("-uiTestingArabicDark") ? "تم":"Done"].tap()
             app.buttons["onboardingBack"].tap()
             XCTAssertTrue(identified("onboardingSelectedLocation",in:app).exists)
             advanceSetup(app,to:3)
         }
-        advanceSetup(app,to:4)
-        if captureSetup {capture(prefix+" 4 optional alerts skipped")}
-        advanceSetup(app,to:5)
-        if captureSetup {capture(prefix+" 5 saved setup summary")}
         app.buttons["continueOnboarding"].tap()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:10))
     }
@@ -249,7 +299,7 @@ final class SalatiUITests:XCTestCase {
     private func advanceSetup(_ app:XCUIApplication,to page:Int) {
         app.buttons["continueOnboarding"].tap()
         let state=app.staticTexts["onboardingStep"]
-        let predicate=NSPredicate(format:"label == %@","\(page) / 5")
+        let predicate=NSPredicate(format:"label == %@","\(page) / 3")
         expectation(for:predicate,evaluatedWith:state)
         waitForExpectations(timeout:5)
     }
@@ -289,19 +339,19 @@ final class SalatiUITests:XCTestCase {
         app.descendants(matching:.any).matching(identifier:identifier).firstMatch
     }
     private func onboardingDisclosureButton(_ app:XCUIApplication)->XCUIElement {
-        // SwiftUI may expose a DisclosureGroup identifier on its container.
-        // Select the disclosure header's actual button, never tap the group's centre.
-        let labels=NSPredicate(format:"label BEGINSWITH %@ OR label BEGINSWITH %@","Advanced settings","إعدادات متقدمة")
-        let container=identified("onboardingAdvanced",in:app)
-        let header=container.buttons.matching(labels).firstMatch
-        if header.exists {return header}
-        let globalHeader=app.buttons.matching(labels).firstMatch
-        if globalHeader.exists {return globalHeader}
-        // The collapsed control can itself be the button, with a system-generated label.
-        return app.buttons.matching(identifier:"onboardingAdvanced").firstMatch
+        app.buttons["onboardingAdvanced"]
+    }
+    private func systemLanguage(_ arabic:Bool)->[String] {
+        ["-AppleLanguages",arabic ? "(ar)":"(en)","-AppleLocale",arabic ? "ar_SA":"en_US"]
+    }
+    private func launch(_ app:XCUIApplication) {
+        if !app.launchArguments.contains("-AppleLanguages") {
+            app.launchArguments += systemLanguage(app.launchArguments.contains("-uiTestingArabicDark"))
+        }
+        app.launch()
     }
     private func languageControl(_ app:XCUIApplication)->XCUIElement {
-        let control=app.segmentedControls["appLanguage"]
+        let control=app.buttons["appLanguage"]
         reveal(control,app:app)
         XCTAssertTrue(control.waitForExistence(timeout:5));return control
     }
@@ -313,14 +363,11 @@ final class SalatiUITests:XCTestCase {
         }
     }
     private func assertLanguageDirection(_ app:XCUIApplication,arabic:Bool) {
-        let control=languageControl(app)
-        let english=control.buttons["English"],arabicButton=control.buttons["العربية"]
-        let direction=NSPredicate {_,_ in
-            guard english.exists && arabicButton.exists else {return false}
-            return arabic ? english.frame.minX>arabicButton.frame.minX : english.frame.minX<arabicButton.frame.minX
-        }
-        expectation(for:direction,evaluatedWith:nil)
-        waitForExpectations(timeout:5)
+        let prayer=app.tabBars.buttons[arabic ? "الصلاة":"Prayer"]
+        let settings=app.tabBars.buttons[arabic ? "الإعدادات":"Settings"]
+        XCTAssertTrue(prayer.waitForExistence(timeout:5));XCTAssertTrue(settings.exists)
+        if arabic {XCTAssertGreaterThan(prayer.frame.midX,settings.frame.midX)}
+        else {XCTAssertLessThan(prayer.frame.midX,settings.frame.midX)}
     }
     private func captureScreen(_ name:String) {
         let attachment=XCTAttachment(screenshot:XCUIScreen.main.screenshot());attachment.name=name;attachment.lifetime = .keepAlways;add(attachment)

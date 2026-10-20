@@ -1,14 +1,17 @@
 import SwiftUI
 import ActivityKit
+import AlarmKit
 import UserNotifications
 
 struct NotificationSettingsView: View {
     @EnvironmentObject var model:AppModel
     @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var player=AdhanPlayer.shared
     @State private var authorization:String?
     @State private var requesting=false
     @State private var notificationDenied=false
+    @State private var alarmDenied=false
     private let prayers=["FAJR","DHUHR","ASR","MAGHRIB","ISHA"]
     private var notificationsSelected:Bool {model.settings.liveActivitiesEnabled || model.settings.policies.values.contains {$0.delivery == .notification || $0.reminder>0}}
     private var alarmsSelected:Bool {model.settings.policies.values.contains {$0.delivery == .alarm}}
@@ -24,7 +27,7 @@ struct NotificationSettingsView: View {
                         }.padding(.vertical,4)
                     }.accessibilityIdentifier("prayerAlert."+id)
                 }
-            } header:{Text("Prayer alerts")} footer:{Text("Choose delivery and sound for each prayer. Off means no prayer alert; advance reminders are a separate choice.")}
+            } header:{Text("Prayer alerts")} footer:{Text("Choose how each prayer gets your attention.")}
             Section {
                 Toggle("Automatic prayer countdown",isOn:$model.settings.liveActivitiesEnabled)
                 Toggle("Sound for advance reminders",isOn:$model.settings.reminderSound)
@@ -32,7 +35,7 @@ struct NotificationSettingsView: View {
                     Label("Allow Live Activities in iOS Settings to show the countdown.",systemImage:"info.circle").font(.footnote)
                     settingsButton
                 }
-            } header:{Text("Countdown and reminders")} footer:{Text("The countdown starts 15 minutes before prayer. If it cannot start, Salati uses a notification reminder when permitted.")}
+            } header:{Text("Countdown and reminders")} footer:{Text("See a countdown 15 minutes before prayer.")}
             if notificationsSelected || alarmsSelected {
                 Section {
                     if notificationsSelected {
@@ -40,30 +43,43 @@ struct NotificationSettingsView: View {
                             Label("Notifications are turned off in iOS Settings.",systemImage:"bell.slash").font(.callout)
                             settingsButton
                         } else {
-                            Button("Allow notifications") {requestPermission(alarm:false)}.disabled(requesting)
+                            Button("Set up notifications") {requestPermission(alarm:false)}.disabled(requesting)
                         }
                     }
-                    if alarmsSelected {Button("Allow system alarms") {requestPermission(alarm:true)}.disabled(requesting)}
+                    if alarmsSelected {
+                        if alarmDenied {
+                            Label("Alarms are turned off in iOS Settings.",systemImage:"alarm").font(.callout)
+                            settingsButton
+                        } else {
+                            Button("Set up alarms") {requestPermission(alarm:true)}.disabled(requesting)
+                        }
+                    }
                     if requesting {ProgressView()}
                     if let authorization {Text(LocalizedStringKey(authorization)).font(.footnote)}
-                } header:{Text("Permissions")} footer:{Text("Permission applies to the choices above. It does not enable other prayer alerts.")}
+                } header:{Text("Access")}
             }
             Section {
                 NavigationLink {ScheduledAlertTestView()} label:{Label("Test an alert",systemImage:"bell.badge")}
                 NavigationLink {AdhanPreviewView()} label:{Label("Listen to adhan",systemImage:"play.circle")}
-            } header:{Text("Try your settings")} footer:{Text("Test an alert for delivery in one minute, or listen to a recording immediately.")}
+            } header:{Text("Try your settings")}
             if player.isPlaying {Section {Button("Stop playback",systemImage:"stop.circle.fill") {player.stop()}}}
             if player.error != nil {Section {Label("The recording could not play. Try another recording.",systemImage:"exclamationmark.circle").font(.footnote)}}
             Section {
-                Text("Open Salati regularly to keep future alerts ready.").font(.footnote).foregroundStyle(.secondary)
-                NavigationLink("Alert status and diagnostics") {SchedulingDiagnosticsView()}
+                NavigationLink("Troubleshooting") {SchedulingDiagnosticsView()}
             }
         }.navigationTitle("Notifications and adhan").navigationBarTitleDisplayMode(.inline)
             .task {await readPermission()}
+            .onChange(of:scenePhase) {_,phase in
+                if phase == .active {authorization=nil;Task {await readPermission()}}
+            }
     }
     private var settingsButton:some View {Button("Open iOS Settings") {if let url=URL(string:UIApplication.openSettingsURLString) {openURL(url)}}}
     private func deliveryTitle(_ delivery:Delivery)->String {switch delivery {case .off:"Off";case .notification:"Notification";case .alarm:"System alarm"}}
-    private func readPermission() async {let settings=await UNUserNotificationCenter.current().notificationSettings();notificationDenied=settings.authorizationStatus == .denied}
+    private func readPermission() async {
+        let settings=await UNUserNotificationCenter.current().notificationSettings()
+        notificationDenied=settings.authorizationStatus == .denied
+        alarmDenied=AlarmManager.shared.authorizationState == .denied
+    }
     private func requestPermission(alarm:Bool) {
         requesting=true
         Task {if alarm {authorization=await model.scheduler.authorizeAlarms()}else {authorization=await model.scheduler.authorizeNotifications()};requesting=false;await readPermission();model.queueRefresh()}
@@ -91,7 +107,7 @@ private struct PrayerAlertDetailView:View {
                         if selection.delivery == .alarm {
                             ForEach(Recording.all) {Text(model.arabic ? $0.arabic:$0.english).tag($0.id)}
                         } else if Recording.all.contains(where:{$0.id == selection.sound}) {
-                            Text("Selected adhan — system notification sound for now").tag(selection.sound)
+                            Text("System sound; adhan saved").tag(selection.sound)
                         }
                     }
                     if Recording.all.contains(where:{$0.id == selection.sound}) {
@@ -100,14 +116,14 @@ private struct PrayerAlertDetailView:View {
                 } header:{Text("Sound")} footer:{
                     if selection.delivery == .alarm {
                         if Recording.all.contains(where:{$0.id == selection.sound}) {
-                            Text("The selected full recording is prepared for the alarm. Use Test an alert to check playback on your iPhone.")
+                            Text("Use Test an alert to check this recording on your iPhone.")
                         } else if selection.sound == "silent" {
                             Text("Choose an audible alarm sound")
                         } else {
-                            Text("This alarm uses the system sound. Choose a recording above to hear the full adhan.")
+                            Text("Choose an adhan recording or keep the system sound.")
                         }
                     } else {
-                        Text("Notifications use the system sound or silence. Full adhan recordings are available with system alarms and in Listen to adhan.")
+                        Text("For the full adhan, choose System alarm.")
                     }
                 }
             }
@@ -117,7 +133,7 @@ private struct PrayerAlertDetailView:View {
                         if selection.reminder == 0 {Text("Off")}else {Text("\(selection.reminder) min").monospacedDigit()}
                     }
                 }
-            } header:{Text("Advance reminder")} footer:{Text("Advance reminders use the system sound or silence, never adhan.")}
+            } header:{Text("Advance reminder")} footer:{Text("Reminders can stay on when prayer alerts are off.")}
             if player.isPlaying {Section {Button("Stop playback",systemImage:"stop.circle.fill") {player.stop()}}}
         }.navigationTitle(LocalizedStringKey(prayer)).navigationBarTitleDisplayMode(.inline)
     }
@@ -133,7 +149,7 @@ private struct AdhanPreviewView:View {
         List {
             Section {ForEach(Recording.all) {recording in
                 Button {player.play(recording.id)} label:{Label(model.arabic ? recording.arabic:recording.english,systemImage:"play.circle")}.padding(.vertical,4)
-            }} footer:{Text("Plays immediately. Listening does not change your prayer alert settings.")}
+            }} footer:{Text("Listen now without changing your alerts.")}
             if player.isPlaying {Section {Button("Stop playback",systemImage:"stop.circle.fill") {player.stop()}}}
             if player.error != nil {Section {Text("The recording could not play. Try another recording.").foregroundStyle(.secondary)}}
         }.navigationTitle("Listen to adhan").navigationBarTitleDisplayMode(.inline)
@@ -142,12 +158,17 @@ private struct AdhanPreviewView:View {
 
 private struct ScheduledAlertTestView:View {
     @EnvironmentObject var model:AppModel
+    @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var scheduler=PrayerScheduler.shared
     @State private var testPrayer="FAJR"
     @State private var testDelivery:Delivery = .notification
     @State private var testing=false
     @State private var authorization:String?
     @State private var requesting=false
+    @State private var alarmDenied=false
+    @State private var notificationDenied=false
+    private var selectedAccessDenied:Bool {testDelivery == .alarm ? alarmDenied:notificationDenied}
     var body:some View {
         Form {
             Section {
@@ -155,27 +176,42 @@ private struct ScheduledAlertTestView:View {
                 Picker("Use prayer sound preference",selection:$testPrayer) {
                     ForEach(["FAJR","DHUHR","ASR","MAGHRIB","ISHA"],id:\.self) {Text(LocalizedStringKey($0)).tag($0)}
                 }
-            } footer:{Text("This test uses the chosen prayer’s sound. Your prayer schedule stays unchanged.")}
+            } footer:{Text("Hear your chosen prayer sound in a one-minute test.")}
             Section {
-                Button(LocalizedStringKey(testDelivery == .alarm ? "Allow system alarms":"Allow notifications")) {
+                if selectedAccessDenied {
+                    Text(LocalizedStringKey(testDelivery == .alarm ? "Alarms are turned off in iOS Settings.":"Notifications are turned off in iOS Settings."))
+                        .font(.callout).foregroundStyle(.secondary)
+                    Button("Open iOS Settings") {if let url=URL(string:UIApplication.openSettingsURLString) {openURL(url)}}
+                } else {
+                Button(LocalizedStringKey(testDelivery == .alarm ? "Set up alarms":"Set up notifications")) {
                     requesting=true
                     Task {
                         if testDelivery == .alarm {authorization=await scheduler.authorizeAlarms()}
                         else {authorization=await scheduler.authorizeNotifications()}
-                        requesting=false;model.queueRefresh()
+                        requesting=false;await readPermission();model.queueRefresh()
                     }
                 }.disabled(requesting)
+                }
                 if let authorization {Text(LocalizedStringKey(authorization)).font(.footnote)}
                 Button("Test in one minute — lock the phone") {
                     testing=true
                     let sound=model.settings.policies[testPrayer]?.sound ?? "default"
                     Task {await scheduler.scheduleTest(delivery:testDelivery,sound:sound,settings:model.settings);testing=false}
-                }.disabled(testing).accessibilityIdentifier("scheduleTestAlert")
+                }.disabled(testing || selectedAccessDenied).accessibilityIdentifier("scheduleTestAlert")
                 if testing {ProgressView()}
                 Button("Cancel test alerts",role:.destructive) {Task {await scheduler.cancelTests()}}
                 if let status=scheduler.testStatus {Text(LocalizedStringKey(status)).font(.footnote)}
-            } footer:{Text("Allow the selected delivery type, then start the test and lock your iPhone.")}
+            } footer:{Text("After starting the test, lock your iPhone.")}
         }.navigationTitle("Test an alert").navigationBarTitleDisplayMode(.inline)
+            .task {await readPermission()}
+            .onChange(of:scenePhase) {_,phase in
+                if phase == .active {authorization=nil;Task {await readPermission()}}
+            }
+    }
+    private func readPermission() async {
+        let settings=await UNUserNotificationCenter.current().notificationSettings()
+        notificationDenied=settings.authorizationStatus == .denied
+        alarmDenied=AlarmManager.shared.authorizationState == .denied
     }
 }
 

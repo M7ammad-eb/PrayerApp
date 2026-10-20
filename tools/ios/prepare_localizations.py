@@ -27,8 +27,8 @@ for lang,folder in [('en','values'),('ar','values-ar')]:
  for k,en,ar in [('FAJR','Fajr','الفجر'),('SUNRISE','Sunrise','الشروق'),('DHUHR','Dhuhr','الظهر'),('ASR','Asr','العصر'),('MAGHRIB','Maghrib','المغرب'),('ISHA','Isha','العشاء')]:strings[k]=ar if lang=='ar' else en;strings[en]=strings[k]
  out=Path('iosApp/SharedPresentation')/(lang+'.lproj');out.mkdir(parents=True,exist_ok=True)
  (out/'Localizable.strings').write_text('\n'.join(json.dumps(k,ensure_ascii=False)+' = '+json.dumps(v.replace('\\"','"'),ensure_ascii=False)+';' for k,v in sorted(strings.items()))+'\n',encoding='utf-8')
- arplist={'NSLocationWhenInUseUsageDescription':'يستخدم صلاتي إحداثياتك لحساب المواقيت وتسمية موقعك باستخدام قاعدة المدن دون اتصال.','NSAlarmKitUsageDescription':'اسمح لصلاتي بجدولة منبهات النظام للصلوات التي تختارها.'}
- (out/'InfoPlist.strings').write_text('\n'.join(json.dumps(k)+' = '+json.dumps(v if lang=='ar' else {'NSLocationWhenInUseUsageDescription':'Salati uses your coordinates to calculate prayer times and label your location offline.','NSAlarmKitUsageDescription':'Allow Salati to schedule system alarms for prayers you choose.'}[k],ensure_ascii=False)+';' for k,v in arplist.items()),encoding='utf-8')
+ arplist={'NSLocationWhenInUseUsageDescription':'يُستخدم موقعك لتحديد مواقيت الصلاة واتجاه القبلة.','NSAlarmKitUsageDescription':'اسمح لصلاتي بجدولة منبهات النظام للصلوات التي تختارها.'}
+ (out/'InfoPlist.strings').write_text('\n'.join(json.dumps(k)+' = '+json.dumps(v if lang=='ar' else {'NSLocationWhenInUseUsageDescription':'Your location is used to find local prayer times and Qibla direction.','NSAlarmKitUsageDescription':'Allow Salati to schedule system alarms for prayers you choose.'}[k],ensure_ascii=False)+';' for k,v in arplist.items()),encoding='utf-8')
 # Generate the shared recording catalogue from Android metadata rather than filename guesses.
 models=Path('app/src/main/java/com/prayertimes/data/models/PrayerModels.kt').read_text(encoding='utf-8')
 engine=Path('app/src/main/java/com/prayertimes/audio/AthanAudioEngine.kt').read_text(encoding='utf-8')

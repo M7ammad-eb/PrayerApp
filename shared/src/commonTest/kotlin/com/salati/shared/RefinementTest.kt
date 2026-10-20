@@ -55,7 +55,7 @@ class RefinementTest {
             assertTrue(page.weekCount in 5..6)
         }
     }
-    @Test fun overnightRowsUseTomorrowActualEventAndPreserveCivilContext() {
+    @Test fun overnightBoardHasSixUniquePrayerSlotsWithExactCurrentAndNextOccurrences() {
         val days=listOf(day("2026-10-18"),day("2026-10-19"),day("2026-10-20"))
         val today=days[0];val tomorrow=days[1]
         for(now in listOf(today.events.last().epochSeconds+1,today.civilEndEpoch-1,today.civilEndEpoch,tomorrow.events[0].epochSeconds-1,tomorrow.events[0].epochSeconds)) {
@@ -63,18 +63,24 @@ class RefinementTest {
             if(now<today.civilEndEpoch) {
                 assertEquals(today.dateISO,state.civilDateISO)
                 assertEquals("2026-10-19.FAJR",state.tomorrowEventID)
-                assertEquals("2026-10-19.FAJR",state.displayEventIDs.last())
+                assertEquals("2026-10-19.FAJR",state.displayEventIDs.first())
+                assertFalse("2026-10-18.FAJR" in state.displayEventIDs)
                 assertEquals("2026-10-18.ISHA",state.currentEventID)
             } else if(now<tomorrow.events[0].epochSeconds) {
                 assertEquals(tomorrow.dateISO,state.civilDateISO)
                 assertNull(state.tomorrowEventID)
                 assertEquals("2026-10-18.ISHA",state.previousEventID)
+                assertEquals("2026-10-18.ISHA",state.displayEventIDs.last())
+                assertFalse("2026-10-19.ISHA" in state.displayEventIDs)
             } else {
                 assertEquals("2026-10-19.FAJR",state.currentEventID)
                 assertEquals("2026-10-19.SUNRISE",state.nextEventID)
                 assertNull(state.previousEventID)
             }
             assertTrue(state.nextEventID in state.displayEventIDs)
+            assertEquals(6,state.displayEventIDs.size)
+            assertEquals(listOf("FAJR","SUNRISE","DHUHR","ASR","MAGHRIB","ISHA"),state.displayEventIDs.map {it.substringAfterLast('.')})
+            assertTrue(state.currentEventID == null || state.currentEventID in state.displayEventIDs)
             if(now<tomorrow.events[0].epochSeconds) assertEquals("2026-10-19.FAJR",state.nextEventID)
         }
         assertNotEquals(today.events[0].epochSeconds,tomorrow.events[0].epochSeconds)

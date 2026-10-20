@@ -14,20 +14,20 @@ struct PlacesView: View {
                 CurrentLocationButton(service:model.locationService)
                 LocationStatusView(service:model.locationService)
                 Button {manual=true} label: { Label("Enter coordinates",systemImage:"mappin.and.ellipse") }
-            } footer: { Text("Choose a city offline, or use your precise location. Check the time zone if you are near a border.") }
-            if searching {HStack {ProgressView();Text("Searching offline cities…")}}
+            } footer: { Text("Search for a city, or use your current location.") }
+            if searching {HStack {ProgressView();Text("Searching…")}}
             if let failure { Text(LocalizedStringKey(failure)).foregroundStyle(.secondary) }
             if let location=model.settings.location {
                 Section("Selected location") {
                     Label(model.locationDisplayName,systemImage:"checkmark.circle.fill").foregroundStyle(Color.accentColor)
-                    Text(LocalizedStringKey(location.isGPS ? "Using exact GPS coordinates" : "Offline manual location")).font(.footnote).foregroundStyle(.secondary)
+                    Text(LocalizedStringKey(location.isGPS ? "Current location" : "Selected city")).font(.footnote).foregroundStyle(.secondary)
                 }
             }
             if !searching && !query.isEmpty && results.isEmpty && failure == nil { ContentUnavailableView.search(text:query) }
-            if query.isEmpty { ContentUnavailableView("Find your city",systemImage:"magnifyingglass",description:Text("Search in Arabic or English. No internet needed.")) }
+            if query.isEmpty { ContentUnavailableView("Find your city",systemImage:"magnifyingglass",description:Text("Search by city name.")) }
             ForEach(results) { place in
                 Button { model.select(place.location); dismiss() } label: {
-                    VStack(alignment:.leading,spacing:4) { Text(model.arabic ? (place.arabicName ?? place.name) : place.name); Text("\(place.country) · \(place.zone)").font(.caption).foregroundStyle(.secondary) }
+                    VStack(alignment:.leading,spacing:4) { Text(model.arabic ? (place.arabicName ?? place.name) : place.name); Text(model.locale.localizedString(forRegionCode:place.country) ?? place.country).font(.caption).foregroundStyle(.secondary) }
                 }.accessibilityIdentifier("city.\(place.id)")
             }
         }
@@ -82,7 +82,7 @@ struct ManualLocationView: View {
             TextField("Latitude",text:$latitude).keyboardType(.numbersAndPunctuation).environment(\.layoutDirection,.leftToRight)
             TextField("Longitude",text:$longitude).keyboardType(.numbersAndPunctuation).environment(\.layoutDirection,.leftToRight)
             Picker("Time zone",selection:$zone) { ForEach(TimeZone.knownTimeZoneIdentifiers,id:\.self) { Text($0).tag($0) } }
-            Text("Choose the IANA time zone for these coordinates. The device time zone may differ.").font(.footnote).foregroundStyle(.secondary)
+            Text("Choose the time zone for this location.").font(.footnote).foregroundStyle(.secondary)
         }
         .navigationTitle("Coordinates").navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement:.confirmationAction) { Button("Save") {
@@ -94,138 +94,144 @@ struct ManualLocationView: View {
 struct OnboardingView: View {
     @EnvironmentObject var model: AppModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var review=false
     @State private var showPlaces=false
-    @State private var advanced=false
-    @State private var authorization:String?
-    @State private var requestingPermission=false
-    private var step:Int {review ? model.setupReviewStep:model.onboardingStep}
-    private let titles=["A moment for prayer","Prayer times for your location","Your prayer calculation","Alerts, your way","Ready for your day"]
-    private let symbols=["moon.stars.fill","location.fill","sun.horizon.fill","bell.badge.fill","checkmark.circle.fill"]
-    private var enabledCount:Int {model.settings.policies.values.filter {$0.delivery != .off}.count}
+    @State private var showCalculation=false
+    @State private var showAlerts=false
+    private var step:Int {min(2,max(0,review ? model.setupReviewStep:model.onboardingStep))}
+    private let titles=["Welcome to Salati","Where do you pray?","Make time for prayer"]
+    private let subtitles=["Prayer times, wherever your day takes you.","Find prayer times for your city or current location.","Your prayer times are ready. Make Salati your own, or begin your day."]
+    private let symbols=["sun.horizon.fill","location.fill","checkmark"]
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    VStack(alignment:.leading,spacing:12) {
-                        Image(systemName:symbols[step]).font(.system(size:32,weight:.medium)).foregroundStyle(Color.accentColor).accessibilityHidden(true)
-                        Text(LocalizedStringKey(titles[step])).font(.title2.bold()).fixedSize(horizontal:false,vertical:true)
-                        Text(LocalizedStringKey(subtitle)).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
-                    }.padding(.vertical,8)
-                }.listRowBackground(Color.accentColor.opacity(0.08))
-                page
+            ScrollView {
+                VStack(alignment:.leading,spacing:28) {
+                    VStack(alignment:.leading,spacing:18) {
+                        Image(systemName:symbols[step])
+                            .font(.system(size:36,weight:.medium)).foregroundStyle(Color.accentColor)
+                            .frame(width:80,height:80).background(Color.accentColor.opacity(0.10),in:RoundedRectangle(cornerRadius:24))
+                            .accessibilityHidden(true)
+                        Text(LocalizedStringKey(titles[step])).font(.largeTitle.bold()).fixedSize(horizontal:false,vertical:true)
+                        Text(LocalizedStringKey(subtitles[step])).font(.title3).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
+                    }
+                    page
+                }.frame(maxWidth:560,alignment:.leading).padding(24).frame(maxWidth:.infinity)
             }
+            .id(step)
+            .background(Color(uiColor:.systemGroupedBackground))
             .safeAreaInset(edge:.bottom) {
-                VStack(spacing:10) {
-                    ProgressView(value:Double(step+1),total:5).accessibilityLabel(Text("Setup progress"))
+                VStack(spacing:14) {
                     HStack {
-                        Text("\(step+1) / 5").monospacedDigit().environment(\.layoutDirection,.leftToRight)
-                            .accessibilityIdentifier("onboardingStep")
+                        ProgressView(value:Double(step+1),total:3).frame(maxWidth:90).accessibilityLabel(Text("Setup progress"))
                         Spacer()
-                        Text(LocalizedStringKey(["Language","Location","Calculation","Prayer alerts","Ready"][step]))
-                    }.font(.caption).foregroundStyle(.secondary)
-                    Button(action:advance) {Text(LocalizedStringKey(step == 4 ? (review ? "Done":"Start using Salati") : "Continue")).frame(maxWidth:.infinity,minHeight:44)}
-                        .buttonStyle(.borderedProminent).disabled(step == 1 && model.settings.location == nil)
+                        Text("\(step+1) / 3").font(.caption).foregroundStyle(.secondary).monospacedDigit().environment(\.layoutDirection,.leftToRight).accessibilityIdentifier("onboardingStep")
+                    }
+                    Button(action:advance) {
+                        Text(LocalizedStringKey(step == 2 ? (review ? "Done":"Start using Salati") : "Continue"))
+                            .font(.headline).frame(maxWidth:.infinity,minHeight:46)
+                    }.buttonStyle(.borderedProminent).disabled(step == 1 && model.settings.location == nil)
                         .accessibilityIdentifier("continueOnboarding")
-                }.padding(.horizontal,20).padding(.vertical,12).background(.regularMaterial)
+                }.frame(maxWidth:560).padding(.horizontal,24).padding(.vertical,16).frame(maxWidth:.infinity).background(.regularMaterial)
             }
-            .navigationTitle(LocalizedStringKey(review ? "Review setup":"Welcome to Salati")).navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(LocalizedStringKey(review ? "Review setup":"Salati")).navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if step>0 {ToolbarItem(placement:.topBarLeading) {Button("Back",systemImage:"chevron.backward") {move(to:step-1)}.accessibilityIdentifier("onboardingBack")}}
                 if review {ToolbarItem(placement:.cancellationAction) {Button("Close") {dismiss()}}}
             }
             .sheet(isPresented:$showPlaces) {NavigationStack {PlacesView()}}
-            .onChange(of:step) {_,value in if value == 2 {model.applyOnboardingDefaults()}}
-        }
-    }
-    private var subtitle:String {
-        switch step {
-        case 0:return "Precise times. A quiet space. Always offline."
-        case 1:return "Choose a city without granting location access, or use GPS when you need it."
-        case 2:return "A starting point for your location, with the freedom to adjust."
-        case 3:return "Keep prayer times close. Choose only the alerts you want."
-        default:return "Your choices are saved. You can change them anytime in Settings."
+            .sheet(isPresented:$showCalculation) {calculationSheet}
+            .sheet(isPresented:$showAlerts) {
+                NavigationStack {NotificationSettingsView().toolbar {ToolbarItem(placement:.confirmationAction) {Button("Done") {showAlerts=false}}}}
+            }
         }
     }
     @ViewBuilder private var page:some View {
         switch step {
         case 0:
-            Section("Language") {
-                Picker("Language",selection:$model.settings.language) {Text("English").tag("en");Text("العربية").tag("ar")}
-                    .pickerStyle(.segmented).accessibilityIdentifier("onboardingLanguage")
-                Label("Calculated on your device. No account or subscription.",systemImage:"iphone")
-                    .font(.callout).foregroundStyle(.secondary)
-            }
+            VStack(alignment:.leading,spacing:20) {
+                Label("Prayer times",systemImage:"sun.horizon")
+                Label("Qibla direction",systemImage:"location.north.circle")
+                Label("Hijri calendar",systemImage:"calendar")
+            }.font(.headline).frame(maxWidth:.infinity,alignment:.leading).padding(22)
+                .background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:24))
+            Button {
+                if let url=URL(string:UIApplication.openSettingsURLString) {openURL(url)}
+            } label: {
+                HStack {Label("Language",systemImage:"globe");Spacer();Text(model.languageDisplayName).foregroundStyle(.secondary);Image(systemName:"arrow.up.forward").font(.caption)}
+                    .font(.subheadline).padding(.vertical,12)
+            }.accessibilityIdentifier("onboardingLanguage")
         case 1:
-            Section {
-                CurrentLocationButton(service:model.locationService).accessibilityIdentifier("onboardingGPS")
-                LocationStatusView(service:model.locationService)
-                Button {showPlaces=true} label: {Label("Choose location",systemImage:"magnifyingglass")}.accessibilityIdentifier("chooseLocation")
-            } header:{Text("Location")}
-            if let location=model.settings.location {
-                Section("Selected location") {
-                    Label(model.locationDisplayName,systemImage:"checkmark.circle.fill").foregroundStyle(Color.accentColor).accessibilityIdentifier("onboardingSelectedLocation")
-                    Text(LocalizedStringKey(location.isGPS ? "Using exact GPS coordinates":"Offline manual location")).font(.footnote).foregroundStyle(.secondary)
-                    Text(location.zone).font(.caption).foregroundStyle(.secondary).environment(\.layoutDirection,.leftToRight)
-                }
+            VStack(alignment:.leading,spacing:18) {
+                CurrentLocationButton(service:model.locationService).font(.headline).accessibilityIdentifier("onboardingGPS")
+                Divider()
+                Button {showPlaces=true} label: {Label("Choose a city",systemImage:"magnifyingglass").font(.headline).frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())}.accessibilityIdentifier("chooseLocation")
+                LocationStatusView(service:model.locationService,showLastUpdate:false)
+            }.frame(maxWidth:.infinity,alignment:.leading).padding(22)
+                .background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:24))
+            if model.settings.location != nil {
+                Label(model.locationDisplayName,systemImage:"checkmark.circle.fill")
+                    .font(.headline).foregroundStyle(Color.accentColor).accessibilityIdentifier("onboardingSelectedLocation")
             }
-        case 2:
-            Section {
-                LabeledContent("Method") {Text(LocalizedStringKey(model.settings.method))}
-                LabeledContent("Asr") {Text(LocalizedStringKey(model.settings.hanafi ? "Hanafi":"Standard"))}
-                Text(LocalizedStringKey(model.settings.onboardingComplete || model.settings.calculationMethodOverridden || model.settings.asrOverridden ? "Your chosen calculation settings are preserved.":model.onboardingDefaultsAreFallback ? "A regional method is not available for this time zone. Muslim World League and Standard Asr provide a reviewable starting point.":"Based on your time zone. Standard Asr is the default; you can change either choice.")).font(.footnote).foregroundStyle(.secondary)
-            } header: {Text("Calculation")}
-            Section {
-                DisclosureGroup("Advanced settings",isExpanded:$advanced) {
+        default:
+            VStack(alignment:.leading,spacing:16) {
+                if let next=model.presentationSnapshot?.events.first(where:{$0.id == model.nextEventID}) {
+                    Text("Up next").font(.subheadline.weight(.medium)).foregroundStyle(Color.accentColor)
+                    ViewThatFits(in:.horizontal) {
+                        HStack(alignment:.firstTextBaseline) {
+                            Text(next.title).font(.title.bold())
+                            Spacer(minLength:16)
+                            Text(next.timeText).font(.title2.weight(.medium)).monospacedDigit().environment(\.layoutDirection,.leftToRight)
+                        }
+                        VStack(alignment:.leading,spacing:8) {
+                            Text(next.title).font(.title.bold())
+                            Text(next.timeText).font(.title2.weight(.medium)).monospacedDigit().environment(\.layoutDirection,.leftToRight)
+                        }
+                    }.accessibilityElement(children:.combine).accessibilityIdentifier("onboardingNextPrayer")
+                    Divider()
+                }
+                Label(model.locationDisplayName,systemImage:"checkmark.circle.fill").font(.subheadline).foregroundStyle(.secondary)
+            }.frame(maxWidth:.infinity,alignment:.leading).padding(22)
+                .background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:24))
+            VStack(spacing:0) {
+                Button {showCalculation=true} label:{option("Adjust prayer times",symbol:"slider.horizontal.3")}.accessibilityIdentifier("onboardingAdvanced")
+                Divider().padding(.horizontal,20)
+                Button {showAlerts=true} label:{option("Choose prayer alerts",symbol:"bell")}.accessibilityIdentifier("onboardingAlertSettings")
+            }.background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:24))
+            Text("You can change these choices in Settings.").font(.footnote).foregroundStyle(.secondary)
+        }
+    }
+    private func option(_ title:LocalizedStringKey,symbol:String)->some View {
+        HStack {Label(title,systemImage:symbol);Spacer();Image(systemName:"chevron.forward").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)}
+            .font(.body).padding(20).contentShape(Rectangle())
+    }
+    private var calculationSheet:some View {
+        NavigationStack {
+            Form {
+                Section {
                     Picker("Method",selection:Binding(get:{model.settings.method},set:{model.settings.calculationMethodOverridden=true;model.settings.method=$0})) {
                         ForEach(model.engine.calculationMethods,id:\.self) {Text(LocalizedStringKey($0)).tag($0)}
                     }
                     Toggle("Hanafi Asr",isOn:Binding(get:{model.settings.hanafi},set:{model.settings.asrOverridden=true;model.settings.hanafi=$0}))
-                }.accessibilityIdentifier("onboardingAdvanced")
-            } footer:{Text("Your changes are kept when you choose another location.")}
-        case 3:
-            Section {
-                NavigationLink {NotificationSettingsView()} label: {Label("Choose prayer alerts",systemImage:"bell")}
-                    .accessibilityIdentifier("onboardingAlertSettings")
-                LabeledContent("Enabled prayers",value:String(enabledCount))
-                Toggle("Automatic prayer countdown",isOn:$model.settings.liveActivitiesEnabled)
-            } footer:{Text("Alerts stay off until you choose them. Continue without enabling alerts if you prefer.")}
-            if model.settings.policies.values.contains(where:{$0.delivery == .notification || $0.reminder>0}) || model.settings.liveActivitiesEnabled {
-                Section {
-                    Button("Allow notifications") {requestNotifications()}.disabled(requestingPermission).accessibilityIdentifier("onboardingAllowNotifications")
-                    if requestingPermission {ProgressView()}
-                    if let authorization {Text(LocalizedStringKey(authorization)).font(.footnote)}
-                } footer:{Text("Permission lets Salati deliver the reminders you selected. It does not turn on other prayer alerts.")}
-            }
-        default:
-            Section {
-                Label(model.locationDisplayName,systemImage:"location.fill")
-                LabeledContent("Method") {Text(LocalizedStringKey(model.settings.method))}
-                LabeledContent("Asr") {Text(LocalizedStringKey(model.settings.hanafi ? "Hanafi":"Standard"))}
-                LabeledContent("Enabled prayers",value:String(enabledCount))
-                LabeledContent("Automatic prayer countdown") {Text(LocalizedStringKey(model.settings.liveActivitiesEnabled ? "On":"Off"))}
-            } header:{Text("Your setup")}
-            Section {Label("Add a Salati widget to keep prayer times on your Home Screen.",systemImage:"rectangle.grid.2x2").font(.callout).foregroundStyle(.secondary)}
+                } footer:{Text("Choose the method used by your local mosque.")}
+            }.navigationTitle("Prayer calculation").navigationBarTitleDisplayMode(.inline)
+                .toolbar {ToolbarItem(placement:.confirmationAction) {Button("Done") {showCalculation=false}}}
         }
     }
     private func move(to value:Int) {
         withAnimation(reduceMotion ? nil:.easeInOut(duration:0.2)) {if review {model.setupReviewStep=value}else {model.onboardingStep=value}}
     }
     private func advance() {
-        if step<4 {move(to:step+1)}
+        if step<2 {if step == 1 {model.applyOnboardingDefaults()};move(to:step+1)}
         else if review {dismiss()}
         else {model.settings.onboardingComplete=true;model.onboardingStep=0}
-    }
-    private func requestNotifications() {
-        requestingPermission=true
-        Task {authorization=await model.scheduler.authorizeNotifications();requestingPermission=false;model.queueRefresh()}
     }
 }
 
 private struct CurrentLocationButton:View {
     @ObservedObject var service:LocationService
     var body:some View {
-        Button {service.request()} label: {Label("Use current location",systemImage:"location.fill")}.disabled(service.isAcquiring)
+        Button {service.request()} label: {Label("Use current location",systemImage:"location.fill").frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())}.disabled(service.isAcquiring)
     }
 }
