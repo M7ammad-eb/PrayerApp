@@ -1,0 +1,134 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "7AD552CD-5C57-4F73-A218-71A4AE2D6C9A.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English actual WidgetKit installed widget accessibility_0_D8A0B59C-D61F-40AD-ABC5-3AA723C1C888.txt",
+        "timestamp" : 1792535704.967
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "DEE726CC-4A0D-4437-8F1A-E44389033EA0.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English actual WidgetKit installed Home Screen widget live timer_0_218DC4E9-654F-4D0A-A96C-5AC38EBF1B6C.png",
+        "timestamp" : 1792535704.019
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "FA5FE296-D531-4EED-ADB5-0B0C7A6762E4.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English actual WidgetKit gallery page 5 live archived timer_0_EC409A67-9DA3-4A79-809C-3E337C99F70B.png",
+        "timestamp" : 1792535691.803
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "2F4CA304-58E7-4CFA-A320-FCA20E94B251.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English actual WidgetKit gallery page 4 live archived timer_0_22D30253-15F6-489C-A6BF-AF03DC7CEFF0.png",
+        "timestamp" : 1792535687.115
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "22A3391A-B1A9-4085-A16F-EFEA2C154542.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English actual WidgetKit gallery page 3 live archived timer_0_533BF872-97D2-4187-8E79-DA6616726771.png",
+        "timestamp" : 1792535682.551
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "19B8B175-D928-4BF4-86B3-3DCBF4C4B6A5.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English actual WidgetKit gallery page 2 live archived timer_0_CA4EC51D-0AF0-4B7B-AC45-EE8884429AF7.png",
+        "timestamp" : 1792535678.002
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "F13FB314-8394-4DF8-B19F-C1356F3203BA.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English actual WidgetKit gallery page 1 live archived timer_0_B286AFDE-CA31-40FA-8C4C-70589847B083.png",
+        "timestamp" : 1792535673.444
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "C79B59BB-A944-4CCB-B6F6-8D88493EC7B9.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic actual WidgetKit installed widget accessibility_0_6000C6B8-B80C-4939-86E6-A1C3F94D6708.txt",
+        "timestamp" : 1792535605.851
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "85619F39-18F6-43FA-9F8E-77AE78C46286.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic actual WidgetKit installed Home Screen widget live timer_0_F9C0B2D6-B6BC-4CC4-A8B9-163D1F7A2E5F.png",
+        "timestamp" : 1792535602.916
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "F708BC49-B8CA-45B7-8E46-CC55892F946F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic actual WidgetKit gallery page 5 live archived timer_0_0F8BD5FF-DEAD-4BEF-BA6A-5BED8A916ED7.png",
+        "timestamp" : 1792535586.157
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "408FE024-A5E3-46B9-837A-2A71B9923E8A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic actual WidgetKit gallery page 4 live archived timer_0_7BF282EB-8BBE-4FE4-87EF-14DAE7E31A06.png",
+        "timestamp" : 1792535580.914
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "0200D40C-A6E5-4EBC-B4B7-2F43117A945C.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic actual WidgetKit gallery page 3 live archived timer_0_436ECAC8-966F-44F2-827A-7B27089549D7.png",
+        "timestamp" : 1792535575.861
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "413C7438-2D2D-491D-9EDE-F9E776836A8A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic actual WidgetKit gallery page 2 live archived timer_0_A7DC6BE5-C588-43F1-B8C4-A2EA38784D91.png",
+        "timestamp" : 1792535571.081
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E52F2A8A-51B6-409C-9C7B-9043B7E4A789",
+        "deviceName" : "iPhone 17 Pro Max",
+        "exportedFileName" : "D2295ED1-685F-4E48-A292-52357C23295A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic actual WidgetKit gallery page 1 live archived timer_0_AD04B9F3-2765-4BEA-BB5D-7E6FB175E785.png",
+        "timestamp" : 1792535565.274
+      }
+    ],
+    "testIdentifier" : "SalatiUITests/testSystemWidgetGalleryAndInstalledWidget()",
+    "testIdentifierURL" : "test://com.apple.xcode/Salati/SalatiUITests/SalatiUITests/testSystemWidgetGalleryAndInstalledWidget"
+  }
+]

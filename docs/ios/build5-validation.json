@@ -1,0 +1,87 @@
+{
+  "applicationSource": "dc22501456934274bc504c63a2c4e50fc125b2a1",
+  "status": "runtime validation, visual review and independent Release verification complete",
+  "runs": [
+    {
+      "run": 39488536765,
+      "source": "2c1720292f607adc1ca1cd6947567aff673dcf2a",
+      "acceptedChecks": {
+        "sharedJVM": 25,
+        "android": 99
+      },
+      "artifact": {
+        "id": 12293638991,
+        "sha256": "2a27d5feb64a95c0d0ffca39bbcc602754d22dea8dc3f6b3a6ec9a57ecfcab78"
+      },
+      "notes": "Android job passed. Later changes do not modify shared or Android source. The overall run failed its initial iOS UI selectors; its Close UI result was rejected by visual review."
+    },
+    {
+      "run": 39495919171,
+      "source": "37dc28ec95b5d4c4f5f4e369332af4b822e8a7c8",
+      "acceptedChecks": {
+        "sharedNative": 23,
+        "iOSApp": 46,
+        "mainUIFlows": 8
+      },
+      "artifact": {
+        "id": 12299013415,
+        "sha256": "bd05d0d704f44f1c5e52b0cdae7f3c5ad8a8f42d30ffb3958fe31fd005ff34bf"
+      },
+      "notes": "Actual active/expired Activity Close disappears before app foreground. The ninth UI flow failed the exact gallery Add Widget selector. Swift/Kotlin/runtime resource code is unchanged afterward; the final app Info.plist additionally enables native language settings."
+    },
+    {
+      "run": 39502308401,
+      "source": "6c9c64790542d6898778c8f513c4c98971d9f30c",
+      "acceptedChecks": {
+        "compactUIFlows": 3
+      },
+      "artifact": {
+        "id": 12302503299,
+        "sha256": "be37eb281adcd1d266f42518a3ba158b9d3729e6830ceb7886f41b063bb99061"
+      },
+      "notes": "Workflow passed. All English gallery families and Arabic installed horizontal-large content are visually populated. English installed capture is a loading skeleton; Arabic-labeled gallery captures retain English cached previews. Those images are excluded from final positive evidence."
+    },
+    {
+      "run": 39507214129,
+      "source": "dc22501456934274bc504c63a2c4e50fc125b2a1",
+      "status": "success",
+      "acceptedChecks": {
+        "mainUIFlows": 1
+      },
+      "artifact": {
+        "id": 12305235190,
+        "sha256": "c22dd108a5c472fc652781bf0c7ac4484f959bc6f1e653d63aedde45e5e967ef"
+      },
+      "notes": "All five Arabic gallery layouts and both English/Arabic installed horizontal-large widgets are populated and visually reviewed. The test requires localized city and prayer text within the installed widget Icon. English-labeled gallery captures retain Arabic cache and are excluded."
+    }
+  ],
+  "unitTestTotal": 193,
+  "distinctUIFlows": 12,
+  "simulatorOS": "iOS 26.4.1",
+  "devices": [
+    "iPhone 17 Pro Max",
+    "iPhone 17e"
+  ],
+  "limitations": [
+    "No physical iOS 27 / AltStore validation was performed by the agent.",
+    "Native Settings navigation captures show root Settings, not an exercised per-app picker. OS language relaunches verify rendering and persistence; plist enables the native language option.",
+    "Terminated-app Live Activity expiry may remain at readable 0:00 until Close or foreground cleanup; exact offline dismissal is not guaranteed.",
+    "WidgetKit gallery preview caching can retain the prior language during launch-argument language fixtures. Installed timeline language is checked separately.",
+    "Small widget secondary Hijri text may truncate; next prayer identity, time and countdown retain priority."
+  ],
+  "release": {
+    "run": 39509731236,
+    "source": "dc22501456934274bc504c63a2c4e50fc125b2a1",
+    "status": "success",
+    "artifact": {
+      "id": 12304889028,
+      "sha256": "0aba6e71229d2c499fb083f405e094ecb081182c82496f532e56fcd1155bdb0d"
+    },
+    "ipa": {
+      "name": "Salati-Recovery-1.8-build5.ipa",
+      "bytes": 39512628,
+      "sha256": "d962ceb9b6c0b45d9a98fa04269f9e34bd113ad50c58d4bb79ae88d7646bdd43"
+    },
+    "independentReceipt": "build5-verification.json"
+  }
+}

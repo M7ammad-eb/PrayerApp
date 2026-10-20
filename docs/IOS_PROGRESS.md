@@ -1,5 +1,15 @@
 # iOS migration progress
 
+## Recovery (build 5)
+
+- Delivered `C:/Users/M1993/PrayerApp/build/ios/Salati-Recovery-1.8-build5.ipa`, 39,512,628 bytes. SHA-256 `d962ceb9b6c0b45d9a98fa04269f9e34bd113ad50c58d4bb79ae88d7646bdd43`. [Release 39509731236](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39509731236) and [independent package verification](ios/build5-verification.json) passed. Import with AltStore Classic, retain the widget extension, and open Salati once.
+- Application source: `dc22501456934274bc504c63a2c4e50fc125b2a1` on `ios`. Delivery evidence commits are documentation only. [Recovery handoff](IOS_RECOVERY.md) explains the implementation and platform limits.
+- Three-screen setup; native iOS language preference with extensible bundle localization; preserved preferences; technical explanations removed from normal UI. Shared policy supplies six prayer slots with actual upcoming Fajr after Isha and current Isha across midnight, without day-relative labels or duplicate rows.
+- Bounded countdown layouts verified in actual installed English/Arabic widgets and all five gallery families. Expanded Island content stays inside the curved edge; Close runs through the app process without opening its UI. Active and expired Activities disappear before foregrounding in the system UI tests.
+- Accepted coverage: 193 unit tests and 12 distinct UI flows, with source-specific provenance in the [validation record](ios/build5-validation.json). [150 original screenshots](ios/screenshots/build5/README.md) retain hashes and review limitations. Initial false-positive Close and loading/cached-language captures were rejected and replaced by stronger checks.
+- Physical iOS 27/AltStore behavior remains a device check. Native Settings navigation was observed, but the per-app language picker itself was not exercised in the simulator. Terminated-app exact automatic Activity dismissal is not guaranteed; readable content, Close and foreground cleanup handle retained Activities.
+- Previous IPAs, main, Android_Legacy and baseline tags remain preserved.
+
 ## Native UX refinement (build 4)
 
 - Delivered `C:/Users/M1993/PrayerApp/build/ios/Salati-Refinement-1.8-build4.ipa`, 39,508,222 bytes. SHA-256 `c6071e4611b59d122609324023a6b311b772cb72ba8d4451ed9fd8619142ede5`. [Release 39320315492](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39320315492) PASSED; [independent receipt](ios/build4-verification.json) verifies both device bundles, build/version/identity/extension, App Group metadata, original MP3s and exact database, compiled assets/icon and Arabic translations. Import with AltStore Classic and retain the widget extension; open Salati once after installation.

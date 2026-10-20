@@ -1,0 +1,50 @@
+{
+  "file": "C:\\Users\\M1993\\PrayerApp\\build\\ios\\Salati-Recovery-1.8-build5.ipa",
+  "metadata": {
+    "sourceCommit": "dc22501456934274bc504c63a2c4e50fc125b2a1",
+    "workflowRun": "https://github.com/M7ammad-eb/PrayerApp/actions/runs/39509731236",
+    "platform": "iPhoneOS",
+    "architecture": "arm64",
+    "minimumIOS": "26.0",
+    "configuration": "Release",
+    "buildNumber": "5",
+    "version": "1.8",
+    "signing": "ad-hoc capability metadata only; AltStore must re-sign with the user Apple ID before installation",
+    "sha256": "d962ceb9b6c0b45d9a98fa04269f9e34bd113ad50c58d4bb79ae88d7646bdd43",
+    "bytes": 39512628,
+    "requestedAppGroups": [
+      "group.com.salati.prayertimes"
+    ]
+  },
+  "verified": [
+    {
+      "bundle": "com.salati.prayertimes.ios",
+      "build": "5",
+      "platform": "arm64 iPhoneOS",
+      "adHocMetadata": true,
+      "groups": [
+        "group.com.salati.prayertimes"
+      ]
+    },
+    {
+      "bundle": "com.salati.prayertimes.ios.widgets",
+      "build": "5",
+      "platform": "arm64 iPhoneOS",
+      "adHocMetadata": true,
+      "groups": [
+        "group.com.salati.prayertimes"
+      ]
+    }
+  ],
+  "artifactSHA256": "0aba6e71229d2c499fb083f405e094ecb081182c82496f532e56fcd1155bdb0d",
+  "checks": [
+    "ZIP integrity",
+    "IPA SHA-256 and size",
+    "app/widget bundle identities, version 1.8 and build 5; WidgetKit extension point",
+    "11 MP3s and places.db match build 2 originals; compiled assets and app icon present; no short clips; silent one-shot CAF present",
+    "no Apple profiles or debug/preview dylibs",
+    "all refinement Arabic translations present in app and widget",
+    "Close LiveActivityIntent background metadata and event parameter in both app and extension; English/Arabic resources present",
+    "Native language picker explicitly enabled for single-preferred-language devices"
+  ]
+}

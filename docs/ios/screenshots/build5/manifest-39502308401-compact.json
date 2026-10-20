@@ -1,0 +1,308 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "3E4333DE-38AC-486A-9543-A23456D58CD9.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility large text calendar stable six-row area_0_4598DDCB-88F4-4DF5-A3E0-75A6DC56D3FC.png",
+        "timestamp" : 1792533462.09
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "E15B0D8A-AD90-41E6-8F78-751A638D322B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility large text prayer home_0_53C89A4B-7730-4C5C-9E5B-C9F5DB2D0911.png",
+        "timestamp" : 1792533459.854
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "7751B556-6C35-4432-89EF-4652072F9A64.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility large text location action revealed above footer_0_6882E543-4E0F-472D-9B54-CCFEB6B9F292.png",
+        "timestamp" : 1792533445.551
+      }
+    ],
+    "testIdentifier" : "SalatiUITests/testAccessibilityCalendarAndHome()",
+    "testIdentifierURL" : "test://com.apple.xcode/Salati/SalatiUITests/SalatiUITests/testAccessibilityCalendarAndHome"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "4C325C6B-54F5-49BA-98C4-919FF738497A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English light immediate adhan recording preview list_0_926D12C2-30FB-452D-A0A1-BDB9BC326D2F.png",
+        "timestamp" : 1792533634.214
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "014C2498-FCED-4A0D-95BF-638CB577F2A3.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English light scheduled test alert distinct from immediate playback_0_74B33B83-FB72-4159-B004-54DB1A31DED3.png",
+        "timestamp" : 1792533631.782
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "5637A1FA-FEFD-46C9-A7E9-17FDDBF87870.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English light Fajr system alarm default sound and explanation_0_C1C4C06C-8884-49FC-B888-A515A983B7E3.png",
+        "timestamp" : 1792533625.864
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "73405B27-49B2-4859-90C1-55792F90F7FC.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English light Fajr notification sound selection_0_E654EB40-60EB-4F67-BCC6-41AFF79FC0E8.png",
+        "timestamp" : 1792533621.945
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "970E9F57-61CE-4CC2-AB9D-02EC84718871.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English light Fajr delivery and independent advance reminder_0_EA95EA0B-6876-406F-BEE2-6B3E675FE021.png",
+        "timestamp" : 1792533617.752
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "34425007-89FE-446A-A0FC-93F400C134BF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English light notification settings per-prayer overview_0_25C5ECEF-FD1A-4076-B674-4BF37EE96056.png",
+        "timestamp" : 1792533613.216
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "57A0895C-0C15-4759-A4CF-25F8CF5E48BA.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English Qibla physical heading 90_0_0D140224-D616-4B16-9037-292FE78169AE.png",
+        "timestamp" : 1792533601.494
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "26A1F90E-5CE8-4CDF-93C7-33A34A6AC4AC.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English Settings from system language_0_830A6F4B-6B43-4D28-A3F2-5A338D27B969.png",
+        "timestamp" : 1792533599.714
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "A86DC03D-73A2-4B50-84E3-8F23E9E78CC0.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic Qibla physical heading 90_0_5DCB3862-F19A-44BD-A21D-D09C86E2D9ED.png",
+        "timestamp" : 1792533582.023
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "11D699ED-02D6-4BF5-848C-C7803CAD5D06.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic Settings from system language_0_327505FD-C12B-4768-8AD0-0A2EC45F296C.png",
+        "timestamp" : 1792533579.799
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "BD4B75AA-A5E8-4364-8B65-691741B6FE61.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English Qibla physical heading 90_0_03A49282-1D20-419C-AD9F-AF9A8381803A.png",
+        "timestamp" : 1792533564.696
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "8C2FA3A8-1111-4C92-BA14-0FAE7BC4CB92.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English Settings from system language_0_46760CDA-17CE-4C70-8F78-18FE5AA35A44.png",
+        "timestamp" : 1792533562.982
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "109F927C-79C6-48C8-912D-62986579F78D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic Qibla physical heading 90_0_B56E3A2C-407D-4E7E-AA0D-4B5CCD1F7D02.png",
+        "timestamp" : 1792533548.364
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "0CFFB30B-D33B-4E6E-B2E2-7EBBDBF8564F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic Settings from system language_0_C44C1885-9ECD-43E8-9363-ECDA65E75CCA.png",
+        "timestamp" : 1792533546.276
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "24574E93-0BC7-4B73-AB11-B415ED520791.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Language action opens iOS Settings — simulator destination_0_F00A7F00-D892-4C29-B5D7-A3A9ED3F3033.png",
+        "timestamp" : 1792533529.431
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "D71AA009-1FD6-4FD9-B7F6-41B8FC155EAF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Settings language follows iPhone_0_A20989E3-40B2-4501-891B-C9E945B1D8CE.png",
+        "timestamp" : 1792533520.655
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "48E6C161-7CD3-4F4A-8672-9733898D4F52.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Qibla simulated true heading 90 English_0_F793A0E7-8D43-4991-ACF7-2912E5E3FD7A.png",
+        "timestamp" : 1792533517.052
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "31BFBE27-0E55-4DA1-86AB-F04DA21493E5.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Hijri calendar with dual dates_0_8616C776-65E4-4AE4-8272-1D589F8D818A.png",
+        "timestamp" : 1792533510.312
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "33ABAB04-162B-4D34-8A6A-B1FA93478327.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Prayer home_0_82FB97E1-02B8-493D-8161-EEC6BE868AB4.png",
+        "timestamp" : 1792533507.619
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "4B363C22-A7BD-4A48-9280-8EA42B09C706.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English light onboarding 3 optional expert calculation_0_74E0C418-C66F-4E42-87DF-FF125171A1F6.png",
+        "timestamp" : 1792533497.668
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "8D14351E-2B20-4764-81EF-E292ECBD89E3.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English light onboarding 3 ready next prayer_0_5E78C6F2-C0D0-4BBA-9DDC-9D4600D43BE3.png",
+        "timestamp" : 1792533495.362
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "B3C60C0F-1771-4B47-BA05-59DC30E1C36D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English light onboarding 2 offline location selected_0_2D159B60-AE80-4E04-91F2-E6DEE4804073.png",
+        "timestamp" : 1792533493.394
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "C7B92C5F-0092-442D-B480-C1B0D4A99F2F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English light onboarding 2 choose location_0_057B1ADF-A640-4EBB-8B96-A26A88FF91C2.png",
+        "timestamp" : 1792533481.775
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "4902EC94-B9F2-49EE-B7D8-369331EDA387.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "English light onboarding 1 welcome_0_CEF2F7D6-4556-4B9F-B180-AFC028E8EF95.png",
+        "timestamp" : 1792533479.396
+      }
+    ],
+    "testIdentifier" : "SalatiUITests/testChooseOfflineCityAndNavigate()",
+    "testIdentifierURL" : "test://com.apple.xcode/Salati/SalatiUITests/SalatiUITests/testChooseOfflineCityAndNavigate"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "10DB80C7-B556-4D29-BE2A-920F90F572E0.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic dark compact-width renderer preview midnightHorizontal_0_2D7CCF1B-8B34-40FC-8174-98872CB115CE.png",
+        "timestamp" : 1792533697.25
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "5BB9DCD8-494C-43D2-9198-297F0805550A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic dark compact-width renderer preview overnightHorizontal_0_045229E7-2EDE-45F3-9051-B15F16472177.png",
+        "timestamp" : 1792533687.79
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "C2A0984D-6FC2-483F-B807-4BD51AADEADD.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic dark compact-width renderer preview overnightStandard_0_090A4FC0-3F9B-4A13-835D-C09B3889B47E.png",
+        "timestamp" : 1792533682.769
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "E429D27E-50C0-459F-B965-2936B97B6505.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic dark compact-width renderer preview horizontalMedium_0_13810385-CF5A-46CB-B1ED-1F3283394FC7.png",
+        "timestamp" : 1792533673.545
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "49A10376-191D-4B27-82E7-4EC71948B0BB",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "5596AED4-F380-441D-877E-08D6A73A4ACD.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Arabic dark compact-width renderer preview medium_0_AFCDDC87-A55E-49A5-8160-00AFAA58F561.png",
+        "timestamp" : 1792533664.386
+      }
+    ],
+    "testIdentifier" : "SalatiUITests/testCompactWidgetLayouts()",
+    "testIdentifierURL" : "test://com.apple.xcode/Salati/SalatiUITests/SalatiUITests/testCompactWidgetLayouts"
+  }
+]

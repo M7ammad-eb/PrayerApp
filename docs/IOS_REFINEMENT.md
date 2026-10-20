@@ -1,5 +1,7 @@
 # Native UX refinement — build 4
 
+Historical build 4 record. The current delivery is [recovery build 5](IOS_RECOVERY.md), which corrects the installed widget layout, Activity dismissal, onboarding and language behavior described there. The original build 4 receipt and file remain preserved.
+
 Delivered **Salati 1.8, build 4**: `C:/Users/M1993/PrayerApp/build/ios/Salati-Refinement-1.8-build4.ipa` (39,508,222 bytes), source `725a63f382e06e04c6de750f2c011c83b04c8f0b`. SHA-256: `c6071e4611b59d122609324023a6b311b772cb72ba8d4451ed9fd8619142ede5`.
 
 [Release workflow 39320315492](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39320315492) passed on that exact source. [Independent verification receipt](ios/build4-verification.json) confirms both ARM64 iPhoneOS bundles, version/build/identities, WidgetKit extension identity, ad-hoc App Group request metadata, all 11 original MP3 hashes and the exact offline database hash, compiled assets/icon presence, Arabic refinement translations and absence of Apple profiles/debug dylibs. Workflow checkout identity and Release compiler commands establish source/configuration provenance; that provenance is not inferred from the binary alone.

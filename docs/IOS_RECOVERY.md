@@ -1,6 +1,8 @@
 # Salati recovery — build 5
 
-Implementation and validation are in progress. This document is not a release receipt.
+Delivered **Salati 1.8, build 5**: `C:/Users/M1993/PrayerApp/build/ios/Salati-Recovery-1.8-build5.ipa`, 39,512,628 bytes. SHA-256: `d962ceb9b6c0b45d9a98fa04269f9e34bd113ad50c58d4bb79ae88d7646bdd43`. Application source: `dc22501456934274bc504c63a2c4e50fc125b2a1`.
+
+[Release 39509731236](https://github.com/M7ammad-eb/PrayerApp/actions/runs/39509731236) passed on that exact source. The [independent package receipt](ios/build5-verification.json) verifies ARM64 iPhoneOS app/widget bundles, identities and version, App Group request metadata, background Close intent metadata, native language-setting visibility, original recordings/database, compiled assets and Arabic resources. AltStore Classic must sign the package with the user's Apple ID. Later delivery-documentation commits do not change the application source.
 
 ## Product corrections
 
@@ -34,7 +36,17 @@ The first recovery run (39488536765) passed 25 shared JVM tests, 99 Android test
 
 Run 39495919171, source `37dc28ec95b5d4c4f5f4e369332af4b822e8a7c8`, passed 23 native shared tests, 46 app tests and eight of nine main UI flows. Actual system Close succeeded for both active and expired Activities before foregrounding Salati; app-process intent logs corroborate execution. English/Arabic expanded captures keep the progress inside the curved edge. Four alternating OS language launches preserve Damascus and verify mirrored tab order. The native Settings screenshot shows the simulator's root Settings screen, so it is not proof of the per-app language picker interaction.
 
-That run's remaining UI failure was a gallery interaction: the exact Add Widget selector missed the visible control because its accessibility label has a leading space. The selector now tolerates that whitespace and has an observed button-position fallback. Actual medium/large standard and horizontal gallery views rendered complete next-prayer names and times. The small gallery capture was still loading. A focused follow-up captures all gallery sizes, installation and compact-phone flows. Installation also requires visual review: the Home Screen's Done control exists beneath an open gallery, so that selector alone is insufficient proof. Pending those results and the final Release package/source/hash receipt.
+That run's remaining UI failure was a gallery interaction: the exact Add Widget selector missed the visible control because its accessibility label has a leading space. The selector now tolerates that whitespace and has an observed button-position fallback. Installation also requires actual content: the Home Screen's Done control exists beneath an open gallery, so that selector alone is insufficient proof.
+
+Run 39502308401, source `6c9c64790542d6898778c8f513c4c98971d9f30c`, passed the gallery flow and all three iPhone 17e flows. Review accepted five populated English gallery families and the Arabic installed widget; it rejected the English installed loading skeleton and cached English previews mislabeled by the test as Arabic. Final focused run 39507214129 on the delivered application source passes a stronger check requiring localized city and prayer text within the installed widget Icon. Its five Arabic gallery layouts and both English/Arabic installed horizontal-large widgets are populated and visually reviewed. The total accepted coverage is **193 unit tests and 12 distinct UI flows**; [machine-readable validation record](ios/build5-validation.json) separates each run's source and accepted checks.
+
+[150 original PNGs](ios/screenshots/build5/README.md) retain individual source/workflow/hash provenance. Lead and independent reviewers inspected the actual system surfaces as well as app and compact-phone captures. The only production change after the 46-app-test run is the native language-visibility plist setting, which is included in final simulator compilation and independently checked in the Release IPA. Swift, Kotlin and runtime translations are unchanged.
+
+## Installation and device checks
+
+Import the build 5 IPA into AltStore Classic and retain the SalatiWidgets extension. Open Salati once after updating so its schedule and obsolete Activities are refreshed. Existing bundle identities and user preferences are preserved. The package requests the App Group through ad-hoc metadata; AltStore must replace it with the user's Apple-ID signing.
+
+Physical iOS 27 was not available to the agent. Verify the native Settings language picker, normal widget refresh across prayer boundaries, and real alarm/audio delivery on the phone. Simulator captures prove system layout and the tested Close interaction, not a guarantee of all physical-device background behavior. No exact offline terminated-app automatic Activity end is claimed.
 
 ## Primary references
 

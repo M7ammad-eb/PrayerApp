@@ -1,6 +1,6 @@
 # Salati iOS implementation handoff
 
-The current delivered milestone is native UX refinement, version 1.8/build 4, application source `725a63f382e06e04c6de750f2c011c83b04c8f0b`: `Salati-Refinement-1.8-build4.ipa`. Its corrected shared calendar/event/default policies, completed UX, passing runtime/Release workflows and independent delivery receipt are in [IOS_REFINEMENT.md](IOS_REFINEMENT.md) and [IOS_PROGRESS.md](IOS_PROGRESS.md). Phase 2 scheduling/audio remains documented in [IOS_PHASE2.md](IOS_PHASE2.md). Previous build 3 and earlier IPA files are preserved.
+The current delivered milestone is recovery, version 1.8/build 5, application source `dc22501456934274bc504c63a2c4e50fc125b2a1`: `Salati-Recovery-1.8-build5.ipa`. Its three-screen setup, native language selection, actual system widget layouts, Activity dismissal fixes, validation and independent delivery receipt are in [IOS_RECOVERY.md](IOS_RECOVERY.md) and [IOS_PROGRESS.md](IOS_PROGRESS.md). Shared calendar refinement remains documented in [IOS_REFINEMENT.md](IOS_REFINEMENT.md), and Phase 2 scheduling/audio in [IOS_PHASE2.md](IOS_PHASE2.md). Previous IPA files are preserved.
 
 ## Historical Phase 1 handoff
 
