@@ -11,7 +11,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func application(_ application: UIApplication,didFinishLaunchingWithOptions launchOptions:[UIApplication.LaunchOptionsKey:Any]?=nil) -> Bool {
         let center=UNUserNotificationCenter.current()
         center.delegate=self
-        let play=UNNotificationAction(identifier:"PLAY_ADHAN",title:Settings.load().language == "ar" ? "تشغيل الأذان كاملًا الآن" : "Play full adhan now",options:.foreground)
+        let play=UNNotificationAction(identifier:"PLAY_ADHAN",title:AppLanguage.text("Play full adhan now",language:AppLanguage.current),options:.foreground)
         center.setNotificationCategories([UNNotificationCategory(identifier:"PRAYER",actions:[play],intentIdentifiers:[])])
         BGTaskScheduler.shared.register(forTaskWithIdentifier:Self.refreshIdentifier,using:nil) { task in
             let work=Task { @MainActor in

@@ -126,10 +126,10 @@ private enum SchedulingFailure: LocalizedError {
     case alarmPermission, notificationPermission, silentAlarm, foregroundActivity
     var errorDescription: String? {
         switch self {
-        case .alarmPermission:return "Allow system alarms to use the selected alarm policy."
-        case .notificationPermission:return "Allow notifications for the selected alerts and reminders."
-        case .silentAlarm:return "System alarms require an audible sound. Choose Notification for silent delivery."
-        case .foregroundActivity:return "Open Salati to prepare automatic Live Activities."
+        case .alarmPermission:return AppLanguage.text("Allow alarms in iOS Settings.",language:AppLanguage.current)
+        case .notificationPermission:return AppLanguage.text("Allow notifications in iOS Settings.",language:AppLanguage.current)
+        case .silentAlarm:return AppLanguage.text("Choose a sound for alarms, or use notifications for silent alerts.",language:AppLanguage.current)
+        case .foregroundActivity:return AppLanguage.text("Open Salati to prepare Live Activities.",language:AppLanguage.current)
         }
     }
 }
@@ -403,12 +403,11 @@ struct ScheduleDiagnostic: Codable {
     }
     private struct LiveResult {var accepted:[ScheduledLivePrayer]=[];var failures:[String]=[];var outdated:[ScheduledLivePrayer]=[]}
     func dismissLiveActivity(eventID:String) async {
-        _=await operations.enqueue { [self] in
-            await liveLifecycle.dismiss(eventID:eventID)
-            record("Live Activity closed",result:eventID)
-            armLiveActivityExpiry()
-            return ""
-        }
+        // Ending a visible activity must not wait behind alert reconciliation or
+        // an authorization request. Submission rechecks this dismissal marker.
+        await liveLifecycle.dismiss(eventID:eventID)
+        record("Live Activity closed",result:eventID)
+        armLiveActivityExpiry()
     }
     func cleanupLiveActivities(enabled:Bool=true) async {
         await liveLifecycle.cleanup(enabled:enabled)
@@ -485,7 +484,7 @@ struct ScheduleDiagnostic: Codable {
         let id="salati.status.expiry"
         guard let horizon,horizon.timeIntervalSinceNow>24*3600 else {notifications.removePendingNotificationRequests(withIdentifiers:[id]);return}
         let content=UNMutableNotificationContent();content.title="Salati · صلاتي"
-        content.body=settings.language == "ar" ? "افتح صلاتي لتجديد مواعيد الصلاة؛ الجدول المحضّر يقترب من نهايته." : "Open Salati to replenish prayer alerts; the prepared schedule is nearing its end."
+        content.body=AppLanguage.text("Open Salati to keep prayer alerts up to date.",language:settings.language)
         content.sound=nil
         let trigger=UNTimeIntervalNotificationTrigger(timeInterval:max(1,horizon.timeIntervalSinceNow-24*3600),repeats:false)
         do {try await notifications.add(UNNotificationRequest(identifier:id,content:content,trigger:trigger))} catch {record("expiry warning failed",result:error.localizedDescription)}
@@ -497,14 +496,14 @@ struct ScheduleDiagnostic: Codable {
             let item=ScheduledAlert(id:"salati.test."+delivery.rawValue,prayer:"TEST",title:AppLanguage.text("Salati test alert",language:settings.language),date:date,prayerDate:date,policy:PrayerPolicy(delivery:delivery,sound:sound,reminder:0),reminder:false)
             var request=NativeAlertRequest.make(item,settings:settings);request.isTest=true
             let result=await self.reconciler.reconcile([request],now:Date(),production:false)
-            self.testStatus=result.failures.isEmpty ? (settings.language == "ar" ? "تمت جدولة اختبار بعد نحو دقيقة. اقفل الهاتف الآن." : "Test scheduled about one minute ahead. Lock the phone now.") : result.failures.joined(separator:" ")
+            self.testStatus=result.failures.isEmpty ? AppLanguage.text("Test scheduled in about a minute. Lock your iPhone now.",language:settings.language) : result.failures.joined(separator:" ")
             return self.testStatus ?? ""
         }
     }
     func cancelTests() async {
         _=await operations.enqueue { [weak self] in
             guard let self else {return ""}
-            do {try await self.reconciler.cancelTests();self.testStatus="Test alerts cancelled"} catch {self.testStatus=error.localizedDescription}
+            do {try await self.reconciler.cancelTests();self.testStatus=AppLanguage.text("Test alerts cancelled",language:AppLanguage.current)} catch {self.testStatus=error.localizedDescription}
             return self.testStatus ?? ""
         }
     }

@@ -27,7 +27,9 @@
 "Alerts, your way" = "Alerts, your way";
 "Aligned with Qibla" = "Aligned with Qibla";
 "Allow Live Activities in iOS Settings to show the countdown." = "Allow Live Activities in iOS Settings to show the countdown.";
+"Allow alarms in iOS Settings." = "Allow alarms in iOS Settings.";
 "Allow notifications" = "Allow notifications";
+"Allow notifications in iOS Settings." = "Allow notifications in iOS Settings.";
 "Allow system alarms" = "Allow system alarms";
 "Allow the selected delivery type, then start the test and lock your iPhone." = "Allow the selected delivery type, then start the test and lock your iPhone.";
 "App-rendered preview" = "App-rendered preview";
@@ -50,6 +52,7 @@
 "Choose a city offline, or use your precise location. Check the time zone if you are near a border." = "Choose a city offline, or use your precise location. Check the time zone if you are near a border.";
 "Choose a city without granting location access, or use GPS when you need it." = "Choose a city without granting location access, or use GPS when you need it.";
 "Choose a city without granting location access, or use GPS when you need it. Notifications and alarms are optional and requested from Settings." = "Choose a city without granting location access, or use GPS when you need it. Notifications and alarms are optional and requested from Settings.";
+"Choose a sound for alarms, or use notifications for silent alerts." = "Choose a sound for alarms, or use notifications for silent alerts.";
 "Choose an adhan recording or keep the system sound." = "Choose an adhan recording or keep the system sound.";
 "Choose an audible alarm sound" = "Choose an audible alarm sound";
 "Choose delivery and sound for each prayer. Off means no prayer alert; advance reminders are a separate choice." = "Choose delivery and sound for each prayer. Off means no prayer alert; advance reminders are a separate choice.";
@@ -196,6 +199,8 @@
 "On" = "On";
 "Open Salati after installing or changing location to update your widgets." = "Open Salati after installing or changing location to update your widgets.";
 "Open Salati regularly to keep future alerts ready." = "Open Salati regularly to keep future alerts ready.";
+"Open Salati to keep prayer alerts up to date." = "Open Salati to keep prayer alerts up to date.";
+"Open Salati to prepare Live Activities." = "Open Salati to prepare Live Activities.";
 "Open Salati to refresh" = "Open Salati to refresh";
 "Open iOS Settings" = "Open iOS Settings";
 "Open preview" = "Open preview";
@@ -303,9 +308,11 @@
 "TASUA" = "Tasu‘a";
 "TEHRAN" = "Institute of Geophysics, University of Tehran";
 "TURKEY" = "Presidency of Religious Affairs, Turkey (Diyanet)";
+"Test alerts cancelled" = "Test alerts cancelled";
 "Test an alert" = "Test an alert";
 "Test an alert for delivery in one minute, or listen to a recording immediately." = "Test an alert for delivery in one minute, or listen to a recording immediately.";
 "Test in one minute — lock the phone" = "Test in one minute — lock the phone";
+"Test scheduled in about a minute. Lock your iPhone now." = "Test scheduled in about a minute. Lock your iPhone now.";
 "The correction expires at the unadjusted month boundary. Some Hijri labels may repeat when it resets." = "The correction expires at the unadjusted month boundary. Some Hijri labels may repeat when it resets.";
 "The countdown starts 15 minutes before prayer. If it cannot start, Salati uses a notification reminder when permitted." = "The countdown starts 15 minutes before prayer. If it cannot start, Salati uses a notification reminder when permitted.";
 "The countdown uses system rendering. Open Salati regularly to refresh changing prayer schedules." = "The countdown uses system rendering. Open Salati regularly to refresh changing prayer schedules.";

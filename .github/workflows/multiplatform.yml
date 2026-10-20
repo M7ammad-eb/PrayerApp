@@ -109,6 +109,7 @@ jobs:
           if [[ -d iosApp/TestResults.xcresult ]]; then
             xcrun xcresulttool export attachments --path iosApp/TestResults.xcresult --output-path iosApp/screenshots
           fi
+          xcrun simctl spawn "$SIMULATOR_ID" log show --last 40m --style compact --predicate 'subsystem == "com.salati.prayertimes.ios" OR process == "appintentsd"' > iosApp/activity-intents.log || true
       - name: Select compact simulator after main device finishes
         if: inputs.activity_only != true
         timeout-minutes: 12
@@ -147,4 +148,5 @@ jobs:
             iosApp/*.png
             iosApp/screenshots
             iosApp/screenshots-compact
+            iosApp/activity-intents.log
             shared/build/reports/tests

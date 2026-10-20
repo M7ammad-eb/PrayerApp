@@ -18,6 +18,8 @@ final class SalatiUITests:XCTestCase {
         let preferences=XCUIApplication(bundleIdentifier:"com.apple.Preferences")
         let opened=NSPredicate {_,_ in preferences.state == .runningForeground}
         expectation(for:opened,evaluatedWith:nil);waitForExpectations(timeout:10)
+        XCTAssertTrue(preferences.navigationBars.firstMatch.waitForExistence(timeout:15),preferences.debugDescription)
+        settleSystemPresentation()
         captureScreen("Language action opens native iPhone app settings")
         app.activate()
         // Simulate the OS relaunch with its per-app language preference. Keep all
@@ -34,7 +36,9 @@ final class SalatiUITests:XCTestCase {
             app.tabBars.buttons[arabic ? "القبلة":"Qibla"].tap()
             capture(arabic ? "Arabic Qibla physical heading 90":"English Qibla physical heading 90")
             app.tabBars.buttons[arabic ? "الصلاة":"Prayer"].tap()
-            XCTAssertTrue(app.staticTexts.matching(NSPredicate(format:"label CONTAINS %@",arabic ? "دمشق":"Damascus")).firstMatch.waitForExistence(timeout:5))
+            let city=app.staticTexts["homeSelectedLocation"]
+            XCTAssertTrue(city.waitForExistence(timeout:5))
+            XCTAssertEqual(city.label,arabic ? "دمشق":"Damascus")
         }
         app.tabBars.buttons["Settings"].tap()
         reviewAlertJourney(app)
@@ -93,7 +97,7 @@ final class SalatiUITests:XCTestCase {
     }
     func testSystemActivityCloseAndExpiryRecovery() {
         let app=XCUIApplication()
-        app.launchArguments=["-uiTestingReset","-uiTestingShowcase","-uiTestingActivityDuration","40"]
+        app.launchArguments=["-uiTestingReset","-uiTestingShowcase","-uiTestingActivityDuration","180"]
         launch(app);chooseCity("Madinah",app:app)
         let showcase=app.buttons["presentationShowcase"];reveal(showcase,app:app);showcase.tap()
         let springboard=XCUIApplication(bundleIdentifier:"com.apple.springboard")
@@ -103,13 +107,22 @@ final class SalatiUITests:XCTestCase {
         let visiblePrayer=springboard.descendants(matching:.any).matching(NSPredicate(format:"label CONTAINS 'Maghrib'")).firstMatch
         _=visiblePrayer.waitForExistence(timeout:15);settleSystemPresentation()
         springboard.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.035)).press(forDuration:1)
-        let close=springboard.buttons["Close"]
+        let close=springboard.buttons["liveActivity.close"]
         XCTAssertTrue(close.waitForExistence(timeout:10),"Actual expanded Activity must offer a working Close action")
         captureScreen("System expanded Activity with Close action")
-        close.tap();settleSystemPresentation();captureScreen("System Island after explicit Close")
+        close.tap()
+        assertSystemActivityDismissed(close:close,prayer:visiblePrayer,app:app)
+        captureScreen("System Island after explicit Close")
         app.activate();app.buttons["actualActivity.inspect"].tap()
         XCTAssertEqual(app.staticTexts["actualActivity.status"].label,"Preview activities: 0")
 
+        // A separate short fixture tests expiry. The first deadline must never
+        // overlap the Close assertion and masquerade as a working interaction.
+        app.terminate()
+        app.launchArguments=["-uiTestingShowcase","-uiTestingActivityDuration","40"]+systemLanguage(false)
+        launch(app)
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:10))
+        reveal(showcase,app:app);showcase.tap()
         app.buttons["actualActivity.start"].tap()
         XCTAssertTrue(app.staticTexts["System Live Activity preview started"].waitForExistence(timeout:10))
         XCUIDevice.shared.press(.home);_=visiblePrayer.waitForExistence(timeout:15);app.terminate()
@@ -118,7 +131,11 @@ final class SalatiUITests:XCTestCase {
         settleSystemPresentation();captureScreen("System Activity after deadline with app terminated")
         // A terminated process cannot run a local end timer. If iOS keeps the
         // stale activity visible, its real Close intent must still recover it.
-        if close.waitForExistence(timeout:3) {close.tap();settleSystemPresentation();captureScreen("Expired system Activity closed without opening Salati")}
+        if close.waitForExistence(timeout:3) {
+            close.tap()
+            assertSystemActivityDismissed(close:close,prayer:visiblePrayer,app:app)
+            captureScreen("Expired system Activity closed without opening Salati")
+        }
         app.launchArguments=["-uiTestingShowcase"]+systemLanguage(false);launch(app)
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:10))
         reveal(showcase,app:app);showcase.tap();app.buttons["actualActivity.inspect"].tap()
@@ -138,7 +155,7 @@ final class SalatiUITests:XCTestCase {
             XCTAssertTrue(add.waitForExistence(timeout:5),board.debugDescription);add.tap()
             let search=board.searchFields.firstMatch
             XCTAssertTrue(search.waitForExistence(timeout:8),board.debugDescription);search.tap();search.typeText("Salati")
-            let salati=board.buttons.matching(NSPredicate(format:"label CONTAINS[c] 'Salati'")).firstMatch
+            let salati=board.cells.matching(NSPredicate(format:"label ==[c] 'Salati'")).firstMatch
             XCTAssertTrue(salati.waitForExistence(timeout:10),board.debugDescription);salati.tap()
             let prefix=arabic ? "Arabic actual WidgetKit":"English actual WidgetKit"
             for page in 0..<5 {
@@ -261,7 +278,7 @@ final class SalatiUITests:XCTestCase {
         let city=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'city.'")).firstMatch
         XCTAssertTrue(city.waitForExistence(timeout:10));city.tap()
         XCTAssertTrue(app.buttons["continueOnboarding"].isEnabled)
-        if captureSetup {capture(prefix+" 2 offline location selected")}
+        if captureSetup {settleSystemPresentation();capture(prefix+" 2 offline location selected")}
         advanceSetup(app,to:3)
         if captureSetup {
             capture(prefix+" 3 ready next prayer")
@@ -282,6 +299,13 @@ final class SalatiUITests:XCTestCase {
         let contentTop=app.navigationBars.firstMatch.frame.maxY
         let footerTop=app.progressIndicators.firstMatch.frame.minY-16
         return control.frame.minY>=contentTop && control.frame.maxY<=footerTop
+    }
+    private func assertSystemActivityDismissed(close:XCUIElement,prayer:XCUIElement,app:XCUIApplication) {
+        let gone=NSPredicate {_,_ in !close.exists && !prayer.exists}
+        let result=XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:gone,object:nil)],timeout:15)
+        if result != .completed {captureScreen("FAILURE Activity still visible after Close")}
+        XCTAssertEqual(result,.completed,"Close must remove the actual system presentation before foreground cleanup can mask a failure")
+        XCTAssertNotEqual(app.state,.runningForeground,"Close must not open Salati")
     }
     private func revealOnboardingControl(_ control:XCUIElement,app:XCUIApplication) {
         for _ in 0..<6 {

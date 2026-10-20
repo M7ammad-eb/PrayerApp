@@ -18,11 +18,11 @@ iOS owns the application language. The Language row opens the app's native Setti
 
 ## Live Activity lifecycle
 
-The Activity's prayer name/time and countdown share the main row. City and a 44-point Close control form a subordinate header. Compact and expanded forms constrain timer width. Expired content retains prayer identity and a readable message; it is not replaced by an empty view.
+The Activity's prayer name/time, bounded countdown and 44-point Close control share the expanded main row. City is subordinate, and progress stays inside the lower curved edge. Compact and expanded forms constrain timer width. Prayer identity and scheduled time remain nonempty even if iOS retains an archived countdown at zero. A fresh stale-state render shows the end message; timely re-rendering with the application terminated is not guaranteed.
 
 Lifecycle cleanup is independent of calculation, storage and alert replenishment. It runs before refresh on launch/foreground, observes Activity state changes and arms an expiry timer while the app can execute. End calls provide complete final content and immediate dismissal. Legacy records without usable event identity are retired on cleanup.
 
-Close is a LiveActivityIntent executed by the app process without opening the UI. It is serialized with reconciliation, ends all copies of the chosen event and persists dismissal until that prayer instant. Submission rechecks suppression after asynchronous retention work. A system dismissal uses captured identity even if ActivityKit has already removed the record; app-initiated replacement endings do not suppress the replacement.
+Close is a LiveActivityIntent intended to execute by the app process without opening the UI. It bypasses alert reconciliation waits, ends all copies of the chosen event and persists dismissal until that prayer instant. Submission rechecks suppression after asynchronous retention work. A system dismissal uses captured identity even if ActivityKit has already removed the record; app-initiated replacement endings do not suppress the replacement. Runtime logs identify unexpected extension routing rather than silently returning success.
 
 An offline, suspended or terminated app cannot promise execution at an exact future deadline. `staleDate` marks stale content; it does not schedule `end()`. A future `timestamp` orders content updates; it is not a scheduled end. This implementation does not claim guaranteed automatic dismissal while the process cannot run. Nonempty stale content, Close, and immediate launch/foreground recovery address that execution boundary. Physical iOS 27 behavior remains a separate device check.
 
@@ -30,7 +30,7 @@ An offline, suspended or terminated app cannot promise execution at an exact fut
 
 Lead owns shared policy, language/storage integration, lifecycle, tests and delivery. Two bounded agents owned app UI and widget/Activity presentation, followed by independent cross-review. Review resolved two dismissal races, alarm-denial recovery, missing legacy event identity and binary direction/formatting assumptions. Only one resource-intensive build/test job runs at a time; iOS CI waits for shared/Android validation.
 
-Pending final runtime results, visual review, Release package and source/hash receipt.
+The first recovery run (39488536765) passed 25 shared JVM tests, 99 Android tests and 45 app tests. Two UI selectors failed (city toolbar button and widget gallery cell). Visual inspection also invalidated the initial Close test's success claim: its one-second capture still showed the Activity, and foreground cleanup could mask failed or delayed interaction. The replacement test requires the actual system Activity to disappear before reopening Salati. Pending final runtime results, visual review, Release package and source/hash receipt.
 
 ## Primary references
 

@@ -4,13 +4,18 @@ import SalatiCore
 struct HomeView: View {
     @EnvironmentObject var model: AppModel
     @State private var showPlaces=false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject private var audio=AdhanPlayer.shared
     var body: some View {
         List {
             if let day=model.day {
                 Section {
                     VStack(alignment:.leading,spacing:16) {
-                        Label("Up next",systemImage:"clock").font(.subheadline.weight(.medium)).foregroundStyle(Color.accentColor)
+                        VStack(alignment:.leading,spacing:8) {
+                            Text(model.locationDisplayName).font(.subheadline).foregroundStyle(.secondary)
+                                .fixedSize(horizontal:false,vertical:true).accessibilityIdentifier("homeSelectedLocation")
+                            Label("Up next",systemImage:"clock").font(.subheadline.weight(.medium)).foregroundStyle(Color.accentColor)
+                        }
                         if let next=model.presentationSnapshot?.events.first(where:{$0.id == model.nextEventID}) {
                         ViewThatFits(in:.horizontal) {
                             HStack(alignment:.firstTextBaseline) { Text(next.title).font(.largeTitle.weight(.semibold)); Spacer(); Text(next.timeText).font(.title.weight(.medium)).monospacedDigit().environment(\.layoutDirection,.leftToRight) }
@@ -30,15 +35,26 @@ struct HomeView: View {
                     ForEach(model.displayEvents) { event in
                         let next=event.id == model.nextEventID
                         let current=event.id == model.currentEventID
-                        HStack(spacing:14) {
-                            Image(systemName:symbol(event.id)).foregroundStyle(next ? Color.accentColor : (current ? Color.primary:Color.secondary)).frame(width:28).accessibilityHidden(true)
-                            VStack(alignment:.leading,spacing:3) {
-                                Text(event.title).fontWeight(next || current ? .semibold:.regular)
-                                if current {Label("Current prayer",systemImage:"circle.fill").font(.caption).foregroundStyle(.primary)}
-                                else if next {Label("Up next",systemImage:"circle.fill").font(.caption).foregroundStyle(Color.accentColor)}
+                        Group {
+                            if dynamicTypeSize.isAccessibilitySize {
+                                VStack(alignment:.leading,spacing:8) {
+                                    Text(event.title).fontWeight(next || current ? .semibold:.regular)
+                                    Text(event.timeText).monospacedDigit().environment(\.layoutDirection,.leftToRight)
+                                    if current {Text("Current prayer").font(.caption).foregroundStyle(.primary)}
+                                    else if next {Text("Up next").font(.caption).foregroundStyle(Color.accentColor)}
+                                }.frame(maxWidth:.infinity,alignment:.leading)
+                            } else {
+                                HStack(spacing:14) {
+                                    Image(systemName:symbol(event.id)).foregroundStyle(next ? Color.accentColor : (current ? Color.primary:Color.secondary)).frame(width:28).accessibilityHidden(true)
+                                    VStack(alignment:.leading,spacing:3) {
+                                        Text(event.title).fontWeight(next || current ? .semibold:.regular)
+                                        if current {Label("Current prayer",systemImage:"circle.fill").font(.caption).foregroundStyle(.primary)}
+                                        else if next {Label("Up next",systemImage:"circle.fill").font(.caption).foregroundStyle(Color.accentColor)}
+                                    }
+                                    Spacer(minLength:8)
+                                    Text(event.timeText).monospacedDigit().environment(\.layoutDirection,.leftToRight).fontWeight(next || current ? .semibold:.regular)
+                                }
                             }
-                            Spacer(minLength:8)
-                            Text(event.timeText).monospacedDigit().environment(\.layoutDirection,.leftToRight).fontWeight(next || current ? .semibold:.regular)
                         }.foregroundStyle(next ? Color.accentColor:(current ? Color.primary:Color.secondary))
                             .padding(.vertical,7).accessibilityElement(children:.combine).accessibilityIdentifier("homePrayer."+event.id)
                     }

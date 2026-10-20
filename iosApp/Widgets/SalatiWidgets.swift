@@ -306,6 +306,7 @@ struct PrayerActivityFooter:View {
             if !isExpired,let start=state.start,start<state.date {
                 ProgressView(timerInterval:start...state.date,countsDown:false).tint(Color.accentColor)
                     .labelsHidden().accessibilityLabel("Prayer countdown progress")
+                    .frame(height:4).clipShape(Capsule())
             }
         }
     }
@@ -325,7 +326,19 @@ struct PrayerActivityExpanded:View {
     let state:PrayerActivityAttributes.ContentState
     var isExpired=false
     var body:some View {
-        PrayerActivityCard(city:city,state:state,isExpired:isExpired)
+        VStack(alignment:.leading,spacing:8) {
+            HStack(alignment:.center,spacing:8) {
+                PrayerActivityHeading(state:state).frame(maxWidth:.infinity,alignment:.leading)
+                PrayerActivityRemaining(state:state,isExpired:isExpired)
+                PrayerActivityCloseButton(eventID:state.eventID)
+            }
+            if !city.isEmpty {Text(city).font(.caption).foregroundStyle(.secondary).lineLimit(1)}
+            PrayerActivityFooter(city:city,state:state,isExpired:isExpired)
+        }
+        // The bottom region shares space with the sensor and rounded lower corners.
+        // Keep its composition short and its animated track safely inside that area.
+        .padding(.horizontal,4).padding(.bottom,10)
+        .environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))
     }
 }
 struct PrayerActivityCompactName:View {
