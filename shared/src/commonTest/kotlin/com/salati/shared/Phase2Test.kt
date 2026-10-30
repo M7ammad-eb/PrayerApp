@@ -100,9 +100,11 @@ class Phase2Test {
     @Test fun compassUnwrapsAndAlignmentUsesReliableHysteresis() {
         val tracker=CompassAlignmentTracker()
         val first=tracker.update(0.0,359.0,2.0,100.0)
+        // Within 3.5 degrees counts immediately; there is no dwell time.
+        assertTrue(first.aligned);assertTrue(first.enteredAlignment)
         val second=tracker.update(0.0,1.0,2.0,100.7)
         assertTrue(kotlin.math.abs(second.rotation-first.rotation)<3)
-        assertTrue(second.aligned);assertTrue(second.enteredAlignment)
+        assertTrue(second.aligned);assertFalse(second.enteredAlignment)
         assertFalse(tracker.update(0.0,6.0,2.0,101.0).enteredAlignment)
         assertTrue(tracker.update(0.0,6.0,2.0,101.1).aligned)
         assertFalse(tracker.update(0.0,6.0,25.0,101.2).aligned)

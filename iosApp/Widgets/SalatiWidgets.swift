@@ -430,7 +430,18 @@ struct Countdown:View {
     let date:Date
     var now=Date()
     var width:CGFloat=120
+    // Leading/trailing follow the surrounding layout, so in Arabic the timer lines up with the
+    // prayer name on the right. The digits themselves are always laid out left to right below.
     var alignment:TextAlignment = .leading
+    @Environment(\.layoutDirection) private var surroundingDirection
+    private var physicalAlignment:TextAlignment {
+        guard surroundingDirection == .rightToLeft else {return alignment}
+        switch alignment {
+        case .leading:return .trailing
+        case .trailing:return .leading
+        default:return alignment
+        }
+    }
     var body:some View {
         Group {
             if date>now {Text(timerInterval:now...date,countsDown:true)}
@@ -439,8 +450,8 @@ struct Countdown:View {
         // Dynamic Text is horizontally flexible in an archived WidgetKit view.
         // A concrete width is required even when the ordinary SwiftUI preview fits.
         .monospacedDigit().lineLimit(1).minimumScaleFactor(0.85)
-        .frame(width:width,alignment:alignment == .trailing ? .trailing : alignment == .center ? .center : .leading)
-        .multilineTextAlignment(alignment)
+        .frame(width:width,alignment:physicalAlignment == .trailing ? .trailing : physicalAlignment == .center ? .center : .leading)
+        .multilineTextAlignment(physicalAlignment)
         .environment(\.locale,Locale(identifier:"en_US_POSIX")).environment(\.layoutDirection,.leftToRight)
     }
 }

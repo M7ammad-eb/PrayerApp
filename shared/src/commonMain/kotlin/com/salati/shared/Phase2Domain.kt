@@ -82,18 +82,17 @@ data class CompassState(val rotation: Double, val reliable: Boolean, val aligned
 class CompassAlignmentTracker {
     private var rotation: Double? = null
     private var aligned = false
-    private var candidateSince: Double? = null
+    // Facing the Qibla is reported the moment the heading is within 3.5 degrees (same as Android);
+    // it is released only beyond 8 degrees so a small wobble does not flicker the indicator.
+    @Suppress("UNUSED_PARAMETER")
     fun update(bearing: Double, heading: Double, accuracy: Double, nowEpoch: Double): CompassState {
         val reliable = bearing.isFinite() && heading.isFinite() && accuracy in 0.0..15.0
         val target = signed(bearing - heading)
         val continuous = rotation?.let { it + signed(target - it) } ?: target
         if (reliable) rotation = continuous
         val wasAligned = aligned
-        if (!reliable || abs(target) > 8) { aligned = false; candidateSince = null }
-        else if (!aligned && abs(target) <= 4) {
-            val since = candidateSince ?: nowEpoch.also { candidateSince = it }
-            if (nowEpoch - since >= 0.6) aligned = true
-        } else if (!aligned) candidateSince = null
+        if (!reliable || abs(target) > 8) aligned = false
+        else if (!aligned && abs(target) <= 3.5) aligned = true
         return CompassState(rotation ?: continuous, reliable, aligned, aligned && !wasAligned)
     }
     private fun signed(angle: Double) = ((angle + 180) % 360 + 360) % 360 - 180

@@ -1,5 +1,21 @@
 {
   "This log stays on your iPhone. Share it only if you need help.": "يبقى هذا السجل على جهازك. شاركه فقط إذا احتجت إلى مساعدة.",
   "Share log": "مشاركة السجل",
-  "Clear log": "مسح السجل"
+  "Clear log": "مسح السجل",
+  "Find the Qibla": "تحديد القبلة",
+  "Hold your phone flat and turn until the Kaaba marker reaches the top.": "ضع الهاتف بشكل مسطح ثم استدر حتى تصل علامة الكعبة إلى أعلى الدائرة.",
+  "Facing the Qibla": "أنت باتجاه القبلة",
+  "Turn right": "اتجه يميناً",
+  "Turn left": "اتجه يساراً",
+  "Sensor:": "دقة الحساس:",
+  "High": "عالية",
+  "Medium": "متوسطة",
+  "Low": "منخفضة",
+  "Unreliable": "غير موثوق",
+  "Calibrate": "معايرة",
+  "Compass Calibration": "معايرة البوصلة",
+  "Got it": "حسناً",
+  "To calibrate your compass, move your phone smoothly in a figure 8 in the air several times, away from metal and magnets.": "لمعايرة بوصلة الهاتف، حرّك جهازك بسلاسة بشكل رقم 8 في الهواء عدة مرات بعيداً عن المعادن والمغناطيس.",
+  "Distance to Kaaba:": "المسافة إلى الكعبة المشرفة:",
+  "km": "كم"
 }
