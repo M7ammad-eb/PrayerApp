@@ -433,11 +433,14 @@ struct ScheduleDiagnostic: Codable {
             }
         }
     }
+    var nextLiveActivityDeadline:Date? {liveLifecycle.nextExpiry}
     private func armLiveActivityExpiry() {
         expiryTask?.cancel()
+        // Keep the background wake-up aligned with the nearest countdown deadline.
+        AppDelegate.requestRefresh()
         guard let next=liveLifecycle.nextExpiry else {expiryTask=nil;return}
-        // No suspended-process execution promise: system stale UI and Close remain
-        // usable offline, and launch/foreground cleanup does not depend on a refresh.
+        // The timer below only runs while the process is alive. When suspended, the
+        // background wake-up above, Close, and launch/foreground cleanup end the activity.
         expiryTask=Task { @MainActor [weak self] in
             do {try await Task.sleep(for:.seconds(max(0.05,next.timeIntervalSinceNow)));try Task.checkCancellation()} catch {return}
             await self?.liveLifecycle.cleanup()

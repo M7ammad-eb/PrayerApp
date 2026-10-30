@@ -15,7 +15,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         center.setNotificationCategories([UNNotificationCategory(identifier:"PRAYER",actions:[play],intentIdentifiers:[])])
         BGTaskScheduler.shared.register(forTaskWithIdentifier:Self.refreshIdentifier,using:nil) { task in
             let work=Task { @MainActor in
-                let model=AppModel(); await model.refresh(); task.setTaskCompleted(success:!Task.isCancelled && model.error == nil)
+                // Ending a finished countdown must not depend on a successful refresh
+                // (it needs a saved location and can be cut short by the system).
+                await PrayerScheduler.shared.cleanupLiveActivities()
+                let model=AppModel(); await model.refresh()
+                AppDelegate.requestRefresh()
+                task.setTaskCompleted(success:!Task.isCancelled && model.error == nil)
             }
             task.expirationHandler={ work.cancel() }
         }
@@ -29,9 +34,15 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         }
         completion()
     }
-    static func requestRefresh() {
+    // A suspended app cannot end its own Live Activity, and a stale date does not
+    // remove it. Ask iOS for a wake-up just after the nearest countdown finishes so
+    // the activity can be ended; iOS decides when, or whether, to grant it. Only one
+    // request per identifier can be pending, so this always replaces the previous one.
+    @MainActor static func requestRefresh() {
         let request=BGAppRefreshTaskRequest(identifier:refreshIdentifier)
-        request.earliestBeginDate=Date(timeIntervalSinceNow:12*3600)
+        var earliest=Date(timeIntervalSinceNow:12*3600)
+        if let deadline=PrayerScheduler.shared.nextLiveActivityDeadline {earliest=min(earliest,deadline.addingTimeInterval(5))}
+        request.earliestBeginDate=earliest
         try? BGTaskScheduler.shared.submit(request)
     }
 }
