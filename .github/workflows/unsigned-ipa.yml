@@ -26,6 +26,15 @@ jobs:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ runner.arch }}-2.4.10-xcode26.4.1
       - run: brew install xcodegen
+      - name: Stamp a unique build number
+        # Every IPA gets its own build number (shown in Settings > About and used for the file name),
+        # so a new build is never mistaken for the one already installed.
+        run: |
+          BUILD=$((100 + GITHUB_RUN_NUMBER))
+          for plist in iosApp/Config/App-Info.plist iosApp/Config/Widget-Info.plist; do
+            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$plist"
+          done
+          echo "Build number: $BUILD"
       - name: Build actual iPhone framework and resources
         run: KOTLIN_TARGET=IosArm64 KOTLIN_BUILD_TYPE=Release bash tools/ios/build.sh
       - name: Compile and package unsigned iPhone IPA

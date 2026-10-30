@@ -35,8 +35,7 @@ struct HomeView: View {
                     ForEach(model.displayEvents) { event in
                         let next=event.id == model.nextEventID
                         let current=event.id == model.currentEventID
-                        let past=event.date<Date() && !current
-                        let rowTint:Color?=(current || next) ? Color.accentColor.opacity(0.10) : nil
+                        let rowTint:Color?=next ? Color.accentColor.opacity(0.10) : nil
                         Group {
                             if dynamicTypeSize.isAccessibilitySize {
                                 VStack(alignment:.leading,spacing:8) {
@@ -46,16 +45,20 @@ struct HomeView: View {
                                     else if next {Text("Up next").font(.caption).foregroundStyle(Color.accentColor)}
                                 }.frame(maxWidth:.infinity,alignment:.leading)
                             } else {
-                                // The row tint and weight mark the current and next prayer; VoiceOver
-                                // hears the same state, so no caption or dot is needed on screen.
-                                HStack(spacing:14) {
-                                    Image(systemName:symbol(event.id)).foregroundStyle(next || current ? Color.accentColor : Color.secondary).frame(width:28).accessibilityHidden(true)
+                                // Same language as the widget: an arrow and accent colour for the next prayer,
+                                // a dot and bold text for the current one, secondary for the rest.
+                                HStack(spacing:10) {
+                                    Group {
+                                        if next {Image(systemName:"arrowtriangle.forward.fill").font(.system(size:8)).foregroundStyle(Color.accentColor)}
+                                        else {Circle().fill(current ? Color.primary : Color.clear).frame(width:6,height:6)}
+                                    }.frame(width:10).accessibilityHidden(true)
+                                    Image(systemName:symbol(event.id)).foregroundStyle(next ? Color.accentColor : (current ? Color.primary : Color.secondary)).frame(width:28).accessibilityHidden(true)
                                     Text(event.title).fontWeight(next || current ? .semibold:.regular)
                                     Spacer(minLength:8)
                                     Text(event.timeText).monospacedDigit().environment(\.layoutDirection,.leftToRight).fontWeight(next || current ? .semibold:.regular)
                                 }.accessibilityValue(Text(LocalizedStringKey(current ? "Current prayer" : (next ? "Up next" : ""))))
                             }
-                        }.foregroundStyle(past ? Color.secondary : Color.primary)
+                        }.foregroundStyle(next ? Color.accentColor : (current ? Color.primary : Color.secondary))
                             .padding(.vertical,7).accessibilityElement(children:.combine).accessibilityIdentifier("homePrayer."+event.id)
                             .listRowBackground(rowTint)
                     }

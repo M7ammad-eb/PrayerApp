@@ -244,6 +244,9 @@ struct OnboardingView: View {
                         Text("Starts 15 minutes before each prayer.").font(.subheadline).foregroundStyle(.secondary)
                     }
                 }.padding(14).background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:20,style:.continuous))
+                if alertChoice == .alarm && permissionNote == nil {
+                    Text("You'll be asked to allow alarms and notifications.").font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                }
                 if let permissionNote {
                     VStack(spacing:8) {
                         Label {Text(permissionNote)} icon:{Image(systemName:"exclamationmark.triangle.fill")}.font(.subheadline.weight(.medium))
@@ -397,26 +400,50 @@ struct OnboardingView: View {
         }
         model.settings=updated
     }
-    // Continue on the alerts page saves the choice, then opens the matching system permission.
-    // If it is declined, the page says so once and a second Continue moves on.
+    // Continue on the alerts page opens the matching system permission first and saves the choice
+    // afterwards, so the scheduler is not rebuilding alarms underneath the prompt. If a permission
+    // is declined the page says so once, and a second Continue moves on.
     private func commitAlerts() async {
         guard !committing else {return}
         committing=true
         defer {committing=false}
-        applyAlertChoice()
-        if permissionNote != nil {move(to:step+1);return}
+        if permissionNote != nil {applyAlertChoice();move(to:step+1);return}
         switch alertChoice {
-        case .off:move(to:step+1)
+        case .off:
+            applyAlertChoice();move(to:step+1)
         case .notification:
-            _=await model.scheduler.authorizeNotifications()
-            let status=await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
-            if status == .authorized || status == .provisional || status == .ephemeral {move(to:step+1)}
-            else {permissionNote="Notifications are turned off in iOS Settings."}
+            let granted=await requestNotifications()
+            applyAlertChoice()
+            if granted {move(to:step+1)} else {permissionNote="Notifications are turned off in iOS Settings."}
         case .alarm:
-            _=await model.scheduler.authorizeAlarms()
-            if AlarmManager.shared.authorizationState == .authorized {move(to:step+1)}
-            else {permissionNote="Alarms are turned off in iOS Settings."}
+            let granted=await requestAlarms()
+            // The countdown fallback and the "open Salati to refresh" reminder are notifications,
+            // so alarm users are asked for that permission as well.
+            _=await requestNotifications()
+            applyAlertChoice()
+            if granted {move(to:step+1)} else {permissionNote="Alarms are turned off in iOS Settings."}
         }
+    }
+    private func requestNotifications() async -> Bool {
+        let center=UNUserNotificationCenter.current()
+        var status=await center.notificationSettings().authorizationStatus
+        if status == .notDetermined {
+            _=await model.scheduler.authorizeNotifications()
+            status=await center.notificationSettings().authorizationStatus
+        }
+        return status == .authorized || status == .provisional || status == .ephemeral
+    }
+    // Waits for the person's decision itself rather than for the request call to return, so the
+    // page can never stay stuck behind a request that does not come back.
+    private func requestAlarms() async -> Bool {
+        if AlarmManager.shared.authorizationState == .notDetermined {
+            Task {_=await model.scheduler.authorizeAlarms()}
+            for _ in 0..<480 {
+                if AlarmManager.shared.authorizationState != .notDetermined {break}
+                try? await Task.sleep(for:.milliseconds(250))
+            }
+        }
+        return AlarmManager.shared.authorizationState == .authorized
     }
 }
 
