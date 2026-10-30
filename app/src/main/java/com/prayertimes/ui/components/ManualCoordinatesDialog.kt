@@ -159,14 +159,14 @@ fun ManualCoordinatesDialog(
 
     val presetCoordinates = remember(strings.isArabic) {
         listOf(
-            PresetCoord(strings.presetMakkah, 21.4225, 39.8262, "Asia/Riyadh", "Saudi Arabia"),
-            PresetCoord(strings.presetMadinah, 24.4672, 39.6111, "Asia/Riyadh", "Saudi Arabia"),
-            PresetCoord(strings.presetJerusalem, 31.7683, 35.2137, "Asia/Jerusalem", "Palestine"),
-            PresetCoord(strings.presetCairo, 30.0444, 31.2357, "Africa/Cairo", "Egypt"),
-            PresetCoord(strings.presetDubai, 25.2048, 55.2708, "Asia/Dubai", "UAE"),
-            PresetCoord(strings.presetIstanbul, 41.0082, 28.9784, "Europe/Istanbul", "Turkey"),
-            PresetCoord(strings.presetLondon, 51.5074, -0.1278, "Europe/London", "United Kingdom"),
-            PresetCoord(strings.presetNewYork, 40.7128, -74.0060, "America/New_York", "United States")
+            PresetCoord(strings.presetMakkah, 21.4225, 39.8262, "Asia/Riyadh"),
+            PresetCoord(strings.presetMadinah, 24.4672, 39.6111, "Asia/Riyadh"),
+            PresetCoord(strings.presetJerusalem, 31.7683, 35.2137, "Asia/Jerusalem"),
+            PresetCoord(strings.presetCairo, 30.0444, 31.2357, "Africa/Cairo"),
+            PresetCoord(strings.presetDubai, 25.2048, 55.2708, "Asia/Dubai"),
+            PresetCoord(strings.presetIstanbul, 41.0082, 28.9784, "Europe/Istanbul"),
+            PresetCoord(strings.presetLondon, 51.5074, -0.1278, "Europe/London"),
+            PresetCoord(strings.presetNewYork, 40.7128, -74.0060, "America/New_York")
         )
     }
 
@@ -358,7 +358,7 @@ fun ManualCoordinatesDialog(
                     value = locationNameText,
                     onValueChange = { locationNameText = it },
                     label = { Text(strings.locationNameLabel) },
-                    placeholder = { Text("Desert Camp") },
+                    placeholder = { Text(strings.locationNameExample) },
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     },
@@ -542,12 +542,12 @@ fun ManualCoordinatesDialog(
                         onClick = {
                             if (isValid && latParsed != null && lonParsed != null) {
                                 val finalName = locationNameText.trim().ifEmpty {
-                                    "Custom (${String.format(Locale.US, "%.2f, %.2f", latParsed, lonParsed)})"
+                                    "${strings.defaultCustomCoordinatesName} (${String.format(Locale.US, "%.2f, %.2f", latParsed, lonParsed)})"
                                 }
                                 val finalCountry = nearestPlaceResult?.let { result ->
                                     val placeName = if (strings.isArabic) result.place.nameAr ?: result.place.nameEn else result.place.nameEn
-                                    context.getString(R.string.coords_near_city_short_format, placeName)
-                                } ?: "Manual Coordinates"
+                                    strings.nearCityShort(placeName)
+                                } ?: strings.customCoordinates
                                 val newLocation = UserLocation(
                                     name = finalName,
                                     country = finalCountry,
@@ -579,6 +579,5 @@ private data class PresetCoord(
     val name: String,
     val lat: Double,
     val lon: Double,
-    val tz: String,
-    val country: String
+    val tz: String
 )

@@ -7,11 +7,13 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.prayertimes.MainActivity
+import com.prayertimes.R
 import com.prayertimes.data.calculator.PrayerTimesCalculator
 import com.prayertimes.data.models.NotificationSoundType
 import com.prayertimes.data.models.PrayerType
 import com.prayertimes.data.preferences.AppPrayerSettings
 import com.prayertimes.data.preferences.PrayerPreferences
+import com.prayertimes.util.LocalizedStrings
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.ZoneId
@@ -445,6 +447,8 @@ object PrayerNotificationScheduler {
     /** Debug-only end-to-end probe: AlarmManager -> receiver -> live countdown notification. */
     fun triggerTestScheduledLiveCountdown(context: Context, delayMillis: Long = 60_000L) {
         if (!context.isDebuggable()) return
+        val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic(context)
+        val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val now = System.currentTimeMillis()
         scheduleLiveCountdownAlarm(
@@ -454,7 +458,7 @@ object PrayerNotificationScheduler {
             prayerTargetEpochMillis = now + delayMillis + 2 * 60_000L,
             countdownStartEpochMillis = now + delayMillis,
             requestCode = DEBUG_COUNTDOWN_REQUEST_CODE,
-            locationName = "Scheduled Live Countdown Test",
+            locationName = localizedRes.getString(R.string.notification_scheduled_countdown_test),
             liveCountdownEnabled = true,
             leadMinutes = 2
         )
@@ -468,19 +472,22 @@ object PrayerNotificationScheduler {
         applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
 
     fun triggerTestNotification(context: Context, prayerType: PrayerType, soundType: NotificationSoundType) {
+        val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic(context)
+        val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
         val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
             action = PrayerAlarmReceiver.ACTION_PRAYER_ALARM
             putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
-            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_TIME, "Now")
+            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_TIME, localizedRes.getString(R.string.common_now))
             putExtra(PrayerAlarmReceiver.EXTRA_SOUND_TYPE, soundType.name)
             putExtra(PrayerAlarmReceiver.EXTRA_IS_PRE_REMINDER, false)
-            putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, "Test Mode")
+            putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, localizedRes.getString(R.string.notification_test_mode))
         }
         context.sendBroadcast(intent)
     }
 
     fun triggerTestLiveCountdown(context: Context, minutesFromNow: Int = 2) {
         val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic(context)
+        val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
         val targetMillis = System.currentTimeMillis() + minutesFromNow * 60 * 1000L
         PrayerLiveCountdownManager.show(
             context = context,
@@ -488,21 +495,23 @@ object PrayerNotificationScheduler {
             targetEpochMillis = targetMillis,
             countdownStartEpochMillis = System.currentTimeMillis(),
             receiverExecutionEpochMillis = System.currentTimeMillis(),
-            locationName = "Live Countdown Test",
+            locationName = localizedRes.getString(R.string.notification_live_countdown_test),
             isArabic = isArabic
         )
     }
 
     fun triggerTestAlarmInSeconds(context: Context, prayerType: PrayerType, soundType: NotificationSoundType, seconds: Int = 5) {
+        val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic(context)
+        val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val triggerTime = System.currentTimeMillis() + (seconds * 1000L)
         val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
             action = PrayerAlarmReceiver.ACTION_PRAYER_ALARM
             putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
-            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_TIME, "In $seconds s")
+            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_TIME, localizedRes.getString(R.string.notification_in_seconds_format, seconds))
             putExtra(PrayerAlarmReceiver.EXTRA_SOUND_TYPE, soundType.name)
             putExtra(PrayerAlarmReceiver.EXTRA_IS_PRE_REMINDER, false)
-            putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, "Alarm Test ($seconds s)")
+            putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, localizedRes.getString(R.string.notification_alarm_test_format, seconds))
         }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
@@ -521,12 +530,14 @@ object PrayerNotificationScheduler {
         soundType: NotificationSoundType,
         delaySeconds: Int = 300
     ) {
+        val isArabic = PrayerPreferences.getInitialSettings(context).language.resolveIsArabic(context)
+        val localizedRes = LocalizedStrings.forLanguage(context, isArabic)
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val triggerTime = System.currentTimeMillis() + (delaySeconds * 1000L)
         val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
             action = PrayerAlarmReceiver.ACTION_PRAYER_ALARM
             putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_NAME, prayerType.name)
-            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_TIME, "$prayerTime (Snooze)")
+            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_TIME, localizedRes.getString(R.string.notification_snoozed_time_format, prayerTime))
             putExtra(PrayerAlarmReceiver.EXTRA_SOUND_TYPE, soundType.name)
             putExtra(PrayerAlarmReceiver.EXTRA_IS_PRE_REMINDER, false)
             putExtra(PrayerAlarmReceiver.EXTRA_LOCATION_NAME, locationName)

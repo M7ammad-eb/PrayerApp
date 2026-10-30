@@ -28,7 +28,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Schedule
@@ -48,7 +50,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,10 +59,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.prayertimes.R
 import com.prayertimes.ui.components.CityPickerDialog
 import com.prayertimes.ui.components.LightweightPageEntry
 import com.prayertimes.ui.locale.LocalAppStrings
@@ -72,13 +75,17 @@ import com.prayertimes.ui.screens.QiblaScreen
 import com.prayertimes.ui.screens.SettingsScreen
 import com.prayertimes.ui.viewmodel.PrayerViewModel
 import com.prayertimes.ui.theme.ExpressiveMotion
-import kotlinx.coroutines.launch
 
 enum class AppNavTab(val icon: ImageVector) {
     PRAYER_TIMES(Icons.Outlined.Schedule),
     QIBLA(Icons.Outlined.Explore),
     MONTHLY(Icons.Outlined.CalendarMonth),
     SETTINGS(Icons.Outlined.Settings)
+}
+
+private enum class PermissionFeedback {
+    LOCATION_DENIED,
+    NOTIFICATIONS_DENIED
 }
 
 @Composable
@@ -88,7 +95,6 @@ fun MainScreen(
     onRequestNotificationPermission: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var selectedTab by remember { mutableIntStateOf(AppNavTab.PRAYER_TIMES.ordinal) }
@@ -96,10 +102,13 @@ fun MainScreen(
     // an already-active Settings tab doesn't recompose it back to the main hub on its own -
     // bumping this on every tap of the Settings tab forces that reset.
     var settingsResetKey by remember { mutableIntStateOf(0) }
+    var settingsAtRoot by remember { mutableStateOf(true) }
+    var settingsSearchExpanded by remember { mutableStateOf(false) }
     // Distinguishes "Re-run Setup Wizard" tapped from Settings (skippable, in case of a mis-tap)
     // from true first-run onboarding (not skippable - initial setup should be completed).
     var onboardingReopenedFromSettings by remember { mutableStateOf(false) }
     var showCityPickerFromHeader by remember { mutableStateOf(false) }
+    var permissionFeedback by remember { mutableStateOf<PermissionFeedback?>(null) }
 
     val settings by viewModel.settings.collectAsState()
     val isGpsLoading by viewModel.isGpsLoading.collectAsState()
@@ -123,9 +132,7 @@ fun MainScreen(
         if (fineGranted || coarseGranted) {
             viewModel.requestGpsLocation(context)
         } else {
-            scope.launch {
-                snackbarHostState.showSnackbar("Location permission was denied. You can select your city manually.")
-            }
+            permissionFeedback = PermissionFeedback.LOCATION_DENIED
         }
     }
 
@@ -140,9 +147,7 @@ fun MainScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (!isGranted) {
-            scope.launch {
-                snackbarHostState.showSnackbar("Notification permission is required for Athan & prayer alerts.")
-            }
+            permissionFeedback = PermissionFeedback.NOTIFICATIONS_DENIED
         }
     }
 
@@ -155,6 +160,16 @@ fun MainScreen(
 
     ProvideAppLocale(appLanguage = settings.language) {
         val strings = LocalAppStrings.current
+
+        LaunchedEffect(permissionFeedback, strings) {
+            val message = when (permissionFeedback) {
+                PermissionFeedback.LOCATION_DENIED -> strings.locationPermissionDeniedMessage
+                PermissionFeedback.NOTIFICATIONS_DENIED -> strings.notificationPermissionRequiredMessage
+                null -> return@LaunchedEffect
+            }
+            permissionFeedback = null
+            snackbarHostState.showSnackbar(message)
+        }
 
         if (!settings.onboardingCompleted) {
             com.prayertimes.ui.screens.OnboardingScreen(
@@ -254,6 +269,9 @@ fun MainScreen(
                     topBar = {
                         ExpressiveTopHeader(
                             currentTab = AppNavTab.values()[selectedTab],
+                            showSettingsTitle = settingsAtRoot,
+                            settingsSearchExpanded = settingsSearchExpanded,
+                            onSettingsSearchClick = { settingsSearchExpanded = !settingsSearchExpanded },
                             settings = settings,
                             strings = strings,
                             onLocationClick = { showCityPickerFromHeader = true },
@@ -317,6 +335,9 @@ fun MainScreen(
                         AppNavTab.SETTINGS -> {
                             SettingsScreen(
                                 resetKey = settingsResetKey,
+                                onRootStateChanged = { settingsAtRoot = it },
+                                searchExpanded = settingsSearchExpanded,
+                                onSearchExpandedChange = { settingsSearchExpanded = it },
                                 settings = settings,
                                 isGpsLoading = isGpsLoading,
                                 onSelectCity = { viewModel.selectCity(it) },
@@ -415,7 +436,11 @@ fun MainScreen(
                 ExpressiveFloatingBottomBar(
                     selectedTab = selectedTab,
                     onSelectTab = { tab ->
-                        if (tab == AppNavTab.SETTINGS.ordinal) settingsResetKey++
+                        if (tab == AppNavTab.SETTINGS.ordinal) {
+                            settingsResetKey++
+                            settingsAtRoot = true
+                            settingsSearchExpanded = false
+                        }
                         selectedTab = tab
                     },
                     tabTitle = { tabTitle(it) },
@@ -432,6 +457,9 @@ fun MainScreen(
 @Composable
 private fun ExpressiveTopHeader(
     currentTab: AppNavTab,
+    showSettingsTitle: Boolean,
+    settingsSearchExpanded: Boolean,
+    onSettingsSearchClick: () -> Unit,
     settings: com.prayertimes.data.preferences.AppPrayerSettings,
     strings: com.prayertimes.ui.locale.AppStrings,
     onLocationClick: () -> Unit,
@@ -500,7 +528,7 @@ private fun ExpressiveTopHeader(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-            } else if (currentTab != AppNavTab.SETTINGS) {
+            } else if (currentTab != AppNavTab.SETTINGS || showSettingsTitle) {
                 Text(
                     text = when (currentTab) {
                         AppNavTab.PRAYER_TIMES -> strings.appTitle
@@ -513,6 +541,25 @@ private fun ExpressiveTopHeader(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(vertical = 7.dp)
                 )
+                if (currentTab == AppNavTab.SETTINGS) {
+                    Surface(
+                        onClick = onSettingsSearchClick,
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (settingsSearchExpanded) Icons.Default.Close else Icons.Default.Search,
+                                contentDescription = stringResource(
+                                    if (settingsSearchExpanded) R.string.settings_cancel else R.string.settings_search_hint
+                                ),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(21.dp)
+                            )
+                        }
+                    }
+                }
                 if (currentTab == AppNavTab.MONTHLY) {
                     CompactHijriAdjustmentControl(
                         adjustmentDays = settings.hijriAdjustmentDays,

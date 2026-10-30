@@ -34,6 +34,8 @@
     <string name="common_select">اختيار</string>
     <string name="common_active">مفعّل</string>
     <string name="common_current_location">الموقع الحالي</string>
+    <string name="location_permission_denied_message">تم رفض إذن الموقع. يمكنك اختيار مدينتك يدوياً.</string>
+    <string name="notification_permission_required_message">إذن الإشعارات مطلوب لتنبيهات الأذان والصلاة.</string>
 
     <!-- ===== Full-Screen Prayer Alarm ===== -->
     <string name="alarm_badge_prayer">صلاة %1$s</string>
@@ -43,12 +45,21 @@
     <string name="alarm_dua_btn">الدعاء</string>
     <string name="alarm_open_app_btn">فتح مواقيت الصلاة والقبلة</string>
     <string name="alarm_dua_sheet_title">دعاء بعد الأذان</string>
+    <string name="alarm_dua_text">اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّدًا الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَامًا مَحْمُودًا الَّذِي وَعَدْتَهُ</string>
+    <string name="alarm_dua_transliteration">Allahumma Rabba hadhihid-da\'watit-tammah, was-salatil-qa\'imah, ati Muhammadan al-wasilata wal-fadilah, wab\'athhu maqaman mahmudan alladhi wa\'adtah.</string>
+    <string name="alarm_dua_translation">“اللهم رب هذه الدعوة التامة والصلاة القائمة، آتِ محمداً الوسيلة والفضيلة، وابعثه مقاماً محموداً الذي وعدته.”</string>
     <string name="notif_alarm_approaching_title">اقتراب موعد صلاة %1$s</string>
     <string name="notif_alarm_time_title">حان الآن وقت صلاة %1$s</string>
     <string name="notif_alarm_approaching_body">استعد لصلاة %1$s القادمة في %2$s بـ %3$s.</string>
     <string name="notif_alarm_time_body">حان الآن وقت صلاة %1$s في %2$s (%3$s).</string>
     <string name="notif_alarm_open_view_action">فتح شاشة التنبيه</string>
     <string name="notif_athan_playing_title">أذان صلاة %1$s</string>
+    <string name="notification_test_mode">وضع الاختبار</string>
+    <string name="notification_live_countdown_test">اختبار العد التنازلي المباشر</string>
+    <string name="notification_scheduled_countdown_test">اختبار العد التنازلي المجدول</string>
+    <string name="notification_alarm_test_format">اختبار المنبه (%1$d ث)</string>
+    <string name="notification_in_seconds_format">بعد %1$d ث</string>
+    <string name="notification_snoozed_time_format">%1$s (مؤجل)</string>
     <string name="gps_current_location_fallback">موقع GPS الحالي</string>
     <string name="gps_coordinates_fallback">إحداثيات GPS</string>
     <string name="gps_fix_failed_error">تعذر تحديد موقع GPS الحالي. يرجى التأكد من تفعيل خدمات الموقع.</string>
@@ -257,8 +268,6 @@
     <string name="settings_about_hub_subtitle">معلومات التطبيق والخصوصية والتراخيص</string>
     <string name="about_data_attribution_title">بيانات الأماكن</string>
     <string name="about_data_attribution_body">أسماء المدن والأماكن مقدَّمة من GeoNames.org، مرخّصة بموجب رخصة المشاع الإبداعي - النسب 4.0 (CC BY 4.0).</string>
-    <string name="about_typeface_title">الخط والترخيص</string>
-    <string name="about_typeface_body">يستخدم التطبيق خط Zain من تصميم Boutros Fonts. حقوق النشر © 2024 لمؤلفي مشروع Zain، وهو مرخّص بموجب رخصة SIL Open Font License 1.1.</string>
     <string name="settings_rerun_setup_title">إعادة تشغيل معالج الإعداد الأولي</string>
     <string name="settings_rerun_setup_subtitle">إعادة تخصيص اللغة والموقع والأذان والتصميم</string>
     <string name="settings_juristic_standard_desc">ظل الشيء مثله (الشافعي، المالكي، الحنبلي)</string>
@@ -385,6 +394,7 @@
     <string name="coords_latitude_label">خط العرض (°)</string>
     <string name="coords_longitude_label">خط الطول (°)</string>
     <string name="coords_location_name_label">اسم الموقع / الوصف</string>
+    <string name="coords_location_name_example">مخيم صحراوي</string>
     <string name="coords_time_zone_label">المنطقة الزمنية</string>
     <string name="coords_apply_coordinates">تطبيق الإحداثيات</string>
     <string name="coords_near_city_format">بالقرب من %1$s، %2$s (تقريباً %3$d كم)</string>

@@ -53,6 +53,13 @@ android {
   buildFeatures {
     compose = true
   }
+  bundle {
+    // The app supports an offline in-app language switcher. Keep every declared locale in each
+    // Play-delivered install instead of relying on Play Core to download a missing language split.
+    language {
+      enableSplit = false
+    }
+  }
   testOptions { unitTests { isIncludeAndroidResources = true } }
   dependenciesInfo {
     includeInApk = false

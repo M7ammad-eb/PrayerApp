@@ -102,7 +102,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                         "latenessMs=${if (intendedTriggerForLog >= 0L) receiverExecutionMillis - intendedTriggerForLog else -1L}"
                 )
             }
-            val prayerName = intent.getStringExtra(EXTRA_PRAYER_NAME) ?: "Prayer"
+            val prayerName = intent.getStringExtra(EXTRA_PRAYER_NAME) ?: PrayerType.FAJR.name
             val prayerType = try {
                 PrayerType.valueOf(prayerName.uppercase())
             } catch (e: Exception) {
@@ -146,14 +146,14 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             return
         }
 
-        val prayerName = intent.getStringExtra(EXTRA_PRAYER_NAME) ?: "Prayer"
+        val prayerName = intent.getStringExtra(EXTRA_PRAYER_NAME) ?: PrayerType.FAJR.name
         val prayerType = try {
             PrayerType.valueOf(prayerName.uppercase())
         } catch (e: Exception) {
             PrayerType.FAJR
         }
         val prayerTime = intent.getStringExtra(EXTRA_PRAYER_TIME) ?: ""
-        val locationName = intent.getStringExtra(EXTRA_LOCATION_NAME) ?: "your location"
+        val locationName = intent.getStringExtra(EXTRA_LOCATION_NAME).orEmpty()
 
         val soundTypeStr = intent.getStringExtra(EXTRA_SOUND_TYPE) ?: NotificationSoundType.FULL_ATHAN.name
         val isPreReminder = intent.getBooleanExtra(EXTRA_IS_PRE_REMINDER, false)

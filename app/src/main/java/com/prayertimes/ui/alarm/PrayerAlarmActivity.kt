@@ -27,6 +27,7 @@ import com.prayertimes.data.models.PrayerType
 import com.prayertimes.data.preferences.PrayerPreferences
 import com.prayertimes.notifications.PrayerNotificationScheduler
 import com.prayertimes.notifications.PrayerAlarmReceiver
+import com.prayertimes.ui.locale.ProvideAppLocale
 import com.prayertimes.ui.theme.MyApplicationTheme
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -107,39 +108,43 @@ class PrayerAlarmActivity : ComponentActivity() {
             ) {
                 val playbackState by AthanAudioEngine.playbackState.collectAsState()
 
-                PrayerAlarmScreen(
-                    prayerType = prayerType,
-                    prayerTimeFormatted = prayerTime,
-                    locationName = locationName,
-                    soundType = soundType,
-                    playbackState = playbackState,
-                    onStopAthan = {
-                        AthanAudioService.stopAthan(this@PrayerAlarmActivity)
-                        AthanAudioEngine.stop()
-                        finish()
-                    },
-                    onSnooze = {
-                        AthanAudioService.stopAthan(this@PrayerAlarmActivity)
-                        AthanAudioEngine.stop()
-                        // Schedule quick 5 minute snooze alarm
-                        PrayerNotificationScheduler.scheduleSnoozeAlarm(
-                            context = this@PrayerAlarmActivity,
-                            prayerType = prayerType,
-                            prayerTime = prayerTime,
-                            locationName = locationName,
-                            soundType = soundType,
-                            delaySeconds = 5 * 60
-                        )
-                        finish()
-                    },
-                    onOpenApp = {
-                        val mainIntent = Intent(this@PrayerAlarmActivity, MainActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                ProvideAppLocale(
+                    appLanguage = settings?.language ?: com.prayertimes.data.models.AppLanguage.SYSTEM
+                ) {
+                    PrayerAlarmScreen(
+                        prayerType = prayerType,
+                        prayerTimeFormatted = prayerTime,
+                        locationName = locationName,
+                        soundType = soundType,
+                        playbackState = playbackState,
+                        onStopAthan = {
+                            AthanAudioService.stopAthan(this@PrayerAlarmActivity)
+                            AthanAudioEngine.stop()
+                            finish()
+                        },
+                        onSnooze = {
+                            AthanAudioService.stopAthan(this@PrayerAlarmActivity)
+                            AthanAudioEngine.stop()
+                            // Schedule quick 5 minute snooze alarm
+                            PrayerNotificationScheduler.scheduleSnoozeAlarm(
+                                context = this@PrayerAlarmActivity,
+                                prayerType = prayerType,
+                                prayerTime = prayerTime,
+                                locationName = locationName,
+                                soundType = soundType,
+                                delaySeconds = 5 * 60
+                            )
+                            finish()
+                        },
+                        onOpenApp = {
+                            val mainIntent = Intent(this@PrayerAlarmActivity, MainActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            }
+                            startActivity(mainIntent)
+                            finish()
                         }
-                        startActivity(mainIntent)
-                        finish()
-                    }
-                )
+                    )
+                }
             }
         }
     }

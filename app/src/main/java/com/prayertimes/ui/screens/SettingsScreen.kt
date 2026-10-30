@@ -142,6 +142,9 @@ private data class SettingsSearchEntry(
 @Composable
 fun SettingsScreen(
     resetKey: Any = Unit,
+    onRootStateChanged: (Boolean) -> Unit = {},
+    searchExpanded: Boolean = false,
+    onSearchExpandedChange: (Boolean) -> Unit = {},
     settings: AppPrayerSettings,
     isGpsLoading: Boolean,
     onSelectCity: (UserLocation) -> Unit,
@@ -174,6 +177,10 @@ fun SettingsScreen(
     val strings = LocalAppStrings.current
     var currentSubScreen by remember(resetKey) { mutableStateOf(SettingsSubScreen.MAIN) }
 
+    LaunchedEffect(currentSubScreen) {
+        onRootStateChanged(currentSubScreen == SettingsSubScreen.MAIN)
+    }
+
     // Hardware back button support
     BackHandler(enabled = currentSubScreen != SettingsSubScreen.MAIN) {
         currentSubScreen = SettingsSubScreen.MAIN
@@ -184,7 +191,11 @@ fun SettingsScreen(
             SettingsSubScreen.MAIN -> {
                 SettingsMainHub(
                     settings = settings,
-                    onNavigateTo = { currentSubScreen = it }
+                    searchExpanded = searchExpanded,
+                    onNavigateTo = {
+                        onSearchExpandedChange(false)
+                        currentSubScreen = it
+                    }
                 )
             }
             SettingsSubScreen.APPEARANCE -> {
@@ -259,11 +270,15 @@ fun SettingsScreen(
 @Composable
 private fun SettingsMainHub(
     settings: AppPrayerSettings,
+    searchExpanded: Boolean,
     onNavigateTo: (SettingsSubScreen) -> Unit
 ) {
     val strings = LocalAppStrings.current
-    var searchExpanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+
+    LaunchedEffect(searchExpanded) {
+        if (!searchExpanded) searchQuery = ""
+    }
 
     Column(
         modifier = Modifier
@@ -273,39 +288,6 @@ private fun SettingsMainHub(
             .testTag("settings_screen"),
         verticalArrangement = Arrangement.Top
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = strings.navSettings,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Surface(
-                onClick = {
-                    if (searchExpanded) searchQuery = ""
-                    searchExpanded = !searchExpanded
-                },
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(44.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = if (searchExpanded) Icons.Default.Close else Icons.Default.Search,
-                        contentDescription = stringResource(
-                            if (searchExpanded) R.string.settings_cancel else R.string.settings_search_hint
-                        ),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(21.dp)
-                    )
-                }
-            }
-        }
-
         AnimatedVisibility(visible = searchExpanded) {
             OutlinedTextField(
                 value = searchQuery,
@@ -2128,7 +2110,7 @@ private fun SettingsNotificationsSubScreen(
                 OutlinedButton(
                     onClick = {
                         onTestAlarmInSeconds(PrayerType.DHUHR, NotificationSoundType.FULL_ATHAN, 5)
-                        testAlarmScheduledText = context.getString(R.string.settings_test_alarm_scheduled)
+                        testAlarmScheduledText = strings.testAlarmScheduled
                     },
                     shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()
@@ -2274,27 +2256,6 @@ private fun SettingsAboutSubScreen(
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = strings.aboutDataAttributionBody,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Card(
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = strings.aboutTypefaceTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = strings.aboutTypefaceBody,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

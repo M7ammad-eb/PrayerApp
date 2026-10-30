@@ -62,11 +62,13 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.prayertimes.R
 import com.prayertimes.audio.AdhanPlaybackState
 import com.prayertimes.data.models.NotificationSoundType
 import com.prayertimes.data.models.PrayerType
@@ -227,10 +229,11 @@ fun PrayerAlarmScreen(
                         )
                     }
 
-                    if (soundType.subtitle.isNotBlank()) {
+                    val localizedSoundSubtitle = strings.soundTypeSubtitle(soundType)
+                    if (localizedSoundSubtitle.isNotBlank()) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = soundType.subtitle,
+                            text = localizedSoundSubtitle,
                             color = Color.White.copy(alpha = 0.75f),
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center
@@ -398,7 +401,7 @@ fun PrayerAlarmScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّدًا الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَامًا مَحْمُودًا الَّذِي وَعَدْتَهُ",
+                            text = stringResource(R.string.alarm_dua_text),
                             style = MaterialTheme.typography.bodyLarge,
                             fontFamily = FontFamily.Serif,
                             fontSize = 18.sp,
@@ -411,17 +414,19 @@ fun PrayerAlarmScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Text(
-                            text = "Allahumma Rabba hadhihid-da'watit-tammah, was-salatil-qa'imah, ati Muhammadan al-wasilata wal-fadilah, wab'athhu maqaman mahmudan alladhi wa'adtah.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                            lineHeight = 20.sp
-                        )
+                        if (!strings.isArabic) {
+                            Text(
+                                text = stringResource(R.string.alarm_dua_transliteration),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                lineHeight = 20.sp
+                            )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
 
                         Text(
-                            text = "\"O Allah, Lord of this perfect call and established prayer, grant Muhammad the intercession and superiority, and raise him to the praised station which You have promised him.\"",
+                            text = stringResource(R.string.alarm_dua_translation),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             lineHeight = 18.sp

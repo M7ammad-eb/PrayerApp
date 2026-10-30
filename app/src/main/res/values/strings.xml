@@ -34,6 +34,8 @@
     <string name="common_select">Select</string>
     <string name="common_active">Active</string>
     <string name="common_current_location">Current Location</string>
+    <string name="location_permission_denied_message">Location permission was denied. You can select your city manually.</string>
+    <string name="notification_permission_required_message">Notification permission is required for Athan and prayer alerts.</string>
 
     <!-- ===== Full-Screen Prayer Alarm ===== -->
     <string name="alarm_badge_prayer">%1$s PRAYER</string>
@@ -43,12 +45,21 @@
     <string name="alarm_dua_btn">Dua</string>
     <string name="alarm_open_app_btn">Open Prayer Times &amp; Qibla</string>
     <string name="alarm_dua_sheet_title">Dua After the Athan</string>
+    <string name="alarm_dua_text">اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّدًا الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَامًا مَحْمُودًا الَّذِي وَعَدْتَهُ</string>
+    <string name="alarm_dua_transliteration">Allahumma Rabba hadhihid-da\'watit-tammah, was-salatil-qa\'imah, ati Muhammadan al-wasilata wal-fadilah, wab\'athhu maqaman mahmudan alladhi wa\'adtah.</string>
+    <string name="alarm_dua_translation">“O Allah, Lord of this perfect call and established prayer, grant Muhammad the intercession and superiority, and raise him to the praised station which You have promised him.”</string>
     <string name="notif_alarm_approaching_title">Approaching: %1$s Prayer</string>
     <string name="notif_alarm_time_title">Time for %1$s Prayer</string>
     <string name="notif_alarm_approaching_body">Prepare for %1$s prayer coming up at %2$s in %3$s.</string>
     <string name="notif_alarm_time_body">It is now time for %1$s prayer in %2$s (%3$s).</string>
     <string name="notif_alarm_open_view_action">Open Alarm View</string>
     <string name="notif_athan_playing_title">Athan: %1$s Prayer</string>
+    <string name="notification_test_mode">Test mode</string>
+    <string name="notification_live_countdown_test">Live countdown test</string>
+    <string name="notification_scheduled_countdown_test">Scheduled live countdown test</string>
+    <string name="notification_alarm_test_format">Alarm test (%1$d s)</string>
+    <string name="notification_in_seconds_format">In %1$d s</string>
+    <string name="notification_snoozed_time_format">%1$s (Snoozed)</string>
     <string name="gps_current_location_fallback">Current GPS Location</string>
     <string name="gps_coordinates_fallback">GPS Coordinates</string>
     <string name="gps_fix_failed_error">Unable to get current GPS fix. Please ensure location services are enabled.</string>
@@ -257,8 +268,6 @@
     <string name="settings_about_hub_subtitle">App information, privacy, and licenses</string>
     <string name="about_data_attribution_title">Place Data</string>
     <string name="about_data_attribution_body">City and place names are provided by GeoNames.org, licensed under Creative Commons Attribution 4.0 (CC BY 4.0).</string>
-    <string name="about_typeface_title">Typeface &amp; License</string>
-    <string name="about_typeface_body">Zain typeface by Boutros Fonts. Copyright 2024 The Zain Project Authors. Licensed under the SIL Open Font License 1.1.</string>
     <string name="settings_rerun_setup_title">Re-run Setup Wizard</string>
     <string name="settings_rerun_setup_subtitle">Re-configure language, location, athan &amp; style</string>
     <string name="settings_juristic_standard_desc">Shadow equals object length (Standard)</string>
@@ -385,6 +394,7 @@
     <string name="coords_latitude_label">Latitude (°)</string>
     <string name="coords_longitude_label">Longitude (°)</string>
     <string name="coords_location_name_label">Location Name / Label</string>
+    <string name="coords_location_name_example">Desert Camp</string>
     <string name="coords_time_zone_label">Time Zone</string>
     <string name="coords_apply_coordinates">Apply Coordinates</string>
     <string name="coords_near_city_format">Near %1$s, %2$s (approx. %3$d km)</string>

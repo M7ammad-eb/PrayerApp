@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
@@ -71,6 +72,8 @@ class AppStrings(
     val select: String = s(R.string.common_select)
     val active: String = s(R.string.common_active)
     val currentLocationFallback: String = s(R.string.common_current_location)
+    val locationPermissionDeniedMessage: String = s(R.string.location_permission_denied_message)
+    val notificationPermissionRequiredMessage: String = s(R.string.notification_permission_required_message)
 
     // Next Prayer / Hero
     val currentPrayerLabel: String = s(R.string.hero_current_prayer_label)
@@ -277,6 +280,7 @@ class AppStrings(
     val minutesBefore: String = s(R.string.settings_minutes_before)
     val testAlert: String = s(R.string.settings_test_alert)
     val testAlarm5s: String = s(R.string.settings_test_alarm_5s)
+    val testAlarmScheduled: String = s(R.string.settings_test_alarm_scheduled)
     val reschedule7Days: String = s(R.string.settings_reschedule_7_days)
     val notificationsDisabledWarning: String = s(R.string.settings_notifications_disabled_warning)
     val enableNotificationsBtn: String = s(R.string.settings_enable_notifications_btn)
@@ -288,8 +292,6 @@ class AppStrings(
     val aboutHubSubtitle: String = s(R.string.settings_about_hub_subtitle)
     val aboutDataAttributionTitle: String = s(R.string.about_data_attribution_title)
     val aboutDataAttributionBody: String = s(R.string.about_data_attribution_body)
-    val aboutTypefaceTitle: String = s(R.string.about_typeface_title)
-    val aboutTypefaceBody: String = s(R.string.about_typeface_body)
     val rerunSetupTitle: String = s(R.string.settings_rerun_setup_title)
     val rerunSetupSubtitle: String = s(R.string.settings_rerun_setup_subtitle)
     val juristicStandardDesc: String = s(R.string.settings_juristic_standard_desc)
@@ -374,9 +376,12 @@ class AppStrings(
     val latitudeLabel: String = s(R.string.coords_latitude_label)
     val longitudeLabel: String = s(R.string.coords_longitude_label)
     val locationNameLabel: String = s(R.string.coords_location_name_label)
+    val locationNameExample: String = s(R.string.coords_location_name_example)
     val timeZoneLabel: String = s(R.string.coords_time_zone_label)
     val applyCoordinates: String = s(R.string.coords_apply_coordinates)
     val defaultCustomCoordinatesName: String = s(R.string.coords_default_custom_name)
+    fun nearCityShort(placeName: String): String =
+        res.getString(R.string.coords_near_city_short_format, placeName)
     val presetMakkah: String = s(R.string.coords_preset_makkah)
     val presetMadinah: String = s(R.string.coords_preset_madinah)
     val presetJerusalem: String = s(R.string.coords_preset_jerusalem)
@@ -494,13 +499,14 @@ fun ProvideAppLocale(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
+    val baseConfiguration = LocalConfiguration.current
     val isArabic = appLanguage.resolveIsArabic(context)
 
     // The app's chosen language can differ from the Activity locale, so resolve resources against
     // an explicitly pinned configuration instead of recreating the Activity through LocaleManager.
-    val localizedResources = remember(isArabic) {
+    val localizedResources = remember(isArabic, baseConfiguration) {
         val locale = Locale(if (isArabic) "ar" else "en")
-        val config = Configuration(context.resources.configuration).apply { setLocale(locale) }
+        val config = Configuration(baseConfiguration).apply { setLocale(locale) }
         context.createConfigurationContext(config).resources
     }
 
