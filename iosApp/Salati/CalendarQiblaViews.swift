@@ -13,6 +13,7 @@ struct HijriView: View {
     @State private var anchorMonth:HijriYearMonth?
     @State private var pageIndex=0
     @State private var selected:CalendarCell?
+    @State private var showAdjust=false
     private let pageWindow=60
     // Cell fonts are bounded for seven readable columns; keep their padding bounded too.
     private var cellHeight:CGFloat {min(rowHeight,80)}
@@ -38,29 +39,6 @@ struct HijriView: View {
                             Spacer(minLength:0)
                             Button {movePage(1)} label: {Image(systemName:"chevron.forward").frame(width:44,height:44)}.accessibilityLabel("Next month")
                         }.buttonStyle(.borderless)
-                        if dynamicTypeSize.isAccessibilitySize {
-                            Text("Hijri adjustment").font(.caption).frame(maxWidth:.infinity,alignment:.leading)
-                                .fixedSize(horizontal:false,vertical:true)
-                        }
-                        HStack(alignment:.center,spacing:8) {
-                            Stepper(value:Binding(get:{model.calendarOffset(pageMonthKey:page.monthKey)},set:{setOffset($0,page:page)}),in:-2...2) {
-                                VStack(alignment:.leading,spacing:3) {
-                                    if !dynamicTypeSize.isAccessibilitySize {Text("Hijri adjustment").font(.caption)}
-                                    Text(model.calendarOffset(pageMonthKey:page.monthKey).formatted(.number.sign(strategy:.always()).locale(Locale(identifier:"en_US_POSIX"))))
-                                        .font(.subheadline.monospacedDigit()).environment(\.locale,Locale(identifier:"en_US_POSIX"))
-                                        .accessibilityIdentifier("calendarAdjustmentValue")
-                                }
-                            }.accessibilityLabel(Text("Hijri adjustment")).accessibilityIdentifier("calendarAdjustment")
-                            Button("Reset") {setOffset(0,page:page)}.font(.caption)
-                                .disabled(model.calendarOffset(pageMonthKey:page.monthKey) == 0)
-                                .accessibilityIdentifier("calendarReset")
-                        }
-                        HStack {
-                            Text("For this month").font(.caption).foregroundStyle(.secondary)
-                            Spacer()
-                            Button("Today") {withAnimation(reduceMotion ? nil : .easeOut(duration:0.18)) {anchorMonth=nil;pageIndex=0;selected=nil}}
-                                .buttonStyle(.bordered).controlSize(.small).accessibilityIdentifier("calendarToday")
-                        }
                     }
                     // Page style follows the layout direction, so Arabic pages in the natural direction.
                     TabView(selection:$pageIndex) {
@@ -104,11 +82,49 @@ struct HijriView: View {
                 }
             } else {ContentUnavailableView("Calendar unavailable",systemImage:"calendar.badge.exclamationmark")}
         }.navigationTitle("Hijri calendar").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                // Rare, month-specific work lives behind the toolbar so the calendar stays uncluttered.
+                if anchorMonth != nil || pageIndex != 0 {
+                    ToolbarItem(placement:.topBarLeading) {
+                        Button("Today") {withAnimation(reduceMotion ? nil : .easeOut(duration:0.18)) {anchorMonth=nil;pageIndex=0;selected=nil}}
+                            .accessibilityIdentifier("calendarToday")
+                    }
+                }
+                ToolbarItem(placement:.topBarTrailing) {
+                    Button {showAdjust=true} label: {Label("Hijri adjustment",systemImage:"slider.horizontal.3")}
+                        .accessibilityIdentifier("calendarAdjust")
+                }
+            }
+            .sheet(isPresented:$showAdjust) {adjustmentSheet}
             .onAppear {
                 if anchorMonth == nil,ProcessInfo.processInfo.arguments.contains("-uiTestingCalendarGeometry") {
                     anchorMonth=HijriYearMonth(year:1448,month:11)
                 }
             }
+    }
+    private var adjustmentSheet:some View {
+        NavigationStack {
+            Form {
+                if let page {
+                    let offset=model.calendarOffset(pageMonthKey:page.monthKey)
+                    Section {
+                        Stepper(value:Binding(get:{model.calendarOffset(pageMonthKey:page.monthKey)},set:{setOffset($0,page:page)}),in:-2...2) {
+                            LabeledContent("Hijri adjustment") {
+                                Text(offset.formatted(.number.sign(strategy:.always()).locale(Locale(identifier:"en_US_POSIX"))))
+                                    .monospacedDigit().environment(\.locale,Locale(identifier:"en_US_POSIX"))
+                                    .accessibilityIdentifier("calendarAdjustmentValue")
+                            }
+                        }.accessibilityIdentifier("calendarAdjustment")
+                        Button("Reset") {setOffset(0,page:page)}.disabled(offset == 0).accessibilityIdentifier("calendarReset")
+                    } header: {
+                        Text("\(model.arabic ? page.titleArabic : page.titleEnglish) \(page.year.description)")
+                    } footer: {
+                        Text("Local moon sighting may differ. This adjustment changes only the named Hijri month.")
+                    }
+                }
+            }.navigationTitle("Hijri adjustment").navigationBarTitleDisplayMode(.inline)
+                .toolbar {ToolbarItem(placement:.confirmationAction) {Button("Done") {showAdjust=false}}}
+        }.presentationDetents([.medium])
     }
     private func calendarGrid(_ page:CalendarPage)->some View {
         LazyVGrid(columns:Array(repeating:GridItem(.flexible(minimum:0),spacing:2),count:7),spacing:5) {

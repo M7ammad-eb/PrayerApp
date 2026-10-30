@@ -254,7 +254,7 @@ struct PrayerLiveActivity:Widget {
     var body:some WidgetConfiguration {
         ActivityConfiguration(for:PrayerActivityAttributes.self) {context in
             PrayerActivityCard(city:context.attributes.city,state:context.state,isExpired:activityIsExpired(context))
-                .padding(16).activityBackgroundTint(Color.black.opacity(0.08)).activitySystemActionForegroundColor(.primary)
+                .padding(14).activityBackgroundTint(Color.black.opacity(0.08)).activitySystemActionForegroundColor(.primary)
         } dynamicIsland: {context in
             DynamicIsland {
                 // Name and countdown sit beside the sensor housing; the lower region holds
@@ -394,11 +394,18 @@ struct PrayerActivityCompactName:View {
             .foregroundStyle(Color.accentColor).accessibilityLabel(Text(state.title))
     }
 }
+// Minimal presentation: a progress ring that fills towards the prayer, with the prayer's glyph
+// inside, so it shows live information rather than a static logo.
 struct PrayerActivityMinimalName:View {
     let state:PrayerActivityAttributes.ContentState
     var body:some View {
-        Image(systemName:prayerSymbol(state.eventID)).font(.system(size:12,weight:.semibold))
-            .foregroundStyle(Color.accentColor).accessibilityLabel(Text(state.title))
+        ZStack {
+            if let start=state.start,start<state.date,state.date>Date() {
+                ProgressView(timerInterval:start...state.date,countsDown:false) {EmptyView()} currentValueLabel: {EmptyView()}
+                    .progressViewStyle(.circular).tint(Color.accentColor)
+            }
+            Image(systemName:prayerSymbol(state.eventID)).font(.system(size:11,weight:.semibold)).foregroundStyle(Color.accentColor)
+        }.accessibilityLabel(Text(state.title))
     }
 }
 struct PrayerActivityCompactTime:View {

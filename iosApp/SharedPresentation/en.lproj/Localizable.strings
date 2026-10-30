@@ -29,6 +29,7 @@
 "Alerts stay off until you choose them. Continue without enabling alerts if you prefer." = "Alerts stay off until you choose them. Continue without enabling alerts if you prefer.";
 "Alerts, your way" = "Alerts, your way";
 "Aligned with Qibla" = "Aligned with Qibla";
+"All prayers" = "All prayers";
 "Allow Live Activities in iOS Settings to show the countdown." = "Allow Live Activities in iOS Settings to show the countdown.";
 "Allow alarms in iOS Settings." = "Allow alarms in iOS Settings.";
 "Allow notifications" = "Allow notifications";
@@ -38,6 +39,7 @@
 "Allow the selected delivery type, then start the test and lock your iPhone." = "Allow the selected delivery type, then start the test and lock your iPhone.";
 "App-rendered preview" = "App-rendered preview";
 "Appearance" = "Appearance";
+"Applies to all five prayers. You can still choose differently for each one below." = "Applies to all five prayers. You can still choose differently for each one below.";
 "Arabic and English" = "Arabic and English";
 "Asr" = "Asr";
 "At %@" = "At %@";
@@ -191,6 +193,7 @@
 "Manual adjustments" = "Manual adjustments";
 "Medium widget" = "Medium widget";
 "Method" = "Method";
+"Mixed" = "Mixed";
 "Month adjustment" = "Month adjustment";
 "NONE" = "None";
 "Nearest offline city: %@ · %@ km" = "Nearest offline city: %@ · %@ km";

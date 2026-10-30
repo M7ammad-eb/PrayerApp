@@ -18,6 +18,14 @@ struct NotificationSettingsView: View {
     var body:some View {
         Form {
             Section {
+                Picker("All prayers",selection:Binding<Delivery?>(get:{allPrayersDelivery},set:{value in if let value {setAllPrayers(value)}})) {
+                    Text("System alarm").tag(Optional(Delivery.alarm))
+                    Text("Notification").tag(Optional(Delivery.notification))
+                    Text("Off").tag(Optional(Delivery.off))
+                    if allPrayersDelivery == nil {Text("Mixed").tag(Optional<Delivery>.none)}
+                }.accessibilityIdentifier("allPrayersDelivery")
+            } footer: {Text("Applies to all five prayers. You can still choose differently for each one below.")}
+            Section {
                 ForEach(prayers,id:\.self) {id in
                     NavigationLink {PrayerAlertDetailView(prayer:id)} label: {
                         HStack {
@@ -64,14 +72,27 @@ struct NotificationSettingsView: View {
             } header:{Text("Try your settings")}
             if player.isPlaying {Section {Button("Stop playback",systemImage:"stop.circle.fill") {player.stop()}}}
             if player.error != nil {Section {Label("The recording could not play. Try another recording.",systemImage:"exclamationmark.circle").font(.footnote)}}
-            Section {
-                NavigationLink("Troubleshooting") {SchedulingDiagnosticsView()}
-            }
         }.navigationTitle("Notifications and adhan").navigationBarTitleDisplayMode(.inline)
             .task {await readPermission()}
             .onChange(of:scenePhase) {_,phase in
                 if phase == .active {authorization=nil;Task {await readPermission()}}
             }
+    }
+    // The delivery shared by all five prayers, or nil when they differ.
+    private var allPrayersDelivery:Delivery? {
+        let values=Set(prayers.map {model.settings.policies[$0]?.delivery ?? .off})
+        return values.count == 1 ? values.first : nil
+    }
+    private func setAllPrayers(_ delivery:Delivery) {
+        var updated=model.settings
+        for id in prayers {
+            var policy=updated.policies[id] ?? PrayerPolicy()
+            policy.delivery=delivery
+            // An alarm must play something audible: use the first adhan unless one is already chosen.
+            if delivery == .alarm,!Recording.all.contains(where:{$0.id == policy.sound}) {policy.sound=Recording.all.first?.id ?? "default"}
+            updated.policies[id]=policy
+        }
+        model.settings=updated
     }
     private var settingsButton:some View {Button("Open iOS Settings") {if let url=URL(string:UIApplication.openSettingsURLString) {openURL(url)}}}
     private func deliveryTitle(_ delivery:Delivery)->String {switch delivery {case .off:"Off";case .notification:"Notification";case .alarm:"System alarm"}}
@@ -215,7 +236,7 @@ private struct ScheduledAlertTestView:View {
     }
 }
 
-private struct SchedulingDiagnosticsView:View {
+struct SchedulingDiagnosticsView:View {
     @EnvironmentObject var model:AppModel
     @ObservedObject private var scheduler=PrayerScheduler.shared
     var body:some View {

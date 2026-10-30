@@ -29,6 +29,7 @@
 "Alerts stay off until you choose them. Continue without enabling alerts if you prefer." = "تبقى التنبيهات متوقفة حتى تختارها. يمكنك المتابعة دون تفعيلها.";
 "Alerts, your way" = "تنبيهات تناسبك";
 "Aligned with Qibla" = "محاذٍ للقبلة";
+"All prayers" = "كل الصلوات";
 "Allow Live Activities in iOS Settings to show the countdown." = "اسمح بالأنشطة المباشرة في إعدادات iOS لعرض العدّ التنازلي.";
 "Allow alarms in iOS Settings." = "اسمح بالمنبهات في إعدادات iOS.";
 "Allow notifications" = "السماح بالإشعارات";
@@ -38,6 +39,7 @@
 "Allow the selected delivery type, then start the test and lock your iPhone." = "اسمح بنوع التنبيه المختار، ثم ابدأ الاختبار واقفل iPhone.";
 "App-rendered preview" = "معاينة داخل التطبيق";
 "Appearance" = "المظهر";
+"Applies to all five prayers. You can still choose differently for each one below." = "يسري على الصلوات الخمس جميعها، ويمكنك اختيار نمط مختلف لكل صلاة في الأسفل.";
 "Arabic and English" = "العربية والإنجليزية";
 "Asr" = "العصر";
 "At %@" = "عند %@";
@@ -191,6 +193,7 @@
 "Manual adjustments" = "التعديلات اليدوية";
 "Medium widget" = "ودجت متوسط";
 "Method" = "طريقة الحساب";
+"Mixed" = "مختلطة";
 "Month adjustment" = "تعديل الشهر";
 "NONE" = "بدون تعديل (None)";
 "Nearest offline city: %@ · %@ km" = "أقرب مدينة في قاعدة البيانات: %@ · %@ كم";

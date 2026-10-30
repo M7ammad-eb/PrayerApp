@@ -27,6 +27,13 @@ struct HomeView: View {
                                 .font(.system(.largeTitle,design:.rounded,weight:.light)).monospacedDigit().foregroundStyle(Color.accentColor).environment(\.locale,Locale(identifier:"en_US_POSIX"))
                                 .environment(\.layoutDirection,.leftToRight).accessibilityLabel(Text("Time until next prayer"))
                         }
+                        // How far the day has moved from the current prayer towards the next one.
+                        if let current=model.presentationSnapshot?.events.first(where:{$0.id == model.currentEventID}),
+                           current.date<=countdownStart,current.date<next.date,next.date>countdownStart {
+                            ProgressView(timerInterval:current.date...next.date,countsDown:false)
+                                .tint(Color.accentColor).labelsHidden().frame(height:4).clipShape(Capsule())
+                                .accessibilityHidden(true)
+                        }
                         }
                         Text(model.arabic ? day.hijriArabic : day.hijriEnglish).font(.subheadline).foregroundStyle(.secondary)
                     }.padding(.vertical,12)
@@ -67,9 +74,6 @@ struct HomeView: View {
                     LabeledContent("Islamic midnight",value:model.time(day.midnightEpoch))
                     LabeledContent("Last third",value:model.time(day.lastThirdEpoch))
                 } header: {Text("The night")}
-                Section {
-                    NavigationLink("Notifications and adhan") { NotificationSettingsView() }
-                }
                 #if SALATI_APP
                 if ProcessInfo.processInfo.arguments.contains("-uiTestingShowcase") {
                     Section("Presentation previews") {

@@ -54,7 +54,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     var body: some Scene {
         WindowGroup {
             root
-                .task { await model.scheduler.cleanupLiveActivities();await model.refresh() }
+                .task { model.syncSystemLanguage();await model.scheduler.cleanupLiveActivities();await model.refresh() }
                 .onChange(of:phase) { _,phase in if phase == .active {
                     model.syncSystemLanguage()
                     Task {await model.scheduler.cleanupLiveActivities();model.queueRefresh()}
@@ -84,11 +84,11 @@ struct RootView: View {
             if !model.settings.onboardingComplete { OnboardingView() }
             else {
                 TabView(selection:$selectedTab) {
-                    Tab("Prayer",systemImage:"sun.horizon",value:0) { NavigationStack { HomeView() } }
+                    Tab("Prayer",systemImage:"sun.horizon.fill",value:0) { NavigationStack { HomeView() } }
                     Tab("Calendar",systemImage:"calendar",value:1) { NavigationStack { HijriView() } }
-                    Tab("Qibla",systemImage:"location.north.circle",value:2) { NavigationStack { QiblaView() } }
-                    Tab("Settings",systemImage:"slider.horizontal.3",value:3) { NavigationStack { SettingsView() } }
-                }
+                    Tab("Qibla",systemImage:"location.north.circle.fill",value:2) { NavigationStack { QiblaView() } }
+                    Tab("Settings",systemImage:"gearshape.fill",value:3) { NavigationStack { SettingsView() } }
+                }.tabBarMinimizeBehavior(.onScrollDown)
             }
         }
         .alert("Unable to update",isPresented:Binding(get:{model.error != nil},set:{if !$0 {model.error=nil}})) { Button("OK") {model.error=nil} } message: {Text(model.error ?? "")}

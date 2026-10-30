@@ -1,13 +1,34 @@
 import SwiftUI
 
+// Row label in the style of the system Settings app: a small rounded icon tile and the title.
+struct SettingsLabel: View {
+    let title: LocalizedStringKey
+    let symbol: String
+    init(_ title: LocalizedStringKey, symbol: String) {self.title=title;self.symbol=symbol}
+    var body: some View {
+        Label {
+            Text(title)
+        } icon: {
+            Image(systemName:symbol).font(.system(size:14,weight:.semibold)).foregroundStyle(.white)
+                .frame(width:28,height:28).background(Color.accentColor,in:RoundedRectangle(cornerRadius:7,style:.continuous))
+        }
+    }
+}
+
 struct SettingsView: View {
     @EnvironmentObject var model: AppModel
     @State private var places=false
     @Environment(\.openURL) private var openURL
     var body: some View {
         Form {
+            // Alerts come first: it is the part of Settings people return to most.
+            Section {
+                NavigationLink {NotificationSettingsView()} label: {SettingsLabel("Notifications and adhan",symbol:"bell.badge.fill")}
+            } header: {Text("Prayer alerts")}
             Section("Location") {
-                Button {places=true} label: {LabeledContent("City",value:model.locationDisplayName)}
+                Button {places=true} label: {
+                    LabeledContent {Text(model.locationDisplayName)} label: {SettingsLabel("City",symbol:"mappin.and.ellipse")}
+                }.foregroundStyle(.primary)
                 if let location=model.settings.location {
                     Label(LocalizedStringKey(location.isGPS ? "Current location" : "Selected city"),systemImage:location.isGPS ? "location.fill":"mappin")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -24,24 +45,24 @@ struct SettingsView: View {
                 Toggle("Hanafi Asr",isOn:Binding(get:{model.settings.hanafi},set:{model.settings.asrOverridden=true;model.settings.hanafi=$0}))
                 Picker("High latitudes",selection:$model.settings.highLatitude) { ForEach(model.engine.highLatitudeRules,id:\.self) {Text(LocalizedStringKey($0)).tag($0)} }
                 NavigationLink("Manual adjustments") { Form { ForEach(0..<6) {i in Stepper(value:$model.settings.adjustments[i],in:-60...60) {LabeledContent(LocalizedStringKey(["Fajr","Sunrise","Dhuhr","Asr","Maghrib","Isha"][i]),value:model.settings.adjustments[i].description+" min")} } }.navigationTitle("Manual adjustments").navigationBarTitleDisplayMode(.inline) }
-                NavigationLink("Hijri adjustment") { HijriView() }
             }
+            // Time format follows the iPhone's own 24-hour setting, so there is no second switch here.
             Section("Display") {
                 Button {
                     if let url=URL(string:UIApplication.openSettingsURLString) {openURL(url)}
                 } label: {
-                    LabeledContent("Language") {HStack {Text(model.languageDisplayName);Image(systemName:"arrow.up.forward").font(.caption)}}
-                }.accessibilityIdentifier("appLanguage")
-                Picker("Appearance",selection:$model.settings.appearance) {Text("System").tag("system");Text("Light").tag("light");Text("Dark").tag("dark")}
-                Toggle("24-hour time",isOn:$model.settings.use24Hour)
-            }
-            Section("Prayer alerts") {
-                NavigationLink("Notifications and adhan") { NotificationSettingsView() }
-
+                    LabeledContent {
+                        HStack {Text(model.languageDisplayName);Image(systemName:"arrow.up.forward").font(.caption)}
+                    } label: {SettingsLabel("Language",symbol:"globe")}
+                }.foregroundStyle(.primary).accessibilityIdentifier("appLanguage")
+                Picker(selection:$model.settings.appearance) {
+                    Text("System").tag("system");Text("Light").tag("light");Text("Dark").tag("dark")
+                } label: {SettingsLabel("Appearance",symbol:"circle.lefthalf.filled")}
             }
             Section("Help") {
-                NavigationLink {WidgetHelpView()} label:{Label("Add a widget",systemImage:"rectangle.grid.2x2")}
-                Button("Review setup") {model.setupReviewStep=0;model.reviewingSetup=true}
+                NavigationLink {WidgetHelpView()} label: {SettingsLabel("Add a widget",symbol:"rectangle.grid.2x2.fill")}
+                Button {model.setupReviewStep=0;model.reviewingSetup=true} label: {SettingsLabel("Review setup",symbol:"checklist")}.foregroundStyle(.primary)
+                NavigationLink {SchedulingDiagnosticsView()} label: {SettingsLabel("Troubleshooting",symbol:"wrench.and.screwdriver.fill")}
             }
             Section("About") {
                 Text("Salati · صلاتي").font(.headline)
@@ -60,7 +81,7 @@ struct SettingsView: View {
 }
 
 private struct WidgetHelpView:View {
-    var body:some View {
+    var body: some View {
         List {
             Section("Add a widget") {
                 Label("Touch and hold your Home Screen, then choose Edit and Add Widget.",systemImage:"1.circle")

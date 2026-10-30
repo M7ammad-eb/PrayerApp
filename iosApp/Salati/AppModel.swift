@@ -28,7 +28,15 @@ import CoreLocation
     var displayEvents:[SnapshotEvent] {presentationSnapshot?.displayEvents(at:Date()) ?? []}
     var currentEventID:String? {presentationSnapshot?.moment(at:Date())?.currentEventID}
     var nextEventID:String? {presentationSnapshot?.moment(at:Date())?.nextEventID}
-    func syncSystemLanguage() {if settings.language != AppLanguage.current {settings.language=AppLanguage.current}}
+    // Language and time format follow the iPhone; Salati keeps no second copy of either setting.
+    func syncSystemLanguage() {
+        if settings.language != AppLanguage.current {settings.language=AppLanguage.current}
+        let system24=Self.systemUses24Hour
+        if settings.use24Hour != system24 {settings.use24Hour=system24}
+    }
+    static var systemUses24Hour:Bool {
+        !(DateFormatter.dateFormat(fromTemplate:"j",options:0,locale:Locale.current) ?? "").contains("a")
+    }
     var zone: TimeZone { TimeZone(identifier:settings.location?.zone ?? "UTC") ?? .gmt }
     var calendar: Calendar { var c=Calendar(identifier:.gregorian); c.timeZone=zone; return c }
     var todayISO: String { iso(Date()) }
