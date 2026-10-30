@@ -3,7 +3,7 @@ name: Salati unsigned IPA
 on:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write   # publishes the IPA as a release and updates the AltStore source
 concurrency:
   group: salati-unsigned-ipa-${{ github.ref }}
   cancel-in-progress: false
@@ -30,7 +30,8 @@ jobs:
         # Every IPA gets its own build number (shown in Settings > About and used for the file name),
         # so a new build is never mistaken for the one already installed.
         run: |
-          BUILD=$((100 + GITHUB_RUN_NUMBER))
+          # Continues the numbering used so far (build 9 was the last one handed over); the next build is 10.
+          BUILD=$((GITHUB_RUN_NUMBER - 7))
           for plist in iosApp/Config/App-Info.plist iosApp/Config/Widget-Info.plist; do
             /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$plist"
           done
@@ -59,6 +60,10 @@ jobs:
             build/unsigned-ipa/Salati-AltStore-ready.ipa.sha256
             build/unsigned-ipa/AltStore-build-info.json
             build/unsigned-ipa/AltStore-README.txt
+      - name: Publish release and AltStore source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/ios/publish_altstore.sh
       - uses: actions/upload-artifact@v4
         with:
           name: Salati-iphone-release-symbols
