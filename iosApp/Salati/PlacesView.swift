@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreLocation
 import UserNotifications
+import AlarmKit
 
 struct PlacesView: View {
     @EnvironmentObject var model: AppModel
@@ -93,49 +94,77 @@ struct ManualLocationView: View {
         }.disabled(!valid) } }
     }
 }
-// First-run setup: welcome, location, alerts, ready. The system permission prompts appear on
-// their own as the matching page opens (after a short beat so the page can be read first);
-// nothing needs an extra "enable" tap, and declining either one still leaves a clear way forward.
+// First-run setup. Each page is one decision, and nothing is requested until the person acts:
+// choosing "Use my current location" opens the location prompt, and Continue on the alerts page
+// (after choosing alarm or notification for all five prayers) opens the matching permission.
+private enum SetupAlertChoice {case alarm,notification,off}
+private enum SetupPage {case welcome,location,alerts,adhan,ready}
+
 struct OnboardingView: View {
     @EnvironmentObject var model: AppModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
-    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ObservedObject private var player=AdhanPlayer.shared
     var review=false
     @State private var showPlaces=false
     @State private var showCalculation=false
     @State private var showAlerts=false
-    @State private var locationAsked=false
-    @State private var alertsAsked=false
-    @State private var alertDefaultsApplied=false
-    @State private var alertsStatus:UNAuthorizationStatus?
-    private let stepCount=4
-    private var step:Int {min(stepCount-1,max(0,review ? model.setupReviewStep:model.onboardingStep))}
-    private let titles=["Welcome to Salati","Where do you pray?","Never miss a prayer","Make time for prayer"]
-    private let subtitles=["Prayer times, wherever your day takes you.","Find prayer times for your city or current location.","Salati can notify you at each prayer time and count down to the next one.","Your prayer times are ready. Make Salati your own, or begin your day."]
-    private let symbols=["sun.horizon.fill","location.fill","bell.badge.fill","checkmark"]
-    private var buttonTitle:String {
-        switch step {
-        case 0:return "Get started"
-        case stepCount-1:return review ? "Done":"Start using Salati"
-        default:return "Continue"
+    @State private var alertChoice=SetupAlertChoice.alarm
+    @State private var adhanChoice=Recording.all.first?.id ?? "default"
+    @State private var countdown=true
+    @State private var permissionNote:LocalizedStringKey?
+    @State private var committing=false
+    @State private var playingID:String?
+    private let prayers=["FAJR","DHUHR","ASR","MAGHRIB","ISHA"]
+    private var pages:[SetupPage] {
+        alertChoice == .alarm ? [.welcome,.location,.alerts,.adhan,.ready] : [.welcome,.location,.alerts,.ready]
+    }
+    private var step:Int {min(pages.count-1,max(0,review ? model.setupReviewStep:model.onboardingStep))}
+    private var current:SetupPage {pages[step]}
+    private var title:String {
+        switch current {
+        case .welcome:"Welcome to Salati"
+        case .location:"Where do you pray?"
+        case .alerts:"How should Salati alert you?"
+        case .adhan:"Choose the adhan"
+        case .ready:"Make time for prayer"
         }
     }
+    private var subtitle:String {
+        switch current {
+        case .welcome:"Prayer times, wherever your day takes you."
+        case .location:"Find prayer times for your city or current location."
+        case .alerts:"Choose once for all five prayers. You can fine-tune each prayer later."
+        case .adhan:"Pick the recitation that plays at prayer time."
+        case .ready:"Your prayer times are ready. Make Salati your own, or begin your day."
+        }
+    }
+    private var symbol:String {
+        switch current {
+        case .welcome:"moon.stars.fill"
+        case .location:"location.fill"
+        case .alerts:"bell.badge.fill"
+        case .adhan:"speaker.wave.2.fill"
+        case .ready:"checkmark"
+        }
+    }
+    private var buttonTitle:String {
+        switch current {
+        case .welcome:"Let's begin"
+        case .ready:review ? "Done":"Start using Salati"
+        default:"Continue"
+        }
+    }
+    private var canContinue:Bool {!(current == .location && model.settings.location == nil) && !committing}
     var body: some View {
         NavigationStack {
             VStack(spacing:0) {
                 ScrollView {
-                    VStack(spacing:28) {
-                        VStack(spacing:14) {
-                            Image(systemName:symbols[step]).font(.system(size:42,weight:.medium)).foregroundStyle(Color.accentColor)
-                                .frame(width:96,height:96).background(Color.accentColor.opacity(0.12),in:Circle())
-                                .accessibilityHidden(true)
-                            Text(LocalizedStringKey(titles[step])).font(.largeTitle.bold()).multilineTextAlignment(.center).fixedSize(horizontal:false,vertical:true)
-                            Text(LocalizedStringKey(subtitles[step])).font(.title3).foregroundStyle(.secondary).multilineTextAlignment(.center).fixedSize(horizontal:false,vertical:true)
-                        }.padding(.top,16)
-                        page
-                    }.frame(maxWidth:560).padding(.horizontal,24).padding(.bottom,24).frame(maxWidth:.infinity)
+                    VStack(spacing:26) {
+                        header
+                        content
+                    }.frame(maxWidth:560).padding(.horizontal,20).padding(.top,12).padding(.bottom,20).frame(maxWidth:.infinity)
                 }.id(step)
                 footer
             }
@@ -150,34 +179,46 @@ struct OnboardingView: View {
             .sheet(isPresented:$showAlerts) {
                 NavigationStack {NotificationSettingsView().toolbar {ToolbarItem(placement:.confirmationAction) {Button("Done") {showAlerts=false}}}}
             }
-            .task(id:step) {
-                if step == 1 {await autoRequestLocation()}
-                else if step == 2 {await autoRequestAlerts()}
-            }
-            .onChange(of:scenePhase) {_,phase in
-                if phase == .active && step == 2 {Task {await refreshAlertsStatus()}}
-            }
+            .onAppear {if review {loadCurrentChoices()}}
+            .onChange(of:alertChoice) {permissionNote=nil}
+            .onDisappear {stopPreview()}
         }
+    }
+    private var header:some View {
+        VStack(spacing:12) {
+            if current == .welcome {
+                ZStack {
+                    RoundedRectangle(cornerRadius:28,style:.continuous)
+                        .fill(LinearGradient(colors:[Color.accentColor,Color.accentColor.opacity(0.7)],startPoint:.topLeading,endPoint:.bottomTrailing))
+                    Image(systemName:symbol).font(.system(size:50,weight:.medium)).foregroundStyle(.white)
+                }.frame(width:104,height:104).shadow(color:Color.accentColor.opacity(0.25),radius:14,y:6).accessibilityHidden(true)
+            } else {
+                Image(systemName:symbol).font(.system(size:28,weight:.semibold)).foregroundStyle(Color.accentColor)
+                    .frame(width:64,height:64).background(Color.accentColor.opacity(0.12),in:Circle()).accessibilityHidden(true)
+            }
+            Text(LocalizedStringKey(title)).font(.title.bold()).fixedSize(horizontal:false,vertical:true)
+            Text(LocalizedStringKey(subtitle)).font(.body).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
+        }.multilineTextAlignment(.center).padding(.top,current == .welcome ? 28:8)
     }
     private var footer:some View {
         VStack(spacing:14) {
             HStack(spacing:6) {
-                ForEach(0..<stepCount,id:\.self) {index in
+                ForEach(0..<pages.count,id:\.self) {index in
                     Capsule().fill(index == step ? Color.accentColor : Color.secondary.opacity(0.25))
-                        .frame(width:index == step ? 22:8,height:8)
+                        .frame(width:index == step ? 20:7,height:7)
                 }
             }.accessibilityElement(children:.ignore).accessibilityLabel(Text("Setup progress"))
-                .accessibilityValue("\(step+1) / \(stepCount)").accessibilityIdentifier("onboardingStep")
+                .accessibilityValue("\(step+1) / \(pages.count)").accessibilityIdentifier("onboardingStep")
             Button(action:advance) {
-                Text(LocalizedStringKey(buttonTitle)).font(.headline).frame(maxWidth:.infinity,minHeight:50)
-            }.buttonStyle(.borderedProminent).controlSize(.large).disabled(step == 1 && model.settings.location == nil)
+                Text(LocalizedStringKey(buttonTitle)).font(.headline).frame(maxWidth:260,minHeight:44)
+            }.buttonStyle(.borderedProminent).buttonBorderShape(.capsule).disabled(!canContinue)
                 .accessibilityIdentifier("continueOnboarding")
-        }.frame(maxWidth:560).padding(.horizontal,24).padding(.vertical,16).frame(maxWidth:.infinity).background(.bar)
+        }.frame(maxWidth:.infinity).padding(.top,10).padding(.bottom,16)
     }
-    @ViewBuilder private var page:some View {
-        switch step {
-        case 0:
-            VStack(spacing:20) {
+    @ViewBuilder private var content:some View {
+        switch current {
+        case .welcome:
+            VStack(spacing:18) {
                 VStack(alignment:.leading,spacing:18) {
                     featureRow("sun.horizon","Prayer times")
                     featureRow("location.north.circle","Qibla direction")
@@ -190,15 +231,54 @@ struct OnboardingView: View {
                         .font(.subheadline).padding(.vertical,4)
                 }.accessibilityIdentifier("onboardingLanguage")
             }
-        case 1:
+        case .location:
             SetupLocationStep(service:model.locationService,choose:{showPlaces=true})
-        case 2:
-            SetupAlertsStep(status:alertsStatus,language:model.settings.language,
-                            customize:{showAlerts=true},
-                            openSettings:{if let url=URL(string:UIApplication.openSettingsURLString) {openURL(url)}})
-        default:
-            VStack(spacing:20) {
-                VStack(alignment:.leading,spacing:16) {
+        case .alerts:
+            VStack(spacing:12) {
+                alertOption(.alarm,symbol:"alarm.fill",title:"System alarm",subtitle:"Rings like an alarm, even when your iPhone is on silent.",badge:"Recommended")
+                alertOption(.notification,symbol:"bell.fill",title:"Notification",subtitle:"A banner and sound at prayer time.")
+                alertOption(.off,symbol:"bell.slash.fill",title:"Off",subtitle:"No prayer alerts. You can set them up later.")
+                Toggle(isOn:$countdown) {
+                    VStack(alignment:.leading,spacing:3) {
+                        Text("Prayer countdown").font(.headline)
+                        Text("Starts 15 minutes before each prayer.").font(.subheadline).foregroundStyle(.secondary)
+                    }
+                }.padding(14).background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:20,style:.continuous))
+                if let permissionNote {
+                    VStack(spacing:8) {
+                        Label {Text(permissionNote)} icon:{Image(systemName:"exclamationmark.triangle.fill")}.font(.subheadline.weight(.medium))
+                        Button("Open iOS Settings") {if let url=URL(string:UIApplication.openSettingsURLString) {openURL(url)}}.buttonStyle(.bordered).controlSize(.small)
+                        Text("You can still continue and allow this later.").font(.footnote).foregroundStyle(.secondary)
+                    }.multilineTextAlignment(.center).padding(.top,4)
+                }
+            }
+        case .adhan:
+            VStack(spacing:10) {
+                ForEach(Recording.all) {recording in
+                    let selected=adhanChoice == recording.id
+                    let playing=player.isPlaying && playingID == recording.id
+                    HStack(spacing:8) {
+                        Button {adhanChoice=recording.id} label: {
+                            HStack(spacing:10) {
+                                Image(systemName:selected ? "checkmark.circle.fill":"circle").font(.title3)
+                                    .foregroundStyle(selected ? Color.accentColor : Color.secondary.opacity(0.5))
+                                Text(model.arabic ? recording.arabic : recording.english).font(.body).multilineTextAlignment(.leading)
+                                Spacer(minLength:0)
+                            }.padding(.vertical,14).padding(.leading,14).contentShape(Rectangle())
+                        }.buttonStyle(.plain)
+                        Button {
+                            if playing {stopPreview()} else {adhanChoice=recording.id;playingID=recording.id;player.play(recording.id)}
+                        } label: {
+                            Image(systemName:playing ? "stop.circle.fill":"play.circle.fill").font(.title).foregroundStyle(Color.accentColor)
+                                .frame(width:48,height:48).contentShape(Rectangle())
+                        }.buttonStyle(.plain).accessibilityLabel(Text(LocalizedStringKey(playing ? "Stop playback":"Play full adhan now")))
+                    }.background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:18,style:.continuous))
+                        .overlay(RoundedRectangle(cornerRadius:18,style:.continuous).strokeBorder(selected ? Color.accentColor : Color.clear,lineWidth:2))
+                }
+            }
+        case .ready:
+            VStack(spacing:18) {
+                VStack(alignment:.leading,spacing:14) {
                     if let next=model.presentationSnapshot?.events.first(where:{$0.id == model.nextEventID}) {
                         Text("Up next").font(.subheadline.weight(.medium)).foregroundStyle(Color.accentColor)
                         ViewThatFits(in:.horizontal) {
@@ -214,16 +294,29 @@ struct OnboardingView: View {
                         }.accessibilityElement(children:.combine).accessibilityIdentifier("onboardingNextPrayer")
                         Divider()
                     }
-                    Label(model.locationDisplayName,systemImage:"checkmark.circle.fill").font(.subheadline).foregroundStyle(.secondary)
+                    Label(model.locationDisplayName,systemImage:"mappin.and.ellipse").font(.subheadline).foregroundStyle(.secondary)
+                    Label(LocalizedStringKey(alertSummary),systemImage:alertChoice == .off ? "bell.slash":"bell").font(.subheadline).foregroundStyle(.secondary)
                 }.setupCard()
                 VStack(spacing:0) {
                     Button {showCalculation=true} label:{option("Adjust prayer times",symbol:"slider.horizontal.3")}.accessibilityIdentifier("onboardingAdvanced")
                     Divider().padding(.horizontal,20)
                     Button {showAlerts=true} label:{option("Choose prayer alerts",symbol:"bell")}.accessibilityIdentifier("onboardingAlertSettings")
-                }.background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:24,style:.continuous))
+                }.background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:20,style:.continuous))
                 Text("You can change these choices in Settings.").font(.footnote).foregroundStyle(.secondary)
             }
         }
+    }
+    private var alertSummary:String {
+        switch alertChoice {
+        case .alarm:"System alarm"
+        case .notification:"Notification"
+        case .off:"Alerts are off"
+        }
+    }
+    private func alertOption(_ choice:SetupAlertChoice,symbol:String,title:LocalizedStringKey,subtitle:LocalizedStringKey,badge:LocalizedStringKey?=nil)->some View {
+        Button {alertChoice=choice} label: {
+            SetupOptionCard(symbol:symbol,title:title,subtitle:subtitle,badge:badge,selected:alertChoice == choice)
+        }.buttonStyle(.plain).accessibilityAddTraits(alertChoice == choice ? .isSelected : [])
     }
     private func featureRow(_ symbol:String,_ title:LocalizedStringKey)->some View {
         HStack(spacing:16) {
@@ -234,7 +327,7 @@ struct OnboardingView: View {
     }
     private func option(_ title:LocalizedStringKey,symbol:String)->some View {
         HStack {Label(title,systemImage:symbol);Spacer();Image(systemName:"chevron.forward").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)}
-            .font(.body).padding(20).contentShape(Rectangle())
+            .font(.body).padding(18).contentShape(Rectangle())
     }
     private var calculationSheet:some View {
         NavigationStack {
@@ -249,50 +342,80 @@ struct OnboardingView: View {
                 .toolbar {ToolbarItem(placement:.confirmationAction) {Button("Done") {showCalculation=false}}}
         }
     }
+    private func stopPreview() {
+        if player.isPlaying {player.stop(reason:"setup preview ended")}
+        playingID=nil
+    }
     private func move(to value:Int) {
+        stopPreview()
         withAnimation(reduceMotion ? nil:.easeInOut(duration:0.2)) {if review {model.setupReviewStep=value}else {model.onboardingStep=value}}
     }
     private func advance() {
-        if step<stepCount-1 {if step == 1 {model.applyOnboardingDefaults()};move(to:step+1)}
-        else if review {dismiss()}
-        else {model.settings.onboardingComplete=true;model.onboardingStep=0}
-    }
-    // The location prompt opens by itself the first time this page appears. If location is turned
-    // off for Salati, the page offers choosing a city instead.
-    private func autoRequestLocation() async {
-        guard !locationAsked,model.settings.location == nil else {return}
-        locationAsked=true
-        do {try await Task.sleep(for:.milliseconds(450))} catch {locationAsked=false;return}
-        guard step == 1 else {locationAsked=false;return}
-        switch CLLocationManager().authorizationStatus {
-        case .denied,.restricted:break
-        default:model.locationService.request()
+        switch current {
+        case .alerts:Task {await commitAlerts()}
+        case .adhan:applyAdhan();move(to:step+1)
+        case .location:model.applyOnboardingDefaults();move(to:step+1)
+        case .ready:
+            if review {dismiss()} else {model.settings.onboardingComplete=true;model.onboardingStep=0}
+        case .welcome:move(to:step+1)
         }
     }
-    private func refreshAlertsStatus() async {
-        alertsStatus=await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
-    }
-    // The notification prompt also opens by itself. Allowing it switches on prayer alerts and the
-    // countdown with sensible defaults; they can be changed from the page or later in Settings.
-    private func autoRequestAlerts() async {
-        await refreshAlertsStatus()
-        if alertsStatus == .notDetermined,!alertsAsked {
-            alertsAsked=true
-            do {try await Task.sleep(for:.milliseconds(450))} catch {alertsAsked=false;return}
-            guard step == 2 else {alertsAsked=false;return}
-            _=await model.scheduler.authorizeNotifications()
-            await refreshAlertsStatus()
+    private func loadCurrentChoices() {
+        let policy=model.settings.policies["FAJR"] ?? PrayerPolicy()
+        switch policy.delivery {
+        case .alarm:alertChoice = .alarm
+        case .notification:alertChoice = .notification
+        case .off:alertChoice = .off
         }
-        if !review,!alertDefaultsApplied,let status=alertsStatus,SetupAlertsStep.isAllowed(status) {
-            alertDefaultsApplied=true
-            var updated=model.settings
-            for id in ["FAJR","DHUHR","ASR","MAGHRIB","ISHA"] {
-                var policy=updated.policies[id] ?? PrayerPolicy()
-                if policy.delivery == .off {policy.delivery = .notification}
-                updated.policies[id]=policy
+        if Recording.all.contains(where:{$0.id == policy.sound}) {adhanChoice=policy.sound}
+        countdown=model.settings.liveActivitiesEnabled
+    }
+    // One choice for all five prayers; fine-tuning per prayer stays in Settings.
+    private func applyAlertChoice() {
+        var updated=model.settings
+        for id in prayers {
+            var policy=updated.policies[id] ?? PrayerPolicy()
+            switch alertChoice {
+            case .alarm:
+                policy.delivery = .alarm
+                if !Recording.all.contains(where:{$0.id == policy.sound}) {policy.sound=adhanChoice}
+            case .notification:policy.delivery = .notification
+            case .off:policy.delivery = .off
             }
-            updated.liveActivitiesEnabled=true
-            model.settings=updated
+            updated.policies[id]=policy
+        }
+        updated.liveActivitiesEnabled=countdown
+        model.settings=updated
+    }
+    private func applyAdhan() {
+        guard alertChoice == .alarm else {return}
+        var updated=model.settings
+        for id in prayers {
+            var policy=updated.policies[id] ?? PrayerPolicy()
+            policy.sound=adhanChoice
+            updated.policies[id]=policy
+        }
+        model.settings=updated
+    }
+    // Continue on the alerts page saves the choice, then opens the matching system permission.
+    // If it is declined, the page says so once and a second Continue moves on.
+    private func commitAlerts() async {
+        guard !committing else {return}
+        committing=true
+        defer {committing=false}
+        applyAlertChoice()
+        if permissionNote != nil {move(to:step+1);return}
+        switch alertChoice {
+        case .off:move(to:step+1)
+        case .notification:
+            _=await model.scheduler.authorizeNotifications()
+            let status=await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+            if status == .authorized || status == .provisional || status == .ephemeral {move(to:step+1)}
+            else {permissionNote="Notifications are turned off in iOS Settings."}
+        case .alarm:
+            _=await model.scheduler.authorizeAlarms()
+            if AlarmManager.shared.authorizationState == .authorized {move(to:step+1)}
+            else {permissionNote="Alarms are turned off in iOS Settings."}
         }
     }
 }
@@ -300,19 +423,55 @@ struct OnboardingView: View {
 private extension View {
     func setupCard()->some View {
         padding(20).frame(maxWidth:.infinity,alignment:.leading)
-            .background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:24,style:.continuous))
+            .background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:22,style:.continuous))
     }
 }
 
+private struct SetupOptionCard:View {
+    let symbol:String
+    let title:LocalizedStringKey
+    var subtitle:LocalizedStringKey?=nil
+    var badge:LocalizedStringKey?=nil
+    var selected:Bool?=nil
+    var body:some View {
+        HStack(spacing:14) {
+            Image(systemName:symbol).font(.title3).foregroundStyle(Color.accentColor).frame(width:42,height:42)
+                .background(Color.accentColor.opacity(0.12),in:RoundedRectangle(cornerRadius:12,style:.continuous)).accessibilityHidden(true)
+            VStack(alignment:.leading,spacing:3) {
+                HStack(spacing:6) {
+                    Text(title).font(.headline)
+                    if let badge {
+                        Text(badge).font(.caption2.weight(.semibold)).foregroundStyle(Color.accentColor)
+                            .padding(.horizontal,7).padding(.vertical,2).background(Color.accentColor.opacity(0.15),in:Capsule())
+                    }
+                }
+                if let subtitle {Text(subtitle).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)}
+            }.multilineTextAlignment(.leading)
+            Spacer(minLength:0)
+            if let selected {
+                Image(systemName:selected ? "checkmark.circle.fill":"circle").font(.title3)
+                    .foregroundStyle(selected ? Color.accentColor : Color.secondary.opacity(0.5))
+            } else {
+                Image(systemName:"chevron.forward").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+            }
+        }
+        .padding(14).frame(maxWidth:.infinity,alignment:.leading)
+        .background(Color(uiColor:.secondarySystemGroupedBackground),in:RoundedRectangle(cornerRadius:20,style:.continuous))
+        .overlay(RoundedRectangle(cornerRadius:20,style:.continuous).strokeBorder(selected == true ? Color.accentColor : Color.clear,lineWidth:2))
+        .contentShape(RoundedRectangle(cornerRadius:20,style:.continuous))
+    }
+}
+
+// Nothing is requested here until the person taps "Use my current location".
 private struct SetupLocationStep:View {
     @EnvironmentObject var model:AppModel
     @ObservedObject var service:LocationService
     let choose:()->Void
     var body:some View {
-        VStack(spacing:16) {
+        VStack(spacing:12) {
             if let location=model.settings.location {
                 HStack(spacing:14) {
-                    Image(systemName:"checkmark.circle.fill").font(.system(size:34)).foregroundStyle(Color.accentColor).accessibilityHidden(true)
+                    Image(systemName:"checkmark.circle.fill").font(.system(size:32)).foregroundStyle(Color.accentColor).accessibilityHidden(true)
                     VStack(alignment:.leading,spacing:2) {
                         Text(model.locationDisplayName).font(.title3.weight(.semibold)).fixedSize(horizontal:false,vertical:true)
                             .accessibilityIdentifier("onboardingSelectedLocation")
@@ -320,7 +479,7 @@ private struct SetupLocationStep:View {
                     }
                     Spacer(minLength:0)
                 }.setupCard()
-                Button("Choose a different city",action:choose).buttonStyle(.bordered).accessibilityIdentifier("chooseLocation")
+                Button("Choose a different city",action:choose).buttonStyle(.bordered).controlSize(.small).accessibilityIdentifier("chooseLocation")
             } else if service.isAcquiring {
                 HStack(spacing:14) {
                     ProgressView()
@@ -328,52 +487,15 @@ private struct SetupLocationStep:View {
                     Spacer(minLength:0)
                 }.setupCard().accessibilityIdentifier("locationProgress")
             } else {
-                VStack(alignment:.leading,spacing:10) {
-                    Image(systemName:"mappin.slash").font(.title2).foregroundStyle(.secondary).accessibilityHidden(true)
-                    Text("Choose your city to get prayer times. You can allow location later in iOS Settings.").font(.subheadline)
-                    if let message=service.message {Text(LocalizedStringKey(message)).font(.footnote).foregroundStyle(.secondary)}
-                }.setupCard()
-                Button {choose()} label:{Text("Choose a city").font(.headline).frame(maxWidth:.infinity,minHeight:44)}
-                    .buttonStyle(.borderedProminent).accessibilityIdentifier("chooseLocation")
-                Button("Try again") {service.request()}.buttonStyle(.bordered)
-            }
-            Text("Prayer times are calculated entirely on your device.").font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
-        }
-    }
-}
-
-private struct SetupAlertsStep:View {
-    let status:UNAuthorizationStatus?
-    let language:String
-    let customize:()->Void
-    let openSettings:()->Void
-    static func isAllowed(_ status:UNAuthorizationStatus)->Bool {
-        status == .authorized || status == .provisional || status == .ephemeral
-    }
-    private var prayerNames:String {
-        ["FAJR","DHUHR","ASR","MAGHRIB","ISHA"].map {AppLanguage.text($0,language:language)}.joined(separator:" · ")
-    }
-    var body:some View {
-        VStack(spacing:16) {
-            if let status,SetupAlertsStep.isAllowed(status) {
-                VStack(alignment:.leading,spacing:12) {
-                    Label("Alerts are on",systemImage:"checkmark.circle.fill").font(.headline).foregroundStyle(Color.accentColor)
-                    Text(prayerNames).font(.subheadline)
-                    Divider()
-                    Label("Prayer countdown",systemImage:"timer").font(.subheadline.weight(.medium))
-                    Text("Starts 15 minutes before each prayer.").font(.footnote).foregroundStyle(.secondary)
-                }.setupCard()
-                Button("Customize alerts",action:customize).buttonStyle(.bordered).accessibilityIdentifier("onboardingAlertSettings")
-            } else if status == .denied {
-                VStack(alignment:.leading,spacing:10) {
-                    Label("Alerts are off",systemImage:"bell.slash").font(.headline)
-                    Text("You can turn alerts on any time in iOS Settings.").font(.subheadline).foregroundStyle(.secondary)
-                }.setupCard()
-                Button("Open iOS Settings",action:openSettings).buttonStyle(.bordered)
-            } else {
-                VStack(alignment:.leading,spacing:10) {
-                    Label("Allow notifications to be reminded at prayer time.",systemImage:"bell").font(.headline)
-                }.setupCard()
+                Button {service.request()} label: {
+                    SetupOptionCard(symbol:"location.fill",title:"Use my current location",subtitle:"Finds the nearest city. Your location never leaves your iPhone.")
+                }.buttonStyle(.plain).accessibilityIdentifier("onboardingGPS")
+                Button {choose()} label: {
+                    SetupOptionCard(symbol:"magnifyingglass",title:"Choose a city",subtitle:"Search by name, without sharing your location.")
+                }.buttonStyle(.plain).accessibilityIdentifier("chooseLocation")
+                if let message=service.message {
+                    Text(LocalizedStringKey(message)).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.top,4)
+                }
             }
         }
     }

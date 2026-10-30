@@ -180,15 +180,15 @@ struct QiblaContent: View {
                     let distance=model.engine.qiblaDistance(latitude:location.latitude,longitude:location.longitude)
                     let rotation=compass?.rotation ?? bearing
                     VStack(spacing:6) {
-                        Text("Find the Qibla").font(.title2.bold())
-                        Text("Hold your phone flat and turn until the Kaaba marker reaches the top.")
+                        Text("Find your Qibla").font(.title2.bold())
+                        Text("Lay your phone flat and turn until the Kaaba badge sits at the top.")
                             .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     }.padding(.horizontal,20)
                     QiblaCompassFace(pointerRotation:rotation,ringRotation:rotation-bearing,aligned:compass?.aligned == true,reduceMotion:reduceMotion)
                         .frame(maxWidth:360).aspectRatio(1,contentMode:.fit)
                         .accessibilityElement(children:.ignore)
                         .accessibilityLabel("Qibla compass")
-                        .accessibilityValue(compass?.aligned == true ? "Facing the Qibla" : (compass?.reliable == true ? "Following true heading" : "Heading unavailable or unreliable"))
+                        .accessibilityValue(compass?.aligned == true ? "You're facing the Qibla" : (compass?.reliable == true ? "Following true heading" : "Heading unavailable or unreliable"))
                         .accessibilityIdentifier("qiblaCompass")
                     statusPill(bearing:bearing)
                     detailsCard(distance:distance)
@@ -202,8 +202,8 @@ struct QiblaContent: View {
         .background(Color(uiColor:.systemGroupedBackground))
         .navigationTitle("Qibla").navigationBarTitleDisplayMode(.inline)
         .sensoryFeedback(.alignment,trigger:alignmentFeedback)
-        .alert("Compass Calibration",isPresented:$showCalibration) {
-            Button("Got it",role:.cancel) {}
+        .alert("Calibrating the compass",isPresented:$showCalibration) {
+            Button("Okay",role:.cancel) {}
         } message: {Text("To calibrate your compass, move your phone smoothly in a figure 8 in the air several times, away from metal and magnets.")}
         .onAppear {service.startHeading();updateCompass()}
         .onDisappear {service.stopHeading();compass=nil;tracker=CompassAlignmentTracker()}
@@ -240,12 +240,12 @@ struct QiblaContent: View {
         return VStack(spacing:2) {
             if aligned {
                 Image(systemName:"checkmark.circle.fill").font(.system(size:28)).accessibilityHidden(true)
-                Text("Facing the Qibla").font(.headline)
+                Text("You're facing the Qibla").font(.headline)
             } else if let compass {
                 let relative=relativeAngle(compass.rotation)
                 Text(degreesText(relative)).font(.system(size:38,weight:.heavy,design:.rounded)).monospacedDigit()
                     .foregroundStyle(Color.accentColor)
-                Text(LocalizedStringKey(relative>0 ? "Turn right" : "Turn left")).font(.subheadline.weight(.bold)).foregroundStyle(.secondary)
+                Text(LocalizedStringKey(relative>0 ? "Rotate right" : "Rotate left")).font(.subheadline.weight(.bold)).foregroundStyle(.secondary)
             } else {
                 Text(degreesText(bearing)).font(.system(size:38,weight:.heavy,design:.rounded)).monospacedDigit()
                     .foregroundStyle(Color.accentColor)
@@ -261,11 +261,11 @@ struct QiblaContent: View {
         .accessibilityIdentifier(aligned ? "qiblaAligned" : "qiblaDirection")
     }
     private var accuracy:(key:String,color:Color) {
-        guard let value=service.accuracy,value>=0 else {return ("Unreliable",Color.red)}
-        if value<=10 {return ("High",Color.accentColor)}
-        if value<=15 {return ("Medium",Color.orange)}
-        if value<=25 {return ("Low",Color.red)}
-        return ("Unreliable",Color.red)
+        guard let value=service.accuracy,value>=0 else {return ("Not reliable",Color.red)}
+        if value<=10 {return ("Strong",Color.accentColor)}
+        if value<=15 {return ("Fair",Color.orange)}
+        if value<=25 {return ("Weak",Color.red)}
+        return ("Not reliable",Color.red)
     }
     private func detailsCard(distance:Double)->some View {
         VStack(alignment:.leading,spacing:10) {
@@ -274,7 +274,7 @@ struct QiblaContent: View {
                 VStack(alignment:.leading,spacing:2) {
                     Text(model.locationDisplayName).font(.subheadline.weight(.semibold)).lineLimit(1)
                     HStack(spacing:4) {
-                        Text("Distance to Kaaba:")
+                        Text("Distance to the Kaaba:")
                         Text(String(format:"%.0f",locale:Locale(identifier:"en_US_POSIX"),distance)).monospacedDigit()
                         Text("km")
                     }.font(.footnote).foregroundStyle(.secondary)
@@ -284,9 +284,9 @@ struct QiblaContent: View {
             Divider()
             HStack(spacing:10) {
                 Circle().fill(accuracy.color).frame(width:9,height:9).accessibilityHidden(true)
-                HStack(spacing:4) {Text("Sensor:");Text(LocalizedStringKey(accuracy.key))}.font(.subheadline).foregroundStyle(.secondary)
+                HStack(spacing:4) {Text("Compass:");Text(LocalizedStringKey(accuracy.key))}.font(.subheadline).foregroundStyle(.secondary)
                 Spacer(minLength:0)
-                Button {showCalibration=true} label:{Label("Calibrate",systemImage:"safari")}.buttonStyle(.borderless)
+                Button {showCalibration=true} label:{Label("Recalibrate",systemImage:"safari")}.buttonStyle(.borderless)
             }
         }
         .padding(16).frame(maxWidth:.infinity,alignment:.leading)
