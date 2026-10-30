@@ -70,6 +70,7 @@
 "City search is unavailable. Try again or enter coordinates." = "City search is unavailable. Try again or enter coordinates.";
 "Clean up preview" = "Clean up preview";
 "Clear local log" = "Clear local log";
+"Clear log" = "Clear log";
 "Close" = "Close";
 "Close countdown" = "Close countdown";
 "Compass accuracy is low. Move away from metal and calibrate your device." = "Compass accuracy is low. Move away from metal and calibrate your device.";
@@ -278,6 +279,7 @@
 "Settings" = "Settings";
 "Setup progress" = "Setup progress";
 "Share local log" = "Share local log";
+"Share log" = "Share log";
 "Shared calculation fixtures with live system timers." = "Shared calculation fixtures with live system timers.";
 "Show city" = "Show city";
 "Show countdown on Lock Screen" = "Show countdown on Lock Screen";
@@ -324,6 +326,7 @@
 "The selected full recording is prepared for the alarm. Use Test an alert to check playback on your iPhone." = "The selected full recording is prepared for the alarm. Use Test an alert to check playback on your iPhone.";
 "This alarm uses the system sound. Choose a recording above to hear the full adhan." = "This alarm uses the system sound. Choose a recording above to hear the full adhan.";
 "This device has no compass. The Qibla bearing is still available." = "This device has no compass. The Qibla bearing is still available.";
+"This log stays on your iPhone. Share it only if you need help." = "This log stays on your iPhone. Share it only if you need help.";
 "This test uses the chosen prayer’s sound. Your prayer schedule stays unchanged." = "This test uses the chosen prayer’s sound. Your prayer schedule stays unchanged.";
 "Time until next prayer" = "Time until next prayer";
 "Time zone" = "Time zone";

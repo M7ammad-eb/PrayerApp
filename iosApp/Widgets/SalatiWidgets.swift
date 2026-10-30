@@ -253,23 +253,35 @@ struct PrayerWidgetContent:View {
 struct PrayerLiveActivity:Widget {
     var body:some WidgetConfiguration {
         ActivityConfiguration(for:PrayerActivityAttributes.self) {context in
-            PrayerActivityCard(city:context.attributes.city,state:context.state,isExpired:context.isStale || context.state.finished || context.state.date<=Date())
+            PrayerActivityCard(city:context.attributes.city,state:context.state,isExpired:activityIsExpired(context))
                 .padding(16).activityBackgroundTint(Color.black.opacity(0.08)).activitySystemActionForegroundColor(.primary)
         } dynamicIsland: {context in
             DynamicIsland {
+                // Name and countdown sit beside the sensor housing; the lower region holds
+                // progress (or the finished message) and Close, so no presentation is ever empty.
+                DynamicIslandExpandedRegion(.leading) {
+                    PrayerActivityHeading(state:context.state,city:context.attributes.city).activityEnvironment(context.state)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    PrayerActivityRemaining(state:context.state,isExpired:activityIsExpired(context),width:92,
+                                            font:.system(.title2,design:.rounded,weight:.medium),iconWhenExpired:true)
+                }
                 DynamicIslandExpandedRegion(.bottom) {
-                    PrayerActivityExpanded(city:context.attributes.city,state:context.state,isExpired:context.isStale || context.state.finished || context.state.date<=Date())
+                    PrayerActivityIslandFooter(state:context.state,isExpired:activityIsExpired(context))
                 }
             } compactLeading: {
                 PrayerActivityCompactName(state:context.state)
             } compactTrailing: {
-                PrayerActivityCompactTime(state:context.state,isExpired:context.isStale || context.state.finished || context.state.date<=Date())
+                PrayerActivityCompactTime(state:context.state,isExpired:activityIsExpired(context))
             } minimal: {
                 PrayerActivityMinimalName(state:context.state)
             }.contentMargins(.horizontal,18,for:.expanded)
-                .contentMargins(.vertical,12,for:.expanded).keylineTint(.clear)
+                .contentMargins(.vertical,12,for:.expanded).keylineTint(Color.accentColor)
         }
     }
+}
+private func activityIsExpired(_ context:ActivityViewContext<PrayerActivityAttributes>)->Bool {
+    context.isStale || context.state.finished || context.state.date<=Date()
 }
 private func activityLocale(_ state:PrayerActivityAttributes.ContentState)->Locale {AppLanguage.locale(state.language)}
 private func activityDirection(_ state:PrayerActivityAttributes.ContentState)->LayoutDirection {AppLanguage.isRightToLeft(state.language) ? .rightToLeft : .leftToRight}
@@ -277,24 +289,48 @@ private func activityEndMessage(_ state:PrayerActivityAttributes.ContentState)->
     if !state.endMessage.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty {return state.endMessage}
     return AppLanguage.text("It is time for prayer",language:state.language)
 }
+private func prayerSymbol(_ id:String)->String {
+    if id.contains("FAJR") {return "sun.horizon.fill"}
+    if id.contains("SUNRISE") {return "sunrise.fill"}
+    if id.contains("DHUHR") {return "sun.max.fill"}
+    if id.contains("ASR") {return "sun.haze.fill"}
+    if id.contains("MAGHRIB") {return "sunset.fill"}
+    return "moon.stars.fill"
+}
+private extension View {
+    func activityEnvironment(_ state:PrayerActivityAttributes.ContentState)->some View {
+        environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))
+    }
+}
 struct PrayerActivityHeading:View {
     let state:PrayerActivityAttributes.ContentState
+    var city=""
+    private var detail:String {city.isEmpty ? state.timeText : state.timeText+" · "+city}
     var body:some View {
-        VStack(alignment:.leading,spacing:3) {
-            Text(state.title).font(.headline).lineLimit(1).minimumScaleFactor(0.85)
-            Text(state.timeText).font(.subheadline).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
+        VStack(alignment:.leading,spacing:2) {
+            HStack(spacing:6) {
+                Image(systemName:prayerSymbol(state.eventID)).font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.accentColor).accessibilityHidden(true)
+                Text(state.title).font(.headline).lineLimit(1).minimumScaleFactor(0.85)
+            }
+            Text(detail).font(.subheadline).monospacedDigit().foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
         }
     }
 }
 struct PrayerActivityRemaining:View {
     let state:PrayerActivityAttributes.ContentState
     var isExpired=false
+    var width:CGFloat=112
+    var font:Font = .system(.title,design:.rounded,weight:.regular)
+    var iconWhenExpired=false
     var body:some View {
         Group {
-            if isExpired {Text(activityEndMessage(state)).font(.subheadline.weight(.medium)).multilineTextAlignment(.trailing).fixedSize(horizontal:false,vertical:true)}
-            else {Countdown(date:state.date,width:112,alignment:.trailing).font(.system(.title,design:.rounded,weight:.regular))}
-        }.frame(width:112,alignment:.trailing)
-            .environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))
+            if isExpired {
+                if iconWhenExpired {Image(systemName:"checkmark.circle.fill").font(.title2).foregroundStyle(Color.accentColor)}
+                else {Text(activityEndMessage(state)).font(.subheadline.weight(.medium)).multilineTextAlignment(.trailing).fixedSize(horizontal:false,vertical:true)}
+            }
+            else {Countdown(date:state.date,width:width,alignment:.trailing).font(font).foregroundStyle(Color.accentColor)}
+        }.frame(width:width,alignment:.trailing).activityEnvironment(state)
     }
 }
 struct PrayerActivityFooter:View {
@@ -321,38 +357,48 @@ private struct PrayerActivityCloseButton:View {
         }.buttonStyle(.plain).accessibilityLabel("Close").accessibilityIdentifier("liveActivity.close")
     }
 }
+// Lower island region: progress while counting down, a plain message once finished.
+struct PrayerActivityIslandFooter:View {
+    let state:PrayerActivityAttributes.ContentState
+    var isExpired=false
+    var body:some View {
+        HStack(spacing:12) {
+            if isExpired {
+                Text(activityEndMessage(state)).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                    .lineLimit(2).frame(maxWidth:.infinity,alignment:.leading)
+            } else {
+                PrayerActivityFooter(city:"",state:state,isExpired:isExpired).frame(maxWidth:.infinity)
+            }
+            PrayerActivityCloseButton(eventID:state.eventID)
+        }.activityEnvironment(state)
+    }
+}
 struct PrayerActivityExpanded:View {
     let city:String
     let state:PrayerActivityAttributes.ContentState
     var isExpired=false
     var body:some View {
-        VStack(alignment:.leading,spacing:8) {
+        VStack(alignment:.leading,spacing:6) {
             HStack(alignment:.center,spacing:8) {
-                PrayerActivityHeading(state:state).frame(maxWidth:.infinity,alignment:.leading)
-                PrayerActivityRemaining(state:state,isExpired:isExpired)
-                PrayerActivityCloseButton(eventID:state.eventID)
+                PrayerActivityHeading(state:state,city:city).frame(maxWidth:.infinity,alignment:.leading)
+                PrayerActivityRemaining(state:state,isExpired:isExpired,width:92,font:.system(.title2,design:.rounded,weight:.medium),iconWhenExpired:true)
             }
-            if !city.isEmpty {Text(city).font(.caption).foregroundStyle(.secondary).lineLimit(1)}
-            PrayerActivityFooter(city:city,state:state,isExpired:isExpired)
-        }
-        // The bottom region shares space with the sensor and rounded lower corners.
-        // Keep its composition short and its animated track safely inside that area.
-        .padding(.horizontal,4).padding(.bottom,10)
-        .environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))
+            PrayerActivityIslandFooter(state:state,isExpired:isExpired)
+        }.padding(.horizontal,4).activityEnvironment(state)
     }
 }
 struct PrayerActivityCompactName:View {
     let state:PrayerActivityAttributes.ContentState
     var body:some View {
-        Text(state.title).font(.system(size:13,weight:.medium)).lineLimit(1).minimumScaleFactor(0.85)
-            .environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))
+        Image(systemName:prayerSymbol(state.eventID)).font(.system(size:14,weight:.semibold))
+            .foregroundStyle(Color.accentColor).accessibilityLabel(Text(state.title))
     }
 }
 struct PrayerActivityMinimalName:View {
     let state:PrayerActivityAttributes.ContentState
     var body:some View {
-        Text(state.title).font(.system(size:10,weight:.medium)).lineLimit(1).minimumScaleFactor(0.85)
-            .environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))
+        Image(systemName:prayerSymbol(state.eventID)).font(.system(size:12,weight:.semibold))
+            .foregroundStyle(Color.accentColor).accessibilityLabel(Text(state.title))
     }
 }
 struct PrayerActivityCompactTime:View {
@@ -360,10 +406,9 @@ struct PrayerActivityCompactTime:View {
     var isExpired=false
     var body:some View {
         Group {
-            if isExpired {Text("0:00").frame(width:46,alignment:.trailing)}
-            else {Countdown(date:state.date,width:46,alignment:.trailing)}
-        }.font(.system(size:13,weight:.medium)).monospacedDigit()
-            .environment(\.locale,Locale(identifier:"en_US_POSIX")).environment(\.layoutDirection,.leftToRight)
+            if isExpired {Image(systemName:"checkmark").font(.system(size:13,weight:.semibold)).foregroundStyle(Color.accentColor)}
+            else {Countdown(date:state.date,width:46,alignment:.trailing).font(.system(size:13,weight:.medium)).monospacedDigit().foregroundStyle(Color.accentColor)}
+        }
     }
 }
 struct PrayerActivityCard:View {
@@ -371,18 +416,14 @@ struct PrayerActivityCard:View {
     let state:PrayerActivityAttributes.ContentState
     var isExpired=false
     var body:some View {
-        VStack(alignment:.leading,spacing:10) {
+        VStack(alignment:.leading,spacing:12) {
             HStack(alignment:.center,spacing:12) {
-                if !city.isEmpty {Text(city).font(.caption).foregroundStyle(.secondary).lineLimit(1)}
-                Spacer(minLength:0)
+                PrayerActivityHeading(state:state,city:city).frame(maxWidth:.infinity,alignment:.leading)
+                PrayerActivityRemaining(state:state,isExpired:isExpired)
                 PrayerActivityCloseButton(eventID:state.eventID)
             }
-            HStack(alignment:.center,spacing:12) {
-                PrayerActivityHeading(state:state).frame(maxWidth:.infinity,alignment:.leading)
-                PrayerActivityRemaining(state:state,isExpired:isExpired)
-            }
             PrayerActivityFooter(city:city,state:state,isExpired:isExpired)
-        }.environment(\.locale,activityLocale(state)).environment(\.layoutDirection,activityDirection(state))
+        }.activityEnvironment(state)
     }
 }
 struct Countdown:View {

@@ -221,12 +221,12 @@ private struct SchedulingDiagnosticsView:View {
     var body:some View {
         ScrollView {
             VStack(alignment:.leading,spacing:16) {
-                Text(model.arabic ? "سجل محلي فقط. قبول الموعد من النظام لا يثبت وقت الصوت أو التسليم الفعلي. لا تعرض استجابة المستخدم على أنها وقت وصول التنبيه." : "Stored only on this phone. Scheduling acceptance does not prove audible delivery. A notification response records user interaction, not the actual delivery instant.").font(.callout)
+                Text("This log stays on your iPhone. Share it only if you need help.").font(.callout).foregroundStyle(.secondary)
                 if let status=model.scheduleStatus {Text(status).font(.callout)}
-                ShareLink(item:scheduler.diagnosticsText) {Label(model.arabic ? "مشاركة السجل" : "Share local log",systemImage:"square.and.arrow.up")}
+                ShareLink(item:scheduler.diagnosticsText) {Label("Share log",systemImage:"square.and.arrow.up")}
                 Text(scheduler.diagnosticsText.isEmpty ? "—" : scheduler.diagnosticsText).font(.caption.monospaced()).textSelection(.enabled).environment(\.layoutDirection,.leftToRight)
-                Button(model.arabic ? "مسح السجل المحلي" : "Clear local log",role:.destructive) {scheduler.clearDiagnostics()}
+                Button("Clear log",role:.destructive) {scheduler.clearDiagnostics()}
             }.padding()
-        }.navigationTitle(model.arabic ? "التشخيص المحلي" : "Local diagnostics").navigationBarTitleDisplayMode(.inline)
+        }.navigationTitle("Troubleshooting").navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -24,7 +24,7 @@ struct HomeView: View {
                         let countdownStart=Date()
                         if next.date>countdownStart {
                             Text(timerInterval:countdownStart...next.date,countsDown:true)
-                                .font(.system(.largeTitle,design:.rounded,weight:.light)).monospacedDigit().environment(\.locale,Locale(identifier:"en_US_POSIX"))
+                                .font(.system(.largeTitle,design:.rounded,weight:.light)).monospacedDigit().foregroundStyle(Color.accentColor).environment(\.locale,Locale(identifier:"en_US_POSIX"))
                                 .environment(\.layoutDirection,.leftToRight).accessibilityLabel(Text("Time until next prayer"))
                         }
                         }
@@ -35,6 +35,8 @@ struct HomeView: View {
                     ForEach(model.displayEvents) { event in
                         let next=event.id == model.nextEventID
                         let current=event.id == model.currentEventID
+                        let past=event.date<Date() && !current
+                        let rowTint:Color?=(current || next) ? Color.accentColor.opacity(0.10) : nil
                         Group {
                             if dynamicTypeSize.isAccessibilitySize {
                                 VStack(alignment:.leading,spacing:8) {
@@ -44,19 +46,18 @@ struct HomeView: View {
                                     else if next {Text("Up next").font(.caption).foregroundStyle(Color.accentColor)}
                                 }.frame(maxWidth:.infinity,alignment:.leading)
                             } else {
+                                // The row tint and weight mark the current and next prayer; VoiceOver
+                                // hears the same state, so no caption or dot is needed on screen.
                                 HStack(spacing:14) {
-                                    Image(systemName:symbol(event.id)).foregroundStyle(next ? Color.accentColor : (current ? Color.primary:Color.secondary)).frame(width:28).accessibilityHidden(true)
-                                    VStack(alignment:.leading,spacing:3) {
-                                        Text(event.title).fontWeight(next || current ? .semibold:.regular)
-                                        if current {Label("Current prayer",systemImage:"circle.fill").font(.caption).foregroundStyle(.primary)}
-                                        else if next {Label("Up next",systemImage:"circle.fill").font(.caption).foregroundStyle(Color.accentColor)}
-                                    }
+                                    Image(systemName:symbol(event.id)).foregroundStyle(next || current ? Color.accentColor : Color.secondary).frame(width:28).accessibilityHidden(true)
+                                    Text(event.title).fontWeight(next || current ? .semibold:.regular)
                                     Spacer(minLength:8)
                                     Text(event.timeText).monospacedDigit().environment(\.layoutDirection,.leftToRight).fontWeight(next || current ? .semibold:.regular)
-                                }
+                                }.accessibilityValue(Text(LocalizedStringKey(current ? "Current prayer" : (next ? "Up next" : ""))))
                             }
-                        }.foregroundStyle(next ? Color.accentColor:(current ? Color.primary:Color.secondary))
+                        }.foregroundStyle(past ? Color.secondary : Color.primary)
                             .padding(.vertical,7).accessibilityElement(children:.combine).accessibilityIdentifier("homePrayer."+event.id)
+                            .listRowBackground(rowTint)
                     }
                 }
                 Section {

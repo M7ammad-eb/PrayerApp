@@ -70,6 +70,7 @@
 "City search is unavailable. Try again or enter coordinates." = "البحث عن المدن غير متاح. حاول مجددًا أو أدخل الإحداثيات.";
 "Clean up preview" = "إنهاء المعاينة";
 "Clear local log" = "مسح السجل المحلي";
+"Clear log" = "مسح السجل";
 "Close" = "إغلاق";
 "Close countdown" = "إغلاق العدّ التنازلي";
 "Compass accuracy is low. Move away from metal and calibrate your device." = "دقة البوصلة منخفضة. ابتعد عن المعادن وعاير جهازك.";
@@ -278,6 +279,7 @@
 "Settings" = "الإعدادات";
 "Setup progress" = "تقدّم الإعداد";
 "Share local log" = "مشاركة السجل المحلي";
+"Share log" = "مشاركة السجل";
 "Shared calculation fixtures with live system timers." = "معاينات بحسابات مشتركة ومؤقتات النظام الحية.";
 "Show city" = "إظهار المدينة";
 "Show countdown on Lock Screen" = "إظهار العد التنازلي على شاشة القفل";
@@ -324,6 +326,7 @@
 "The selected full recording is prepared for the alarm. Use Test an alert to check playback on your iPhone." = "يُجهّز التسجيل المختار كاملًا للمنبّه. استخدم «اختبار تنبيه» للتحقّق من التشغيل على iPhone.";
 "This alarm uses the system sound. Choose a recording above to hear the full adhan." = "يستخدم هذا المنبّه صوت النظام. اختر تسجيلًا أعلاه لسماع الأذان كاملًا.";
 "This device has no compass. The Qibla bearing is still available." = "لا توجد بوصلة في هذا الجهاز. لا تزال زاوية القبلة متاحة.";
+"This log stays on your iPhone. Share it only if you need help." = "يبقى هذا السجل على جهازك. شاركه فقط إذا احتجت إلى مساعدة.";
 "This test uses the chosen prayer’s sound. Your prayer schedule stays unchanged." = "يستخدم الاختبار صوت الصلاة المختارة، دون تغيير جدول صلواتك.";
 "Time until next prayer" = "الوقت المتبقي للصلاة القادمة";
 "Time zone" = "المنطقة الزمنية";
