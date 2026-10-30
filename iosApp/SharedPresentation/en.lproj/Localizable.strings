@@ -23,6 +23,8 @@
 "After starting the test, lock your iPhone." = "After starting the test, lock your iPhone.";
 "Alarms are turned off in iOS Settings." = "Alarms are turned off in iOS Settings.";
 "Alert status and diagnostics" = "Alert status and diagnostics";
+"Alerts are off" = "Alerts are off";
+"Alerts are on" = "Alerts are on";
 "Alerts stay off until you choose them. Continue without enabling alerts if you prefer." = "Alerts stay off until you choose them. Continue without enabling alerts if you prefer.";
 "Alerts, your way" = "Alerts, your way";
 "Aligned with Qibla" = "Aligned with Qibla";
@@ -30,6 +32,7 @@
 "Allow alarms in iOS Settings." = "Allow alarms in iOS Settings.";
 "Allow notifications" = "Allow notifications";
 "Allow notifications in iOS Settings." = "Allow notifications in iOS Settings.";
+"Allow notifications to be reminded at prayer time." = "Allow notifications to be reminded at prayer time.";
 "Allow system alarms" = "Allow system alarms";
 "Allow the selected delivery type, then start the test and lock your iPhone." = "Allow the selected delivery type, then start the test and lock your iPhone.";
 "App-rendered preview" = "App-rendered preview";
@@ -53,6 +56,7 @@
 "Choose a city offline, or use your precise location. Check the time zone if you are near a border." = "Choose a city offline, or use your precise location. Check the time zone if you are near a border.";
 "Choose a city without granting location access, or use GPS when you need it." = "Choose a city without granting location access, or use GPS when you need it.";
 "Choose a city without granting location access, or use GPS when you need it. Notifications and alarms are optional and requested from Settings." = "Choose a city without granting location access, or use GPS when you need it. Notifications and alarms are optional and requested from Settings.";
+"Choose a different city" = "Choose a different city";
 "Choose a sound for alarms, or use notifications for silent alerts." = "Choose a sound for alarms, or use notifications for silent alerts.";
 "Choose an adhan recording or keep the system sound." = "Choose an adhan recording or keep the system sound.";
 "Choose an audible alarm sound" = "Choose an audible alarm sound";
@@ -64,6 +68,7 @@
 "Choose the details shown on this widget." = "Choose the details shown on this widget.";
 "Choose the method used by your local mosque." = "Choose the method used by your local mosque.";
 "Choose the time zone for this location." = "Choose the time zone for this location.";
+"Choose your city to get prayer times. You can allow location later in iOS Settings." = "Choose your city to get prayer times. You can allow location later in iOS Settings.";
 "Choose your location" = "Choose your location";
 "City" = "City";
 "City data" = "City data";
@@ -84,6 +89,7 @@
 "Countdown closed" = "Countdown closed";
 "Current location" = "Current location";
 "Current prayer" = "Current prayer";
+"Customize alerts" = "Customize alerts";
 "DHUHR" = "Dhuhr";
 "Dark" = "Dark";
 "Delivery" = "Delivery";
@@ -116,6 +122,7 @@
 "GPS coordinates stay exact. City names and time zones come from the nearest offline place; check the zone near borders." = "GPS coordinates stay exact. City names and time zones come from the nearest offline place; check the zone near borders.";
 "GULF" = "Gulf Region (UAE & Dubai)";
 "GeoNames attribution" = "GeoNames attribution";
+"Get started" = "Get started";
 "Got it" = "Got it";
 "HIJRI_NEW_YEAR" = "Beginning of the Hijri year";
 "Hanafi" = "Hanafi";
@@ -187,6 +194,7 @@
 "NONE" = "None";
 "Nearest offline city: %@ · %@ km" = "Nearest offline city: %@ · %@ km";
 "Neighboring month boundaries reconcile the correction while keeping every month 29 or 30 days." = "Neighboring month boundaries reconcile the correction while keeping every month 29 or 30 days.";
+"Never miss a prayer" = "Never miss a prayer";
 "Next month" = "Next month";
 "Next prayer" = "Next prayer";
 "Next prayer and your daily offline schedule." = "Next prayer and your daily offline schedule.";
@@ -270,6 +278,7 @@
 "SINGAPORE" = "Majlis Ugama Islam Singapura (MUIS)";
 "SUNRISE" = "Sunrise";
 "Salati" = "Salati";
+"Salati can notify you at each prayer time and count down to the next one." = "Salati can notify you at each prayer time and count down to the next one.";
 "Salati test alert" = "Salati test alert";
 "Salati · صلاتي" = "Salati · صلاتي";
 "Save" = "Save";
@@ -303,6 +312,7 @@
 "Standard" = "Standard";
 "Start system Live Activity preview" = "Start system Live Activity preview";
 "Start using Salati" = "Start using Salati";
+"Starts 15 minutes before each prayer." = "Starts 15 minutes before each prayer.";
 "Stop" = "Stop";
 "Stop playback" = "Stop playback";
 "Stop prayer alarm" = "Stop prayer alarm";
@@ -347,6 +357,7 @@
 "Touch and hold the widget, then choose Edit Widget to choose location, date, and sunrise details." = "Touch and hold the widget, then choose Edit Widget to choose location, date, and sunrise details.";
 "Touch and hold your Home Screen, then choose Edit and Add Widget." = "Touch and hold your Home Screen, then choose Edit and Add Widget.";
 "Troubleshooting" = "Troubleshooting";
+"Try again" = "Try again";
 "Try your settings" = "Try your settings";
 "Turn left" = "Turn left";
 "Turn right" = "Turn right";
@@ -370,6 +381,7 @@
 "Widgets" = "Widgets";
 "You can change calculation and display preferences in Settings." = "You can change calculation and display preferences in Settings.";
 "You can change these choices in Settings." = "You can change these choices in Settings.";
+"You can turn alerts on any time in iOS Settings." = "You can turn alerts on any time in iOS Settings.";
 "Your changes are kept when you choose another location." = "Your changes are kept when you choose another location.";
 "Your choices are saved. You can change them anytime in Settings." = "Your choices are saved. You can change them anytime in Settings.";
 "Your chosen calculation settings are preserved." = "Your chosen calculation settings are preserved.";

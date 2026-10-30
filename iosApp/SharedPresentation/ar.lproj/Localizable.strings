@@ -23,6 +23,8 @@
 "After starting the test, lock your iPhone." = "بعد بدء الاختبار، اقفل iPhone.";
 "Alarms are turned off in iOS Settings." = "المنبهات متوقفة في إعدادات iOS.";
 "Alert status and diagnostics" = "حالة التنبيهات والتشخيص";
+"Alerts are off" = "التنبيهات متوقفة";
+"Alerts are on" = "التنبيهات مفعّلة";
 "Alerts stay off until you choose them. Continue without enabling alerts if you prefer." = "تبقى التنبيهات متوقفة حتى تختارها. يمكنك المتابعة دون تفعيلها.";
 "Alerts, your way" = "تنبيهات تناسبك";
 "Aligned with Qibla" = "محاذٍ للقبلة";
@@ -30,6 +32,7 @@
 "Allow alarms in iOS Settings." = "اسمح بالمنبهات في إعدادات iOS.";
 "Allow notifications" = "السماح بالإشعارات";
 "Allow notifications in iOS Settings." = "اسمح بالإشعارات في إعدادات iOS.";
+"Allow notifications to be reminded at prayer time." = "اسمح بالإشعارات لتصلك التذكيرات عند وقت الصلاة.";
 "Allow system alarms" = "السماح بمنبهات النظام";
 "Allow the selected delivery type, then start the test and lock your iPhone." = "اسمح بنوع التنبيه المختار، ثم ابدأ الاختبار واقفل iPhone.";
 "App-rendered preview" = "معاينة داخل التطبيق";
@@ -53,6 +56,7 @@
 "Choose a city offline, or use your precise location. Check the time zone if you are near a border." = "اختر مدينة دون إنترنت أو استخدم موقعك الدقيق. تحقّق من المنطقة الزمنية إذا كنت قرب الحدود.";
 "Choose a city without granting location access, or use GPS when you need it." = "اختر مدينة دون منح إذن الموقع أو استخدم GPS عند الحاجة.";
 "Choose a city without granting location access, or use GPS when you need it. Notifications and alarms are optional and requested from Settings." = "اختر مدينة دون منح إذن الموقع، أو استخدم GPS عند الحاجة. الإشعارات والمنبهات اختيارية ويمكن تفعيلها من الإعدادات.";
+"Choose a different city" = "اختر مدينة أخرى";
 "Choose a sound for alarms, or use notifications for silent alerts." = "اختر صوتًا للمنبهات، أو استخدم الإشعارات للتنبيهات الصامتة.";
 "Choose an adhan recording or keep the system sound." = "اختر تسجيلًا للأذان أو احتفظ بصوت النظام.";
 "Choose an audible alarm sound" = "اختر صوتًا مسموعًا للمنبّه";
@@ -64,6 +68,7 @@
 "Choose the details shown on this widget." = "اختر التفاصيل المعروضة في الودجت.";
 "Choose the method used by your local mosque." = "اختر طريقة الحساب المتّبعة في مسجدك.";
 "Choose the time zone for this location." = "اختر المنطقة الزمنية لهذا الموقع.";
+"Choose your city to get prayer times. You can allow location later in iOS Settings." = "اختر مدينتك لعرض مواقيت الصلاة. يمكنك السماح بالموقع لاحقاً من إعدادات iOS.";
 "Choose your location" = "اختر موقعك";
 "City" = "المدينة";
 "City data" = "بيانات المدن";
@@ -84,6 +89,7 @@
 "Countdown closed" = "أُغلق العدّ التنازلي";
 "Current location" = "الموقع الحالي";
 "Current prayer" = "الصلاة الحالية";
+"Customize alerts" = "تخصيص التنبيهات";
 "DHUHR" = "الظهر";
 "Dark" = "داكن";
 "Delivery" = "نوع التنبيه";
@@ -116,6 +122,7 @@
 "GPS coordinates stay exact. City names and time zones come from the nearest offline place; check the zone near borders." = "تُستخدم إحداثيات GPS الدقيقة. يُؤخذ اسم المدينة والمنطقة الزمنية من أقرب مكان في قاعدة البيانات؛ تحقق من المنطقة قرب الحدود.";
 "GULF" = "منطقة الخليج العربي (دبي والإمارات)";
 "GeoNames attribution" = "مصدر بيانات GeoNames";
+"Get started" = "ابدأ";
 "Got it" = "حسناً";
 "HIJRI_NEW_YEAR" = "بداية السنة الهجرية";
 "Hanafi" = "حنفي";
@@ -187,6 +194,7 @@
 "NONE" = "بدون تعديل (None)";
 "Nearest offline city: %@ · %@ km" = "أقرب مدينة في قاعدة البيانات: %@ · %@ كم";
 "Neighboring month boundaries reconcile the correction while keeping every month 29 or 30 days." = "تتوافق بدايات الأشهر المجاورة مع التصحيح، مع بقاء كل شهر 29 أو 30 يومًا.";
+"Never miss a prayer" = "لا تفوّت أي صلاة";
 "Next month" = "الشهر التالي";
 "Next prayer" = "الصلاة القادمة";
 "Next prayer and your daily offline schedule." = "الصلاة القادمة وجدولك اليومي دون اتصال.";
@@ -270,6 +278,7 @@
 "SINGAPORE" = "مجلس الشؤون الإسلامية بسنغافورة (MUIS)";
 "SUNRISE" = "الشروق";
 "Salati" = "صلاتي";
+"Salati can notify you at each prayer time and count down to the next one." = "يمكن لصلاتي تنبيهك عند كل صلاة وعرض عدّ تنازلي للصلاة القادمة.";
 "Salati test alert" = "اختبار تنبيه صلاتي";
 "Salati · صلاتي" = "Salati · صلاتي";
 "Save" = "حفظ";
@@ -303,6 +312,7 @@
 "Standard" = "قياسي";
 "Start system Live Activity preview" = "بدء معاينة نشاط مباشر في النظام";
 "Start using Salati" = "ابدأ استخدام صلاتي";
+"Starts 15 minutes before each prayer." = "يبدأ قبل كل صلاة بـ 15 دقيقة.";
 "Stop" = "إيقاف";
 "Stop playback" = "إيقاف التشغيل";
 "Stop prayer alarm" = "إيقاف منبّه الصلاة";
@@ -347,6 +357,7 @@
 "Touch and hold the widget, then choose Edit Widget to choose location, date, and sunrise details." = "اضغط مطولًا على الويدجت، ثم اختر تعديل الويدجت لتحديد عرض الموقع والتاريخ والشروق.";
 "Touch and hold your Home Screen, then choose Edit and Add Widget." = "اضغط مطولًا على الشاشة الرئيسية، ثم اختر تعديل وإضافة ويدجت.";
 "Troubleshooting" = "حل المشكلات";
+"Try again" = "حاول مجدداً";
 "Try your settings" = "جرّب إعداداتك";
 "Turn left" = "اتجه يساراً";
 "Turn right" = "اتجه يميناً";
@@ -370,6 +381,7 @@
 "Widgets" = "الويدجت";
 "You can change calculation and display preferences in Settings." = "يمكنك تغيير الحساب والعرض من الإعدادات.";
 "You can change these choices in Settings." = "يمكنك تغيير هذه الاختيارات من الإعدادات.";
+"You can turn alerts on any time in iOS Settings." = "يمكنك تفعيل التنبيهات في أي وقت من إعدادات iOS.";
 "Your changes are kept when you choose another location." = "تُحفظ تعديلاتك عند اختيار موقع آخر.";
 "Your choices are saved. You can change them anytime in Settings." = "حُفظت اختياراتك. يمكنك تغييرها في أي وقت من الإعدادات.";
 "Your chosen calculation settings are preserved." = "تُحفظ إعدادات الحساب التي اخترتها.";

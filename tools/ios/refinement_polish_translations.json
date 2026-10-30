@@ -17,5 +17,17 @@
   "Got it": "حسناً",
   "To calibrate your compass, move your phone smoothly in a figure 8 in the air several times, away from metal and magnets.": "لمعايرة بوصلة الهاتف، حرّك جهازك بسلاسة بشكل رقم 8 في الهواء عدة مرات بعيداً عن المعادن والمغناطيس.",
   "Distance to Kaaba:": "المسافة إلى الكعبة المشرفة:",
-  "km": "كم"
+  "km": "كم",
+  "Get started": "ابدأ",
+  "Never miss a prayer": "لا تفوّت أي صلاة",
+  "Salati can notify you at each prayer time and count down to the next one.": "يمكن لصلاتي تنبيهك عند كل صلاة وعرض عدّ تنازلي للصلاة القادمة.",
+  "Choose a different city": "اختر مدينة أخرى",
+  "Choose your city to get prayer times. You can allow location later in iOS Settings.": "اختر مدينتك لعرض مواقيت الصلاة. يمكنك السماح بالموقع لاحقاً من إعدادات iOS.",
+  "Try again": "حاول مجدداً",
+  "Alerts are on": "التنبيهات مفعّلة",
+  "Starts 15 minutes before each prayer.": "يبدأ قبل كل صلاة بـ 15 دقيقة.",
+  "Alerts are off": "التنبيهات متوقفة",
+  "You can turn alerts on any time in iOS Settings.": "يمكنك تفعيل التنبيهات في أي وقت من إعدادات iOS.",
+  "Allow notifications to be reminded at prayer time.": "اسمح بالإشعارات لتصلك التذكيرات عند وقت الصلاة.",
+  "Customize alerts": "تخصيص التنبيهات"
 }
