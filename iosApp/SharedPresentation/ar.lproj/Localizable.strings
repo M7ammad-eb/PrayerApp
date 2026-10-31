@@ -366,6 +366,7 @@
 "Test in one minute — lock the phone" = "اختبار بعد دقيقة — اقفل الهاتف";
 "Test scheduled in about a minute. Lock your iPhone now." = "تمت جدولة اختبار بعد نحو دقيقة. اقفل iPhone الآن.";
 "The correction expires at the unadjusted month boundary. Some Hijri labels may repeat when it resets." = "ينتهي التعديل عند بداية الشهر غير المعدّل. قد تتكرر بعض التواريخ الهجرية عند انتهاء التعديل.";
+"The countdown couldn't start. Open Salati and try again." = "تعذّر بدء العد التنازلي. افتح صلاتي وحاول مجدداً.";
 "The countdown starts 15 minutes before prayer. If it cannot start, Salati uses a notification reminder when permitted." = "يبدأ العدّ التنازلي قبل الصلاة بـ 15 دقيقة. إن تعذّر تشغيله، يستخدم صلاتي إشعار تذكير إذا كان مسموحًا.";
 "The countdown uses system rendering. Open Salati regularly to refresh changing prayer schedules." = "يعرض النظام العد التنازلي. افتح صلاتي بانتظام لتحديث المواقيت المتغيرة.";
 "The current Hijri date advances at Maghrib. Gregorian cell dates stay civil dates; prayer times stay on their civil day." = "يتقدم التاريخ الهجري عند المغرب. تبقى التواريخ الميلادية ومواقيت الصلاة مرتبطة بيومها المدني.";

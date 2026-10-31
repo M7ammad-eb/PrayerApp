@@ -27,8 +27,13 @@ struct StartPrayerCountdownIntent: AppIntent {
     static var openAppWhenRun = true
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        let started=await PrayerScheduler.shared.startNextPrayerCountdown()
-        let key=started ? "Countdown started." : "Live Activities are turned off for Salati."
+        let key:String
+        switch await PrayerScheduler.shared.startNextPrayerCountdown() {
+        case .started:key="Countdown started."
+        case .activitiesOff:key="Live Activities are turned off for Salati."
+        case .noSchedule:key="Open Salati to load your prayer times."
+        case .failed:key="The countdown couldn't start. Open Salati and try again."
+        }
         return .result(dialog:IntentDialog(stringLiteral:AppLanguage.text(key,language:AppLanguage.current)))
     }
 }

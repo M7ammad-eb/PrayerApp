@@ -78,6 +78,7 @@ struct ScheduledLivePrayer: Equatable {
         return result
     }
 }
+enum PrayerCountdownStart {case started,activitiesOff,noSchedule,failed}
 enum NativeAlertRoute: String, Codable { case notification, alarm }
 struct NativePendingAlert: Equatable {
     var id: String
@@ -410,20 +411,52 @@ struct ScheduleDiagnostic: Codable {
         armLiveActivityExpiry()
     }
     // Starts the countdown for the next prayer now (Siri, Shortcuts, Action button). Manual
-    // activities carry their own id prefix so the scheduled plan does not end them.
-    func startNextPrayerCountdown() async -> Bool {
-        guard ActivityAuthorizationInfo().areActivitiesEnabled,let snapshot=ScheduleSnapshot.load(),
-              let next=snapshot.nextEvent(after:Date()) else {return false}
+    // activities carry their own id prefix so the scheduled plan does not end them. Each way it can
+    // fail is reported separately, so the person is told what actually went wrong.
+    func startNextPrayerCountdown() async -> PrayerCountdownStart {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            record("Live Activity from shortcut skipped",result:"Live Activities are turned off for Salati in iOS Settings")
+            return .activitiesOff
+        }
+        guard let snapshot=ScheduleSnapshot.load(),let next=snapshot.nextEvent(after:Date()) else {
+            record("Live Activity from shortcut skipped",result:"no saved prayer schedule")
+            return .noSchedule
+        }
+        // The shortcut opens Salati, and ActivityKit only accepts a new activity once the app is active.
+        var waits=0
+        while UIApplication.shared.applicationState != .active && waits<24 {
+            try? await Task.sleep(for:.milliseconds(250));waits+=1
+        }
         let eventID="salati.manual."+next.id
         let state=PrayerActivityAttributes.ContentState(title:next.title,date:next.date,eventID:eventID,language:snapshot.language,start:Date(),
             timeText:next.timeText,endMessage:AppLanguage.text("It is time for prayer",language:snapshot.language))
         for old in Activity<PrayerActivityAttributes>.activities where old.content.state.eventID == eventID {await liveLifecycle.finish(id:old.id)}
-        do {
-            _=try Activity<PrayerActivityAttributes>.request(attributes:PrayerActivityAttributes(city:snapshot.city),content:ActivityContent(state:state,staleDate:next.date),pushType:nil)
-            record("Live Activity started from shortcut",result:eventID)
-            observeLiveActivityStates();armLiveActivityExpiry()
-            return true
-        } catch {record("Live Activity from shortcut failed",result:error.localizedDescription);return false}
+        var attempts=0
+        while true {
+            attempts+=1
+            do {
+                _=try Activity<PrayerActivityAttributes>.request(attributes:PrayerActivityAttributes(city:snapshot.city),content:ActivityContent(state:state,staleDate:next.date),pushType:nil)
+                record("Live Activity started from shortcut",result:eventID)
+                observeLiveActivityStates();armLiveActivityExpiry()
+                return .started
+            } catch {
+                record("Live Activity from shortcut failed",result:"attempt \(attempts): "+error.localizedDescription)
+                guard attempts<3,let reason=error as? ActivityAuthorizationError else {return .failed}
+                switch reason {
+                case .globalMaximumExceeded,.targetMaximumExceeded:
+                    // Countdowns scheduled for later prayers can fill every slot; free the one furthest away.
+                    let furthest=Activity<PrayerActivityAttributes>.activities
+                        .filter {!$0.content.state.eventID.hasPrefix("salati.manual.")}
+                        .max {$0.content.state.date<$1.content.state.date}
+                    guard let furthest else {return .failed}
+                    await liveLifecycle.finish(id:furthest.id)
+                case .visibility:
+                    try? await Task.sleep(for:.seconds(1))
+                default:
+                    return .failed
+                }
+            }
+        }
     }
     func cleanupLiveActivities(enabled:Bool=true) async {
         await liveLifecycle.cleanup(enabled:enabled)

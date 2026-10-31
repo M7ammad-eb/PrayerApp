@@ -366,6 +366,7 @@
 "Test in one minute — lock the phone" = "Test in one minute — lock the phone";
 "Test scheduled in about a minute. Lock your iPhone now." = "Test scheduled in about a minute. Lock your iPhone now.";
 "The correction expires at the unadjusted month boundary. Some Hijri labels may repeat when it resets." = "The correction expires at the unadjusted month boundary. Some Hijri labels may repeat when it resets.";
+"The countdown couldn't start. Open Salati and try again." = "The countdown couldn't start. Open Salati and try again.";
 "The countdown starts 15 minutes before prayer. If it cannot start, Salati uses a notification reminder when permitted." = "The countdown starts 15 minutes before prayer. If it cannot start, Salati uses a notification reminder when permitted.";
 "The countdown uses system rendering. Open Salati regularly to refresh changing prayer schedules." = "The countdown uses system rendering. Open Salati regularly to refresh changing prayer schedules.";
 "The current Hijri date advances at Maghrib. Gregorian cell dates stay civil dates; prayer times stay on their civil day." = "The current Hijri date advances at Maghrib. Gregorian cell dates stay civil dates; prayer times stay on their civil day.";
