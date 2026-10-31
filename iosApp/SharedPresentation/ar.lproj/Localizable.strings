@@ -117,6 +117,7 @@
 "FRANCE_UOIF" = "اتحاد المنظمات الإسلامية بفرنسا (UOIF)";
 "Fair" = "مقبولة";
 "Fajr" = "الفجر";
+"Fajr starts with its own adhan. You can change any prayer later in Settings." = "يبدأ الفجر بأذانه الخاص. يمكنك تغيير أي صلاة لاحقاً من الإعدادات.";
 "Find prayer times for your city or current location." = "اعرف مواقيت الصلاة في مدينتك أو موقعك الحالي.";
 "Find your Qibla" = "اعثر على قبلتك";
 "Find your city" = "ابحث عن مدينتك";

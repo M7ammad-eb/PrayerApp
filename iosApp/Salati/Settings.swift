@@ -81,6 +81,14 @@ struct Settings: Codable, Equatable {
         if let data=try? JSONEncoder().encode(self) {defaults.set(data,forKey:"settings.v1")}
     }
 }
+extension Recording {
+    // Fajr has its own recitation; every other prayer starts from the general adhan.
+    static var fajrID:String? {all.first {$0.id.contains("fajr")}?.id}
+    static func defaultID(for prayer:String,general:String)->String {
+        guard prayer == "FAJR" else {return general}
+        return general.contains("fajr") ? general : (fajrID ?? general)
+    }
+}
 struct Recording: Identifiable, Decodable {
     let id: String
     let english: String

@@ -89,7 +89,7 @@ struct NotificationSettingsView: View {
             var policy=updated.policies[id] ?? PrayerPolicy()
             policy.delivery=delivery
             // An alarm must play something audible: use the first adhan unless one is already chosen.
-            if delivery == .alarm,!Recording.all.contains(where:{$0.id == policy.sound}) {policy.sound=Recording.all.first?.id ?? "default"}
+            if delivery == .alarm,!Recording.all.contains(where:{$0.id == policy.sound}) {policy.sound=Recording.defaultID(for:id,general:Recording.all.first?.id ?? "default")}
             updated.policies[id]=policy
         }
         model.settings=updated

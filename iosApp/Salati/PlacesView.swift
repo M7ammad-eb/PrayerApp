@@ -15,7 +15,7 @@ struct PlacesView: View {
         List {
             Section {
                 CurrentLocationButton(service:model.locationService)
-                LocationStatusView(service:model.locationService)
+                LocationStatusView(service:model.locationService,showLastUpdate:false)
                 Button {manual=true} label: { Label("Enter coordinates",systemImage:"mappin.and.ellipse") }
             } footer: { Text("Search for a city, or use your current location.") }
             if searching {HStack {ProgressView();Text("Searching…")}}
@@ -257,6 +257,8 @@ struct OnboardingView: View {
             }
         case .adhan:
             VStack(spacing:10) {
+                Text("Fajr starts with its own adhan. You can change any prayer later in Settings.")
+                    .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.bottom,4)
                 ForEach(Recording.all) {recording in
                     let selected=adhanChoice == recording.id
                     let playing=player.isPlaying && playingID == recording.id
@@ -370,7 +372,9 @@ struct OnboardingView: View {
         case .notification:alertChoice = .notification
         case .off:alertChoice = .off
         }
-        if Recording.all.contains(where:{$0.id == policy.sound}) {adhanChoice=policy.sound}
+        // The general adhan is read from Dhuhr, because Fajr has its own default recitation.
+        let general=model.settings.policies["DHUHR"]?.sound ?? policy.sound
+        if Recording.all.contains(where:{$0.id == general}) {adhanChoice=general}
         countdown=model.settings.liveActivitiesEnabled
     }
     // One choice for all five prayers; fine-tuning per prayer stays in Settings.
@@ -381,7 +385,7 @@ struct OnboardingView: View {
             switch alertChoice {
             case .alarm:
                 policy.delivery = .alarm
-                if !Recording.all.contains(where:{$0.id == policy.sound}) {policy.sound=adhanChoice}
+                if !Recording.all.contains(where:{$0.id == policy.sound}) {policy.sound=Recording.defaultID(for:id,general:adhanChoice)}
             case .notification:policy.delivery = .notification
             case .off:policy.delivery = .off
             }
@@ -395,7 +399,7 @@ struct OnboardingView: View {
         var updated=model.settings
         for id in prayers {
             var policy=updated.policies[id] ?? PrayerPolicy()
-            policy.sound=adhanChoice
+            policy.sound=Recording.defaultID(for:id,general:adhanChoice)
             updated.policies[id]=policy
         }
         model.settings=updated

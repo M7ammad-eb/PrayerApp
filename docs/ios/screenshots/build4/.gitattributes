@@ -1,2 +1,0 @@
-# Preserve exported manifest bytes so their recorded hashes survive Windows checkout.
-*-manifest-*.json -text

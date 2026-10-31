@@ -45,5 +45,6 @@
   "You'll be asked to allow alarms and notifications.": "سيُطلب منك السماح بالمنبهات والإشعارات.",
   "All prayers": "كل الصلوات",
   "Mixed": "مختلطة",
-  "Applies to all five prayers. You can still choose differently for each one below.": "يسري على الصلوات الخمس جميعها، ويمكنك اختيار نمط مختلف لكل صلاة في الأسفل."
+  "Applies to all five prayers. You can still choose differently for each one below.": "يسري على الصلوات الخمس جميعها، ويمكنك اختيار نمط مختلف لكل صلاة في الأسفل.",
+  "Fajr starts with its own adhan. You can change any prayer later in Settings.": "يبدأ الفجر بأذانه الخاص. يمكنك تغيير أي صلاة لاحقاً من الإعدادات."
 }

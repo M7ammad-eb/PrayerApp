@@ -1,2 +1,0 @@
-# Preserve exported manifest bytes across checkout.
-manifest-*.json -text

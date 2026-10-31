@@ -1,6 +1,17 @@
 import SwiftUI
 import SalatiCore
 
+// Calendar pages and date formatters are expensive to build; keep them between redraws so swiping
+// only lays out views. A reference type held in @State: changing it never triggers a redraw.
+private final class CalendarRenderCache {
+    var pages: [String: CalendarPage] = [:]
+    var input: DateFormatter?
+    var output: DateFormatter?
+    var weekdays: [String] = []
+    var fullDates: [String: String] = [:]
+    var signature = ""
+}
+
 struct HijriView: View {
     @EnvironmentObject var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -14,17 +25,29 @@ struct HijriView: View {
     @State private var pageIndex=0
     @State private var selected:CalendarCell?
     @State private var showAdjust=false
-    private let pageWindow=60
+    @State private var cache=CalendarRenderCache()
+    private let pageWindow=24
     // Cell fonts are bounded for seven readable columns; keep their padding bounded too.
     private var cellHeight:CGFloat {min(rowHeight,80)}
-    // Weekday header, six reserved week rows and the grid spacing between them.
-    private var gridHeight:CGFloat {cellHeight*6+52}
+    // Height of the weekday header plus the rows this month needs (5 or 6), with the spacing between them.
+    private func gridHeight(rows:Int)->CGFloat {CGFloat(rows)*(cellHeight+5)+22}
+    private var visibleRows:Int {max(5,min(6,(page?.cells.count ?? 42)/7))}
     private var page: CalendarPage? {monthPage(pageIndex)}
     private func monthPage(_ index:Int)->CalendarPage? {
-        if anchorMonth == nil,index == 0 {return model.calendarPage(monthDelta:0)}
+        let adjustment="\(model.settings.hijriOffset)|\(model.settings.hijriAnchor ?? "")"
+        if anchorMonth == nil,index == 0 {
+            let key="today|\(model.religiousTodayISO)|"+adjustment
+            if let hit=cache.pages[key] {return hit}
+            guard let built=model.calendarPage(monthDelta:0) else {return nil}
+            cache.pages[key]=built;return built
+        }
         guard let base=anchorMonth ?? model.calendarPage(monthDelta:0).map({HijriYearMonth(year:$0.year,month:$0.month)}) else {return nil}
         let month=index == 0 ? base : base.plusMonths(amount:Int32(index))
-        return try? model.engine.calendarMonth(year:month.year,month:month.month,storedOffset:Int32(model.settings.hijriOffset),anchor:model.settings.hijriAnchor)
+        let key="\(month.year)-\(month.month)|"+adjustment
+        if let hit=cache.pages[key] {return hit}
+        guard let built=try? model.engine.calendarMonth(year:month.year,month:month.month,storedOffset:Int32(model.settings.hijriOffset),anchor:model.settings.hijriAnchor) else {return nil}
+        if cache.pages.count>80 {cache.pages.removeAll()}
+        cache.pages[key]=built;return built
     }
     var body: some View {
         List {
@@ -39,7 +62,7 @@ struct HijriView: View {
                             Spacer(minLength:0)
                             Button {movePage(1)} label: {Image(systemName:"chevron.forward").frame(width:44,height:44)}.accessibilityLabel("Next month")
                         }.buttonStyle(.borderless)
-                    }
+                    }.listRowSeparator(.hidden)
                     // Page style follows the layout direction, so Arabic pages in the natural direction.
                     TabView(selection:$pageIndex) {
                         ForEach(-pageWindow...pageWindow,id:\.self) {index in
@@ -48,7 +71,9 @@ struct HijriView: View {
                                 else {Color.clear}
                             }.frame(maxHeight:.infinity,alignment:.top).tag(index)
                         }
-                    }.tabViewStyle(.page(indexDisplayMode:.never)).frame(height:gridHeight)
+                    }.tabViewStyle(.page(indexDisplayMode:.never)).frame(height:gridHeight(rows:visibleRows))
+                        .animation(reduceMotion ? nil : .easeInOut(duration:0.2),value:visibleRows)
+                        .listRowSeparator(.hidden)
                         .onChange(of:pageIndex) {_,index in
                             selected=nil
                             // Keep a window of pages around the visible month; re-centre near its edge.
@@ -77,9 +102,11 @@ struct HijriView: View {
                     }
                 }
                 Section {
-                    Text("Umm al-Qura calendar").font(.footnote).foregroundStyle(.secondary)
-                    Text("Local moon sighting may differ.").font(.footnote).foregroundStyle(.secondary)
-                }
+                    VStack(alignment:.leading,spacing:4) {
+                        Text("Umm al-Qura calendar")
+                        Text("Local moon sighting may differ.")
+                    }.font(.footnote).foregroundStyle(.secondary)
+                }.listRowBackground(Color.clear)
             } else {ContentUnavailableView("Calendar unavailable",systemImage:"calendar.badge.exclamationmark")}
         }.navigationTitle("Hijri calendar").navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -159,18 +186,28 @@ struct HijriView: View {
         anchorMonth=HijriYearMonth(year:page.year,month:page.month);pageIndex=0
         model.setCalendarOffset(pageMonthKey:page.monthKey,value:value);selected=nil
     }
+    // Formatters are built once per zone/language, not once per day cell.
+    private func prepareFormatters() {
+        let signature=model.zone.identifier+"|"+model.settings.language
+        guard cache.signature != signature || cache.input == nil else {return}
+        let input=DateFormatter();input.locale=Locale(identifier:"en_US_POSIX");input.calendar=model.calendar;input.timeZone=model.zone;input.dateFormat="yyyy-MM-dd"
+        let output=DateFormatter();output.locale=model.locale;output.calendar=model.calendar;output.timeZone=model.zone
+        output.setLocalizedDateFormatFromTemplate("EEEE d MMMM yyyy")
+        let symbols=DateFormatter();symbols.locale=model.locale
+        cache.input=input;cache.output=output;cache.fullDates=[:];cache.signature=signature
+        cache.weekdays=(0..<7).map {symbols.veryShortStandaloneWeekdaySymbols[($0+6)%7]}
+    }
     private func gregorian(_ iso:String,full:Bool=false)->String {
         let pieces=iso.split(separator:"-")
         if !full,pieces.count == 3,let day=Int(pieces[2]),let month=Int(pieces[1]) {return "\(day)/\(month)"}
-        let input=DateFormatter();input.locale=Locale(identifier:"en_US_POSIX");input.calendar=model.calendar;input.timeZone=model.zone;input.dateFormat="yyyy-MM-dd"
-        guard let date=input.date(from:iso) else {return iso}
-        let output=DateFormatter();output.locale=model.locale;output.calendar=model.calendar;output.timeZone=model.zone
-        output.setLocalizedDateFormatFromTemplate("EEEE d MMMM yyyy")
-        return output.string(from:date)
+        prepareFormatters()
+        if let hit=cache.fullDates[iso] {return hit}
+        guard let date=cache.input?.date(from:iso),let text=cache.output?.string(from:date) else {return iso}
+        cache.fullDates[iso]=text;return text
     }
     private func weekday(_ index:Int)->String {
-        let f=DateFormatter();f.locale=model.locale
-        return f.veryShortStandaloneWeekdaySymbols[(index+6)%7]
+        prepareFormatters()
+        return cache.weekdays.indices.contains(index) ? cache.weekdays[index] : ""
     }
 }
 struct QiblaView: View {
@@ -186,6 +223,7 @@ struct QiblaContent: View {
     @State private var compass:CompassState?
     @State private var alignmentFeedback=0
     @State private var showCalibration=false
+    @State private var availableHeight:CGFloat=0
     let reduceMotion:Bool
     private let cardShape=RoundedRectangle(cornerRadius:24,style:.continuous)
     var body:some View {
@@ -195,13 +233,10 @@ struct QiblaContent: View {
                     let bearing=model.engine.qiblaBearing(latitude:location.latitude,longitude:location.longitude)
                     let distance=model.engine.qiblaDistance(latitude:location.latitude,longitude:location.longitude)
                     let rotation=compass?.rotation ?? bearing
-                    VStack(spacing:6) {
-                        Text("Find your Qibla").font(.title2.bold())
-                        Text("Lay your phone flat and turn until the Kaaba badge sits at the top.")
-                            .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                    }.padding(.horizontal,20)
+                    Text("Lay your phone flat and turn until the Kaaba badge sits at the top.")
+                        .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal,20)
                     QiblaCompassFace(pointerRotation:rotation,ringRotation:rotation-bearing,aligned:compass?.aligned == true,reduceMotion:reduceMotion)
-                        .frame(maxWidth:360).aspectRatio(1,contentMode:.fit)
+                        .frame(maxWidth:compassSide).aspectRatio(1,contentMode:.fit)
                         .accessibilityElement(children:.ignore)
                         .accessibilityLabel("Qibla compass")
                         .accessibilityValue(compass?.aligned == true ? "You're facing the Qibla" : (compass?.reliable == true ? "Following true heading" : "Heading unavailable or unreliable"))
@@ -215,6 +250,7 @@ struct QiblaContent: View {
                 } else {ContentUnavailableView("Choose your location",systemImage:"location")}
             }.padding(.horizontal,16).padding(.top,8).padding(.bottom,24).frame(maxWidth:560).frame(maxWidth:.infinity)
         }
+        .onGeometryChange(for:CGFloat.self) {proxy in proxy.size.height} action: {height in availableHeight=height}
         .background(Color(uiColor:.systemGroupedBackground))
         .navigationTitle("Qibla").navigationBarTitleDisplayMode(.inline)
         .sensoryFeedback(.alignment,trigger:alignmentFeedback)
@@ -233,6 +269,9 @@ struct QiblaContent: View {
             else {service.stopHeading();compass=nil;tracker=CompassAlignmentTracker()}
         }
     }
+    // The compass takes whatever height is left after the text, status pill and details card,
+    // so the whole screen fits without scrolling on normal iPhones.
+    private var compassSide:CGFloat {availableHeight>0 ? min(360,max(220,availableHeight-370)) : 360}
     private func updateCompass() {
         guard let location=model.settings.location else {compass=nil;return}
         let bearing=model.engine.qiblaBearing(latitude:location.latitude,longitude:location.longitude)
