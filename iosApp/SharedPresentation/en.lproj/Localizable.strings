@@ -1,5 +1,7 @@
+"%@ is at %@, in %@." = "%@ is at %@, in %@.";
 "24-hour time" = "24-hour time";
 "A banner and sound at prayer time." = "A banner and sound at prayer time.";
+"A large countdown to your next prayer, ideal for StandBy." = "A large countdown to your next prayer, ideal for StandBy.";
 "A moment for prayer" = "A moment for prayer";
 "A regional method is not available for this time zone. Muslim World League and Standard Asr provide a reviewable starting point." = "A regional method is not available for this time zone. Muslim World League and Standard Asr provide a reviewable starting point.";
 "A starting point for your location, with the freedom to adjust." = "A starting point for your location, with the freedom to adjust.";
@@ -92,6 +94,7 @@
 "Couldn’t find your location. Try again or choose a city." = "Couldn’t find your location. Try again or choose a city.";
 "Countdown and reminders" = "Countdown and reminders";
 "Countdown closed" = "Countdown closed";
+"Countdown started." = "Countdown started.";
 "Current location" = "Current location";
 "Current prayer" = "Current prayer";
 "Customize alerts" = "Customize alerts";
@@ -144,6 +147,7 @@
 "How should Salati alert you?" = "How should Salati alert you?";
 "ISHA" = "Isha";
 "ISNA" = "Islamic Society of North America (ISNA)";
+"Iftar" = "Iftar";
 "Illustrative gallery data. These are app-rendered previews of the actual widget and activity views, not installed system surfaces." = "Illustrative gallery data. These are app-rendered previews of the actual widget and activity views, not installed system surfaces.";
 "Inspect preview" = "Inspect preview";
 "Isha" = "Isha";
@@ -164,6 +168,7 @@
 "Listen now without changing your alerts." = "Listen now without changing your alerts.";
 "Listen to adhan" = "Listen to adhan";
 "Live Activities are disabled" = "Live Activities are disabled";
+"Live Activities are turned off for Salati." = "Live Activities are turned off for Salati.";
 "Live Activity · Expired content" = "Live Activity · Expired content";
 "Live Activity · Lock Screen" = "Live Activity · Lock Screen";
 "Local diagnostics" = "Local diagnostics";
@@ -227,6 +232,7 @@
 "Open Salati after installing or changing location to update your widgets." = "Open Salati after installing or changing location to update your widgets.";
 "Open Salati regularly to keep future alerts ready." = "Open Salati regularly to keep future alerts ready.";
 "Open Salati to keep prayer alerts up to date." = "Open Salati to keep prayer alerts up to date.";
+"Open Salati to load your prayer times." = "Open Salati to load your prayer times.";
 "Open Salati to prepare Live Activities." = "Open Salati to prepare Live Activities.";
 "Open Salati to refresh" = "Open Salati to refresh";
 "Open iOS Settings" = "Open iOS Settings";
@@ -247,6 +253,7 @@
 "Prayer countdown progress" = "Prayer countdown progress";
 "Prayer countdowns start automatically when enabled. Open Salati regularly to replenish future alerts." = "Prayer countdowns start automatically when enabled. Open Salati regularly to replenish future alerts.";
 "Prayer event" = "Prayer event";
+"Prayer glance" = "Prayer glance";
 "Prayer time ended" = "Prayer time ended";
 "Prayer time is approaching" = "Prayer time is approaching";
 "Prayer times" = "Prayer times";
@@ -271,6 +278,7 @@
 "RAMADAN_ODD_NIGHT" = "One of Ramadan’s odd nights";
 "RAMADAN_START" = "Beginning of Ramadan";
 "RUSSIA" = "Spiritual Administration of Muslims of Russia (SAMR)";
+"Ramadan" = "Ramadan";
 "Ready" = "Ready";
 "Ready for your day" = "Ready for your day";
 "Recalibrate" = "Recalibrate";
@@ -278,6 +286,7 @@
 "Remaining" = "Remaining";
 "Reminder before prayer" = "Reminder before prayer";
 "Reminders can stay on when prayer alerts are off." = "Reminders can stay on when prayer alerts are off.";
+"Reminds you before Fajr during Ramadan only." = "Reminds you before Fajr during Ramadan only.";
 "Requesting location permission…" = "Requesting location permission…";
 "Reset" = "Reset";
 "Reset active adjustment" = "Reset active adjustment";
@@ -319,11 +328,13 @@
 "Show countdown on Lock Screen" = "Show countdown on Lock Screen";
 "Show date" = "Show date";
 "Show sunrise in schedule" = "Show sunrise in schedule";
+"Shows the countdown to the next prayer in the Dynamic Island and on the Lock Screen." = "Shows the countdown to the next prayer in the Dynamic Island and on the Lock Screen.";
 "Silent" = "Silent";
 "Small widget" = "Small widget";
 "Sound" = "Sound";
 "Sound for advance reminders" = "Sound for advance reminders";
 "Standard" = "Standard";
+"Start prayer countdown" = "Start prayer countdown";
 "Start system Live Activity preview" = "Start system Live Activity preview";
 "Start using Salati" = "Start using Salati";
 "Starts 15 minutes before each prayer." = "Starts 15 minutes before each prayer.";
@@ -332,6 +343,8 @@
 "Stop prayer alarm" = "Stop prayer alarm";
 "Stored only on this phone. Scheduling acceptance does not prove audible delivery. A notification response records user interaction, not the actual delivery instant." = "Stored only on this phone. Scheduling acceptance does not prove audible delivery. A notification response records user interaction, not the actual delivery instant.";
 "Strong" = "Strong";
+"Suhoor ends" = "Suhoor ends";
+"Suhoor reminder" = "Suhoor reminder";
 "Sunrise" = "Sunrise";
 "System" = "System";
 "System Live Activity preview started" = "System Live Activity preview started";
@@ -346,6 +359,7 @@
 "TASUA" = "Tasu‘a";
 "TEHRAN" = "Institute of Geophysics, University of Tehran";
 "TURKEY" = "Presidency of Religious Affairs, Turkey (Diyanet)";
+"Tells you the next prayer and how long until it." = "Tells you the next prayer and how long until it.";
 "Test alerts cancelled" = "Test alerts cancelled";
 "Test an alert" = "Test an alert";
 "Test an alert for delivery in one minute, or listen to a recording immediately." = "Test an alert for delivery in one minute, or listen to a recording immediately.";
@@ -377,7 +391,9 @@
 "UMM_AL_QURA" = "Umm Al-Qura University, Makkah";
 "Umm al-Qura calendar" = "Umm al-Qura calendar";
 "Unable to update" = "Unable to update";
+"Until iftar" = "Until iftar";
 "Until prayer" = "Until prayer";
+"Until suhoor ends" = "Until suhoor ends";
 "Up next" = "Up next";
 "Up to six days are prepared. Open Salati regularly to replenish the schedule; background refresh is best effort." = "Up to six days are prepared. Open Salati regularly to replenish the schedule; background refresh is best effort.";
 "Use Test an alert to check this recording on your iPhone." = "Use Test an alert to check this recording on your iPhone.";

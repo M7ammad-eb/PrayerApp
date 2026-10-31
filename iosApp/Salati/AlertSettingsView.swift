@@ -44,6 +44,12 @@ struct NotificationSettingsView: View {
                     settingsButton
                 }
             } header:{Text("Countdown and reminders")} footer:{Text("See a countdown 15 minutes before prayer.")}
+            Section {
+                Picker("Suhoor reminder",selection:$model.settings.suhoorReminder) {
+                    Text("Off").tag(0)
+                    ForEach([15,30,45,60],id:\.self) {Text("\($0) min").tag($0)}
+                }
+            } header: {Text("Ramadan")} footer: {Text("Reminds you before Fajr during Ramadan only.")}
             if notificationsSelected || alarmsSelected {
                 Section {
                     if notificationsSelected {

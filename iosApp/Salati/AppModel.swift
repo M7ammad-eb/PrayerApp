@@ -34,6 +34,8 @@ import CoreLocation
         let system24=Self.systemUses24Hour
         if settings.use24Hour != system24 {settings.use24Hour=system24}
     }
+    // Hijri month 9. The calendar already applies the Maghrib boundary and any adjustment.
+    var isRamadan:Bool {calendarPage(monthDelta:0)?.month == 9}
     static var systemUses24Hour:Bool {
         !(DateFormatter.dateFormat(fromTemplate:"j",options:0,locale:Locale.current) ?? "").contains("a")
     }
@@ -196,7 +198,15 @@ import CoreLocation
                 }
             }
             let inputs=all.map {PlanEvent(id:$0.id,prayer:String($0.id.split(separator:".").last ?? ""),title:$0.title,epochSeconds:$0.date.timeIntervalSince1970)}
-            let policies=configuration.policies.map {PlanPolicy(prayer:$0.key,delivery:$0.value.delivery.rawValue,reminderMinutes:Int32($0.value.reminder))}
+            // During Ramadan the Fajr reminder is at least the chosen suhoor reminder. The planner works
+            // per prayer, so the last few days of the 6-day window can extend just past Ramadan.
+            var planned=configuration.policies
+            if configuration.suhoorReminder>0,isRamadan {
+                var fajr=planned["FAJR"] ?? PrayerPolicy()
+                fajr.reminder=max(fajr.reminder,configuration.suhoorReminder)
+                planned["FAJR"]=fajr
+            }
+            let policies=planned.map {PlanPolicy(prayer:$0.key,delivery:$0.value.delivery.rawValue,reminderMinutes:Int32($0.value.reminder))}
             let plan=SharedScheduling.shared.plan(events:inputs,policies:policies,nowEpoch:now.timeIntervalSince1970,liveActivitiesEnabled:configuration.liveActivitiesEnabled)
             let alerts=plan.filter {$0.kind != "live"}.map {item in
                 ScheduledAlert(id:item.id,prayer:item.prayer,title:item.title,date:Date(timeIntervalSince1970:item.triggerEpoch),prayerDate:Date(timeIntervalSince1970:item.eventEpoch),

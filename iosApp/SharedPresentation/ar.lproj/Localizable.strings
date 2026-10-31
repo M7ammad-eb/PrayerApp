@@ -1,5 +1,7 @@
+"%@ is at %@, in %@." = "%@ عند %@، بعد %@.";
 "24-hour time" = "تنسيق 24 ساعة";
 "A banner and sound at prayer time." = "إشعار وصوت عند وقت الصلاة.";
+"A large countdown to your next prayer, ideal for StandBy." = "عدّ تنازلي كبير للصلاة القادمة، مناسب لوضع الاستعداد.";
 "A moment for prayer" = "لحظة للصلاة";
 "A regional method is not available for this time zone. Muslim World League and Standard Asr provide a reviewable starting point." = "لا تتوفر توصية إقليمية لهذه المنطقة الزمنية. يمكنك البدء برابطة العالم الإسلامي والعصر القياسي، ثم مراجعة اختيارك.";
 "A starting point for your location, with the freedom to adjust." = "إعداد مناسب لموقعك، ويمكنك تعديله كما تفضّل.";
@@ -92,6 +94,7 @@
 "Couldn’t find your location. Try again or choose a city." = "تعذّر تحديد موقعك. حاول مجددًا أو اختر مدينة.";
 "Countdown and reminders" = "العدّ التنازلي والتذكير";
 "Countdown closed" = "أُغلق العدّ التنازلي";
+"Countdown started." = "بدأ العد التنازلي.";
 "Current location" = "الموقع الحالي";
 "Current prayer" = "الصلاة الحالية";
 "Customize alerts" = "تخصيص التنبيهات";
@@ -144,6 +147,7 @@
 "How should Salati alert you?" = "كيف تريد أن ينبهك صلاتي؟";
 "ISHA" = "العشاء";
 "ISNA" = "الجمعية الإسلامية لأمريكا الشمالية (ISNA)";
+"Iftar" = "الإفطار";
 "Illustrative gallery data. These are app-rendered previews of the actual widget and activity views, not installed system surfaces." = "بيانات توضيحية للمعرض؛ هذه معاينات داخل التطبيق لعناصر العرض الفعلية، وليست عناصر مثبتة على شاشات النظام.";
 "Inspect preview" = "فحص المعاينة";
 "Isha" = "العشاء";
@@ -164,6 +168,7 @@
 "Listen now without changing your alerts." = "استمع الآن دون تغيير تنبيهاتك.";
 "Listen to adhan" = "الاستماع إلى الأذان";
 "Live Activities are disabled" = "الأنشطة المباشرة غير مفعلة";
+"Live Activities are turned off for Salati." = "الأنشطة المباشرة متوقفة لصلاتي.";
 "Live Activity · Expired content" = "نشاط مباشر · محتوى منتهٍ";
 "Live Activity · Lock Screen" = "نشاط مباشر · شاشة القفل";
 "Local diagnostics" = "التشخيص المحلي";
@@ -227,6 +232,7 @@
 "Open Salati after installing or changing location to update your widgets." = "افتح صلاتي بعد التثبيت أو تغيير الموقع لتحديث الويدجت.";
 "Open Salati regularly to keep future alerts ready." = "افتح صلاتي بانتظام لتجهيز التنبيهات القادمة.";
 "Open Salati to keep prayer alerts up to date." = "افتح صلاتي لتحديث تنبيهات الصلاة.";
+"Open Salati to load your prayer times." = "افتح صلاتي لتحميل مواقيت الصلاة.";
 "Open Salati to prepare Live Activities." = "افتح صلاتي لتجهيز الأنشطة المباشرة.";
 "Open Salati to refresh" = "افتح صلاتي لتحديث المواقيت";
 "Open iOS Settings" = "فتح إعدادات iOS";
@@ -247,6 +253,7 @@
 "Prayer countdown progress" = "تقدم العد التنازلي للصلاة";
 "Prayer countdowns start automatically when enabled. Open Salati regularly to replenish future alerts." = "يبدأ العد التنازلي تلقائيًا عند تفعيله. افتح صلاتي بانتظام لتجديد المواعيد القادمة.";
 "Prayer event" = "موعد الصلاة";
+"Prayer glance" = "نظرة سريعة";
 "Prayer time ended" = "انتهى وقت الصلاة";
 "Prayer time is approaching" = "اقترب موعد الصلاة";
 "Prayer times" = "مواقيت الصلاة";
@@ -271,6 +278,7 @@
 "RAMADAN_ODD_NIGHT" = "ليلة وترية من العشر الأواخر";
 "RAMADAN_START" = "بداية شهر رمضان";
 "RUSSIA" = "الإدارة الدينية لمسلمي روسيا (SAMR)";
+"Ramadan" = "رمضان";
 "Ready" = "جاهز";
 "Ready for your day" = "جاهز ليومك";
 "Recalibrate" = "إعادة المعايرة";
@@ -278,6 +286,7 @@
 "Remaining" = "المتبقي";
 "Reminder before prayer" = "تذكير قبل الصلاة";
 "Reminders can stay on when prayer alerts are off." = "يمكن إبقاء التذكيرات مفعّلة عند إيقاف تنبيهات الصلاة.";
+"Reminds you before Fajr during Ramadan only." = "يذكّرك قبل الفجر في رمضان فقط.";
 "Requesting location permission…" = "جارٍ طلب إذن الموقع…";
 "Reset" = "إعادة الضبط";
 "Reset active adjustment" = "إعادة ضبط التعديل النشط";
@@ -319,11 +328,13 @@
 "Show countdown on Lock Screen" = "إظهار العد التنازلي على شاشة القفل";
 "Show date" = "إظهار التاريخ";
 "Show sunrise in schedule" = "إظهار الشروق في الجدول";
+"Shows the countdown to the next prayer in the Dynamic Island and on the Lock Screen." = "يعرض العد التنازلي للصلاة القادمة في الجزيرة الديناميكية وعلى شاشة القفل.";
 "Silent" = "صامت";
 "Small widget" = "ودجت صغير";
 "Sound" = "الصوت";
 "Sound for advance reminders" = "صوت التذكير المسبق";
 "Standard" = "قياسي";
+"Start prayer countdown" = "بدء العد التنازلي للصلاة";
 "Start system Live Activity preview" = "بدء معاينة نشاط مباشر في النظام";
 "Start using Salati" = "ابدأ استخدام صلاتي";
 "Starts 15 minutes before each prayer." = "يبدأ قبل كل صلاة بـ 15 دقيقة.";
@@ -332,6 +343,8 @@
 "Stop prayer alarm" = "إيقاف منبّه الصلاة";
 "Stored only on this phone. Scheduling acceptance does not prove audible delivery. A notification response records user interaction, not the actual delivery instant." = "يُحفظ على هذا الهاتف فقط. قبول الجدولة لا يثبت تشغيل الصوت. استجابة الإشعار تسجّل تفاعل المستخدم، وليس وقت وصوله الفعلي.";
 "Strong" = "قوية";
+"Suhoor ends" = "نهاية السحور";
+"Suhoor reminder" = "تذكير السحور";
 "Sunrise" = "الشروق";
 "System" = "النظام";
 "System Live Activity preview started" = "بدأت معاينة النشاط المباشر في النظام";
@@ -346,6 +359,7 @@
 "TASUA" = "تاسوعاء";
 "TEHRAN" = "معهد الجيوفيزياء بجامعة طهران";
 "TURKEY" = "رئاسة الشؤون الدينية التركية (ديانت)";
+"Tells you the next prayer and how long until it." = "يخبرك بالصلاة القادمة والوقت المتبقي لها.";
 "Test alerts cancelled" = "أُلغيت تنبيهات الاختبار";
 "Test an alert" = "اختبار تنبيه";
 "Test an alert for delivery in one minute, or listen to a recording immediately." = "اختبر وصول تنبيه بعد دقيقة، أو استمع إلى تسجيل فورًا.";
@@ -377,7 +391,9 @@
 "UMM_AL_QURA" = "جامعة أم القرى (مكة المكرمة)";
 "Umm al-Qura calendar" = "تقويم أم القرى";
 "Unable to update" = "تعذر التحديث";
+"Until iftar" = "حتى الإفطار";
 "Until prayer" = "حتى الصلاة";
+"Until suhoor ends" = "حتى نهاية السحور";
 "Up next" = "الموعد القادم";
 "Up to six days are prepared. Open Salati regularly to replenish the schedule; background refresh is best effort." = "تُجهز مواقيت ستة أيام. افتح صلاتي بانتظام لتجديد الجدول؛ التحديث في الخلفية غير مضمون.";
 "Use Test an alert to check this recording on your iPhone." = "استخدم «اختبار تنبيه» لتجربة هذا التسجيل على iPhone.";

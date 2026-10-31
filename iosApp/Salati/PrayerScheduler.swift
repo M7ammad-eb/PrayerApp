@@ -409,6 +409,22 @@ struct ScheduleDiagnostic: Codable {
         record("Live Activity closed",result:eventID)
         armLiveActivityExpiry()
     }
+    // Starts the countdown for the next prayer now (Siri, Shortcuts, Action button). Manual
+    // activities carry their own id prefix so the scheduled plan does not end them.
+    func startNextPrayerCountdown() async -> Bool {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled,let snapshot=ScheduleSnapshot.load(),
+              let next=snapshot.nextEvent(after:Date()) else {return false}
+        let eventID="salati.manual."+next.id
+        let state=PrayerActivityAttributes.ContentState(title:next.title,date:next.date,eventID:eventID,language:snapshot.language,start:Date(),
+            timeText:next.timeText,endMessage:AppLanguage.text("It is time for prayer",language:snapshot.language))
+        for old in Activity<PrayerActivityAttributes>.activities where old.content.state.eventID == eventID {await liveLifecycle.finish(id:old.id)}
+        do {
+            _=try Activity<PrayerActivityAttributes>.request(attributes:PrayerActivityAttributes(city:snapshot.city),content:ActivityContent(state:state,staleDate:next.date),pushType:nil)
+            record("Live Activity started from shortcut",result:eventID)
+            observeLiveActivityStates();armLiveActivityExpiry()
+            return true
+        } catch {record("Live Activity from shortcut failed",result:error.localizedDescription);return false}
+    }
     func cleanupLiveActivities(enabled:Bool=true) async {
         await liveLifecycle.cleanup(enabled:enabled)
         observeLiveActivityStates()
@@ -477,7 +493,7 @@ struct ScheduleDiagnostic: Codable {
         result.outdated=future.filter {item in !result.accepted.contains(where:{$0.id == item.id}) && Activity<PrayerActivityAttributes>.activities.contains(where:{$0.content.state.eventID == item.id})}
         if batch.blocked {record("Live Activity batch stopped",result:"capacity/authorization/visibility prevents new requests; existing matching activities retained; remaining events use notification fallback")}
         if result.accepted.count == future.count {
-            for old in Activity<PrayerActivityAttributes>.activities where !desired.contains(where:{$0.id == old.content.state.eventID}) && !old.content.state.eventID.hasPrefix("salati.showcase.") {await liveLifecycle.finish(id:old.id)}
+            for old in Activity<PrayerActivityAttributes>.activities where !desired.contains(where:{$0.id == old.content.state.eventID}) && !old.content.state.eventID.hasPrefix("salati.showcase.") && !old.content.state.eventID.hasPrefix("salati.manual.") {await liveLifecycle.finish(id:old.id)}
         }
         await liveLifecycle.cleanup()
         observeLiveActivityStates();armLiveActivityExpiry()

@@ -63,6 +63,33 @@ struct PrayerWidget:Widget {
             .supportedFamilies([.systemSmall,.systemMedium,.systemLarge])
     }
 }
+// A large next-prayer countdown. A small widget fills the screen in StandBy, so this reads from across a room.
+struct PrayerGlanceWidget:Widget {
+    let kind="SalatiGlance"
+    var body:some WidgetConfiguration {
+        AppIntentConfiguration(kind:kind,intent:PrayerWidgetOptions.self,provider:PrayerProvider()) {entry in
+            PrayerGlanceView(entry:entry).containerBackground(.fill.tertiary,for:.widget)
+        }.configurationDisplayName("Prayer glance").description("A large countdown to your next prayer, ideal for StandBy.")
+            .supportedFamilies([.systemSmall])
+    }
+}
+private struct PrayerGlanceView:View {
+    let entry:PrayerEntry
+    var body:some View {
+        Group {
+            if let next=entry.next {
+                VStack(alignment:.leading,spacing:4) {
+                    Text(next.title).font(.title3.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8).widgetAccentable()
+                    Spacer(minLength:0)
+                    Countdown(date:next.date,now:entry.date,width:140).font(.system(size:32,weight:.semibold,design:.rounded)).widgetAccentable()
+                    Text(next.timeText).font(.subheadline.weight(.medium)).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
+                }.frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.leading)
+            } else {
+                PrayerWidgetContent(entry:entry,family:.systemSmall)
+            }
+        }.environment(\.locale,entry.locale).environment(\.layoutDirection,entry.direction)
+    }
+}
 struct PrayerHorizontalWidget:Widget {
     let kind="SalatiPrayerHorizontal"
     var body:some WidgetConfiguration {
@@ -253,8 +280,8 @@ struct PrayerWidgetContent:View {
 struct PrayerLiveActivity:Widget {
     var body:some WidgetConfiguration {
         ActivityConfiguration(for:PrayerActivityAttributes.self) {context in
-            PrayerActivityCard(city:context.attributes.city,state:context.state,isExpired:activityIsExpired(context))
-                .padding(14).activityBackgroundTint(Color.black.opacity(0.08)).activitySystemActionForegroundColor(.primary)
+            PrayerActivityLockScreen(city:context.attributes.city,state:context.state,isExpired:activityIsExpired(context))
+                .activityBackgroundTint(Color.black.opacity(0.08)).activitySystemActionForegroundColor(.primary)
         } dynamicIsland: {context in
             DynamicIsland {
                 // Name and countdown sit beside the sensor housing; the lower region holds
@@ -277,7 +304,32 @@ struct PrayerLiveActivity:Widget {
                 PrayerActivityMinimalName(state:context.state)
             }.contentMargins(.horizontal,18,for:.expanded)
                 .contentMargins(.vertical,12,for:.expanded).keylineTint(Color.accentColor)
-        }
+        }.supplementalActivityFamilies([.small])
+    }
+}
+// Lock Screen card on iPhone; a compact name-and-countdown layout in the Apple Watch Smart Stack.
+struct PrayerActivityLockScreen:View {
+    @Environment(\.activityFamily) private var family
+    let city:String
+    let state:PrayerActivityAttributes.ContentState
+    var isExpired=false
+    var body:some View {
+        if family == .small {PrayerActivityWatch(state:state,isExpired:isExpired)}
+        else {PrayerActivityCard(city:city,state:state,isExpired:isExpired).padding(14)}
+    }
+}
+struct PrayerActivityWatch:View {
+    let state:PrayerActivityAttributes.ContentState
+    var isExpired=false
+    var body:some View {
+        VStack(alignment:.leading,spacing:2) {
+            HStack(spacing:6) {
+                Image(systemName:prayerSymbol(state.eventID)).font(.footnote.weight(.semibold)).foregroundStyle(Color.accentColor).accessibilityHidden(true)
+                Text(state.title).font(.headline).lineLimit(1).minimumScaleFactor(0.8)
+            }
+            if isExpired {Text(activityEndMessage(state)).font(.footnote.weight(.medium)).lineLimit(2)}
+            else {Countdown(date:state.date,width:120,alignment:.leading).font(.system(.title2,design:.rounded,weight:.semibold)).foregroundStyle(Color.accentColor)}
+        }.frame(maxWidth:.infinity,alignment:.leading).activityEnvironment(state)
     }
 }
 private func activityIsExpired(_ context:ActivityViewContext<PrayerActivityAttributes>)->Bool {
@@ -390,8 +442,8 @@ struct PrayerActivityExpanded:View {
 struct PrayerActivityCompactName:View {
     let state:PrayerActivityAttributes.ContentState
     var body:some View {
-        Image(systemName:prayerSymbol(state.eventID)).font(.system(size:14,weight:.semibold))
-            .foregroundStyle(Color.accentColor).accessibilityLabel(Text(state.title))
+        Image(systemName:prayerSymbol(state.eventID)).font(.system(size:15,weight:.semibold))
+            .foregroundStyle(Color.accentColor).frame(width:44,alignment:.trailing).accessibilityLabel(Text(state.title))
     }
 }
 // Minimal presentation: a progress ring that fills towards the prayer, with the prayer's glyph
@@ -413,8 +465,8 @@ struct PrayerActivityCompactTime:View {
     var isExpired=false
     var body:some View {
         Group {
-            if isExpired {Image(systemName:"checkmark").font(.system(size:13,weight:.semibold)).foregroundStyle(Color.accentColor)}
-            else {Countdown(date:state.date,width:46,alignment:.trailing).font(.system(size:13,weight:.medium)).monospacedDigit().foregroundStyle(Color.accentColor)}
+            if isExpired {Image(systemName:"checkmark").font(.system(size:13,weight:.semibold)).foregroundStyle(Color.accentColor).frame(width:44,alignment:.leading)}
+            else {Countdown(date:state.date,width:44,alignment:.leading).font(.system(size:13,weight:.semibold)).monospacedDigit().foregroundStyle(Color.accentColor)}
         }
     }
 }
@@ -585,5 +637,5 @@ private struct RendererPreviewDetail<Content:View>:View {
     }
 }
 #else
-@main struct SalatiWidgetBundle:WidgetBundle {var body:some Widget {PrayerWidget();PrayerHorizontalWidget();PrayerAccessoryWidget();PrayerLiveActivity()}}
+@main struct SalatiWidgetBundle:WidgetBundle {var body:some Widget {PrayerWidget();PrayerGlanceWidget();PrayerHorizontalWidget();PrayerAccessoryWidget();PrayerLiveActivity()}}
 #endif

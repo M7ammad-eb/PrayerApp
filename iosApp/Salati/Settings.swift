@@ -34,10 +34,11 @@ struct Settings: Codable, Equatable {
     var onboardingComplete = false
     var liveActivitiesEnabled = false
     var reminderSound = true
+    var suhoorReminder = 0
     var policies = Dictionary(uniqueKeysWithValues: ["FAJR","DHUHR","ASR","MAGHRIB","ISHA"].map { ($0, PrayerPolicy()) })
     init() {}
     enum CodingKeys: String, CodingKey {
-        case calculationMethodOverridden,asrOverridden,location,method,hanafi,highLatitude,adjustments,hijriOffset,hijriAnchor,language,appearance,use24Hour,onboardingComplete,policies,liveActivitiesEnabled,reminderSound
+        case calculationMethodOverridden,asrOverridden,location,method,hanafi,highLatitude,adjustments,hijriOffset,hijriAnchor,language,appearance,use24Hour,onboardingComplete,policies,liveActivitiesEnabled,reminderSound,suhoorReminder
     }
     init(from decoder:Decoder) throws {
         self.init()
@@ -60,6 +61,7 @@ struct Settings: Codable, Equatable {
         policies=try c.decodeIfPresent([String:PrayerPolicy].self,forKey:.policies) ?? policies
         liveActivitiesEnabled=try c.decodeIfPresent(Bool.self,forKey:.liveActivitiesEnabled) ?? false
         reminderSound=try c.decodeIfPresent(Bool.self,forKey:.reminderSound) ?? true
+        suhoorReminder=try c.decodeIfPresent(Int.self,forKey:.suhoorReminder) ?? 0
     }
     // Widgets consume only ScheduleSnapshot. App preferences must remain available even
     // when a signer changes or removes shared-group access.

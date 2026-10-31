@@ -46,5 +46,21 @@
   "All prayers": "كل الصلوات",
   "Mixed": "مختلطة",
   "Applies to all five prayers. You can still choose differently for each one below.": "يسري على الصلوات الخمس جميعها، ويمكنك اختيار نمط مختلف لكل صلاة في الأسفل.",
-  "Fajr starts with its own adhan. You can change any prayer later in Settings.": "يبدأ الفجر بأذانه الخاص. يمكنك تغيير أي صلاة لاحقاً من الإعدادات."
+  "Fajr starts with its own adhan. You can change any prayer later in Settings.": "يبدأ الفجر بأذانه الخاص. يمكنك تغيير أي صلاة لاحقاً من الإعدادات.",
+  "Prayer glance": "نظرة سريعة",
+  "A large countdown to your next prayer, ideal for StandBy.": "عدّ تنازلي كبير للصلاة القادمة، مناسب لوضع الاستعداد.",
+  "%@ is at %@, in %@.": "%@ عند %@، بعد %@.",
+  "Open Salati to load your prayer times.": "افتح صلاتي لتحميل مواقيت الصلاة.",
+  "Start prayer countdown": "بدء العد التنازلي للصلاة",
+  "Tells you the next prayer and how long until it.": "يخبرك بالصلاة القادمة والوقت المتبقي لها.",
+  "Shows the countdown to the next prayer in the Dynamic Island and on the Lock Screen.": "يعرض العد التنازلي للصلاة القادمة في الجزيرة الديناميكية وعلى شاشة القفل.",
+  "Countdown started.": "بدأ العد التنازلي.",
+  "Live Activities are turned off for Salati.": "الأنشطة المباشرة متوقفة لصلاتي.",
+  "Ramadan": "رمضان",
+  "Suhoor ends": "نهاية السحور",
+  "Iftar": "الإفطار",
+  "Until suhoor ends": "حتى نهاية السحور",
+  "Until iftar": "حتى الإفطار",
+  "Suhoor reminder": "تذكير السحور",
+  "Reminds you before Fajr during Ramadan only.": "يذكّرك قبل الفجر في رمضان فقط."
 }

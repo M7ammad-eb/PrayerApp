@@ -1,6 +1,32 @@
 import SwiftUI
 import SalatiCore
 
+// Suhoor ends at Fajr and the fast ends at Maghrib; the nearer of the two gets a live countdown.
+private struct RamadanSection: View {
+    @EnvironmentObject var model: AppModel
+    var body: some View {
+        let events=model.displayEvents
+        if let fajr=events.first(where:{$0.id.hasSuffix(".FAJR")}),let maghrib=events.first(where:{$0.id.hasSuffix(".MAGHRIB")}) {
+            let now=Date()
+            let upcoming=[fajr,maghrib].filter {$0.date>now}.min {$0.date<$1.date}
+            Section {
+                LabeledContent {
+                    Text(fajr.timeText).monospacedDigit().environment(\.layoutDirection,.leftToRight)
+                } label: {Label("Suhoor ends",systemImage:"moon.stars")}
+                LabeledContent {
+                    Text(maghrib.timeText).monospacedDigit().environment(\.layoutDirection,.leftToRight)
+                } label: {Label("Iftar",systemImage:"sunset")}
+                if let upcoming {
+                    LabeledContent {
+                        Text(timerInterval:now...upcoming.date,countsDown:true).monospacedDigit().foregroundStyle(Color.accentColor)
+                            .environment(\.locale,Locale(identifier:"en_US_POSIX")).environment(\.layoutDirection,.leftToRight)
+                    } label: {Text(LocalizedStringKey(upcoming.id.hasSuffix(".FAJR") ? "Until suhoor ends" : "Until iftar"))}
+                }
+            } header: {Text("Ramadan")}
+        }
+    }
+}
+
 struct HomeView: View {
     @EnvironmentObject var model: AppModel
     @State private var showPlaces=false
@@ -70,6 +96,7 @@ struct HomeView: View {
                             .listRowBackground(rowTint)
                     }
                 }
+                if model.isRamadan {RamadanSection()}
                 Section {
                     LabeledContent("Islamic midnight",value:model.time(day.midnightEpoch))
                     LabeledContent("Last third",value:model.time(day.lastThirdEpoch))
